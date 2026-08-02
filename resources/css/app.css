@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    /* Normalize weights of the existing Figtree setup (400/500/600/700). */
+    body {
+        @apply font-sans antialiased text-slate-900;
+    }
+}
+
+@layer utilities {
+    /* Grow a progress-bar fill from 0 to its inline width on mount. */
+    .animate-bar-grow {
+        animation: bar-grow 0.5s ease-out both;
+    }
+    @keyframes bar-grow {
+        from {
+            width: 0%;
+        }
+    }
+}

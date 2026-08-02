@@ -1,0 +1,268 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\AuditLog;
+use App\Models\Deal;
+use App\Models\DealStage;
+use App\Models\Project;
+use App\Models\ProjectStage;
+use App\Models\User;
+use App\Services\FinanceService;
+use App\Support\AuditFormatter;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ProjectController extends Controller
+{
+    private function canSeeMoney(Request $request): bool
+    {
+        return $request->user()->hasAnyRole(['admin', 'director', 'financist', 'manager']);
+    }
+
+    /**
+     * Доступ сотрудника к цеху заказа (users.workshops): работник «Металл
+     * цеха» не видит и не двигает заказы «Ағаш цеха» (и наоборот); пустой
+     * список = все цеха (руководство, ASU, работающие на оба цеха).
+     */
+    private function assertWorkshopAccess(Project $project): void
+    {
+        abort_unless(auth()->user()->worksInWorkshop($project->workshop), 403,
+            'Заказ другого цеха: у вас доступ только к своему цеху.');
+    }
+
+    private function scope($query, Request $request)
+    {
+        $user = $request->user();
+        if ($user->hasRole('manager') && ! $user->hasAnyRole(['admin', 'director', 'financist'])) {
+            $uid = $user->id;
+
+            return $query->where(fn ($w) => $w
+                ->where('responsible_user_id', $uid)
+                ->orWhereHas('deal', fn ($d) => $d->where('responsible_user_id', $uid)));
+        }
+
+        return $query;
+    }
+
+    public function index(Request $request): Response
+    {
+        $this->authorize('viewAny', Project::class);
+
+        $view = $request->string('view', 'kanban')->toString();
+
+        $base = Project::query()
+            // cancelled = заказ отменён (в т.ч. каскадом при удалении сделки).
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            // Цех тоже разделён по фирмам: заказ принадлежит компании исходной сделки.
+            ->when(\App\Support\CurrentCompany::id(), fn ($q, $c) => $q->whereHas('deal', fn ($d) => $d->where('company_id', $c)))
+            // Цеху на карточке нужны срок, описание, заметка и адрес (город) из сделки.
+            ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order', 'deal:id,number,company_name,client_name,address,deadline,description,note'])
+            ->withCount(['tasks as overdue_count' => fn ($q) => $q->where('status', '!=', 'done')->whereNotNull('due_date')->where('due_date', '<', now())])
+            // Тайминг: когда заказ вошёл на текущий этап (открытый лог).
+            ->addSelect(['stage_entered_at' => \App\Models\ProjectStageLog::select('entered_at')
+                ->whereColumn('project_id', 'projects.id')->whereNull('left_at')
+                ->latest('entered_at')->limit(1)]);
+        $this->scope($base, $request);
+        // Доступ по цехам: сотрудник с ограничением видит только свои цеха
+        // (заказы без цеха — ASU — видны всем).
+        $userWorkshops = $request->user()->workshops ?? [];
+        if (! empty($userWorkshops)) {
+            $base->where(fn ($w) => $w->whereNull('workshop')->orWhereIn('workshop', $userWorkshops));
+        }
+        // Поиск во вложенной скобке — иначе orWhere «вырывается» из скоупа
+        // компании/владельца и показал бы чужие заказы (утечка между фирмами).
+        $base->when($request->string('search')->toString(), fn ($q, $s) => $q
+            ->where(fn ($w) => $w->where('name', 'like', "%{$s}%")->orWhere('number', 'like', "%{$s}%")));
+
+        // Канбан показывает воронку цеха ТЕКУЩЕЙ компании (BAIA — мебельный,
+        // ASU — швейный); в режиме «Все компании» — этапы обоих цехов С
+        // ПОМЕТКОЙ фирмы (иначе одинаковые «Кесу» выглядят как дубли).
+        // companyQuery: свои этапы приоритетны, «общие» (null) — только фолбэк.
+        $companyId = \App\Support\CurrentCompany::id() ?: null;
+        $companyCodes = \App\Models\Company::pluck('code', 'id');
+        $stages = ProjectStage::companyQuery($companyId)
+            ->with('translations')->get()
+            // Секции чужих цехов скрываем у сотрудников с ограничением.
+            ->filter(fn ($s) => empty($userWorkshops) || $s->workshop === null || in_array($s->workshop, $userWorkshops, true))
+            ->values()
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->translatedName().(! $companyId && $s->company_id ? ' · '.($companyCodes[$s->company_id] ?? '') : ''),
+                'color' => $s->color, 'order' => $s->order, 'is_completed' => $s->is_completed,
+                // Цех (у BAIA их два) — канбан рисует секцию на каждый.
+                'workshop' => $s->workshop,
+            ]);
+
+        $projects = $view === 'list'
+            ? (clone $base)->latest()->paginate(20)->withQueryString()
+            : (clone $base)->latest()->get();
+
+        // Цех не видит суммы — прячем budget из сериализуемой модели, а не только в UI.
+        $canSeeMoney = $this->canSeeMoney($request);
+        if (! $canSeeMoney) {
+            ($projects instanceof \Illuminate\Pagination\AbstractPaginator ? $projects->getCollection() : $projects)
+                ->transform(fn ($p) => $p->makeHidden('budget'));
+        }
+
+        return Inertia::render('Projects/Index', [
+            'projects' => $projects,
+            'stages' => $stages,
+            'view' => $view,
+            'filters' => $request->only('search'),
+            'canSeeMoney' => $canSeeMoney,
+        ]);
+    }
+
+    public function show(Project $project, FinanceService $finance, Request $request): Response
+    {
+        $this->authorize('view', $project);
+        $this->assertWorkshopAccess($project);
+
+        $project->load([
+            'client', 'responsible:id,name,avatar', 'department:id,name',
+            // company_id ОБЯЗАТЕЛЕН в select: по нему фильтруется воронка цеха
+            // ниже — без него грузились обе фирмы (Кесу+Кесу в степпере).
+            'stage', 'deal:id,number,name,company_name,company_id',
+            'tasks' => fn ($q) => $q->with('assignee:id,name')->latest(),
+            'documents' => fn ($q) => $q->where('is_active', true)->with('user:id,name')->latest(),
+            'comments' => fn ($q) => $q->with('user:id,name')->latest(),
+        ]);
+
+        $canSeeMoney = $this->canSeeMoney($request);
+        if (! $canSeeMoney) {
+            $project->makeHidden('budget');
+        }
+
+        // Finance & history follow the originating deal so the whole lifecycle
+        // (sale → production) is one continuous picture for the manager.
+        $source = $project->deal_id
+            ? Deal::with([
+                'invoices' => fn ($q) => $q->withSum('payments as payments_sum_amount', 'amount')->with('payments')->latest(),
+                'expenses' => fn ($q) => $q->with('responsible:id,name,avatar')->latest(),
+            ])->find($project->deal_id)
+            : null;
+        $source ??= $project->load([
+            'invoices' => fn ($q) => $q->withSum('payments as payments_sum_amount', 'amount')->with('payments')->latest(),
+            'expenses' => fn ($q) => $q->with('responsible:id,name,avatar')->latest(),
+        ]);
+
+        // Merge audit history of the project and its deal.
+        $history = AuditFormatter::humanize(
+            AuditLog::query()
+                ->where(function ($q) use ($project) {
+                    $q->where(fn ($w) => $w->where('table_name', 'projects')->where('record_id', $project->id));
+                    if ($project->deal_id) {
+                        $q->orWhere(fn ($w) => $w->where('table_name', 'deals')->where('record_id', $project->deal_id));
+                    }
+                })
+                ->with('user:id,name')->latest()->limit(150)->get(),
+            [
+                'project_stage_id' => ProjectStage::pluck('name', 'id'),
+                'deal_stage_id' => DealStage::pluck('name', 'id'),
+                'responsible_user_id' => User::pluck('name', 'id'),
+            ]
+        );
+
+        // Цех не должен видеть изменения суммы сделки в истории.
+        if (! $canSeeMoney) {
+            $history = $history->reject(fn ($log) => $log->field_name === 'budget')->values();
+        }
+
+        return Inertia::render('Projects/Show', [
+            'project' => $project,
+            'users' => User::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            // Остатки касса/банк — бухгалтеру в форме расхода («доступно N»).
+            'balances' => $request->user()->hasAnyRole(['admin', 'financist'])
+                ? $finance->companyBalances($project->deal?->company_id ? (int) $project->deal->company_id : null)
+                : null,
+            // Этапы цеха компании этого заказа (по исходной сделке); свои
+            // приоритетны, «общие» — фолбэк (иначе степпер двоит Кесу+Кесу…).
+            'stages' => ProjectStage::companyQuery($project->deal?->company_id ? (int) $project->deal->company_id : null, $project->workshop)
+                ->with('translations')->get()
+                ->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName(), 'color' => $s->color, 'order' => $s->order, 'is_completed' => $s->is_completed]),
+            'finance' => $canSeeMoney ? $finance->summaryFor($source) : null,
+            'financeEntityType' => $project->deal_id ? 'deal' : 'project',
+            'financeEntityId' => $source->id,
+            'financeInvoices' => $canSeeMoney ? $source->invoices : [],
+            'financeExpenses' => $canSeeMoney ? $source->expenses : [],
+            'canSeeMoney' => $canSeeMoney,
+            'history' => $history,
+            // Тайминг этапов: сколько заказ провёл на каждом (открытый — тикает).
+            'stageLogs' => $project->stageLogs()->orderBy('entered_at')->orderBy('id')->get()
+                ->map(fn ($l) => [
+                    'stage' => $l->stage_name,
+                    'entered_at' => $l->entered_at->toIso8601String(),
+                    'left_at' => $l->left_at?->toIso8601String(),
+                    'seconds' => $l->left_at ? (int) $l->duration_seconds : (int) abs(now()->diffInSeconds($l->entered_at)),
+                    'open' => $l->left_at === null,
+                ]),
+        ]);
+    }
+
+    public function updateStage(Request $request, Project $project): RedirectResponse
+    {
+        $this->authorize('view', $project);
+        $this->assertWorkshopAccess($project);
+
+        $validated = $request->validate(['project_stage_id' => ['required', 'exists:project_stages,id']]);
+        $stage = ProjectStage::findOrFail($validated['project_stage_id']);
+        // Изоляция цехов: этап чужой компании (BAIA↔ASU) недоступен.
+        $companyId = $project->deal?->company_id ? (int) $project->deal->company_id : null;
+        if ($stage->company_id && (int) $stage->company_id !== $companyId) {
+            return back()->with('error', 'Этап принадлежит цеху другой компании.');
+        }
+        // Перенос на этап (включая «Отправку») — ТОЛЬКО смена этапа. Завершение
+        // заказа и возврат сделки на «Логистику» — ТОЛЬКО кнопкой «Готово»
+        // (projects.toAct), а не автоматом при перетаскивании.
+        $project->project_stage_id = $stage->id;
+        $project->save();
+
+        return back()->with('success', 'Этап проекта обновлён.');
+    }
+
+    public function advance(Project $project): RedirectResponse
+    {
+        $this->authorize('view', $project);
+        $this->assertWorkshopAccess($project);
+        // «Далее» — по ПОЗИЦИИ в воронке цеха своей компании (не по order >
+        // current): при задвоенном order соседний этап не перескакивается.
+        $funnel = ProjectStage::funnel($project->deal?->company_id ? (int) $project->deal->company_id : null, $project->workshop)->values();
+        $idx = $funnel->search(fn ($s) => $s->id === $project->project_stage_id);
+        $next = $idx !== false ? $funnel->get($idx + 1) : $funnel->first();
+        if (! $next) {
+            return back()->with('error', 'Это последний этап.');
+        }
+        // «Далее» доводит только ДО последнего этапа; завершение — кнопкой «Готово».
+        $project->project_stage_id = $next->id;
+        $project->save();
+
+        return back()->with('success', 'Цех: этап «'.$next->name.'».');
+    }
+
+    /**
+     * Workshop "Готово": from the last workshop stage («Отправка»), send the
+     * order back to the Deals board and close the workshop project.
+     */
+    public function sendToAct(Project $project): RedirectResponse
+    {
+        $this->authorize('view', $project);
+        $this->assertWorkshopAccess($project);
+
+        return $this->completeAndReturnDeal($project);
+    }
+
+    /**
+     * Завершить заказ цеха и вернуть исходную сделку на «Логистику» (воронка
+     * компании сделки); дальше менеджер двигает Логистика → Сборка → Акт.
+     */
+    private function completeAndReturnDeal(Project $project): RedirectResponse
+    {
+        // Единая логика с «Готово» на ТВ-экране цеха (ProjectService).
+        [$ok, $message] = app(\App\Services\ProjectService::class)->completeAndReturnDeal($project);
+
+        return back()->with($ok ? 'success' : 'error', $message);
+    }
+}

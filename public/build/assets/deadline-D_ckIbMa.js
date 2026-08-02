@@ -1,0 +1,1 @@
+function e(e,t=!1){if(!e||t)return``;let n=new Date(e);if(isNaN(n))return``;let r=Date.now();return n.getTime()<r?`text-red-600 font-semibold`:n.getTime()<=r+7200*1e3?`text-orange-500 font-semibold`:``}function t(e,t=!1){if(!e||t)return!1;let n=new Date(e);return!isNaN(n)&&n.getTime()<Date.now()}export{t as n,e as t};

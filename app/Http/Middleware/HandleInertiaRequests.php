@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Illuminate\Http\Request;
+use Inertia\Middleware;
+
+class HandleInertiaRequests extends Middleware
+{
+    protected $rootView = 'app';
+
+    public function version(Request $request): ?string
+    {
+        return parent::version($request);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function share(Request $request): array
+    {
+        $user = $request->user();
+
+        return [
+            ...parent::share($request),
+            'auth' => [
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                    'language' => $user->language,
+                    'roles' => $user->getRoleNames(),
+                    'permissions' => $user->getAllPermissions()->pluck('name'),
+                ] : null,
+                // Firms the user may work in + the one currently selected (header switcher).
+                'companies' => $user ? $user->companies()->where('is_active', true)->orderBy('name')->get(['companies.id', 'name', 'code']) : [],
+                'currentCompanyId' => $user ? \App\Support\CurrentCompany::id() : null,
+            ],
+            'notifications' => fn () => $user ? [
+                'unread' => $user->unreadNotifications()->count(),
+                'items' => $user->notifications()->latest()->limit(10)->get()
+                    ->map(fn ($n) => [
+                        'id' => $n->id,
+                        'data' => $n->data,
+                        'read_at' => $n->read_at,
+                        'created_at' => $n->created_at,
+                    ]),
+            ] : ['unread' => 0, 'items' => []],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
+            'locale' => app()->getLocale(),
+            'translations' => fn () => \App\Models\UiTranslation::map(app()->getLocale()),
+            // Публичный VAPID-ключ Web Push: фронт подписывает браузер на пуши чата.
+            'vapidPublicKey' => (string) config('services.webpush.public_key', ''),
+        ];
+    }
+}
