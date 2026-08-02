@@ -6,10 +6,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Предварительные сделки (лоты, как Excel-файл отдела продаж): менеджер вносит
- * цифры, система считает партнёра/налог/остаток/маржу. Маржа ≥ 15% — «участвую»,
- * можно подтвердить в полноценную сделку; ниже — отклоняется. Чек-лист действий
- * (КП в WhatsApp, звонок клиенту…) настраивается админом/финансистом.
+ * Заявки / запросы КП (замена Excel-файла отдела продаж): менеджер вносит
+ * объём и цены по заявке, система считает партнёра/налог/остаток/маржу.
+ * Маржа ≥ порога (15%) — заявку можно перевести в сделку; ниже — отклоняется.
+ * Чек-лист действий (звонок, замер, КП, согласование образца) настраивается
+ * админом/финансистом.
  */
 return new class extends Migration
 {
@@ -27,13 +28,17 @@ return new class extends Migration
             $table->id();
             $table->foreignId('company_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // менеджер
-            $table->string('lot_number', 100)->nullable();
-            $table->string('bin', 40)->nullable();            // БИН заказчика
-            $table->string('customer')->nullable();           // заказчик (компания)
-            $table->string('client_name')->nullable();        // контакт (имя)
-            $table->string('client_phone', 40)->nullable();   // контакт (телефон)
-            $table->string('product');                        // название товара
-            $table->decimal('contract_sum', 15, 2)->default(0);
+            $table->string('request_number', 100)->nullable();  // № заявки / КП
+            $table->string('bin', 40)->nullable();              // БИН / ИИН заказчика
+            $table->string('customer')->nullable();             // заказчик (компания или частное лицо)
+            $table->string('object_address')->nullable();       // объект: адрес монтажа/доставки
+            $table->string('client_name')->nullable();          // контакт (имя)
+            $table->string('client_phone', 40)->nullable();     // контакт (телефон)
+            $table->string('product');                          // изделие (плитка, вазон, скамья…)
+            $table->decimal('quantity', 12, 2)->default(0);     // объём: м², шт…
+            $table->string('unit', 50)->nullable();             // единица измерения объёма
+            $table->decimal('unit_price', 15, 2)->default(0);   // цена за единицу
+            $table->decimal('contract_sum', 15, 2)->default(0); // сумма КП (объём × цена или вручную)
             $table->decimal('purchase_price', 15, 2)->default(0);
             $table->decimal('partner_pct', 5, 2)->default(0);
             $table->decimal('partner_sum', 15, 2)->default(0);
@@ -51,7 +56,8 @@ return new class extends Migration
         });
 
         // Стартовый чек-лист (дальше правится в UI админом/финансистом).
-        foreach (['Отправлено КП через WhatsApp', 'Позвонил клиенту'] as $i => $label) {
+        $items = ['Позвонил клиенту', 'Сделал замер объекта', 'Отправил КП', 'Согласовал образец и цвет'];
+        foreach ($items as $i => $label) {
             DB::table('pre_deal_checklist_items')->insert([
                 'label' => $label, 'order' => $i + 1, 'created_at' => now(), 'updated_at' => now(),
             ]);

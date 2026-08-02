@@ -46,7 +46,7 @@ const allNav = [
     // → Цех → Склад → Сводный отчет → Финансы → ЗП → остальное.
     { key: 'nav.analytics', name: 'Аналитика', route: 'analytics.index', icon: '◊', leadershipOnly: true },
     { key: 'nav.overdue', name: 'Просроченные', route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny' },
-    { key: 'nav.predeals', name: 'Предв. сделки', route: 'preDeals.index', icon: '◧', roles: ['admin', 'director', 'financist', 'manager'] },
+    { key: 'nav.predeals', name: 'Заявки', route: 'preDeals.index', icon: '◧', roles: ['admin', 'director', 'financist', 'manager'] },
     { key: 'nav.deals', name: 'Сделки', route: 'deals.index', icon: '◈', perm: 'deal.viewAny' },
     { key: 'nav.workshop', name: 'Цех', route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
     { key: 'nav.warehouse', name: 'Склад', route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },

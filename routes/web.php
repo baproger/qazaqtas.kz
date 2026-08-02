@@ -67,15 +67,15 @@ Route::middleware('auth')->group(function () {
     Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
 
     // Deals
-    // Предварительные сделки (лоты): расчёт маржи до создания сделки.
+    // Заявки / запросы КП: расчёт маржи до создания сделки.
     Route::get('pre-deals', [\App\Http\Controllers\PreDealController::class, 'index'])->name('preDeals.index');
     Route::post('pre-deals', [\App\Http\Controllers\PreDealController::class, 'store'])->name('preDeals.store');
-    // Быстрая проверка № лота ДО заполнения формы (кнопка «Проверить» у поля).
-    Route::get('pre-deals/check-lot', [\App\Http\Controllers\PreDealController::class, 'checkLot'])->middleware('throttle:60,1')->name('preDeals.checkLot');
+    // Быстрая проверка № заявки ДО заполнения формы (кнопка «Проверить» у поля).
+    Route::get('pre-deals/check-number', [\App\Http\Controllers\PreDealController::class, 'checkNumber'])->middleware('throttle:60,1')->name('preDeals.checkNumber');
     Route::put('pre-deals/{preDeal}', [\App\Http\Controllers\PreDealController::class, 'update'])->name('preDeals.update');
     Route::delete('pre-deals/{preDeal}', [\App\Http\Controllers\PreDealController::class, 'destroy'])->name('preDeals.destroy');
     Route::post('pre-deals/{preDeal}/confirm', [\App\Http\Controllers\PreDealController::class, 'confirm'])->name('preDeals.confirm');
-    // Откат случайного «Выиграл ✓»: сделка удаляется, лот снова «В работе».
+    // Откат случайного «В работу ✓»: сделка удаляется, заявка снова «В работе».
     Route::post('pre-deals/{preDeal}/revert', [\App\Http\Controllers\PreDealController::class, 'revert'])->name('preDeals.revert');
     Route::post('pre-deals/{preDeal}/check/{item}', [\App\Http\Controllers\PreDealController::class, 'check'])->name('preDeals.check');
     Route::post('pre-deal-items', [\App\Http\Controllers\PreDealController::class, 'storeItem'])->name('preDealItems.store');

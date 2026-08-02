@@ -4,9 +4,9 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-// Сборка в лоте — рядом с доставкой, вычитается из остатка при расчёте маржи.
-// При «Выиграл ✓» доставка и сборка лота автоматически создаются расходами
-// сделки (🚚/🔧, confirmed, без нал/банк — кассу не трогают).
+// Монтаж в заявке — рядом с доставкой, вычитается из остатка при расчёте маржи.
+// При переводе заявки в сделку доставка и монтаж автоматически создаются
+// расходами сделки (🚚/🔧, confirmed, без нал/банк — кассу не трогают).
 return new class extends Migration
 {
     public function up(): void

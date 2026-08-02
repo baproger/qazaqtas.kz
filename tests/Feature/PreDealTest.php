@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** Предварительные сделки: расчёт как в Excel, порог маржи 15%, персонализация. */
+/** Заявки / запросы КП: расчёт как в Excel, порог маржи 15%, персонализация. */
 class PreDealTest extends TestCase
 {
     use RefreshDatabase;
@@ -31,8 +31,28 @@ class PreDealTest extends TestCase
         return $u;
     }
 
-    // «Выиграл ✓»: доставка и сборка лота автоматически становятся расходами
-    // сделки (🚚/🔧, confirmed, БЕЗ нал/банк — кассу не трогают); маржа лота
+    // Объём × цена за единицу = сумма КП: менеджер вводит м²/шт и цену,
+    // сумма договора считается сама (и уходит в расчёт маржи).
+    public function test_contract_sum_is_quantity_times_unit_price(): void
+    {
+        $mgr = $this->user('manager');
+
+        $this->actingAs($mgr)->post(route('preDeals.store'), [
+            'product' => 'Тротуарная плитка 300×300',
+            'quantity' => 250, 'unit' => 'м²', 'unit_price' => 8000,
+            'contract_sum' => 1, // затирается расчётом
+            'purchase_price' => 1000000,
+        ])->assertRedirect();
+
+        $request = PreDeal::firstOrFail();
+        $this->assertEquals(2000000, (float) $request->contract_sum);
+        // остаток = 2 000 000 − 1 000 000 − налог 3% (60 000) = 940 000 → 47%
+        $this->assertEquals(940000, (float) $request->remainder);
+        $this->assertEquals(47, (float) $request->margin);
+    }
+
+    // Перевод в сделку: доставка и монтаж заявки автоматически становятся
+    // расходами сделки (🚚/🔧, confirmed, БЕЗ нал/банк — кассу не трогают); маржа заявки
     // учитывает сборку; откат ↩ удаляет авто-расходы и проходит.
     public function test_confirm_creates_delivery_and_assembly_expenses(): void
     {
@@ -103,18 +123,18 @@ class PreDealTest extends TestCase
     }
 
     // Сегодня заканчивается тендер → уведомление менеджеру лота (только new-лоты).
-    public function test_tender_deadline_today_notifies_manager(): void
+    public function test_quote_deadline_today_notifies_manager(): void
     {
         $mgr = $this->user('manager');
         $other = $this->user('manager');
-        PreDeal::create(PreDeal::calculate(['product' => 'A', 'contract_sum' => 100, 'tender_deadline' => now()->toDateString()]) + ['user_id' => $mgr->id]);
-        PreDeal::create(PreDeal::calculate(['product' => 'B', 'contract_sum' => 100, 'tender_deadline' => now()->addDay()->toDateString()]) + ['user_id' => $other->id]);
-        PreDeal::create(PreDeal::calculate(['product' => 'C', 'contract_sum' => 100, 'tender_deadline' => now()->toDateString()]) + ['user_id' => $other->id, 'status' => 'confirmed']);
+        PreDeal::create(PreDeal::calculate(['product' => 'A', 'contract_sum' => 100, 'valid_until' => now()->toDateString()]) + ['user_id' => $mgr->id]);
+        PreDeal::create(PreDeal::calculate(['product' => 'B', 'contract_sum' => 100, 'valid_until' => now()->addDay()->toDateString()]) + ['user_id' => $other->id]);
+        PreDeal::create(PreDeal::calculate(['product' => 'C', 'contract_sum' => 100, 'valid_until' => now()->toDateString()]) + ['user_id' => $other->id, 'status' => 'confirmed']);
 
-        $this->artisan('pre-deals:notify-tender-deadline')->assertSuccessful();
+        $this->artisan('pre-deals:notify-quote-deadline')->assertSuccessful();
 
         $this->assertSame(1, $mgr->notifications()->count());
-        $this->assertSame('tender_deadline', $mgr->notifications()->first()->data['type']);
+        $this->assertSame('quote_deadline', $mgr->notifications()->first()->data['type']);
         $this->assertSame(0, $other->notifications()->count()); // завтра/выигран — не беспокоим
     }
 
@@ -124,36 +144,36 @@ class PreDealTest extends TestCase
     {
         $mgr = $this->user('manager');
         $this->actingAs($mgr)->post(route('preDeals.store'), [
-            'product' => 'Стол', 'contract_sum' => 100000, 'lot_number' => 'LOT-1',
+            'product' => 'Вазон Астана', 'contract_sum' => 100000, 'request_number' => 'ZAY-1',
         ]);
         $lot = PreDeal::firstOrFail();
 
-        $this->actingAs($mgr)->getJson(route('preDeals.checkLot', ['lot_number' => 'LOT-1']))
+        $this->actingAs($mgr)->getJson(route('preDeals.checkNumber', ['request_number' => 'ZAY-1']))
             ->assertOk()->assertJson(['exists' => true, 'manager' => $mgr->name]);
-        $this->actingAs($mgr)->getJson(route('preDeals.checkLot', ['lot_number' => 'LOT-9']))
+        $this->actingAs($mgr)->getJson(route('preDeals.checkNumber', ['request_number' => 'ZAY-9']))
             ->assertOk()->assertJson(['exists' => false]);
-        $this->actingAs($mgr)->getJson(route('preDeals.checkLot', ['lot_number' => 'LOT-1', 'ignore' => $lot->id]))
+        $this->actingAs($mgr)->getJson(route('preDeals.checkNumber', ['request_number' => 'ZAY-1', 'ignore' => $lot->id]))
             ->assertOk()->assertJson(['exists' => false]);
     }
 
     // Дубль № лота запрещён: второй ввод того же лота — ошибка валидации;
     // правка самого лота без смены номера ложно не срабатывает.
-    public function test_duplicate_lot_number_rejected(): void
+    public function test_duplicate_request_number_rejected(): void
     {
         $mgr = $this->user('manager');
         $this->actingAs($mgr)->post(route('preDeals.store'), [
-            'product' => 'Стол', 'contract_sum' => 100000, 'lot_number' => 'LOT-777',
+            'product' => 'Вазон Астана', 'contract_sum' => 100000, 'request_number' => 'ZAY-777',
         ])->assertSessionHasNoErrors();
 
         $this->actingAs($mgr)->post(route('preDeals.store'), [
-            'product' => 'Стул', 'contract_sum' => 50000, 'lot_number' => 'LOT-777',
-        ])->assertSessionHasErrors('lot_number');
+            'product' => 'Скамья парковая', 'contract_sum' => 50000, 'request_number' => 'ZAY-777',
+        ])->assertSessionHasErrors('request_number');
         $this->assertSame(1, PreDeal::count());
 
         // Правка своего лота с тем же номером — проходит (ignore self).
         $lot = PreDeal::firstOrFail();
         $this->actingAs($mgr)->put(route('preDeals.update', $lot), [
-            'product' => 'Стол обновлённый', 'contract_sum' => 120000, 'lot_number' => 'LOT-777',
+            'product' => 'Вазон Астана (правка)', 'contract_sum' => 120000, 'request_number' => 'ZAY-777',
         ])->assertSessionHasNoErrors();
     }
 

@@ -5,7 +5,7 @@ import Avatar from '@/Components/Avatar.vue';
 
 const props = defineProps({ screen: Object, plan: Number, month: String, monthLabel: String, managers: Array, leader: Object, lots: { type: Array, default: () => [] }, funnel: { type: Array, default: () => [] } });
 
-// Чек-лист: доля закрытых галочек — видно, работает менеджер по лотам или нет.
+// Чек-лист: доля закрытых галочек — видно, работает менеджер по заявкам или нет.
 const checksPct = (m) => m.checks_total > 0 ? Math.round(m.checks_done / m.checks_total * 100) : 0;
 const checksClass = (p) => p >= 70 ? 'bg-emerald-100 text-emerald-700' : p >= 30 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-600';
 
@@ -57,8 +57,8 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
              без воронки-плиток, без карточки лидера, без автопрокрутки. -->
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
-                    <span class="text-base font-bold text-slate-900">Отдел продаж — лоты за месяц</span>
-                    <span class="text-xs text-slate-400">добавил лотов · выиграл · конверсия %</span>
+                    <span class="text-base font-bold text-slate-900">Отдел продаж — заявки за месяц</span>
+                    <span class="text-xs text-slate-400">добавил заявок · в работе · конверсия %</span>
                 </div>
                 <div class="divide-y divide-slate-50">
                     <div v-for="(m, i) in managers" :key="m.name" class="flex items-center gap-4 px-5 py-3.5">
@@ -73,7 +73,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                                 <div class="h-2 w-full max-w-xs overflow-hidden rounded-full bg-slate-100">
                                     <div class="h-2 rounded-full transition-all duration-700" :class="barClass(m.conversion)" :style="{ width: Math.max(2, m.conversion) + '%' }"></div>
                                 </div>
-                                <span class="flex-shrink-0 text-xs text-slate-400">план лотов: {{ m.total }}/{{ plan }}</span>
+                                <span class="flex-shrink-0 text-xs text-slate-400">план заявок: {{ m.total }}/{{ plan }}</span>
                             </div>
                         </div>
                         <!-- Справа — данные менеджера: воронка + выиграл -->
@@ -92,11 +92,11 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                                 <span class="ml-1 text-4xl font-black leading-none tabular-nums" :class="m.won > 0 ? 'text-emerald-600' : 'text-slate-300'">{{ m.won }}</span>
                             </div>
                             <div class="mt-1 flex items-center justify-end gap-1.5 text-xs text-slate-400">
-                                <span>выиграл · лотов {{ m.total }} · сделок {{ m.deals }}</span>
-                                <!-- Чек-лист: закрыто галочек из возможных по его лотам -->
+                                <span>в работе · заявок {{ m.total }} · сделок {{ m.deals }}</span>
+                                <!-- Чек-лист: закрыто галочек из возможных по его заявкам -->
                                 <span class="rounded-full px-1.5 py-0.5 font-bold tabular-nums"
                                     :class="m.checks_total > 0 ? checksClass(checksPct(m)) : 'bg-slate-100 text-slate-400'"
-                                    title="Чек-лист по лотам: сделано / всего">☑ {{ m.checks_done }}/{{ m.checks_total }}</span>
+                                    title="Чек-лист по заявкам: сделано / всего">☑ {{ m.checks_done }}/{{ m.checks_total }}</span>
                             </div>
                         </div>
                     </div>
@@ -104,11 +104,11 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                 </div>
         </div>
 
-        <!-- Лоты месяца с чек-листами: видно, кто реально работает по лотам -->
+        <!-- Заявки месяца с чек-листами: видно, кто реально работает по заявкам -->
         <div class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
                 <span class="text-base font-bold text-slate-900">Лоты месяца — чек-листы</span>
-                <span class="text-xs text-slate-400">☑ галочки лота («КП», «Позвонил»…) — работа менеджера по лоту</span>
+                <span class="text-xs text-slate-400">☑ галочки заявки («Позвонил», «Замер», «КП», «Образец»…) — работа менеджера по заявке</span>
             </div>
             <div class="divide-y divide-slate-50">
                 <div v-for="(l, i) in lots" :key="i" class="flex items-center gap-4 px-5 py-2.5">
@@ -128,7 +128,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                         <span class="flex-shrink-0 text-xs font-bold tabular-nums" :class="l.checks_done === l.checks_total && l.checks_total > 0 ? 'text-emerald-600' : 'text-slate-500'">☑ {{ l.checks_done }}/{{ l.checks_total }}</span>
                     </div>
                 </div>
-                <div v-if="!lots.length" class="px-5 py-8 text-center text-sm text-slate-400">В {{ monthLabel }} лотов ещё нет</div>
+                <div v-if="!lots.length" class="px-5 py-8 text-center text-sm text-slate-400">В {{ monthLabel }} заявок ещё нет</div>
             </div>
         </div>
     </div>

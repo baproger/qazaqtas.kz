@@ -13,7 +13,10 @@ class UiTranslationSeeder extends Seeder
             // key, group, ru, kk
             ['nav.dashboard', 'nav', 'Дашборд', 'Басқару тақтасы'],
             ['nav.analytics', 'nav', 'Аналитика', 'Аналитика'],
+            ['nav.predeals', 'nav', 'Заявки', 'Өтінімдер'],
             ['nav.deals', 'nav', 'Сделки', 'Мәмілелер'],
+            ['nav.warehouse', 'nav', 'Склад', 'Қойма'],
+            ['nav.reports', 'nav', 'Сводный отчет', 'Жиынтық есеп'],
             ['nav.overdue', 'nav', 'Просроченные', 'Мерзімі өткен'],
             ['nav.workshop', 'nav', 'Цех', 'Цех'],
             ['nav.chat', 'nav', 'Чат', 'Чат'],
