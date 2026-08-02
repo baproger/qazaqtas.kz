@@ -4,8 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Разовая перенумерация ВСЕХ живых сделок заново с 001 (по фирме: BAIA-001…,
- * ASU-001…), в порядке создания. Удалённые не участвуют (их номера уже
+ * Разовая перенумерация ВСЕХ живых сделок заново с 001 (по фирме: QT-001…),
+ * в порядке создания. Удалённые не участвуют (их номера уже
  * освобождены как …#del{id}). Чаты сделок привязаны к deal_id — история
  * сохраняется, имя чата и тексты гейт-задач обновляются косметически.
  */
@@ -30,7 +30,7 @@ return new class extends Migration
         // Фаза 2: сквозная нумерация с 001 по каждой фирме, в порядке создания.
         $counters = [];
         foreach ($deals as $d) {
-            $prefix = strtoupper((string) ($codes[$d->company_id] ?? '') ?: 'BAIA');
+            $prefix = strtoupper((string) ($codes[$d->company_id] ?? '') ?: 'QT');
             $counters[$prefix] = ($counters[$prefix] ?? 0) + 1;
             $new = $prefix.'-'.str_pad((string) $counters[$prefix], 3, '0', STR_PAD_LEFT);
 

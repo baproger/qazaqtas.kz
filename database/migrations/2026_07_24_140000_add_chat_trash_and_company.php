@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 // Чат: корзина (мягкое удаление с восстановлением) + привязка группы к
-// компании BAIA/ASU (null = видна сотрудникам обеих фирм).
+// фирмы (null = видна сотрудникам всех фирм).
 return new class extends Migration
 {
     public function up(): void

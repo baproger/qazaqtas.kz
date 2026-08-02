@@ -75,7 +75,7 @@ const moveStage = async (id) => {
     router.patch(route('deals.stage', props.deal.id), { deal_stage_id: id }, { preserveScroll: true });
 };
 const advance = () => router.patch(route('deals.advance', props.deal.id), {}, { preserveScroll: true });
-// У BAIA два цеха — сначала выбор («Металл цех» / «Ағаш цех»), у ASU сразу.
+// Если цехов несколько — сначала выбор цеха, иначе сразу в производство.
 const showWorkshopPick = ref(false);
 const sendToWorkshop = (w = null) => {
     if (!w && props.workshops.length > 1) { showWorkshopPick.value = true; return; }
@@ -419,7 +419,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 </div>
             </div>
         </Modal>
-        <!-- Выбор цеха (BAIA: Металл / Ағаш) -->
+        <!-- Выбор цеха (если их несколько) -->
         <Modal :show="showWorkshopPick" max-width="sm" @close="showWorkshopPick = false">
             <div class="p-6">
                 <h3 class="mb-1 text-base font-semibold text-slate-900">В какой цех отправить?</h3>

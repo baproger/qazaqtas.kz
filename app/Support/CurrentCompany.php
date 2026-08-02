@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Models\Company;
 
 /**
- * The firm (BAIA / ASU) the user is currently working in. Chosen at login or
+ * The firm the user is currently working in. Chosen at login or
  * via the header switcher, kept in the session; every company-scoped query
  * (deals, workshop, finance, analytics, payroll) filters by this id.
  */

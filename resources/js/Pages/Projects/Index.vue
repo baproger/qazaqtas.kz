@@ -23,8 +23,8 @@ const onDrop = (stage) => {
 };
 const switchView = (v) => router.get(route('projects.index'), { ...props.filters, view: v }, { preserveState: true });
 const advance = (p) => router.patch(route('projects.advance', p.id), {}, { preserveScroll: true, preserveState: false });
-// Секции канбана: у BAIA два цеха («Металл цех» / «Ағаш цех») — своя строка
-// этапов на каждый; у ASU один цех (workshop=null) — одна секция без шапки.
+// Секции канбана: если цехов несколько — своя строка этапов на каждый;
+// при едином производстве (workshop=null) — одна секция без шапки.
 const workshopGroups = computed(() => {
     const groups = [];
     for (const s of props.stages) {

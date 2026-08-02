@@ -11,7 +11,7 @@ use Inertia\Response;
 class SettingsController extends Controller
 {
     private array $defaults = [
-        'company_name' => 'BAIA Holding',
+        'company_name' => 'QAZAQ TAS',
         'currency' => '₸',
         'auto_create_project' => true,
         'default_locale' => 'ru',

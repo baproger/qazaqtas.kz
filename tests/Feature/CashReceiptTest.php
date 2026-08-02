@@ -62,8 +62,8 @@ class CashReceiptTest extends TestCase
         // «Доход» тоже месячный: сделка прошлого месяца (по дате договора)
         // попадает, сегодняшняя — нет. 100000 − 3% − бонус 15% от остатка = 82450.
         $stage = \App\Models\DealStage::orderBy('order')->first()->id;
-        \App\Models\Deal::create(['number' => 'BAIA-101', 'name' => 'X', 'company_name' => 'Т', 'client_name' => 'И', 'budget' => 100000, 'status' => 'active', 'deal_stage_id' => $stage, 'contract_date' => $past->toDateString()]);
-        \App\Models\Deal::create(['number' => 'BAIA-102', 'name' => 'Y', 'company_name' => 'Т', 'client_name' => 'И', 'budget' => 500000, 'status' => 'active', 'deal_stage_id' => $stage, 'contract_date' => now()->toDateString()]);
+        \App\Models\Deal::create(['number' => 'QT-101', 'name' => 'X', 'company_name' => 'Т', 'client_name' => 'И', 'budget' => 100000, 'status' => 'active', 'deal_stage_id' => $stage, 'contract_date' => $past->toDateString()]);
+        \App\Models\Deal::create(['number' => 'QT-102', 'name' => 'Y', 'company_name' => 'Т', 'client_name' => 'И', 'budget' => 500000, 'status' => 'active', 'deal_stage_id' => $stage, 'contract_date' => now()->toDateString()]);
 
         // Сводка за прошлый месяц: только его поступления и расходы; ЗП/налог скрыты (0).
         $this->actingAs($fin)->get(route('finance.index', ['fin_month' => $past->format('Y-m')]))

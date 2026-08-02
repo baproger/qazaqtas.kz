@@ -20,7 +20,7 @@ const submit = () => form.post(route('screen.enter'), { onError: () => form.rese
                         class="mt-4 w-full rounded-2xl bg-indigo-600 py-3.5 text-base font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-40">Открыть экран</button>
                 </form>
             </div>
-            <p class="mt-4 text-center text-xs text-slate-400">BAIA ERP · экран обновляется автоматически</p>
+            <p class="mt-4 text-center text-xs text-slate-400">QAZAQ TAS ERP · экран обновляется автоматически</p>
         </div>
     </div>
 </template>

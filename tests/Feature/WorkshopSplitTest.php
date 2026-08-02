@@ -13,9 +13,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * У BAIA два цеха («Металл цех» / «Ағаш цех») со своими этапами: при отправке
+ * У QT два цеха («Металл цех» / «Ағаш цех») со своими этапами: при отправке
  * в цех нужен выбор, заказ живёт в воронке своего цеха. У компании с одним
- * цехом (ASU) всё как раньше — без выбора.
+ * одним цехом выбор не показывается.
  */
 class WorkshopSplitTest extends TestCase
 {
@@ -30,7 +30,7 @@ class WorkshopSplitTest extends TestCase
 
     private function baiaWithTwoWorkshops(): array
     {
-        $company = Company::firstOrCreate(['code' => 'BAIA'], ['name' => 'BAIA']);
+        $company = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT']);
         foreach ([['Кесу М', 1], ['Жинау М', 2]] as [$n, $o]) {
             ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Металл цех', 'name' => $n, 'order' => $o, 'type' => 'project', 'is_active' => true, 'is_completed' => $o === 2]);
         }
@@ -40,7 +40,7 @@ class WorkshopSplitTest extends TestCase
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-        $deal = Deal::create(['number' => 'BAIA-001', 'name' => 'X', 'company_name' => 'ТОО', 'client_name' => 'И', 'budget' => 100000, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
+        $deal = Deal::create(['number' => 'QT-001', 'name' => 'X', 'company_name' => 'ТОО', 'client_name' => 'И', 'budget' => 100000, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
 
         return [$admin, $deal, $company];
     }
@@ -66,12 +66,12 @@ class WorkshopSplitTest extends TestCase
 
     public function test_single_workshop_company_needs_no_choice(): void
     {
-        $company = Company::firstOrCreate(['code' => 'ASU'], ['name' => 'ASU']);
+        $company = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT']);
         ProjectStage::create(['company_id' => $company->id, 'name' => 'Пошив', 'order' => 1, 'type' => 'project', 'is_active' => true]);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-        $deal = Deal::create(['number' => 'ASU-001', 'name' => 'X', 'company_name' => 'ТОО', 'client_name' => 'И', 'budget' => 100, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
+        $deal = Deal::create(['number' => 'ALT-001', 'name' => 'X', 'company_name' => 'ТОО', 'client_name' => 'И', 'budget' => 100, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
 
         $this->actingAs($admin)->post(route('deals.toWorkshop', $deal->id))->assertSessionHas('success');
         $this->assertSame('Пошив', $deal->fresh()->project->stage->name);

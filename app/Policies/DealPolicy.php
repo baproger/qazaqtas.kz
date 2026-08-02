@@ -33,7 +33,7 @@ class DealPolicy
 
     /**
      * Leadership sees everything WITHIN ITS COMPANIES; a manager is limited to
-     * deals they are responsible for. Сделка чужой фирмы (BAIA/ASU) недоступна
+     * deals they are responsible for. Сделка чужой фирмы недоступна
      * по прямой ссылке даже руководству, не привязанному к той компании.
      */
     private function ownsOrLeads(User $user, Deal $d): bool

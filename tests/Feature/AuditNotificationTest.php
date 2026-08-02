@@ -30,7 +30,7 @@ class AuditNotificationTest extends TestCase
         $this->actingAs($u);
 
         $deal = Deal::create([
-            'number' => 'BAIA-A-1', 'name' => 'Audit deal', 'budget' => 100, 'status' => 'active',
+            'number' => 'QT-A-1', 'name' => 'Audit deal', 'budget' => 100, 'status' => 'active',
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);
 
@@ -71,7 +71,7 @@ class AuditNotificationTest extends TestCase
         // only through the workshop flow, so we assert notification on a normal transition.
         $stages = DealStage::where('is_active', true)->orderBy('order')->take(2)->get();
         $deal = Deal::create([
-            'number' => 'BAIA-A-2', 'name' => 'D', 'budget' => 1, 'status' => 'active',
+            'number' => 'QT-A-2', 'name' => 'D', 'budget' => 1, 'status' => 'active',
             'responsible_user_id' => $u->id,
             'deal_stage_id' => $stages[0]->id,
         ]);

@@ -9,18 +9,18 @@ use Illuminate\Support\Facades\DB;
 class DealNumberService
 {
     /**
-     * Generate a unique deal number per company, e.g. BAIA-001 / ASU-001.
+     * Generate a unique deal number per company, e.g. QT-001.
      * The prefix is the company code; the sequence runs per prefix.
      * Uses a row-locking transaction to avoid race conditions.
      */
     public function generate(?Company $company = null): string
     {
-        $prefix = ($company?->code ?: 'BAIA').'-';
+        $prefix = ($company?->code ?: 'QT').'-';
 
         return DB::transaction(function () use ($prefix) {
             // Максимум числового суффикса СТРОГОГО формата {CODE}-NNN — только по
             // ЖИВЫМ сделкам: удалённые счётчик не двигают (удалили все — нумерация
-            // начнётся заново с 001). Легаси-номера (BAIA-2025-0042) игнорируются.
+            // начнётся заново с 001). Легаси-номера (QT-2025-0042) игнорируются.
             // Парсим в PHP: sqlite (тесты) без REGEXP.
             $rows = Deal::withTrashed()
                 ->where('number', 'like', $prefix.'%')

@@ -53,7 +53,7 @@ Route::middleware('auth')->group(function () {
     Route::post('profile/avatar', [ProfileController::class, 'updateAvatar'])->middleware('throttle:20,1')->name('profile.avatar');
     Route::get('profile/avatar/{user}', [ProfileController::class, 'avatarShow'])->name('profile.avatar.show');
 
-    // Company switcher (BAIA / ASU)
+    // Company switcher
     Route::patch('company/switch', [\App\Http\Controllers\CompanyController::class, 'switch'])->name('company.switch');
 
     // Users

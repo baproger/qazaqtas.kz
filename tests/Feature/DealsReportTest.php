@@ -46,7 +46,7 @@ class DealsReportTest extends TestCase
     public function test_report_renders_with_data_and_filters(): void
     {
         Deal::create([
-            'number' => 'BAIA-R-1', 'name' => 'ТОО Тест', 'company_name' => 'ТОО Тест',
+            'number' => 'QT-R-1', 'name' => 'ТОО Тест', 'company_name' => 'ТОО Тест',
             'client_name' => 'парта', 'bin' => '990440002867', 'address' => 'Алматы',
             'budget' => 1966700, 'status' => 'active',
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,

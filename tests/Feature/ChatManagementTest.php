@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 /**
  * Управление чатами: корзина (восстановление/стирание), участники группы,
- * изоляция групп по фирмам BAIA/ASU, «кто прочитал», state-поллинг.
+ * изоляция групп по фирмам QT/ALT, «кто прочитал», state-поллинг.
  */
 class ChatManagementTest extends TestCase
 {
@@ -87,27 +87,27 @@ class ChatManagementTest extends TestCase
     public function test_company_group_hidden_from_other_firm_employee(): void
     {
         $this->admin();
-        $baia = Company::create(['name' => 'BAIA', 'code' => 'baia', 'is_active' => true]);
-        $asu = Company::create(['name' => 'ASU', 'code' => 'asu', 'is_active' => true]);
+        $baia = Company::create(['name' => 'QT', 'code' => 'baia', 'is_active' => true]);
+        $alt = Company::create(['name' => 'ALT', 'code' => 'alt', 'is_active' => true]);
 
-        $asuWorker = User::factory()->create();
-        $asuWorker->assignRole('employee');
-        $asuWorker->companies()->sync([$asu->id]);
+        $altWorker = User::factory()->create();
+        $altWorker->assignRole('employee');
+        $altWorker->companies()->sync([$alt->id]);
 
-        // Группа BAIA, сотрудник ASU — участник (добавили по ошибке).
-        $chat = $this->group(['company_id' => $baia->id, 'name' => 'BAIA цех']);
-        $chat->participants()->attach($asuWorker->id, ['joined_at' => now()]);
+        // Группа QT, сотрудник ALT — участник (добавили по ошибке).
+        $chat = $this->group(['company_id' => $baia->id, 'name' => 'QT цех']);
+        $chat->participants()->attach($altWorker->id, ['joined_at' => now()]);
 
-        // В списке чатов группы BAIA нет…
-        $page = $this->actingAs($asuWorker)->get(route('chat.index'));
+        // В списке чатов группы QT нет…
+        $page = $this->actingAs($altWorker)->get(route('chat.index'));
         $page->assertOk();
         $chats = collect($page->viewData('page')['props']['chats']);
         $this->assertFalse($chats->contains(fn ($c) => $c['id'] === $chat->id));
 
         // …и по прямой ссылке сообщения недоступны.
-        $this->actingAs($asuWorker)->get(route('chat.messages', $chat->id))->assertForbidden();
+        $this->actingAs($altWorker)->get(route('chat.messages', $chat->id))->assertForbidden();
 
-        // Сотрудник BAIA группу видит и читает.
+        // Сотрудник QT группу видит и читает.
         $baiaWorker = User::factory()->create();
         $baiaWorker->assignRole('employee');
         $baiaWorker->companies()->sync([$baia->id]);
@@ -154,12 +154,12 @@ class ChatManagementTest extends TestCase
     public function test_group_created_with_company_binding(): void
     {
         $admin = $this->admin();
-        $baia = Company::create(['name' => 'BAIA', 'code' => 'baia', 'is_active' => true]);
+        $baia = Company::create(['name' => 'QT', 'code' => 'baia', 'is_active' => true]);
 
         $this->actingAs($admin)->post(route('chat.store'), [
-            'type' => 'group', 'name' => 'Отдел продаж BAIA', 'company_id' => $baia->id, 'participants' => [],
+            'type' => 'group', 'name' => 'Отдел продаж QT', 'company_id' => $baia->id, 'participants' => [],
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('chats', ['name' => 'Отдел продаж BAIA', 'company_id' => $baia->id]);
+        $this->assertDatabaseHas('chats', ['name' => 'Отдел продаж QT', 'company_id' => $baia->id]);
     }
 }

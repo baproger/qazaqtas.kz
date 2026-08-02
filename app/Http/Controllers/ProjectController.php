@@ -25,7 +25,7 @@ class ProjectController extends Controller
     /**
      * Доступ сотрудника к цеху заказа (users.workshops): работник «Металл
      * цеха» не видит и не двигает заказы «Ағаш цеха» (и наоборот); пустой
-     * список = все цеха (руководство, ASU, работающие на оба цеха).
+     * список = все цеха (руководство и сотрудники без ограничения по цеху).
      */
     private function assertWorkshopAccess(Project $project): void
     {
@@ -67,7 +67,7 @@ class ProjectController extends Controller
                 ->latest('entered_at')->limit(1)]);
         $this->scope($base, $request);
         // Доступ по цехам: сотрудник с ограничением видит только свои цеха
-        // (заказы без цеха — ASU — видны всем).
+        // (заказы без указанного цеха видны всем).
         $userWorkshops = $request->user()->workshops ?? [];
         if (! empty($userWorkshops)) {
             $base->where(fn ($w) => $w->whereNull('workshop')->orWhereIn('workshop', $userWorkshops));
@@ -77,8 +77,8 @@ class ProjectController extends Controller
         $base->when($request->string('search')->toString(), fn ($q, $s) => $q
             ->where(fn ($w) => $w->where('name', 'like', "%{$s}%")->orWhere('number', 'like', "%{$s}%")));
 
-        // Канбан показывает воронку цеха ТЕКУЩЕЙ компании (BAIA — мебельный,
-        // ASU — швейный); в режиме «Все компании» — этапы обоих цехов С
+        // Канбан показывает воронку цеха ТЕКУЩЕЙ фирмы;
+        // в режиме «Все компании» — этапы всех цехов С
         // ПОМЕТКОЙ фирмы (иначе одинаковые «Кесу» выглядят как дубли).
         // companyQuery: свои этапы приоритетны, «общие» (null) — только фолбэк.
         $companyId = \App\Support\CurrentCompany::id() ?: null;
@@ -92,7 +92,7 @@ class ProjectController extends Controller
                 'id' => $s->id,
                 'name' => $s->translatedName().(! $companyId && $s->company_id ? ' · '.($companyCodes[$s->company_id] ?? '') : ''),
                 'color' => $s->color, 'order' => $s->order, 'is_completed' => $s->is_completed,
-                // Цех (у BAIA их два) — канбан рисует секцию на каждый.
+                // Цех — канбан рисует отдельную секцию на каждый.
                 'workshop' => $s->workshop,
             ]);
 
@@ -209,7 +209,7 @@ class ProjectController extends Controller
 
         $validated = $request->validate(['project_stage_id' => ['required', 'exists:project_stages,id']]);
         $stage = ProjectStage::findOrFail($validated['project_stage_id']);
-        // Изоляция цехов: этап чужой компании (BAIA↔ASU) недоступен.
+        // Изоляция цехов: этап чужой фирмы недоступен.
         $companyId = $project->deal?->company_id ? (int) $project->deal->company_id : null;
         if ($stage->company_id && (int) $stage->company_id !== $companyId) {
             return back()->with('error', 'Этап принадлежит цеху другой компании.');

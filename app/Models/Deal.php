@@ -79,7 +79,7 @@ class Deal extends Model
     }
 
     /**
-     * Owning firm (BAIA / ASU) — not to be confused with company_name (the client's company).
+     * Owning firm — not to be confused with company_name (the client's company).
      */
     public function company(): BelongsTo
     {
@@ -150,7 +150,7 @@ class Deal extends Model
     }
 
     /**
-     * Restrict to the firm currently selected in the session (BAIA / ASU).
+     * Restrict to the firm currently selected in the session.
      * No-op when no company is selected (e.g. console commands, tests).
      */
     public function scopeForCurrentCompany($query)

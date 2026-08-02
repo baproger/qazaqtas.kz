@@ -59,7 +59,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Companies (BAIA / ASU) the user works for; one user may belong to both.
+     * Companies the user works for; one user may belong to several.
      */
     public function companies(): BelongsToMany
     {
@@ -83,8 +83,8 @@ class User extends Authenticatable
     }
 
     /**
-     * Доступ к цеху BAIA («Металл цех» / «Ағаш цех»). Пустой список у
-     * сотрудника = ограничения нет; заказ без цеха (ASU) доступен всем.
+     * Доступ к цехам производства. Пустой список у сотрудника = ограничения
+     * нет; заказ без указанного цеха доступен всем.
      */
     public function worksInWorkshop(?string $workshop): bool
     {

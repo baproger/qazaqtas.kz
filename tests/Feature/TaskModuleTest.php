@@ -31,7 +31,7 @@ class TaskModuleTest extends TestCase
     {
         $u = $this->admin();
         $deal = Deal::create([
-            'number' => 'BAIA-T-1', 'name' => 'D', 'budget' => 1, 'status' => 'active',
+            'number' => 'QT-T-1', 'name' => 'D', 'budget' => 1, 'status' => 'active',
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);
 

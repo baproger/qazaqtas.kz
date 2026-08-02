@@ -52,7 +52,7 @@ class AnalyticsController extends Controller
         $wonIds = Deal::won()->forCurrentCompany()->pluck('id');
 
         // Deals by stage (funnel) — этапы ТЕКУЩЕЙ компании (иначе одинаковые
-        // названия воронок BAIA и ASU выглядят как дубли); в режиме «Все
+        // одноимённые этапы разных фирм выглядят как дубли); в режиме «Все
         // компании» показываем обе воронки с пометкой фирмы.
         $companyId = \App\Support\CurrentCompany::id() ?: null;
         $stages = DealStage::with('translations')->where('is_active', true)

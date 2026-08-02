@@ -5,6 +5,12 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Компании (фирмы). У QAZAQ TAS сейчас одна фирма, но система остаётся
+ * мультикомпанийной: у каждой фирмы свои сделки, воронки, склад и финансы —
+ * чтобы добавить вторую, достаточно новой строки в companies; код фирмы
+ * становится префиксом номеров сделок (QT-001).
+ */
 return new class extends Migration
 {
     public function up(): void
@@ -12,7 +18,7 @@ return new class extends Migration
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            // Code is the deal-number prefix: BAIA-001, ASU-001.
+            // Код — префикс номера сделки: QT-001.
             $table->string('code', 20)->unique();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -30,23 +36,18 @@ return new class extends Migration
             $table->foreignId('company_id')->nullable()->after('id')->constrained()->nullOnDelete();
         });
 
-        // Bootstrap the two firms; existing deals were all created under BAIA.
         $now = now();
         DB::table('companies')->insert([
-            ['name' => 'BAIA', 'code' => 'BAIA', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
-            ['name' => 'ASU', 'code' => 'ASU', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'QAZAQ TAS', 'code' => 'QT', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
         ]);
-        $baiaId = DB::table('companies')->where('code', 'BAIA')->value('id');
-        DB::table('deals')->update(['company_id' => $baiaId]);
+        $companyId = DB::table('companies')->where('code', 'QT')->value('id');
+        DB::table('deals')->update(['company_id' => $companyId]);
 
-        // Attach every existing user to both companies so nobody loses access;
-        // admins can narrow memberships later on the Сотрудники page.
-        $companyIds = DB::table('companies')->pluck('id');
+        // Все существующие пользователи получают доступ к фирме; сузить состав
+        // можно на странице «Сотрудники».
         $rows = [];
         foreach (DB::table('users')->pluck('id') as $userId) {
-            foreach ($companyIds as $companyId) {
-                $rows[] = ['company_id' => $companyId, 'user_id' => $userId, 'created_at' => $now, 'updated_at' => $now];
-            }
+            $rows[] = ['company_id' => $companyId, 'user_id' => $userId, 'created_at' => $now, 'updated_at' => $now];
         }
         if ($rows) {
             DB::table('company_user')->insert($rows);

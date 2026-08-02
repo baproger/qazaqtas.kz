@@ -111,7 +111,7 @@ class AuditController extends Controller
         ]));
 
         // Связанная СДЕЛКА каждой строки: расход/счёт/платёж/заказ цеха/лот/задача →
-        // ссылка «BAIA-088», чтобы видно было, по какой сделке действие (батчем, без N+1).
+        // ссылка «QT-088», чтобы видно было, по какой сделке действие (батчем, без N+1).
         $col = $logs->getCollection();
         $ids = fn (string $t) => $col->where('table_name', $t)->pluck('record_id')->filter()->unique()->values();
         $dealByRecord = [

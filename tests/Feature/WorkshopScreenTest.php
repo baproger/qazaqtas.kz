@@ -29,12 +29,12 @@ class WorkshopScreenTest extends TestCase
 
     public function test_code_opens_only_its_workshop(): void
     {
-        $company = Company::firstOrCreate(['code' => 'BAIA'], ['name' => 'BAIA']);
+        $company = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT']);
         ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Металл цех', 'name' => 'Кесу М', 'order' => 1, 'type' => 'project', 'is_active' => true]);
         ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Ағаш цех', 'name' => 'Кесу А', 'order' => 1, 'type' => 'project', 'is_active' => true]);
 
         // Заказ в Ағаш цехе.
-        $deal = Deal::create(['number' => 'BAIA-001', 'name' => 'X', 'company_name' => 'ТОО Клиент', 'client_name' => 'И', 'budget' => 1, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
+        $deal = Deal::create(['number' => 'QT-001', 'name' => 'X', 'company_name' => 'ТОО Клиент', 'client_name' => 'И', 'budget' => 1, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
         app(ProjectService::class)->createFromDeal($deal, 'Ағаш цех');
 
         // Админ выдаёт код экрану «Металл цех».

@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Доступ сотрудников по цехам BAIA (users.workshops): работник «Металл цеха»
+ * Доступ сотрудников по цехам QT (users.workshops): работник «Металл цеха»
  * видит и двигает только свои заказы; пустой список = все цеха.
  */
 class WorkshopAccessTest extends TestCase

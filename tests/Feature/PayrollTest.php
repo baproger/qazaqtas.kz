@@ -75,7 +75,7 @@ class PayrollTest extends TestCase
 
     public function test_tier_uses_pre_tax_margin(): void
     {
-        // Кейс ASU-001: бюджет 1М, расходы 780k, налог 3% (30k) → остаток 190k.
+        // Кейс ALT-001: бюджет 1М, расходы 780k, налог 3% (30k) → остаток 190k.
         // Маржа для ступени — ДО налога: (1М − 780k)/1М = 22% → ставка 10%,
         // бонус = 10% × 190 000 = 19 000 (а не 7% × 190 000 = 13 300).
         $this->assertSame(22.0, \App\Services\PayrollService::marginPct(1000000, 190000, 30000));

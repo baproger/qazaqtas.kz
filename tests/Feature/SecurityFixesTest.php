@@ -21,15 +21,15 @@ class SecurityFixesTest extends TestCase
 
     private Company $baia;
 
-    private Company $asu;
+    private Company $alt;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
         $this->seed(StageSeeder::class);
-        $this->baia = Company::where('code', 'BAIA')->firstOrFail();
-        $this->asu = Company::where('code', 'ASU')->firstOrFail();
+        $this->baia = Company::where('code', 'QT')->firstOrFail();
+        $this->alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
     }
 
     private function user(string $role, ?Company $company = null): User
@@ -75,7 +75,7 @@ class SecurityFixesTest extends TestCase
     {
         $mgr = $this->user('manager');
         $mine = $this->deal($mgr);
-        $other = $this->deal($this->user('manager', $this->asu), $this->asu);
+        $other = $this->deal($this->user('manager', $this->alt), $this->alt);
         $expense = Expense::create([
             'expenseable_type' => 'deal', 'expenseable_id' => $mine->id, 'amount' => 3000,
             'date' => now()->toDateString(), 'status' => 'pending', 'responsible_user_id' => $mgr->id,
@@ -166,15 +166,15 @@ class SecurityFixesTest extends TestCase
 
     public function test_bin_lookup_scoped_to_current_company(): void
     {
-        $asuMgr = $this->user('manager', $this->asu);
-        $asuDeal = $this->deal($asuMgr, $this->asu);
-        $asuDeal->update(['bin' => '999888777', 'company_name' => 'ASU Клиент']);
+        $altMgr = $this->user('manager', $this->alt);
+        $altDeal = $this->deal($altMgr, $this->alt);
+        $altDeal->update(['bin' => '999888777', 'company_name' => 'ALT Клиент']);
 
         $baiaMgr = $this->user('manager', $this->baia);
         $resp = $this->actingAs($baiaMgr)->withSession(['company_id' => $this->baia->id])
             ->getJson(route('deals.binLookup', ['bin' => '999888777']));
 
-        // Менеджер BAIA не видит сделку ASU по её БИН.
+        // Менеджер QT не видит сделку ALT по её БИН.
         $resp->assertOk()->assertJson(['match' => null, 'history' => []]);
     }
 
@@ -187,20 +187,20 @@ class SecurityFixesTest extends TestCase
 
     public function test_manager_cannot_write_custom_fields_to_other_company_project(): void
     {
-        // IDOR: менеджер BAIA не должен править доп-поля заказа/сделки ASU.
-        $asuMgr = $this->user('manager', $this->asu);
-        $asuDeal = $this->deal($asuMgr, $this->asu);
+        // IDOR: менеджер QT не должен править доп-поля заказа/сделки ALT.
+        $altMgr = $this->user('manager', $this->alt);
+        $altDeal = $this->deal($altMgr, $this->alt);
         $field = \App\Models\CustomField::create([
             'entity_type' => 'deal', 'name' => 'Секретное', 'type' => 'text', 'is_visible' => true, 'order' => 1,
         ]);
 
         $baiaMgr = $this->user('manager', $this->baia);
         $this->actingAs($baiaMgr)->post(route('custom-field-values.sync'), [
-            'entity_type' => 'deal', 'entity_id' => $asuDeal->id,
+            'entity_type' => 'deal', 'entity_id' => $altDeal->id,
             'values' => [$field->id => 'взлом'],
         ])->assertForbidden();
 
-        $this->assertDatabaseMissing('custom_field_values', ['entity_id' => $asuDeal->id, 'value' => 'взлом']);
+        $this->assertDatabaseMissing('custom_field_values', ['entity_id' => $altDeal->id, 'value' => 'взлом']);
     }
 
     public function test_salary_hidden_from_serialized_user(): void

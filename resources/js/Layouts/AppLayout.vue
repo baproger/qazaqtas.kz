@@ -89,7 +89,7 @@ const isActive = (name) => {
 };
 const go = () => { mobileOpen.value = false; };
 
-// Company (BAIA / ASU) switcher — full data separation per firm.
+// Company switcher — full data separation per firm.
 // «Все» (id=0) — общий отчёт по обеим фирмам для бухгалтера/админа.
 const companies = computed(() => page.props.auth.companies ?? []);
 const currentCompanyId = computed(() => page.props.auth.currentCompanyId);
@@ -151,10 +151,10 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
             class="fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-slate-900 text-slate-300 transition-all duration-300 ease-in-out">
             <div class="flex h-16 items-center gap-2.5 px-4">
                 <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-black/30">
-                    <img src="/logobaiagolding.jpg" alt="BAIA Holding" class="h-full w-full object-cover" />
+                    <img src="/logo-qazaqtas.svg" alt="QAZAQ TAS" class="h-full w-full object-cover" />
                 </span>
                 <div v-if="!collapsed || mobileOpen" class="leading-tight">
-                    <div class="text-sm font-semibold tracking-tight text-white">BAIA Holding</div>
+                    <div class="text-sm font-semibold tracking-tight text-white">QAZAQ TAS</div>
                     <div class="text-[10px] font-medium uppercase tracking-widest text-slate-500">ERP · CRM</div>
                 </div>
             </div>
@@ -202,7 +202,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 </div>
                 <!-- правый блок не сжимается: часы/фирма/язык всегда целиком -->
                 <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
-                    <!-- Company switcher (BAIA / ASU) -->
+                    <!-- Company switcher -->
                     <div v-if="companies.length > 1" class="flex items-center rounded-lg bg-slate-100 p-0.5 text-xs">
                         <button v-for="c in companies" :key="c.id" @click="switchCompany(c.id)"
                             :class="currentCompanyId === c.id ? 'bg-white text-emerald-600 shadow' : 'text-slate-500'"

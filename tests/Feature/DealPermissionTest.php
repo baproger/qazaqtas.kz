@@ -17,7 +17,7 @@ class DealPermissionTest extends TestCase
     private function deal(?int $responsibleId = null): Deal
     {
         return Deal::create([
-            'number' => 'BAIA-P-'.(Deal::count() + 1), 'name' => 'D', 'budget' => 1000, 'status' => 'active',
+            'number' => 'QT-P-'.(Deal::count() + 1), 'name' => 'D', 'budget' => 1000, 'status' => 'active',
             'responsible_user_id' => $responsibleId,
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);

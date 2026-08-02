@@ -30,7 +30,7 @@ class ChatController extends Controller
     /**
      * Чаты, доступные пользователю: общий + те, где он участник. Группы с
      * company_id видят только сотрудники этой фирмы (админ — все), чтобы
-     * группы BAIA и ASU не путались между собой.
+     * группы разных фирм не путались между собой.
      */
     private function visibleChats(User $user): \Illuminate\Database\Eloquent\Builder
     {
@@ -404,7 +404,7 @@ class ChatController extends Controller
 
         $chat = Chat::create([
             'type' => $validated['type'],
-            // Компания — только у групп: BAIA/ASU видят каждая своё, null — обе.
+            // Компания — только у групп: каждая фирма видит своё, null — все.
             'company_id' => $validated['type'] === 'group' ? ($validated['company_id'] ?? null) : null,
             'name' => $validated['name'] ?? null,
             'description' => $validated['description'] ?? null,

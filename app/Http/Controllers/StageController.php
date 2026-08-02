@@ -14,7 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Настройки → Этапы: управление воронками компаний (BAIA/ASU) и общей
+ * Настройки → Этапы: управление воронками фирм и общей
  * воронкой цеха. Спец-логика этапов держится на stage_type (не на названии);
  * гейт-задачи (текст/роль/срок) настраиваются на этапе.
  */
@@ -59,7 +59,7 @@ class StageController extends Controller
 
         return Inertia::render('Settings/Stages', [
             'dealStages' => $dealStages,
-            // Цех у каждой компании свой (BAIA — мебельный, ASU — швейный).
+            // Цех у каждой фирмы свой.
             'projectStages' => ProjectStage::withCount('projects')
                 ->where(fn ($w) => $w->where('company_id', $companyId)->orWhereNull('company_id'))
                 ->orderBy('order')->get(),
@@ -78,7 +78,7 @@ class StageController extends Controller
     private function reindexFunnel(string $model, ?int $companyId): void
     {
         $stages = $model::where('company_id', $companyId)->orderBy('order')->orderBy('id')->get();
-        // У цеха нумерация ВНУТРИ каждого цеха (у BAIA их два) — 1..N на цех.
+        // У цеха нумерация ВНУТРИ каждого цеха — 1..N на цех.
         $groups = $model === ProjectStage::class
             ? $stages->groupBy(fn ($s) => $s->workshop ?? '')
             : collect(['' => $stages]);
@@ -139,7 +139,7 @@ class StageController extends Controller
         if ($kind === 'project' && $request->has('is_completed')) {
             $isCompleted = (bool) $data['is_completed'];
             if ($isCompleted) {
-                // Завершающий один НА ЦЕХ (у BAIA их два — у каждого свой).
+                // Завершающий один НА ЦЕХ (если цехов несколько — у каждого свой).
                 ProjectStage::where('company_id', $stage->company_id)
                     ->where('workshop', $updates['workshop'] ?? $stage->workshop)
                     ->where('id', '!=', $stage->id)

@@ -40,44 +40,44 @@ class DealNumberResetTest extends TestCase
 
         $d1 = $this->makeDeal();
         $d2 = $this->makeDeal();
-        $this->assertSame('BAIA-001', $d1->number);
-        $this->assertSame('BAIA-002', $d2->number);
+        $this->assertSame('QT-001', $d1->number);
+        $this->assertSame('QT-002', $d2->number);
 
         // Удалили последнюю — номер освободился и выдаётся снова.
         $d2->delete();
-        $this->assertSame('BAIA-002', $svc->generate());
+        $this->assertSame('QT-002', $svc->generate());
         $this->assertStringContainsString('#del', $d2->fresh()->number);
 
         // Удалили все — нумерация начинается заново с 001.
         $d1->delete();
-        $this->assertSame('BAIA-001', $svc->generate());
+        $this->assertSame('QT-001', $svc->generate());
     }
 
     public function test_renumber_migration_restarts_from_001(): void
     {
         // Живые сделки с «дырявыми» номерами + удалённая: после перенумерации
         // живые получают 001/002 по порядку создания, следующая — 003.
-        $d1 = $this->makeDeal('BAIA-039');
-        $d2 = $this->makeDeal('BAIA-040');
-        $this->makeDeal('BAIA-041')->delete();
-        $chat = \App\Models\Chat::create(['deal_id' => $d2->id, 'type' => 'group', 'name' => 'Чат BAIA-040', 'is_active' => true]);
+        $d1 = $this->makeDeal('QT-039');
+        $d2 = $this->makeDeal('QT-040');
+        $this->makeDeal('QT-041')->delete();
+        $chat = \App\Models\Chat::create(['deal_id' => $d2->id, 'type' => 'group', 'name' => 'Чат QT-040', 'is_active' => true]);
 
         (require database_path('migrations/2026_07_21_100000_renumber_deals_from_001.php'))->up();
 
-        $this->assertSame('BAIA-001', $d1->fresh()->number);
-        $this->assertSame('BAIA-002', $d2->fresh()->number);
-        $this->assertSame('Чат BAIA-002', $chat->fresh()->name);
-        $this->assertSame('BAIA-003', app(DealNumberService::class)->generate());
+        $this->assertSame('QT-001', $d1->fresh()->number);
+        $this->assertSame('QT-002', $d2->fresh()->number);
+        $this->assertSame('Чат QT-002', $chat->fresh()->name);
+        $this->assertSame('QT-003', app(DealNumberService::class)->generate());
     }
 
     public function test_legacy_trashed_number_is_skipped_not_crashed(): void
     {
         // Удалённая сделка, чей номер НЕ переименован (легаси до миграции):
         // unique(number) занят — счётчик обязан перескочить, а не упасть.
-        $legacy = $this->makeDeal('BAIA-002');
-        $legacy->deleteQuietly(); // без событий: номер остаётся BAIA-002
+        $legacy = $this->makeDeal('QT-002');
+        $legacy->deleteQuietly(); // без событий: номер остаётся QT-002
 
-        $this->makeDeal('BAIA-001');
-        $this->assertSame('BAIA-003', app(DealNumberService::class)->generate());
+        $this->makeDeal('QT-001');
+        $this->assertSame('QT-003', app(DealNumberService::class)->generate());
     }
 }

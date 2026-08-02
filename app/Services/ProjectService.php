@@ -46,7 +46,7 @@ class ProjectService
             return $deal->project;
         }
 
-        // Заказ попадает в цех СВОЕЙ компании; у BAIA цехов два («Металл цех» /
+        // Заказ попадает в цех СВОЕЙ фирмы; если цехов несколько (
         // «Ағаш цех») — берётся воронка выбранного цеха.
         $companyId = $deal->company_id ? (int) $deal->company_id : null;
         $available = ProjectStage::workshopsFor($companyId);

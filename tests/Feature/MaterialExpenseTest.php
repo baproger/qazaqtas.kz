@@ -29,13 +29,13 @@ class MaterialExpenseTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $this->seed(StageSeeder::class);
 
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $this->manager = User::factory()->create();
         $this->manager->assignRole('manager');
         $this->manager->companies()->attach($company->id);
 
         $this->deal = Deal::create([
-            'company_id' => $company->id, 'number' => 'BAIA-T-1', 'name' => 'Т', 'company_name' => 'ТОО',
+            'company_id' => $company->id, 'number' => 'QT-T-1', 'name' => 'Т', 'company_name' => 'ТОО',
             'client_name' => 'Стол', 'budget' => 100000, 'status' => 'active',
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,
             'responsible_user_id' => $this->manager->id,

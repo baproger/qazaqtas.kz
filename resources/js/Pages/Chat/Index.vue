@@ -70,7 +70,7 @@ const askNotifyPermission = () => {
 const notifyBrowser = (title, body) => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     try {
-        const n = new Notification(title, { body, tag: 'baia-chat' });
+        const n = new Notification(title, { body, tag: 'qazaqtas-chat' });
         n.onclick = () => { window.focus(); n.close(); };
     } catch (e) { /* ignore */ }
 };
@@ -361,7 +361,7 @@ const userSearch = ref('');
 const filteredUsers = computed(() => {
     const q = userSearch.value.trim().toLowerCase();
     let pool = props.users;
-    // Группа фирмы — в списке только сотрудники этой фирмы (чтобы не путать BAIA и ASU).
+    // Группа фирмы — в списке только сотрудники этой фирмы.
     const cid = showEdit.value ? editForm.company_id : (newForm.type === 'group' ? newForm.company_id : null);
     if (cid) pool = pool.filter((u) => (u.company_ids || []).includes(cid));
     return q ? pool.filter((u) => u.name.toLowerCase().includes(q)) : pool;
@@ -884,7 +884,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                     <input v-model="newForm.name" placeholder="Название группы" class="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
                     <div v-if="newForm.errors.name" class="text-xs text-red-600">{{ newForm.errors.name }}</div>
                     <textarea v-model="newForm.description" rows="2" placeholder="Описание группы (необязательно)" class="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400"></textarea>
-                    <!-- Фирма группы: сотрудники BAIA видят группы BAIA, ASU — свои -->
+                    <!-- Фирма группы: сотрудники видят только группы своей фирмы -->
                     <div v-if="companies.length > 1" class="flex items-center gap-1.5">
                         <span class="text-xs text-slate-500">Фирма:</span>
                         <button type="button" @click="newForm.company_id = null"

@@ -26,7 +26,7 @@ class StageTransitionService
 
             $isForward = $current && $target->order > $current->order;
 
-            // Спец-этапы ВОРОНКИ КОМПАНИИ этой сделки (у BAIA и ASU свои).
+            // Спец-этапы ВОРОНКИ ФИРМЫ этой сделки (у каждой фирмы свои).
             $companyId = $deal->company_id ? (int) $deal->company_id : null;
             if ($target->company_id && (int) $target->company_id !== $companyId) {
                 throw ValidationException::withMessages([

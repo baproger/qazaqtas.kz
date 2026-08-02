@@ -118,7 +118,7 @@ class StageRenameTest extends TestCase
 
         [$a, $b] = DealStage::orderBy('order')->take(2)->get();
         $deal = \App\Models\Deal::create([
-            'number' => 'BAIA-S-1', 'name' => 'Т', 'budget' => 1000, 'status' => 'active',
+            'number' => 'QT-S-1', 'name' => 'Т', 'budget' => 1000, 'status' => 'active',
             'deal_stage_id' => $a->id, 'responsible_user_id' => $admin->id,
         ]);
 

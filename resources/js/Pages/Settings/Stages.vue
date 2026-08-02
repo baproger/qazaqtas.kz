@@ -17,12 +17,12 @@ const props = defineProps({
 // Готовая палитра — админ выбирает цвет в один клик, без возни с пипеткой.
 const PALETTE = ['#6366F1', '#3B82F6', '#0EA5E9', '#14B8A6', '#10B981', '#84CC16', '#F59E0B', '#F97316', '#EF4444', '#EC4899', '#8B5CF6', '#64748B'];
 
-// Выбор воронки: компания (BAIA/ASU/…) × вид (сделки | цех).
+// Выбор воронки: фирма × вид (сделки | цех).
 const funnel = ref(props.selectedCompanyId);
 const kindTab = ref('deal');
 const isWorkshop = computed(() => kindTab.value === 'project');
 const kind = computed(() => kindTab.value);
-// Существующие цеха компании (BAIA: «Металл цех», «Ағаш цех») — подсказки в поле.
+// Существующие цеха фирмы — подсказки в поле.
 const workshopNames = computed(() => [...new Set((props.projectStages ?? []).map((s) => s.workshop).filter(Boolean))]);
 
 // Подвкладки цехов: каждый цех настраивается ОТДЕЛЬНО (свой список этапов).
@@ -143,7 +143,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                     Цех
                 </button>
             </div>
-            <!-- Выбор цеха: у BAIA два — настраиваются отдельно -->
+            <!-- Выбор цеха: если цехов несколько — настраиваются отдельно -->
             <div v-if="isWorkshop && workshopTabs.length > 1" class="inline-flex rounded-xl bg-slate-100 p-1">
                 <button v-for="t in workshopTabs" :key="t.key" type="button" @click="workshopTab = t.key"
                     class="rounded-lg px-4 py-1.5 text-sm font-semibold transition-all"
@@ -188,7 +188,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                         </div>
                     </div>
                     <div v-if="isWorkshop" class="min-w-[160px]">
-                        <InputLabel value="Цех (для BAIA: Металл / Ағаш)" />
+                        <InputLabel value="Цех (если производство разделено на участки)" />
                         <TextInput v-model="newForm.workshop" list="workshop-names" placeholder="Пусто = единый цех" class="mt-1 w-full" />
                         <datalist id="workshop-names"><option v-for="w in workshopNames" :key="w" :value="w" /></datalist>
                     </div>
@@ -253,7 +253,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                         </div>
 
                         <div v-if="isWorkshop" class="mt-3">
-                            <InputLabel value="Цех этапа (у BAIA два: Металл цех / Ағаш цех)" />
+                            <InputLabel value="Цех этапа (пусто — единое производство)" />
                             <TextInput v-model="editForm.workshop" list="workshop-names" placeholder="Пусто = единый цех компании" class="mt-1 w-full sm:w-72" />
                         </div>
 

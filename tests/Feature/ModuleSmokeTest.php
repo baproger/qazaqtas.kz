@@ -54,7 +54,7 @@ class ModuleSmokeTest extends TestCase
 
         $deal = Deal::first();
         $this->assertNotNull($deal);
-        $this->assertMatchesRegularExpression('/^BAIA-\d{3,}$/', $deal->number);
+        $this->assertMatchesRegularExpression('/^QT-\d{3,}$/', $deal->number);
         // Название сделки = название компании (поле «Название сделки» убрано из UI,
         // присланный 'name' игнорируется).
         $this->assertEquals('ТОО Тест', $deal->name);
@@ -67,7 +67,7 @@ class ModuleSmokeTest extends TestCase
         $user = $this->admin();
         $wonStage = DealStage::where('is_won', true)->first();
         $deal = Deal::create([
-            'number' => 'BAIA-TEST-1',
+            'number' => 'QT-TEST-1',
             'name' => 'Won Deal',
             'budget' => 500000,
             'status' => 'active',
@@ -87,7 +87,7 @@ class ModuleSmokeTest extends TestCase
     {
         $user = $this->admin();
         $deal = Deal::create([
-            'number' => 'BAIA-TEST-2',
+            'number' => 'QT-TEST-2',
             'name' => 'Show Deal',
             'budget' => 100,
             'status' => 'active',

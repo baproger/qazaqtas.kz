@@ -30,7 +30,7 @@ class SettingsTest extends TestCase
         $u = $this->admin();
 
         $this->actingAs($u)->put(route('settings.update'), [
-            'company_name' => 'BAIA', 'currency' => '$', 'auto_create_project' => false, 'default_locale' => 'kk', 'bonus_percent' => 10, 'tax_percent' => 3,
+            'company_name' => 'QT', 'currency' => '$', 'auto_create_project' => false, 'default_locale' => 'kk', 'bonus_percent' => 10, 'tax_percent' => 3,
         ])->assertRedirect();
 
         $this->assertFalse(Setting::get('auto_create_project'));
@@ -43,7 +43,7 @@ class SettingsTest extends TestCase
         Setting::set('auto_create_project', false);
 
         $deal = Deal::create([
-            'number' => 'BAIA-S-1', 'name' => 'D', 'budget' => 1, 'status' => 'active',
+            'number' => 'QT-S-1', 'name' => 'D', 'budget' => 1, 'status' => 'active',
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);
         $won = DealStage::where('is_won', true)->first();

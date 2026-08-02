@@ -16,7 +16,7 @@ class PaymentController extends Controller
     /** A plain manager may only touch finance tied to their own deal/project. */
     private function assertOwnership(User $user, ?Model $entity): void
     {
-        // Изоляция фирм: финансы чужой компании (BAIA/ASU) недоступны никому,
+        // Изоляция фирм: финансы чужой компании недоступны никому,
         // кто к этой компании не привязан, — включая финансиста и директора.
         $companyId = $entity instanceof \App\Models\Project ? $entity->deal?->company_id : $entity?->company_id;
         abort_unless($entity === null || $user->worksInCompany($companyId ? (int) $companyId : null), 403);

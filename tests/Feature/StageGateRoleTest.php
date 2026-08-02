@@ -41,7 +41,7 @@ class StageGateRoleTest extends TestCase
         $design->update(['stage_type' => 'design', 'gate_task_title' => 'Подтвердить дизайн и расчет', 'gate_task_role' => 'designer', 'gate_task_days' => 3]);
 
         $mgr = $this->user('manager');
-        $deal = Deal::create(['number' => 'BAIA-001', 'name' => 'X', 'company_name' => 'ТОО', 'client_name' => 'И', 'budget' => 100000, 'status' => 'active', 'deal_stage_id' => $first->id, 'responsible_user_id' => $mgr->id]);
+        $deal = Deal::create(['number' => 'QT-001', 'name' => 'X', 'company_name' => 'ТОО', 'client_name' => 'И', 'budget' => 100000, 'status' => 'active', 'deal_stage_id' => $first->id, 'responsible_user_id' => $mgr->id]);
         app(StageTransitionService::class)->moveToStage($deal, $design->fresh());
 
         return $deal->fresh();

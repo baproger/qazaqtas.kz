@@ -115,7 +115,7 @@ class DealController extends Controller
             ],
             'companies' => $request->user()->companies()->where('is_active', true)->orderBy('name')->get(['companies.id', 'name', 'code']),
             'currentCompanyId' => \App\Support\CurrentCompany::id(),
-            // Цеха каждой фирмы: у BAIA их два — кнопка «В цех» открывает выбор.
+            // Цеха фирмы: если их несколько, кнопка «В цех» открывает выбор.
             'workshopsByCompany' => \App\Models\Company::where('is_active', true)->pluck('id')
                 ->mapWithKeys(fn ($id) => [$id => \App\Models\ProjectStage::workshopsFor((int) $id)]),
         ]);
@@ -129,7 +129,7 @@ class DealController extends Controller
         // Название сделки = название компании (поле «Название сделки» убрано из UI).
         $data['name'] = $data['company_name'];
 
-        // Deal belongs to a firm (BAIA / ASU): the one picked in the form if the
+        // Deal belongs to a firm: the one picked in the form if the
         // user is a member of it, otherwise the current session company.
         $requested = (int) $request->input('company_id');
         $memberIds = $request->user()->companies()->where('is_active', true)->pluck('companies.id');
@@ -138,7 +138,7 @@ class DealController extends Controller
 
         $data['company_id'] = $company?->id;
         $data['number'] = $numbers->generate($company);
-        // Первый этап ВОРОНКИ КОМПАНИИ сделки (у BAIA и ASU воронки свои).
+        // Первый этап ВОРОНКИ ФИРМЫ этой сделки (у каждой фирмы воронка своя).
         $data['deal_stage_id'] ??= DealStage::funnel($company?->id)->first()?->id;
         $data['status'] = $data['status'] ?? 'active';
         // Менеджер создаёт сделку только на себя — назначить ответственным другого нельзя.
@@ -407,7 +407,7 @@ class DealController extends Controller
         if ($deal->project && $deal->project->status !== 'completed') {
             return back()->with('error', 'Заказ уже в цехе.');
         }
-        // У BAIA два цеха — при отправке нужно выбрать («Металл цех» / «Ағаш цех»).
+        // Если цехов несколько — при отправке нужно выбрать конкретный.
         $available = \App\Models\ProjectStage::workshopsFor($deal->company_id ? (int) $deal->company_id : null);
         $workshop = $request->string('workshop')->toString() ?: null;
         if (count($available) > 1 && ! in_array($workshop, $available, true)) {
@@ -506,7 +506,7 @@ class DealController extends Controller
         }
 
         // Изоляция фирм: подсказки по БИН — только по сделкам ТЕКУЩЕЙ компании,
-        // иначе менеджер BAIA по БИН увидел бы бюджеты/сделки ASU.
+        // иначе менеджер одной фирмы по БИН увидел бы бюджеты/сделки другой.
         $client = Client::where('inn', $bin)->first();
         $deal = Deal::forCurrentCompany()->where('bin', $bin)->whereNotNull('company_name')->latest()->first();
 

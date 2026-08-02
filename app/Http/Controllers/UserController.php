@@ -50,7 +50,7 @@ class UserController extends Controller
             'roles' => Role::orderBy('name')->pluck('name'),
             'companies' => \App\Models\Company::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'can' => ['manage' => $request->user()->can('create', User::class)],
-            // Цеха холдинга (у BAIA два) — чекбоксы доступа в форме сотрудника.
+            // Цеха производства — чекбоксы доступа в форме сотрудника.
             'workshopOptions' => \App\Models\Company::where('is_active', true)->pluck('id')
                 ->flatMap(fn ($id) => \App\Models\ProjectStage::workshopsFor((int) $id))->unique()->values(),
         ]);
@@ -219,7 +219,7 @@ class UserController extends Controller
         if ($user->department_id) {
             $user->departments()->syncWithoutDetaching([$user->department_id]);
         }
-        // Компании сотрудника (BAIA / ASU, можно обе); без выбора — привязка к обеим.
+        // Фирмы сотрудника (можно несколько); без выбора — привязка ко всем.
         $user->companies()->sync($this->companyIds($request));
 
         return back()->with('success', 'Сотрудник добавлен.');

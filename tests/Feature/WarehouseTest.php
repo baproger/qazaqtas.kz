@@ -32,7 +32,7 @@ class WarehouseTest extends TestCase
 
     public function test_financist_receipt_creates_material_and_stock(): void
     {
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
 
         $this->actingAs($fin)
@@ -54,7 +54,7 @@ class WarehouseTest extends TestCase
 
     public function test_manager_sees_warehouse_but_cannot_receipt(): void
     {
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $mgr = $this->user('manager', $company);
 
         $this->actingAs($mgr)->withSession(['company_id' => $company->id])
@@ -74,7 +74,7 @@ class WarehouseTest extends TestCase
 
     public function test_financist_can_edit_and_delete_receipt_with_stock_recalc(): void
     {
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
         $material = Material::create(['company_id' => $company->id, 'name' => 'ЛДСП', 'unit' => 'штук', 'quantity' => 50]);
         $receipt = $material->receipts()->create(['user_id' => $fin->id, 'quantity' => 50, 'date' => now()->toDateString()]);
@@ -92,7 +92,7 @@ class WarehouseTest extends TestCase
 
     public function test_receipt_edit_cannot_push_stock_negative(): void
     {
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
         $material = Material::create(['company_id' => $company->id, 'name' => 'МДФ', 'unit' => 'штук', 'quantity' => 10]);
         $receipt = $material->receipts()->create(['user_id' => $fin->id, 'quantity' => 50, 'date' => now()->toDateString()]);
@@ -105,7 +105,7 @@ class WarehouseTest extends TestCase
 
     public function test_director_cannot_manage_receipts(): void
     {
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $director = $this->user('director', $company);
         $material = Material::create(['company_id' => $company->id, 'name' => 'Кромка', 'unit' => 'метр', 'quantity' => 5]);
         $receipt = $material->receipts()->create(['quantity' => 5, 'date' => now()->toDateString()]);
@@ -119,7 +119,7 @@ class WarehouseTest extends TestCase
 
     public function test_receipt_price_becomes_last_purchase_price(): void
     {
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
 
         $this->actingAs($fin)->withSession(['company_id' => $company->id])
@@ -145,7 +145,7 @@ class WarehouseTest extends TestCase
 
     public function test_editing_receipt_price_resyncs_material_price(): void
     {
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
         $material = Material::create(['company_id' => $company->id, 'name' => 'МДФ', 'unit' => 'штук', 'quantity' => 10, 'price' => 900]);
         $receipt = $material->receipts()->create(['user_id' => $fin->id, 'quantity' => 10, 'price' => 900, 'date' => now()->toDateString()]);
@@ -159,7 +159,7 @@ class WarehouseTest extends TestCase
     {
         // Фантомная цена: удалили единственный приход с ценой — цена сбрасывается,
         // иначе расходы продолжали бы считаться по цене несуществующего прихода.
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
         $material = Material::create(['company_id' => $company->id, 'name' => 'Кромка', 'unit' => 'метр', 'quantity' => 10, 'price' => 90000]);
         $receipt = $material->receipts()->create(['user_id' => $fin->id, 'quantity' => 10, 'price' => 90000, 'date' => now()->toDateString()]);
@@ -170,7 +170,7 @@ class WarehouseTest extends TestCase
 
     public function test_clearing_receipt_price_resets_material_price(): void
     {
-        $company = Company::where('code', 'BAIA')->firstOrFail();
+        $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
         $material = Material::create(['company_id' => $company->id, 'name' => 'Клей', 'unit' => 'штук', 'quantity' => 10, 'price' => 500]);
         $receipt = $material->receipts()->create(['user_id' => $fin->id, 'quantity' => 10, 'price' => 500, 'date' => now()->toDateString()]);
@@ -183,16 +183,16 @@ class WarehouseTest extends TestCase
 
     public function test_warehouse_scoped_by_current_company(): void
     {
-        $baia = Company::where('code', 'BAIA')->firstOrFail();
-        $asu = Company::where('code', 'ASU')->firstOrFail();
-        Material::create(['company_id' => $baia->id, 'name' => 'ЛДСП BAIA', 'unit' => 'штук', 'quantity' => 5]);
-        Material::create(['company_id' => $asu->id, 'name' => 'МДФ ASU', 'unit' => 'штук', 'quantity' => 7]);
+        $baia = Company::where('code', 'QT')->firstOrFail();
+        $alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
+        Material::create(['company_id' => $baia->id, 'name' => 'ЛДСП QT', 'unit' => 'штук', 'quantity' => 5]);
+        Material::create(['company_id' => $alt->id, 'name' => 'МДФ ALT', 'unit' => 'штук', 'quantity' => 7]);
 
         $fin = $this->user('financist', $baia);
 
         $this->actingAs($fin)->withSession(['company_id' => $baia->id])
             ->get(route('warehouse.index'))
             ->assertInertia(fn ($p) => $p->component('Warehouse/Index')->has('materials', 1)
-                ->where('materials.0.name', 'ЛДСП BAIA'));
+                ->where('materials.0.name', 'ЛДСП QT'));
     }
 }

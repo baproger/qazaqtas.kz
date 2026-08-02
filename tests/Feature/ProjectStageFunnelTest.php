@@ -13,8 +13,8 @@ class ProjectStageFunnelTest extends TestCase
 
     public function test_company_stages_do_not_duplicate_with_legacy_common_ones(): void
     {
-        $baia = Company::firstOrCreate(['code' => 'BAIA'], ['name' => 'BAIA', 'is_active' => true]);
-        $asu = Company::firstOrCreate(['code' => 'ASU'], ['name' => 'ASU', 'is_active' => true]);
+        $baia = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT', 'is_active' => true]);
+        $alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
 
         // Легаси «общие» этапы (company_id = null) с теми же названиями, что и у фирмы.
         foreach (['Кесу', 'Упаковка'] as $i => $name) {
@@ -22,13 +22,13 @@ class ProjectStageFunnelTest extends TestCase
             ProjectStage::create(['name' => $name, 'order' => $i + 1, 'is_active' => true, 'company_id' => $baia->id]);
         }
 
-        // У BAIA есть СВОИ этапы → только они, без легаси-дублей (Кесу+Кесу).
+        // У QT есть СВОИ этапы → только они, без легаси-дублей (Кесу+Кесу).
         $names = ProjectStage::funnel($baia->id)->pluck('name');
         $this->assertCount(2, $names);
         $this->assertSame($names->count(), $names->unique()->count());
 
-        // У ASU своих нет → фолбэк на общие (легаси), а не пусто.
-        $this->assertCount(2, ProjectStage::funnel($asu->id));
+        // У ALT своих нет → фолбэк на общие (легаси), а не пусто.
+        $this->assertCount(2, ProjectStage::funnel($alt->id));
 
         // Без компании («Все») — как раньше, всё вместе.
         $this->assertCount(4, ProjectStage::funnel(null));
@@ -43,15 +43,15 @@ class ProjectStageFunnelTest extends TestCase
         $admin = \App\Models\User::factory()->create();
         $admin->assignRole('admin');
 
-        $baia = Company::firstOrCreate(['code' => 'BAIA'], ['name' => 'BAIA', 'is_active' => true]);
-        $asu = Company::firstOrCreate(['code' => 'ASU'], ['name' => 'ASU', 'is_active' => true]);
+        $baia = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT', 'is_active' => true]);
+        $alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
         foreach ([['Кесу', 1], ['Отправка', 2]] as [$name, $order]) {
             ProjectStage::create(['name' => $name, 'order' => $order, 'is_active' => true, 'company_id' => $baia->id]);
-            ProjectStage::create(['name' => $name, 'order' => $order, 'is_active' => true, 'company_id' => $asu->id]);
+            ProjectStage::create(['name' => $name, 'order' => $order, 'is_active' => true, 'company_id' => $alt->id]);
         }
 
         $deal = \App\Models\Deal::create([
-            'number' => 'BAIA-T-1', 'name' => 'ТОО', 'company_name' => 'ТОО', 'client_name' => 'товар',
+            'number' => 'QT-T-1', 'name' => 'ТОО', 'company_name' => 'ТОО', 'client_name' => 'товар',
             'budget' => 100, 'status' => 'active', 'company_id' => $baia->id,
             'deal_stage_id' => \App\Models\DealStage::orderBy('order')->first()->id,
         ]);
@@ -62,6 +62,6 @@ class ProjectStageFunnelTest extends TestCase
 
         $this->actingAs($admin)->get(route('projects.show', $project))
             ->assertOk()
-            ->assertInertia(fn ($p) => $p->has('stages', 2)); // только этапы BAIA, без дублей ASU
+            ->assertInertia(fn ($p) => $p->has('stages', 2)); // только этапы QT, без дублей ALT
     }
 }

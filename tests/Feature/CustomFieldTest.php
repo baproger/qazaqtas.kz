@@ -38,7 +38,7 @@ class CustomFieldTest extends TestCase
         $this->assertEquals('deal', $field->entity_type);
 
         $deal = Deal::create([
-            'number' => 'BAIA-CF-1', 'name' => 'D', 'budget' => 1, 'status' => 'active',
+            'number' => 'QT-CF-1', 'name' => 'D', 'budget' => 1, 'status' => 'active',
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);
 

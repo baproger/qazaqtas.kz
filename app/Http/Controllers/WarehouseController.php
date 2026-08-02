@@ -14,7 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Склад: у каждой компании (BAIA/ASU) свой. Приход оформляет бухгалтер /
+ * Склад: у каждой фирмы свой. Приход оформляет бухгалтер /
  * директор / админ; менеджеры видят остатки (для расходов по материалам).
  */
 class WarehouseController extends Controller
@@ -114,7 +114,7 @@ class WarehouseController extends Controller
 
         $companyId = CurrentCompany::id() ?: null;
         if (! $companyId && empty($data['material_id'])) {
-            return back()->with('error', 'Переключитесь на конкретную компанию (BAIA или ASU), чтобы оформить приход.');
+            return back()->with('error', 'Переключитесь на конкретную компанию, чтобы оформить приход.');
         }
 
         DB::transaction(function () use ($data, $request, $companyId) {

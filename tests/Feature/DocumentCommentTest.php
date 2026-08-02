@@ -30,7 +30,7 @@ class DocumentCommentTest extends TestCase
     private function deal(): Deal
     {
         return Deal::create([
-            'number' => 'BAIA-D-1', 'name' => 'D', 'budget' => 1, 'status' => 'active',
+            'number' => 'QT-D-1', 'name' => 'D', 'budget' => 1, 'status' => 'active',
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);
     }

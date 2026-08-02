@@ -63,7 +63,7 @@ const stageTime = (deal) => {
     if (h) return `${h}ч ${m}м`;
     return `${m}м`;
 };
-// У BAIA два цеха («Металл цех» / «Ағаш цех») — сначала модалка выбора; у ASU (один цех) — сразу.
+// Если цехов несколько — сначала модалка выбора; при одном — сразу.
 const workshopPickDeal = ref(null);
 const workshopOptions = computed(() => workshopPickDeal.value ? (props.workshopsByCompany[workshopPickDeal.value.company_id] ?? []) : []);
 const toWorkshop = (deal, workshop = null) => {
@@ -387,7 +387,7 @@ const applyBinMatch = () => {
             </div>
         </Modal>
 
-        <!-- Выбор цеха (BAIA: Металл / Ағаш) — как на карточке сделки -->
+        <!-- Выбор цеха (если их несколько) — как на карточке сделки -->
         <Modal :show="!!workshopPickDeal" max-width="sm" @close="workshopPickDeal = null">
             <div class="p-6">
                 <h3 class="mb-1 text-base font-semibold text-slate-900">В какой цех отправить?</h3>

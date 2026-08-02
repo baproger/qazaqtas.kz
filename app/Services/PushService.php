@@ -30,7 +30,7 @@ class PushService
 
         try {
             $webPush = new WebPush(['VAPID' => [
-                'subject' => config('app.url', 'https://erp.baiaholding.kz'),
+                'subject' => config('app.url', 'https://erp.qazaqtas.kz'),
                 'publicKey' => $public,
                 'privateKey' => $private,
             ]]);

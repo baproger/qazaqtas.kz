@@ -15,7 +15,7 @@ class DocumentPolicy
 
     /**
      * Документ доступен, только если доступна его сделка/заказ — так наследуются
-     * и владение менеджера, и изоляция компаний (BAIA/ASU) из Deal/Project-политик.
+     * и владение менеджера, и изоляция фирм из Deal/Project-политик.
      */
     private function entityVisible(User $u, Document $d): bool
     {

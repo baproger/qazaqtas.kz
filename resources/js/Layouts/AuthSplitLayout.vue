@@ -39,10 +39,10 @@ const particles = [
             <!-- Logo -->
             <div class="auth-reveal relative flex w-max items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md" style="animation-delay: 0ms">
                 <span class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-sm">
-                    <img src="/logobaiagolding.jpg" alt="BAIA Holding" class="h-full w-full object-cover" />
+                    <img src="/logo-qazaqtas.svg" alt="QAZAQ TAS" class="h-full w-full object-cover" />
                 </span>
                 <div class="leading-tight">
-                    <div class="text-sm font-bold text-white">BAIA</div>
+                    <div class="text-sm font-bold text-white">QAZAQ TAS</div>
                     <div class="text-[11px] font-medium text-emerald-200">ERP · CRM</div>
                 </div>
             </div>
@@ -74,7 +74,7 @@ const particles = [
 
             <!-- Footer -->
             <div class="auth-reveal relative flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-emerald-100/70" style="animation-delay: 500ms">
-                <span>© 2026 <span class="font-semibold text-white">BAIA Holding</span> · Разработано</span>
+                <span>© 2026 <span class="font-semibold text-white">QAZAQ TAS</span> · Разработано</span>
                 <a href="https://instagram.com/baproger.kz" target="_blank" rel="noopener noreferrer"
                     class="group inline-flex items-center gap-1.5 font-semibold text-white transition-colors hover:text-emerald-200">
                     <svg viewBox="0 0 24 24" class="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
@@ -89,10 +89,10 @@ const particles = [
                 <!-- Mobile logo -->
                 <div class="mb-8 flex items-center gap-2.5 lg:hidden">
                     <span class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
-                        <img src="/logobaiagolding.jpg" alt="BAIA Holding" class="h-full w-full object-cover" />
+                        <img src="/logo-qazaqtas.svg" alt="QAZAQ TAS" class="h-full w-full object-cover" />
                     </span>
                     <div class="leading-tight">
-                        <div class="text-sm font-bold text-slate-900">BAIA</div>
+                        <div class="text-sm font-bold text-slate-900">QAZAQ TAS</div>
                         <div class="text-[11px] font-medium text-emerald-600">ERP · CRM</div>
                     </div>
                 </div>

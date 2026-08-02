@@ -215,7 +215,7 @@ const delExpense = async (e) => {
                 </div>
                 <div class="mt-1 text-xl font-bold tabular-nums" :class="summary.cash >= 0 ? 'text-slate-800' : 'text-rose-600'">{{ money(summary.cash) }}</div>
                 <div class="mt-0.5 text-[11px] text-slate-400">
-                    наличные ОБЩИЕ по холдингу (BAIA + ASU)
+                    наличные ОБЩИЕ по всем фирмам
                     <span v-if="summary.cashCorrection" class="text-amber-500" :title="'Корректировка: ' + money(summary.cashCorrection)">· скорректировано</span>
                 </div>
                 <div v-if="cashFixOpen" class="mt-2 flex items-center gap-1.5">

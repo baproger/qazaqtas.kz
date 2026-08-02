@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Склад: у каждой компании (BAIA/ASU) свой. materials — позиции с текущим
+     * Склад: у каждой фирмы свой. materials — позиции с текущим
      * остатком; material_receipts — история прихода. Расход по материалам из
      * сделки (этап 3) будет списывать quantity.
      */

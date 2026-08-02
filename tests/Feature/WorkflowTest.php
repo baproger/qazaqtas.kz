@@ -45,7 +45,7 @@ class WorkflowTest extends TestCase
         $admin = $this->user('admin');
         $first = DealStage::orderBy('order')->first();
         $second = DealStage::orderBy('order')->skip(1)->first();
-        $deal = Deal::create(['number' => 'BAIA-W-1', 'name' => 'D', 'budget' => 1, 'status' => 'active', 'deal_stage_id' => $first->id]);
+        $deal = Deal::create(['number' => 'QT-W-1', 'name' => 'D', 'budget' => 1, 'status' => 'active', 'deal_stage_id' => $first->id]);
 
         $this->actingAs($admin)->patch(route('deals.advance', $deal))->assertRedirect();
         $this->assertEquals($second->id, $deal->fresh()->deal_stage_id);
@@ -55,7 +55,7 @@ class WorkflowTest extends TestCase
     {
         $this->seedAll();
         $admin = $this->user('admin');
-        $deal = Deal::create(['number' => 'BAIA-W-2', 'name' => 'Заказ', 'budget' => 1000000, 'status' => 'active', 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
+        $deal = Deal::create(['number' => 'QT-W-2', 'name' => 'Заказ', 'budget' => 1000000, 'status' => 'active', 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
 
         $this->actingAs($admin)->post(route('deals.toWorkshop', $deal))->assertRedirect();
 
@@ -112,33 +112,33 @@ class WorkflowTest extends TestCase
 
     public function test_each_company_has_own_workshop_funnel(): void
     {
-        // Цех раздельный: BAIA — мебельный, ASU — швейный. Заказ попадает
+        // Цех раздельный у каждой фирмы. Заказ попадает
         // в цех СВОЕЙ компании, этап чужого цеха недоступен.
         $this->seedAll();
         $admin = $this->user('admin');
-        $baia = \App\Models\Company::where('code', 'BAIA')->firstOrFail();
-        $asu = \App\Models\Company::where('code', 'ASU')->firstOrFail();
-        $admin->companies()->attach([$baia->id, $asu->id]);
+        $baia = \App\Models\Company::where('code', 'QT')->firstOrFail();
+        $alt = \App\Models\Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
+        $admin->companies()->attach([$baia->id, $alt->id]);
 
         $baiaCut = ProjectStage::create(['company_id' => $baia->id, 'name' => 'Кесу (мебель)', 'order' => 100, 'type' => 'project', 'is_active' => true, 'checklist' => []]);
-        $asuSew = ProjectStage::create(['company_id' => $asu->id, 'name' => 'Тігу (швейный)', 'order' => 100, 'type' => 'project', 'is_active' => true, 'checklist' => []]);
+        $altSew = ProjectStage::create(['company_id' => $alt->id, 'name' => 'Этап второй фирмы', 'order' => 100, 'type' => 'project', 'is_active' => true, 'checklist' => []]);
 
         $deal = Deal::create([
-            'company_id' => $asu->id, 'number' => 'ASU-W-1', 'name' => 'Швейный заказ', 'budget' => 100000,
+            'company_id' => $alt->id, 'number' => 'ALT-W-1', 'name' => 'Швейный заказ', 'budget' => 100000,
             'status' => 'active', 'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);
         $this->actingAs($admin)->post(route('deals.toWorkshop', $deal))->assertRedirect();
 
         $project = Project::where('deal_id', $deal->id)->firstOrFail();
-        // Первый этап воронки ASU (сидерные общие этапы + свой) — НЕ этап BAIA.
+        // Первый этап воронки ALT (сидерные общие этапы + свой) — НЕ этап QT.
         $this->assertNotEquals($baiaCut->id, $project->project_stage_id);
 
-        // Перенос заказа ASU на этап цеха BAIA запрещён.
+        // Перенос заказа ALT на этап цеха QT запрещён.
         $this->actingAs($admin)->patch(route('projects.stage', $project), ['project_stage_id' => $baiaCut->id]);
         $this->assertNotEquals($baiaCut->id, $project->fresh()->project_stage_id);
 
-        // На свой швейный этап — можно.
-        $this->actingAs($admin)->patch(route('projects.stage', $project), ['project_stage_id' => $asuSew->id]);
-        $this->assertEquals($asuSew->id, $project->fresh()->project_stage_id);
+        // На свой этап второй фирмы — можно.
+        $this->actingAs($admin)->patch(route('projects.stage', $project), ['project_stage_id' => $altSew->id]);
+        $this->assertEquals($altSew->id, $project->fresh()->project_stage_id);
     }
 }

@@ -7,9 +7,9 @@ Plesk только копирует файлы — `composer` и `migrate` за�
 ## 1. Один раз: настройка в Plesk
 
 **Git → Настройки репозитория:**
-- URL: `https://github.com/baproger/erp.baiaholding.kz.git`, ветка `master`
+- URL: `https://github.com/baproger/erp.qazaqtas.kz.git`, ветка `master`
 - Режим развёртывания: **Автоматически**
-- **Путь сервера — ВАЖНО:** для Laravel деплой должен идти в КОРЕНЬ домена (например `/erp.baiaholding.kz`), а document root домена — в подпапку `/erp.baiaholding.kz/public`.
+- **Путь сервера — ВАЖНО:** для Laravel деплой должен идти в КОРЕНЬ домена (например `/erp.qazaqtas.kz`), а document root домена — в подпапку `/erp.qazaqtas.kz/public`.
   ⚠️ Если деплой настроен прямо в `.../public`, то `app/`, `.env`, `config/` окажутся в веб-доступе — это дыра (можно скачать `.env` с паролями БД). Проверить: document root сайта = `.../public`, а Git-деплой = на уровень выше.
 
 **Веб-хук для авто-деплоя:** скопировать «URL-адрес для веб-хука» из Plesk →
@@ -26,7 +26,7 @@ Content type `application/json`, событие `Just the push event`. Без э
 APP_NAME=BAIA
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://erp.baiaholding.kz
+APP_URL=https://erp.qazaqtas.kz
 APP_KEY=                      # сгенерировать: php artisan key:generate
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -50,7 +50,7 @@ SESSION_SECURE_COOKIE=true
 php composer.phar install --no-dev --optimize-autoloader
 php artisan key:generate         # если APP_KEY пустой
 php artisan migrate --force
-php artisan db:seed --force       # роли + первый админ admin@baia.kz/password — СМЕНИТЬ пароль!
+php artisan db:seed --force       # роли + первый админ admin@qazaqtas.kz/password — СМЕНИТЬ пароль!
 php artisan storage:link
 php artisan optimize              # config+route+view cache
 ```

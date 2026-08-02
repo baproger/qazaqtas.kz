@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Освобождает номера уже удалённых сделок (BAIA-040 → BAIA-040#del{id}):
+ * Освобождает номера уже удалённых сделок (QT-040 → QT-040#del{id}):
  * unique-индекс deals.number учитывает и soft-deleted строки, поэтому без
  * переименования нумерация не может начаться заново с 001.
  */

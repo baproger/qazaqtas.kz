@@ -36,7 +36,7 @@ const ding = () => {
 const notifyBrowser = (title, body) => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     try {
-        const n = new Notification(title, { body, tag: 'baia-chat' });
+        const n = new Notification(title, { body, tag: 'qazaqtas-chat' });
         n.onclick = () => {
             window.focus();
             try { window.location.href = route('chat.index'); } catch (e) { window.location.href = '/chat'; }

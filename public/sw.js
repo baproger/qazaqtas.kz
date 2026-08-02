@@ -1,4 +1,4 @@
-// BAIA ERP — Service Worker для Web Push: уведомления чата приходят как в
+// QAZAQ TAS ERP — Service Worker для Web Push: уведомления чата приходят как в
 // WhatsApp, даже когда браузер свёрнут или вкладка ERP закрыта.
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -9,9 +9,9 @@ self.addEventListener('push', (event) => {
     try { data = { ...data, ...event.data.json() }; } catch (e) { /* пустой payload */ }
     event.waitUntil(self.registration.showNotification(data.title, {
         body: data.body,
-        icon: '/logobaiagolding.jpg',
-        badge: '/logobaiagolding.jpg',
-        tag: 'baia-chat-push', // новое сообщение заменяет предыдущее уведомление
+        icon: '/logo-qazaqtas.png',
+        badge: '/logo-qazaqtas.png',
+        tag: 'qazaqtas-chat-push', // новое сообщение заменяет предыдущее уведомление
         data: { url: data.url },
     }));
 });

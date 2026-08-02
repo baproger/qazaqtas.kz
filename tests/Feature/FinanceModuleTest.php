@@ -30,7 +30,7 @@ class FinanceModuleTest extends TestCase
     private function deal(): Deal
     {
         return Deal::create([
-            'number' => 'BAIA-F-1', 'name' => 'D', 'budget' => 1000000, 'status' => 'active',
+            'number' => 'QT-F-1', 'name' => 'D', 'budget' => 1000000, 'status' => 'active',
             'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);
     }

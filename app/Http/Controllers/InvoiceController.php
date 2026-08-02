@@ -20,7 +20,7 @@ class InvoiceController extends Controller
     // Менеджер работает только со своими сделками — счета чужих сделок недоступны.
     private function assertOwnership(User $user, ?Model $entity): void
     {
-        // Изоляция фирм: счета чужой компании (BAIA/ASU) недоступны никому,
+        // Изоляция фирм: счета чужой компании недоступны никому,
         // кто к этой компании не привязан, — включая финансиста и директора.
         $companyId = $entity instanceof Project ? $entity->deal?->company_id : $entity?->company_id;
         abort_unless($entity === null || $user->worksInCompany($companyId ? (int) $companyId : null), 403);

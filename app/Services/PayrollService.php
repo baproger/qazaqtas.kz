@@ -75,7 +75,7 @@ class PayrollService
      * Canonical company-wide finance figures over WON deals — the single source of
      * truth shared by Dashboard, Analytics and Finance so every page shows the same
      * numbers. All values are factual (won stage = «Оплата успешно») and scoped to
-     * the current firm (BAIA / ASU).
+     * the current firm.
      *
      *   budget    = Σ won-deal budgets
      *   income    = Σ payments on won deals (factual money in)

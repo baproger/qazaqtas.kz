@@ -16,7 +16,7 @@ class Chat extends Model
 
     protected $casts = ['is_active' => 'boolean'];
 
-    /** Фирма (BAIA/ASU), которой принадлежит группа; null — видна обеим. */
+    /** Фирма, которой принадлежит группа; null — видна всем фирмам. */
     public function company(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Company::class);
