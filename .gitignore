@@ -25,3 +25,6 @@ Homestead.yaml
 Thumbs.db
 /backups
 /vendor
+
+# Локальная база для разработки (SQLite)
+/database/*.sqlite
