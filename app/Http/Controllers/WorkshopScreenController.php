@@ -282,10 +282,13 @@ class WorkshopScreenController extends Controller
 
         $screens = WorkshopScreen::get()->keyBy(fn ($s) => ($s->company_id ?? 0).'|'.($s->workshop ?? '').'|'.$s->kind);
         $companies = \App\Models\Company::orderBy('id')->get(['id', 'name'])->map(function ($c) use ($screens) {
-            $stages = ProjectStage::where('company_id', $c->id)->where('is_active', true)->get(['workshop']);
-            $rows = $stages->pluck('workshop')->filter()->unique()->values()
+            // Та же выборка, что и на канбане цеха (ProjectStage::companyQuery):
+            // свои этапы фирмы, а если их нет — общие. Иначе на свежей базе
+            // «Экраны» показывали «Единый цех», хотя цехов несколько.
+            $rows = collect(ProjectStage::workshopsFor($c->id))
                 ->map(fn ($w) => ['workshop' => $w, 'label' => $w]);
-            if ($rows->isEmpty() || $stages->contains(fn ($s) => $s->workshop === null)) {
+            $hasUnassigned = ProjectStage::companyQuery($c->id)->whereNull('workshop')->exists();
+            if ($rows->isEmpty() || $hasUnassigned) {
                 $rows->push(['workshop' => null, 'label' => 'Единый цех']);
             }
 

@@ -48,6 +48,20 @@ class WorkshopCitiesTest extends TestCase
         }
     }
 
+    public function test_screens_page_lists_every_city(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)->get(route('screens.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where(
+                'companies.0.rows',
+                fn ($rows) => collect($rows)->pluck('workshop')->sort()->values()->all()
+                    === collect(StageSeeder::WORKSHOPS)->sort()->values()->all()
+            ));
+    }
+
     public function test_deal_goes_to_the_chosen_city_funnel(): void
     {
         $admin = User::factory()->create();
