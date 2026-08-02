@@ -34,7 +34,7 @@ class DebtTest extends TestCase
 
         $this->actingAs($fin)->post(route('finance.debts.store'), [
             'type' => 'payable', 'counterparty' => 'ТОО Поставщик', 'amount' => 300000,
-            'date' => now()->toDateString(), 'note' => 'за ЛДСП',
+            'date' => now()->toDateString(), 'note' => 'за Мраморная крошка',
         ])->assertRedirect();
         $debt = Debt::first();
         $this->assertEquals('payable', $debt->type);

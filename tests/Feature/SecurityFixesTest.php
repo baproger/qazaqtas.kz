@@ -19,7 +19,7 @@ class SecurityFixesTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Company $baia;
+    private Company $qt;
 
     private Company $alt;
 
@@ -28,7 +28,7 @@ class SecurityFixesTest extends TestCase
         parent::setUp();
         $this->seed(RolePermissionSeeder::class);
         $this->seed(StageSeeder::class);
-        $this->baia = Company::where('code', 'QT')->firstOrFail();
+        $this->qt = Company::where('code', 'QT')->firstOrFail();
         $this->alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
     }
 
@@ -36,7 +36,7 @@ class SecurityFixesTest extends TestCase
     {
         $u = User::factory()->create();
         $u->assignRole($role);
-        $u->companies()->attach(($company ?? $this->baia)->id);
+        $u->companies()->attach(($company ?? $this->qt)->id);
 
         return $u;
     }
@@ -44,7 +44,7 @@ class SecurityFixesTest extends TestCase
     private function deal(User $owner, ?Company $company = null): Deal
     {
         return Deal::create([
-            'company_id' => ($company ?? $this->baia)->id,
+            'company_id' => ($company ?? $this->qt)->id,
             'number' => 'D-'.uniqid(), 'name' => 'Сделка', 'company_name' => 'ТОО', 'budget' => 100000,
             'status' => 'active', 'deal_stage_id' => DealStage::orderBy('order')->first()->id,
             'responsible_user_id' => $owner->id,
@@ -151,7 +151,7 @@ class SecurityFixesTest extends TestCase
     {
         $mgr = $this->user('manager');
         $deal = $this->deal($mgr);
-        $material = Material::create(['company_id' => $this->baia->id, 'name' => 'ЛДСП', 'unit' => 'штук', 'quantity' => 5, 'price' => 100]);
+        $material = Material::create(['company_id' => $this->qt->id, 'name' => 'Мраморная крошка', 'unit' => 'штук', 'quantity' => 5, 'price' => 100]);
 
         $this->actingAs($mgr)->post(route('expenses.store'), [
             'expenseable_type' => 'deal', 'expenseable_id' => $deal->id,
@@ -170,8 +170,8 @@ class SecurityFixesTest extends TestCase
         $altDeal = $this->deal($altMgr, $this->alt);
         $altDeal->update(['bin' => '999888777', 'company_name' => 'ALT Клиент']);
 
-        $baiaMgr = $this->user('manager', $this->baia);
-        $resp = $this->actingAs($baiaMgr)->withSession(['company_id' => $this->baia->id])
+        $qtMgr = $this->user('manager', $this->qt);
+        $resp = $this->actingAs($qtMgr)->withSession(['company_id' => $this->qt->id])
             ->getJson(route('deals.binLookup', ['bin' => '999888777']));
 
         // Менеджер QT не видит сделку ALT по её БИН.
@@ -194,8 +194,8 @@ class SecurityFixesTest extends TestCase
             'entity_type' => 'deal', 'name' => 'Секретное', 'type' => 'text', 'is_visible' => true, 'order' => 1,
         ]);
 
-        $baiaMgr = $this->user('manager', $this->baia);
-        $this->actingAs($baiaMgr)->post(route('custom-field-values.sync'), [
+        $qtMgr = $this->user('manager', $this->qt);
+        $this->actingAs($qtMgr)->post(route('custom-field-values.sync'), [
             'entity_type' => 'deal', 'entity_id' => $altDeal->id,
             'values' => [$field->id => 'взлом'],
         ])->assertForbidden();

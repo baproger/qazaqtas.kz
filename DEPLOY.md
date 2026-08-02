@@ -23,7 +23,7 @@ Content type `application/json`, событие `Just the push event`. Без э
 в корне проекта), минимум:
 
 ```
-APP_NAME=BAIA
+APP_NAME="QAZAQ TAS ERP"
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://erp.qazaqtas.kz

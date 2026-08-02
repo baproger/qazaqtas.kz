@@ -28,7 +28,7 @@ class WorkshopSplitTest extends TestCase
         $this->seed(StageSeeder::class);
     }
 
-    private function baiaWithTwoWorkshops(): array
+    private function companyWithTwoWorkshops(): array
     {
         $company = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT']);
         foreach ([['Кесу М', 1], ['Жинау М', 2]] as [$n, $o]) {
@@ -47,7 +47,7 @@ class WorkshopSplitTest extends TestCase
 
     public function test_two_workshops_require_choice_and_use_own_funnel(): void
     {
-        [$admin, $deal] = $this->baiaWithTwoWorkshops();
+        [$admin, $deal] = $this->companyWithTwoWorkshops();
 
         // Без выбора цеха — ошибка, заказ не создан.
         $this->actingAs($admin)->post(route('deals.toWorkshop', $deal->id))->assertSessionHas('error');

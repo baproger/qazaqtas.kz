@@ -24,12 +24,12 @@ class UserManagementTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('users.store'), [
-            'name' => 'Иван Сотрудник', 'email' => 'ivan@baia.kz',
+            'name' => 'Иван Сотрудник', 'email' => 'ivan@qazaqtas.kz',
             'password' => 'secret123', 'password_confirmation' => 'secret123',
             'role' => 'employee', 'is_active' => true,
         ])->assertRedirect();
 
-        $user = User::where('email', 'ivan@baia.kz')->first();
+        $user = User::where('email', 'ivan@qazaqtas.kz')->first();
         $this->assertNotNull($user);
         $this->assertTrue($user->hasRole('employee'));
     }
@@ -56,12 +56,12 @@ class UserManagementTest extends TestCase
         ];
 
         // Менеджера — можно.
-        $this->actingAs($fin)->post(route('users.store'), $payload('manager', 'new1@baia.kz'))
+        $this->actingAs($fin)->post(route('users.store'), $payload('manager', 'new1@qazaqtas.kz'))
             ->assertSessionHasNoErrors()->assertRedirect();
-        $this->assertTrue(\App\Models\User::where('email', 'new1@baia.kz')->first()->hasRole('manager'));
+        $this->assertTrue(\App\Models\User::where('email', 'new1@qazaqtas.kz')->first()->hasRole('manager'));
 
         // Админа — нельзя (только действующий админ).
-        $this->actingAs($fin)->post(route('users.store'), $payload('admin', 'new2@baia.kz'))
+        $this->actingAs($fin)->post(route('users.store'), $payload('admin', 'new2@qazaqtas.kz'))
             ->assertForbidden();
     }
 

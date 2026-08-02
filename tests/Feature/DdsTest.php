@@ -24,7 +24,7 @@ class DdsTest extends TestCase
 
         // Счёт компании.
         $this->actingAs($fin)->post(route('finance.dds.store'), [
-            'kind' => 'account', 'name' => 'Baia Holding', 'bank' => 'народный',
+            'kind' => 'account', 'name' => 'QAZAQ TAS', 'bank' => 'народный',
             'balance' => 799000, 'receivable' => 31998202,
         ])->assertSessionHasNoErrors()->assertRedirect();
         // Долг.
@@ -36,7 +36,7 @@ class DdsTest extends TestCase
         // Правка и удаление.
         $row = DdsEntry::where('kind', 'account')->first();
         $this->actingAs($fin)->put(route('finance.dds.update', $row->id), [
-            'kind' => 'account', 'name' => 'Baia Holding', 'bank' => 'Форте', 'balance' => 100,
+            'kind' => 'account', 'name' => 'QAZAQ TAS', 'bank' => 'Форте', 'balance' => 100,
         ])->assertRedirect();
         $this->assertSame('Форте', $row->fresh()->bank);
 

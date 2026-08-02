@@ -116,11 +116,11 @@ class WorkflowTest extends TestCase
         // в цех СВОЕЙ компании, этап чужого цеха недоступен.
         $this->seedAll();
         $admin = $this->user('admin');
-        $baia = \App\Models\Company::where('code', 'QT')->firstOrFail();
+        $qt = \App\Models\Company::where('code', 'QT')->firstOrFail();
         $alt = \App\Models\Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
-        $admin->companies()->attach([$baia->id, $alt->id]);
+        $admin->companies()->attach([$qt->id, $alt->id]);
 
-        $baiaCut = ProjectStage::create(['company_id' => $baia->id, 'name' => 'Кесу (мебель)', 'order' => 100, 'type' => 'project', 'is_active' => true, 'checklist' => []]);
+        $qtStage = ProjectStage::create(['company_id' => $qt->id, 'name' => 'Формовка (другой цех)', 'order' => 100, 'type' => 'project', 'is_active' => true, 'checklist' => []]);
         $altSew = ProjectStage::create(['company_id' => $alt->id, 'name' => 'Этап второй фирмы', 'order' => 100, 'type' => 'project', 'is_active' => true, 'checklist' => []]);
 
         $deal = Deal::create([
@@ -131,11 +131,11 @@ class WorkflowTest extends TestCase
 
         $project = Project::where('deal_id', $deal->id)->firstOrFail();
         // Первый этап воронки ALT (сидерные общие этапы + свой) — НЕ этап QT.
-        $this->assertNotEquals($baiaCut->id, $project->project_stage_id);
+        $this->assertNotEquals($qtStage->id, $project->project_stage_id);
 
         // Перенос заказа ALT на этап цеха QT запрещён.
-        $this->actingAs($admin)->patch(route('projects.stage', $project), ['project_stage_id' => $baiaCut->id]);
-        $this->assertNotEquals($baiaCut->id, $project->fresh()->project_stage_id);
+        $this->actingAs($admin)->patch(route('projects.stage', $project), ['project_stage_id' => $qtStage->id]);
+        $this->assertNotEquals($qtStage->id, $project->fresh()->project_stage_id);
 
         // На свой этап второй фирмы — можно.
         $this->actingAs($admin)->patch(route('projects.stage', $project), ['project_stage_id' => $altSew->id]);

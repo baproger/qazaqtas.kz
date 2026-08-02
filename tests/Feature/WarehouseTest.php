@@ -37,10 +37,10 @@ class WarehouseTest extends TestCase
 
         $this->actingAs($fin)
             ->withSession(['company_id' => $company->id])
-            ->post(route('warehouse.receipt'), ['name' => 'ЛДСП 16мм', 'unit' => 'штук', 'quantity' => 50])
+            ->post(route('warehouse.receipt'), ['name' => 'Мраморная крошка 0-2', 'unit' => 'штук', 'quantity' => 50])
             ->assertRedirect();
 
-        $material = Material::where('name', 'ЛДСП 16мм')->first();
+        $material = Material::where('name', 'Мраморная крошка 0-2')->first();
         $this->assertNotNull($material);
         $this->assertEquals(50.0, (float) $material->quantity);
         $this->assertSame($company->id, (int) $material->company_id);
@@ -76,7 +76,7 @@ class WarehouseTest extends TestCase
     {
         $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
-        $material = Material::create(['company_id' => $company->id, 'name' => 'ЛДСП', 'unit' => 'штук', 'quantity' => 50]);
+        $material = Material::create(['company_id' => $company->id, 'name' => 'Мраморная крошка', 'unit' => 'штук', 'quantity' => 50]);
         $receipt = $material->receipts()->create(['user_id' => $fin->id, 'quantity' => 50, 'date' => now()->toDateString()]);
 
         // 50 → 30: остаток уменьшается на 20.
@@ -123,10 +123,10 @@ class WarehouseTest extends TestCase
         $fin = $this->user('financist', $company);
 
         $this->actingAs($fin)->withSession(['company_id' => $company->id])
-            ->post(route('warehouse.receipt'), ['name' => 'ЛДСП', 'unit' => 'штук', 'quantity' => 10, 'price' => 1200])
+            ->post(route('warehouse.receipt'), ['name' => 'Мраморная крошка', 'unit' => 'штук', 'quantity' => 10, 'price' => 1200])
             ->assertSessionHasNoErrors()->assertRedirect();
 
-        $material = Material::where('name', 'ЛДСП')->firstOrFail();
+        $material = Material::where('name', 'Мраморная крошка')->firstOrFail();
         $this->assertEquals(1200.0, (float) $material->price);
         $this->assertEquals(1200.0, (float) $material->receipts()->first()->price);
 
@@ -183,16 +183,16 @@ class WarehouseTest extends TestCase
 
     public function test_warehouse_scoped_by_current_company(): void
     {
-        $baia = Company::where('code', 'QT')->firstOrFail();
+        $qt = Company::where('code', 'QT')->firstOrFail();
         $alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
-        Material::create(['company_id' => $baia->id, 'name' => 'ЛДСП QT', 'unit' => 'штук', 'quantity' => 5]);
+        Material::create(['company_id' => $qt->id, 'name' => 'Мраморная крошка QT', 'unit' => 'штук', 'quantity' => 5]);
         Material::create(['company_id' => $alt->id, 'name' => 'МДФ ALT', 'unit' => 'штук', 'quantity' => 7]);
 
-        $fin = $this->user('financist', $baia);
+        $fin = $this->user('financist', $qt);
 
-        $this->actingAs($fin)->withSession(['company_id' => $baia->id])
+        $this->actingAs($fin)->withSession(['company_id' => $qt->id])
             ->get(route('warehouse.index'))
             ->assertInertia(fn ($p) => $p->component('Warehouse/Index')->has('materials', 1)
-                ->where('materials.0.name', 'ЛДСП QT'));
+                ->where('materials.0.name', 'Мраморная крошка QT'));
     }
 }

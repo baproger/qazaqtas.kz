@@ -87,7 +87,7 @@ class ChatManagementTest extends TestCase
     public function test_company_group_hidden_from_other_firm_employee(): void
     {
         $this->admin();
-        $baia = Company::create(['name' => 'QT', 'code' => 'baia', 'is_active' => true]);
+        $qt = Company::create(['name' => 'QT', 'code' => 'alt2', 'is_active' => true]);
         $alt = Company::create(['name' => 'ALT', 'code' => 'alt', 'is_active' => true]);
 
         $altWorker = User::factory()->create();
@@ -95,7 +95,7 @@ class ChatManagementTest extends TestCase
         $altWorker->companies()->sync([$alt->id]);
 
         // Группа QT, сотрудник ALT — участник (добавили по ошибке).
-        $chat = $this->group(['company_id' => $baia->id, 'name' => 'QT цех']);
+        $chat = $this->group(['company_id' => $qt->id, 'name' => 'QT цех']);
         $chat->participants()->attach($altWorker->id, ['joined_at' => now()]);
 
         // В списке чатов группы QT нет…
@@ -108,11 +108,11 @@ class ChatManagementTest extends TestCase
         $this->actingAs($altWorker)->get(route('chat.messages', $chat->id))->assertForbidden();
 
         // Сотрудник QT группу видит и читает.
-        $baiaWorker = User::factory()->create();
-        $baiaWorker->assignRole('employee');
-        $baiaWorker->companies()->sync([$baia->id]);
-        $chat->participants()->attach($baiaWorker->id, ['joined_at' => now()]);
-        $this->actingAs($baiaWorker)->get(route('chat.messages', $chat->id))->assertOk();
+        $qtWorker = User::factory()->create();
+        $qtWorker->assignRole('employee');
+        $qtWorker->companies()->sync([$qt->id]);
+        $chat->participants()->attach($qtWorker->id, ['joined_at' => now()]);
+        $this->actingAs($qtWorker)->get(route('chat.messages', $chat->id))->assertOk();
     }
 
     public function test_messages_payload_contains_reads_and_state_endpoint_works(): void
@@ -154,12 +154,12 @@ class ChatManagementTest extends TestCase
     public function test_group_created_with_company_binding(): void
     {
         $admin = $this->admin();
-        $baia = Company::create(['name' => 'QT', 'code' => 'baia', 'is_active' => true]);
+        $qt = Company::create(['name' => 'QT', 'code' => 'alt2', 'is_active' => true]);
 
         $this->actingAs($admin)->post(route('chat.store'), [
-            'type' => 'group', 'name' => 'Отдел продаж QT', 'company_id' => $baia->id, 'participants' => [],
+            'type' => 'group', 'name' => 'Отдел продаж QT', 'company_id' => $qt->id, 'participants' => [],
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('chats', ['name' => 'Отдел продаж QT', 'company_id' => $baia->id]);
+        $this->assertDatabaseHas('chats', ['name' => 'Отдел продаж QT', 'company_id' => $qt->id]);
     }
 }

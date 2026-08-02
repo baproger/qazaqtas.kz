@@ -63,12 +63,12 @@ class EmployeeHrTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('users.store'), [
-            'name' => 'Новичок', 'email' => 'hr@baia.kz',
+            'name' => 'Новичок', 'email' => 'hr@qazaqtas.kz',
             'password' => 'secret123', 'password_confirmation' => 'secret123',
             'role' => 'employee', 'birth_date' => '1995-07-24', 'hired_at' => '2026-07-01',
         ])->assertSessionHasNoErrors()->assertRedirect();
 
-        $u = User::where('email', 'hr@baia.kz')->first();
+        $u = User::where('email', 'hr@qazaqtas.kz')->first();
         $this->assertSame('1995-07-24', $u->birth_date->toDateString());
         $this->assertSame('2026-07-01', $u->hired_at->toDateString());
     }

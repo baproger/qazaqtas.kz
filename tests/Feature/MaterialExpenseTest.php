@@ -41,7 +41,7 @@ class MaterialExpenseTest extends TestCase
             'responsible_user_id' => $this->manager->id,
         ]);
 
-        $this->material = Material::create(['company_id' => $company->id, 'name' => 'ЛДСП', 'unit' => 'штук', 'quantity' => 20]);
+        $this->material = Material::create(['company_id' => $company->id, 'name' => 'Мраморная крошка', 'unit' => 'штук', 'quantity' => 20]);
     }
 
     public function test_material_expense_writes_off_stock_without_receipt(): void
@@ -55,7 +55,7 @@ class MaterialExpenseTest extends TestCase
         $this->assertEquals(15.0, (float) $this->material->fresh()->quantity);
         $expense = Expense::first();
         $this->assertSame('confirmed', $expense->status);
-        $this->assertStringContainsString('ЛДСП', $expense->description);
+        $this->assertStringContainsString('Мраморная крошка', $expense->description);
     }
 
     public function test_material_expense_rejected_when_stock_insufficient(): void
