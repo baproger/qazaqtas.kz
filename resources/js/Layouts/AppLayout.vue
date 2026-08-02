@@ -123,7 +123,7 @@ const relTime = (t) => {
     return new Date(t).toLocaleDateString('ru-RU');
 };
 
-const roleLabels = { admin: 'СЕО (админ)', director: 'Директор', financist: 'Финансист-Бухгалтер', manager: 'Менеджер', employee: 'Сотрудник (цех)', lawyer: 'Юрист', cook: 'Повар', designer: 'Дизайнер', supplier: 'Снабженец' };
+const roleLabels = { admin: 'СЕО (админ)', director: 'Директор', financist: 'Финансист-Бухгалтер', manager: 'Менеджер', employee: 'Сотрудник (цех)', lawyer: 'Юрист', cook: 'Повар', designer: 'Технолог', supplier: 'Снабженец' };
 const roleLabel = computed(() => roleLabels[roles.value[0]] ?? roles.value[0] ?? '');
 
 // Live clock next to the language switcher.

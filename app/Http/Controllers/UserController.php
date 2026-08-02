@@ -167,7 +167,7 @@ class UserController extends Controller
         $roleLabels = [
             'admin' => 'СЕО (админ)', 'director' => 'Директор', 'financist' => 'Финансист-Бухгалтер',
             'manager' => 'Менеджер', 'employee' => 'Сотрудник (цех)', 'lawyer' => 'Юрист',
-            'cook' => 'Повар', 'designer' => 'Дизайнер', 'supplier' => 'Снабженец',
+            'cook' => 'Повар', 'designer' => 'Технолог', 'supplier' => 'Снабженец',
         ];
         $users = User::with(['department:id,name', 'roles:id,name', 'companies:companies.id,name'])
             ->orderBy('name')->get();

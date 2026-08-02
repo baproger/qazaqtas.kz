@@ -26,7 +26,7 @@ const loadUser = () => {
     form.clearErrors();
 };
 
-const roleLabels = { admin: 'СЕО (админ)', director: 'Директор', financist: 'Финансист-Бухгалтер', manager: 'Менеджер', employee: 'Сотрудник (цех)', lawyer: 'Юрист', cook: 'Повар', designer: 'Дизайнер', supplier: 'Снабженец' };
+const roleLabels = { admin: 'СЕО (админ)', director: 'Директор', financist: 'Финансист-Бухгалтер', manager: 'Менеджер', employee: 'Сотрудник (цех)', lawyer: 'Юрист', cook: 'Повар', designer: 'Технолог', supplier: 'Снабженец' };
 const deptName = (id) => props.departments.find((d) => d.id === id)?.name ?? '—';
 
 const save = () => form.put(route('profile.card.update', current.value.id), { preserveScroll: true });

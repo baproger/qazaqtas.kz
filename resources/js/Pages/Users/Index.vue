@@ -20,7 +20,7 @@ const props = defineProps({
     workshopOptions: { type: Array, default: () => [] },
 });
 
-const roleLabels = { admin: 'СЕО (админ)', director: 'Директор', financist: 'Финансист-Бухгалтер', manager: 'Менеджер', employee: 'Сотрудник (цех)', lawyer: 'Юрист', cook: 'Повар', designer: 'Дизайнер', supplier: 'Снабженец' };
+const roleLabels = { admin: 'СЕО (админ)', director: 'Директор', financist: 'Финансист-Бухгалтер', manager: 'Менеджер', employee: 'Сотрудник (цех)', lawyer: 'Юрист', cook: 'Повар', designer: 'Технолог', supplier: 'Снабженец' };
 const roleColors = {
     admin: 'bg-purple-50 text-purple-700 ring-purple-200',
     director: 'bg-indigo-50 text-indigo-700 ring-indigo-200',

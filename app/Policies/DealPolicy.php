@@ -42,7 +42,7 @@ class DealPolicy
             return false;
         }
 
-        // Дизайнер и снабженец видят сделки компании — они подтверждают
+        // Технолог и снабженец видят сделки компании — они подтверждают
         // гейт-этапы; править/удалять не могут (нет deal.update, см. update()).
         return $user->hasAnyRole(['admin', 'director', 'financist', 'designer', 'supplier']) || $d->responsible_user_id === $user->id;
     }

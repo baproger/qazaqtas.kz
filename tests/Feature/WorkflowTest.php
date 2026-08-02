@@ -62,7 +62,7 @@ class WorkflowTest extends TestCase
         $project = Project::first();
         $this->assertNotNull($project);
         $firstCex = ProjectStage::orderBy('order')->first();
-        $this->assertEquals('Кесу', $firstCex->name);
+        $this->assertEquals('Формовка', $firstCex->name);
         $this->assertEquals($firstCex->id, $project->project_stage_id);
         $this->assertEquals('closed', $deal->fresh()->status);
     }

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use App\Models\Department;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -10,33 +11,49 @@ use Illuminate\Support\Facades\Hash;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Стартовое наполнение QAZAQ TAS: роли, воронки сделки и цеха, склад
+     * сырья, отделы и учётка администратора (пароль сменить сразу).
      */
     public function run(): void
     {
         $this->call([
             RolePermissionSeeder::class,
             StageSeeder::class,
+            MaterialSeeder::class,
             DealCustomFieldSeeder::class,
             UiTranslationSeeder::class,
         ]);
 
-        $department = Department::firstOrCreate(
-            ['name' => 'Отдел продаж'],
-            ['description' => 'Основной отдел продаж', 'is_active' => true]
-        );
+        $departments = [
+            'Отдел продаж' => 'Заявки, КП, сделки и клиенты',
+            'Производство' => 'Формовка, шлифовка, упаковка изделий',
+            'Снабжение' => 'Закуп сырья и оснастки, склад',
+            'Логистика и монтаж' => 'Доставка и монтаж на объекте',
+            'Бухгалтерия' => 'Финансы, счета, зарплата, отчётность',
+        ];
+
+        $sales = null;
+        foreach ($departments as $name => $description) {
+            $dept = Department::firstOrCreate(['name' => $name], ['description' => $description, 'is_active' => true]);
+            $sales ??= $dept;
+        }
 
         $admin = User::firstOrCreate(
             ['email' => 'admin@qazaqtas.kz'],
             [
                 'name' => 'Администратор',
                 'password' => Hash::make('password'),
-                'department_id' => $department->id,
+                'department_id' => $sales->id,
                 'language' => 'ru',
                 'is_active' => true,
             ]
         );
         $admin->assignRole('admin');
-        $admin->departments()->syncWithoutDetaching([$department->id]);
+        $admin->departments()->syncWithoutDetaching([$sales->id]);
+
+        // Доступ администратора к фирме (мультикомпанийный режим).
+        if ($companyId = Company::orderBy('id')->value('id')) {
+            $admin->companies()->syncWithoutDetaching([$companyId]);
+        }
     }
 }

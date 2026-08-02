@@ -36,10 +36,10 @@ class LocalizationTest extends TestCase
 
         app()->setLocale('kk');
         $stage = DealStage::with('translations')->orderBy('order')->first();
-        $this->assertEquals('Жаңа', $stage->translatedName());
+        $this->assertEquals('Өтінім', $stage->translatedName());
 
         app()->setLocale('ru');
-        $this->assertEquals('Новая', $stage->translatedName());
+        $this->assertEquals('Заявка', $stage->translatedName());
     }
 
     public function test_deals_index_renders_under_kk(): void

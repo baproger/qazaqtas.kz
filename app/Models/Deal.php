@@ -17,10 +17,10 @@ class Deal extends Model
     use HasFactory, SoftDeletes;
 
     /** Ед. изм. для поля «Количество» (колонка lot_number). */
-    public const UNITS = ['штук', 'рулон', 'Комплект', 'Работа', 'метр', 'метр погонный'];
+    public const UNITS = ['штук', 'м²', 'м³', 'метр погонный', 'комплект', 'паллета', 'тонна', 'кг', 'мешок', 'литр', 'рулон', 'работа'];
 
-    /** Источник (портал), откуда пришла сделка. */
-    public const SOURCES = ['ОМ', 'ЗЦП', 'ИОИ', 'СК', 'СК-ЭМ', 'СК-store', 'ОТП'];
+    /** Источник, откуда пришёл заказ (канал продаж). */
+    public const SOURCES = ['Сайт', 'Instagram', 'WhatsApp', 'Входящий звонок', 'Рекомендация', 'Повторный клиент', 'Выставка', 'Дилер / партнёр', 'Госзакуп', 'Другое'];
 
     protected $fillable = [
         'company_id', 'number', 'name', 'client_name', 'company_name', 'address', 'bin', 'contract_date', 'lot_number', 'unit', 'source', 'client_id', 'responsible_user_id', 'department_id',

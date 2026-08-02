@@ -38,7 +38,7 @@ const preWonStage = computed(() => esfStage.value ?? actStage.value);
 // Этапы АКТ/ЭСФ/Оплата двигает ТОЛЬКО бухгалтер (financist) или админ;
 // менеджер и директор видят сделку, но эти этапы не переводят.
 const canAccounting = computed(() => (usePage().props.auth.user?.roles ?? []).some((r) => ['admin', 'financist'].includes(r)));
-// Гейт-галочку ставит роль гейта этапа (дизайнер/снабженец/бухгалтер) или админ.
+// Гейт-галочку ставит роль гейта этапа (технолог/снабженец/бухгалтер) или админ.
 const canConfirmGate = computed(() => {
     const roles = usePage().props.auth.user?.roles ?? [];
     return roles.includes('admin') || (props.stageTask?.role && roles.includes(props.stageTask.role));

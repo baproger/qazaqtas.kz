@@ -33,8 +33,7 @@ class PaymentGateAndThresholdTest extends TestCase
     {
         // Правило 18.07: полная оплата для «Оплата успешно» больше не требуется.
         $fin = $this->user('financist');
-        $act = DealStage::create(['name' => 'Акт', 'type' => 'sale', 'order' => 90, 'is_active' => true, 'stage_type' => 'act', 'checklist' => []]);
-        $esf = DealStage::create(['name' => 'ЭСФ', 'type' => 'sale', 'order' => 91, 'is_active' => true, 'stage_type' => 'esf', 'checklist' => []]);
+        $esf = DealStage::where('stage_type', 'esf')->firstOrFail();
         $won = DealStage::where('is_won', true)->first();
 
         $deal = Deal::create([

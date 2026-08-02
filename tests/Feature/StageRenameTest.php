@@ -64,7 +64,7 @@ class StageRenameTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        $stage = DealStage::where('name', 'Переговоры')->first();
+        $stage = DealStage::where('stage_type', 'act')->firstOrFail();
         $this->actingAs($admin)->put(route('stages.update', ['deal', $stage->id]), [
             'stage_type' => 'act', 'gate_task_title' => 'Выставить акт', 'gate_task_role' => 'financist', 'gate_task_days' => 3,
         ])->assertSessionHasNoErrors()->assertRedirect();
@@ -83,6 +83,10 @@ class StageRenameTest extends TestCase
         $this->seed(StageSeeder::class);
         $admin = User::factory()->create();
         $admin->assignRole('admin');
+
+        // Тип «ЭСФ» уже занят сидерным этапом — освобождаем, чтобы проверить
+        // саму валидацию уникальности типа в воронке.
+        DealStage::where('stage_type', 'esf')->update(['stage_type' => null]);
 
         [$a, $b] = DealStage::orderBy('order')->take(2)->get();
         $this->actingAs($admin)->put(route('stages.update', ['deal', $a->id]), ['stage_type' => 'esf'])->assertSessionHasNoErrors();

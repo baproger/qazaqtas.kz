@@ -67,7 +67,7 @@ class RolePermissionSeeder extends Seeder
             'payroll.view',
         ]);
 
-        // Должности компании (юрист/повар/дизайнер/технолог) — права уровня
+        // Должности компании (юрист/повар/технолог/снабженец) — права уровня
         // «сотрудник»: цех, задачи, своя ЗП. СЕО = роль admin (подпись в UI),
         // «Финансист-Бухгалтер» = financist.
         foreach (['lawyer', 'cook', 'designer', 'supplier'] as $job) {
@@ -76,8 +76,8 @@ class RolePermissionSeeder extends Seeder
                 'task.viewAny', 'task.view', 'task.update',
                 'payroll.view',
             ];
-            // Дизайнер и снабженец подтверждают гейт-этапы («Дизайн и расчет»,
-            // «Закуп ЛДСП,МДФ») — им нужен просмотр сделок.
+            // Технолог и снабженец подтверждают гейт-этапы («Замер и расчёт»,
+            // «Закуп сырья») — им нужен просмотр сделок.
             if (in_array($job, ['designer', 'supplier'], true)) {
                 $perms = array_merge($perms, ['deal.viewAny', 'deal.view']);
             }

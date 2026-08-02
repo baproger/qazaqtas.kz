@@ -19,7 +19,7 @@ use Inertia\Response;
 class DealController extends Controller
 {
     /**
-     * Видимость сделок в списках по роли: руководство — все; дизайнер —
+     * Видимость сделок в списках по роли: руководство — все; технолог —
      * только сделки на этапе «Дизайн и расчет», снабженец — на «Закупе»
      * (их гейт-этапы, чтобы не путались в чужих сделках); менеджер — свои.
      * Прямые ссылки (из уведомлений/задач) шире — их решает DealPolicy.
@@ -269,12 +269,12 @@ class DealController extends Controller
     /**
      * Галочка-гейт текущего этапа: закрывает гейт-задачу («Выставить акт…»,
      * «Подтвердить дизайн…» и т.п.), после чего сделку можно двигать дальше.
-     * Ставит её роль гейта этапа (дизайнер — «Дизайн и расчет», снабженец —
+     * Ставит её роль гейта этапа (технолог — «Замер и расчёт», снабженец —
      * «Закуп ЛДСП,МДФ», бухгалтер — АКТ/ЭСФ/Оплата) или админ.
      */
     public function completeStageTask(Request $request, Deal $deal): RedirectResponse
     {
-        // Не 'update': дизайнер/снабженец не редактируют сделку, но гейт ставят.
+        // Не 'update': технолог/снабженец не редактируют сделку, но гейт ставят.
         $this->authorize('view', $deal);
 
         $gateStage = self::gateStage($deal);
@@ -319,7 +319,7 @@ class DealController extends Controller
 
     /** Текущий этап сделки, если на нём настроен гейт (или null). */
     /** Подписи ролей гейт-задач (для сообщений и карточки сделки). */
-    private const GATE_ROLE_LABELS = ['financist' => 'бухгалтер', 'designer' => 'дизайнер', 'supplier' => 'снабженец', 'manager' => 'менеджер', 'director' => 'директор', 'admin' => 'админ'];
+    private const GATE_ROLE_LABELS = ['financist' => 'бухгалтер', 'designer' => 'технолог', 'supplier' => 'снабженец', 'manager' => 'менеджер', 'director' => 'директор', 'admin' => 'админ'];
 
     private static function gateStage(Deal $deal): ?DealStage
     {
@@ -383,7 +383,7 @@ class DealController extends Controller
 
     public function advance(Deal $deal, StageTransitionService $transitions): \Illuminate\Http\RedirectResponse
     {
-        // Не 'update': у дизайнера есть право «Далее» со своего этапа (DealPolicy::advance).
+        // Не 'update': у технолога есть право «Далее» со своего этапа (DealPolicy::advance).
         $this->authorize('advance', $deal);
         // Следующий этап — по ПОЗИЦИИ в воронке (не по order > current): при
         // задвоенном order переход не перескакивает соседний этап.
