@@ -33,7 +33,7 @@ class AuditController extends Controller
         'category_id' => 'Категория', 'material_id' => 'Материал', 'qty' => 'Количество',
         'name' => 'Название', 'title' => 'Заголовок', 'description' => 'Описание', 'note' => 'Заметка',
         'number' => 'Номер', 'bin' => '№ договора / БИН', 'address' => 'Адрес',
-        'company_name' => 'Заказчик', 'client_name' => 'Товар', 'lot_number' => 'Кол-во (лот)',
+        'company_name' => 'Заказчик', 'client_name' => 'Товар', 'lot_number' => 'Количество',
         'unit' => 'Ед. изм.', 'source' => 'Источник', 'deadline' => 'Срок',
         'contract_date' => 'Дата договора', 'issue_date' => 'Дата счёта', 'due_date' => 'Срок оплаты',
         'date' => 'Дата', 'closed_at' => 'Закрыта', 'completed_at' => 'Завершена',
@@ -110,7 +110,7 @@ class AuditController extends Controller
             'company_id' => \App\Models\Company::pluck('name', 'id'),
         ]));
 
-        // Связанная СДЕЛКА каждой строки: расход/счёт/платёж/заказ цеха/лот/задача →
+        // Связанная СДЕЛКА каждой строки: расход/счёт/платёж/заказ цеха/заявка/задача →
         // ссылка «QT-088», чтобы видно было, по какой сделке действие (батчем, без N+1).
         $col = $logs->getCollection();
         $ids = fn (string $t) => $col->where('table_name', $t)->pluck('record_id')->filter()->unique()->values();

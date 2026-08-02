@@ -28,7 +28,7 @@ const visibleFields = computed(() => (props.customFields ?? []).filter((f) => f.
 const lastStage = computed(() => props.stages[props.stages.length - 1]);
 const isLastStage = computed(() => props.deal.deal_stage_id === lastStage.value?.id);
 // Спец-этапы ищем по названию/флагу — этапы можно перемещать в настройках.
-// "Отправить в цех" — на этапе «Закуп ЛДСП,МДФ».
+// "Отправить в цех" — на этапе «Закуп сырья».
 const workshopStage = computed(() => props.stages.find((s) => s.name?.toLowerCase().includes('закуп')) ?? props.stages[props.stages.length - 3]);
 const isWorkshopStage = computed(() => props.deal.deal_stage_id === workshopStage.value?.id);
 const actStage = computed(() => props.stages.find((s) => s.name?.toLowerCase().includes('акт')));

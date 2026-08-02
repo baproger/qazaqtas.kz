@@ -24,7 +24,7 @@ class ProjectController extends Controller
 
     /**
      * Доступ сотрудника к цеху заказа (users.workshops): работник «Металл
-     * цеха» не видит и не двигает заказы «Ағаш цеха» (и наоборот); пустой
+     * цеха Шымкента не видит и не двигает заказы Алматы или Тараза; пустой
      * список = все цеха (руководство и сотрудники без ограничения по цеху).
      */
     private function assertWorkshopAccess(Project $project): void
@@ -79,7 +79,7 @@ class ProjectController extends Controller
 
         // Канбан показывает воронку цеха ТЕКУЩЕЙ фирмы;
         // в режиме «Все компании» — этапы всех цехов С
-        // ПОМЕТКОЙ фирмы (иначе одинаковые «Кесу» выглядят как дубли).
+        // ПОМЕТКОЙ фирмы (иначе одинаковые «Формовка» выглядят как дубли).
         // companyQuery: свои этапы приоритетны, «общие» (null) — только фолбэк.
         $companyId = \App\Support\CurrentCompany::id() ?: null;
         $companyCodes = \App\Models\Company::pluck('code', 'id');
@@ -124,7 +124,7 @@ class ProjectController extends Controller
         $project->load([
             'client', 'responsible:id,name,avatar', 'department:id,name',
             // company_id ОБЯЗАТЕЛЕН в select: по нему фильтруется воронка цеха
-            // ниже — без него грузились обе фирмы (Кесу+Кесу в степпере).
+            // ниже — без него грузились обе фирмы (Формовка+Формовка в степпере).
             'stage', 'deal:id,number,name,company_name,company_id',
             'tasks' => fn ($q) => $q->with('assignee:id,name')->latest(),
             'documents' => fn ($q) => $q->where('is_active', true)->with('user:id,name')->latest(),
@@ -179,7 +179,7 @@ class ProjectController extends Controller
                 ? $finance->companyBalances($project->deal?->company_id ? (int) $project->deal->company_id : null)
                 : null,
             // Этапы цеха компании этого заказа (по исходной сделке); свои
-            // приоритетны, «общие» — фолбэк (иначе степпер двоит Кесу+Кесу…).
+            // приоритетны, «общие» — фолбэк (иначе степпер двоит Формовка+Формовка…).
             'stages' => ProjectStage::companyQuery($project->deal?->company_id ? (int) $project->deal->company_id : null, $project->workshop)
                 ->with('translations')->get()
                 ->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName(), 'color' => $s->color, 'order' => $s->order, 'is_completed' => $s->is_completed]),

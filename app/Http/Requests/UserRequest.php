@@ -19,7 +19,7 @@ class UserRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'password' => [$userId ? 'nullable' : 'required', 'confirmed', Password::min(6)],
             'department_id' => ['nullable', 'exists:departments,id'],
-            // Доступ к цехам (Металл/Ағаш); пусто = все цеха.
+            // Доступ к цехам (Шымкент/Алматы/Тараз); пусто = все цеха.
             'workshops' => ['nullable', 'array'],
             'workshops.*' => ['string', 'max:100'],
             'phone' => ['nullable', 'string', 'max:50'],

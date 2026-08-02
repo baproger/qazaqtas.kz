@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * У QT два цеха («Металл цех» / «Ағаш цех») со своими этапами: при отправке
+ * У QT два цеха («Шымкент» / «Алматы») со своими этапами: при отправке
  * в цех нужен выбор, заказ живёт в воронке своего цеха. У компании с одним
  * одним цехом выбор не показывается.
  */
@@ -31,11 +31,11 @@ class WorkshopSplitTest extends TestCase
     private function companyWithTwoWorkshops(): array
     {
         $company = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT']);
-        foreach ([['Кесу М', 1], ['Жинау М', 2]] as [$n, $o]) {
-            ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Металл цех', 'name' => $n, 'order' => $o, 'type' => 'project', 'is_active' => true, 'is_completed' => $o === 2]);
+        foreach ([['Формовка Ш', 1], ['Упаковка Ш', 2]] as [$n, $o]) {
+            ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Шымкент', 'name' => $n, 'order' => $o, 'type' => 'project', 'is_active' => true, 'is_completed' => $o === 2]);
         }
-        foreach ([['Кесу А', 1], ['Жинау А', 2]] as [$n, $o]) {
-            ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Ағаш цех', 'name' => $n, 'order' => $o, 'type' => 'project', 'is_active' => true, 'is_completed' => $o === 2]);
+        foreach ([['Формовка А', 1], ['Упаковка А', 2]] as [$n, $o]) {
+            ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Алматы', 'name' => $n, 'order' => $o, 'type' => 'project', 'is_active' => true, 'is_completed' => $o === 2]);
         }
 
         $admin = User::factory()->create();
@@ -53,15 +53,15 @@ class WorkshopSplitTest extends TestCase
         $this->actingAs($admin)->post(route('deals.toWorkshop', $deal->id))->assertSessionHas('error');
         $this->assertNull($deal->fresh()->project);
 
-        // С выбором «Ағаш цех» — заказ на ПЕРВОМ этапе воронки этого цеха.
-        $this->actingAs($admin)->post(route('deals.toWorkshop', $deal->id), ['workshop' => 'Ағаш цех'])->assertSessionHas('success');
+        // С выбором «Алматы» — заказ на ПЕРВОМ этапе воронки этого цеха.
+        $this->actingAs($admin)->post(route('deals.toWorkshop', $deal->id), ['workshop' => 'Алматы'])->assertSessionHas('success');
         $project = $deal->fresh()->project;
-        $this->assertSame('Ағаш цех', $project->workshop);
-        $this->assertSame('Кесу А', $project->stage->name);
+        $this->assertSame('Алматы', $project->workshop);
+        $this->assertSame('Формовка А', $project->stage->name);
 
-        // «Далее» двигает по воронке СВОЕГО цеха (Кесу А → Жинау А, не в металл).
+        // «Далее» двигает по воронке СВОЕГО цеха (Формовка А → Упаковка А, не в металл).
         $this->actingAs($admin)->patch(route('projects.advance', $project->id));
-        $this->assertSame('Жинау А', $project->fresh()->stage->name);
+        $this->assertSame('Упаковка А', $project->fresh()->stage->name);
     }
 
     public function test_single_workshop_company_needs_no_choice(): void

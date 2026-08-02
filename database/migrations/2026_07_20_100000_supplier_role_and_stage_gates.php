@@ -12,7 +12,7 @@ use Spatie\Permission\PermissionRegistrar;
  * 2) Гейты этапов сделки (по stage_type, идемпотентно, если гейт не задан):
  *    - design («Дизайн и расчет»)  → задача «Подтвердить дизайн и расчет»,
  *      роль designer: пока дизайнер не подтвердит — дальше не идёт;
- *    - shop_gate («Закуп ЛДСП,МДФ») → задача «Подтвердить закуп ЛДСП, МДФ»,
+ *    - shop_gate («Закуп сырья») → задача «Подтвердить закуп сырья»,
  *      роль supplier (уведомление снабженцу; отправку в цех не блокирует).
  */
 return new class extends Migration
@@ -42,7 +42,7 @@ return new class extends Migration
 
         DB::table('deal_stages')->where('stage_type', 'shop_gate')
             ->where(fn ($q) => $q->whereNull('gate_task_title')->orWhere('gate_task_title', ''))
-            ->update(['gate_task_title' => 'Подтвердить закуп ЛДСП, МДФ', 'gate_task_role' => 'supplier', 'gate_task_days' => 3]);
+            ->update(['gate_task_title' => 'Подтвердить закуп сырья', 'gate_task_role' => 'supplier', 'gate_task_days' => 3]);
     }
 
     public function down(): void

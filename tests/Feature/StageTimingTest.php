@@ -31,7 +31,7 @@ class StageTimingTest extends TestCase
     public function test_stage_timing_logged_per_stage(): void
     {
         $company = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT']);
-        $s1 = ProjectStage::create(['company_id' => $company->id, 'name' => 'Кесу', 'order' => 1, 'type' => 'project', 'is_active' => true]);
+        $s1 = ProjectStage::create(['company_id' => $company->id, 'name' => 'Формовка', 'order' => 1, 'type' => 'project', 'is_active' => true]);
         $s2 = ProjectStage::create(['company_id' => $company->id, 'name' => 'Жинау', 'order' => 2, 'type' => 'project', 'is_active' => true]);
 
         $admin = User::factory()->create();
@@ -42,7 +42,7 @@ class StageTimingTest extends TestCase
         // Вход в цех — таймер первого этапа открыт.
         $open = ProjectStageLog::where('project_id', $project->id)->whereNull('left_at')->get();
         $this->assertCount(1, $open);
-        $this->assertSame('Кесу', $open->first()->stage_name);
+        $this->assertSame('Формовка', $open->first()->stage_name);
 
         // «Далее» — старый таймер закрыт с длительностью, новый открыт.
         $this->actingAs($admin)->patch(route('projects.advance', $project->id));
@@ -63,18 +63,18 @@ class StageTimingTest extends TestCase
         $company = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT']);
         $stage = DealStage::orderBy('order')->first()->id;
 
-        // A: добавил 2 лота, один ВЫИГРАЛ (стал сделкой) — лидер.
+        // A: добавил 2 заявки, один ВЫИГРАЛ (стал сделкой) — лидер.
         $a = User::factory()->create(['name' => 'Выигрывает']);
         $a->assignRole('manager');
         $deal = Deal::create(['number' => 'QT-001', 'name' => 'X', 'company_name' => 'Т', 'client_name' => 'И', 'budget' => 1000000, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => $stage, 'responsible_user_id' => $a->id]);
         \App\Models\PreDeal::create(['company_id' => $company->id, 'user_id' => $a->id, 'product' => 'Divan', 'contract_sum' => 1000000, 'margin' => 30, 'status' => 'confirmed', 'deal_id' => $deal->id]);
-        \App\Models\PreDeal::create(['company_id' => $company->id, 'user_id' => $a->id, 'product' => 'Стол', 'contract_sum' => 500000, 'margin' => 20, 'status' => 'new']);
+        \App\Models\PreDeal::create(['company_id' => $company->id, 'user_id' => $a->id, 'product' => 'Вазон', 'contract_sum' => 500000, 'margin' => 20, 'status' => 'new']);
 
-        // B: добавил 3 лота, ни одного не выиграл — количеством лидером не стать.
+        // B: добавил 3 заявки, ни одну не подтвердил — количеством лидером не стать.
         $b = User::factory()->create(['name' => 'Количество']);
         $b->assignRole('manager');
         foreach ([1, 2, 3] as $i) {
-            \App\Models\PreDeal::create(['company_id' => $company->id, 'user_id' => $b->id, 'product' => 'Лот '.$i, 'contract_sum' => 100000, 'margin' => 10, 'status' => 'new']);
+            \App\Models\PreDeal::create(['company_id' => $company->id, 'user_id' => $b->id, 'product' => 'Заявка '.$i, 'contract_sum' => 100000, 'margin' => 10, 'status' => 'new']);
         }
 
         $admin = User::factory()->create();
@@ -95,7 +95,7 @@ class StageTimingTest extends TestCase
             ->where('managers.1.won', 0)
             ->where('managers.1.total', 3));
 
-        // Фильтр месяца: в прошлом месяце лотов не было — выигранных 0.
+        // Фильтр месяца: в прошлом месяце заявок не было — подтверждённых 0.
         $this->get(route('screen.show', ['month' => now()->subMonthNoOverflow()->format('Y-m')]))
             ->assertInertia(fn (Assert $p) => $p->where('managers.0.won', 0));
     }

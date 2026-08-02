@@ -24,7 +24,7 @@ class ProjectStage extends Model
      * Цех у каждой фирмы СВОЙ. Если у
      * фирмы есть СВОИ этапы — показываем только их; «общие» (company_id=null,
      * легаси/тесты) — ТОЛЬКО как фолбэк, иначе одинаковые названия двоятся
-     * (Кесу+Кесу…) в степпере заказа.
+     * (Формовка+Формовка…) в степпере заказа.
      */
     public static function companyQuery(?int $companyId, ?string $workshop = null): \Illuminate\Database\Eloquent\Builder
     {

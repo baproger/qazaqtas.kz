@@ -15,7 +15,8 @@ use Illuminate\Database\Seeder;
  * (гейт снабженца, отсюда «В цех») → Логистика (возврат из цеха) → Монтаж →
  * Акт → ЭСФ → Оплата успешно.
  *
- * Цех: Формовка → Шлифовка → Упаковка → Отправка (завершающий: «Готово ✓»
+ * Цех: у КАЖДОГО города (Шымкент, Алматы, Тараз) своя воронка
+ * Формовка → Шлифовка → Упаковка → Отправка (завершающий: «Готово ✓»
  * возвращает сделку на «Логистику»).
  *
  * Этапы сидятся общими (company_id = null): при одной фирме это и есть её
@@ -24,6 +25,9 @@ use Illuminate\Database\Seeder;
  */
 class StageSeeder extends Seeder
 {
+    /** Производственные площадки QAZAQ TAS — у каждой своя воронка цеха. */
+    public const WORKSHOPS = ['Шымкент', 'Алматы', 'Тараз'];
+
     public function run(): void
     {
         $dealStages = [
@@ -62,8 +66,10 @@ class StageSeeder extends Seeder
             $stage->translations()->updateOrCreate(['locale' => 'kk'], ['name' => $s['kk']]);
         }
 
-        // Производство одно (workshop = null) — выбор цеха в интерфейсе не
-        // появляется. Второй участок добавляется в Настройки → Этапы.
+        // Три производства — по городам. У КАЖДОГО своя воронка этапов, свой
+        // ТВ-экран и свой доступ сотрудников (users.workshops): при отправке
+        // сделки в цех менеджер выбирает город. Новый цех добавляется в
+        // Настройки → Этапы (вид «цех», поле «Цех»).
         $workshopStages = [
             ['name' => 'Формовка', 'kk' => 'Қалыптау', 'color' => '#3B82F6', 'done' => false],
             ['name' => 'Шлифовка', 'kk' => 'Тегістеу', 'color' => '#6366F1', 'done' => false],
@@ -71,13 +77,15 @@ class StageSeeder extends Seeder
             ['name' => 'Отправка', 'kk' => 'Жіберу', 'color' => '#10B981', 'done' => true],
         ];
 
-        foreach ($workshopStages as $i => $s) {
-            $stage = ProjectStage::updateOrCreate(
-                ['name' => $s['name'], 'type' => 'project'],
-                ['order' => $i + 1, 'color' => $s['color'], 'is_completed' => $s['done'], 'is_active' => true, 'checklist' => [], 'workshop' => null]
-            );
-            $stage->translations()->updateOrCreate(['locale' => 'ru'], ['name' => $s['name']]);
-            $stage->translations()->updateOrCreate(['locale' => 'kk'], ['name' => $s['kk']]);
+        foreach (self::WORKSHOPS as $workshop) {
+            foreach ($workshopStages as $i => $s) {
+                $stage = ProjectStage::updateOrCreate(
+                    ['name' => $s['name'], 'type' => 'project', 'workshop' => $workshop],
+                    ['order' => $i + 1, 'color' => $s['color'], 'is_completed' => $s['done'], 'is_active' => true, 'checklist' => []]
+                );
+                $stage->translations()->updateOrCreate(['locale' => 'ru'], ['name' => $s['name']]);
+                $stage->translations()->updateOrCreate(['locale' => 'kk'], ['name' => $s['kk']]);
+            }
         }
     }
 }

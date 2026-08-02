@@ -34,7 +34,7 @@ class WorkflowTest extends TestCase
         $this->seedAll();
         $emp = $this->user('manager');
 
-        $this->actingAs($emp)->post(route('deals.store'), ['name' => 'Тендер', 'client_name' => 'Иван', 'company_name' => 'ТОО Тендер', 'address' => 'Астана, пр. Мәңгілік Ел 1', 'budget' => 1000000])
+        $this->actingAs($emp)->post(route('deals.store'), ['name' => 'Заказ с сайта', 'client_name' => 'Иван', 'company_name' => 'ТОО Астана Курылыс', 'address' => 'Астана, пр. Мәңгілік Ел 1', 'budget' => 1000000])
             ->assertRedirect();
         $this->assertEquals(1, Deal::count());
     }
@@ -57,11 +57,15 @@ class WorkflowTest extends TestCase
         $admin = $this->user('admin');
         $deal = Deal::create(['number' => 'QT-W-2', 'name' => 'Заказ', 'budget' => 1000000, 'status' => 'active', 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
 
-        $this->actingAs($admin)->post(route('deals.toWorkshop', $deal))->assertRedirect();
+        // Цехов три (Шымкент/Алматы/Тараз) — при отправке выбирается город.
+        $this->actingAs($admin)->post(route('deals.toWorkshop', $deal))
+            ->assertSessionHas('error');
+        $this->actingAs($admin)->post(route('deals.toWorkshop', $deal), ['workshop' => 'Шымкент'])->assertRedirect();
 
         $project = Project::first();
         $this->assertNotNull($project);
-        $firstCex = ProjectStage::orderBy('order')->first();
+        $this->assertSame('Шымкент', $project->workshop);
+        $firstCex = ProjectStage::where('workshop', 'Шымкент')->orderBy('order')->first();
         $this->assertEquals('Формовка', $firstCex->name);
         $this->assertEquals($firstCex->id, $project->project_stage_id);
         $this->assertEquals('closed', $deal->fresh()->status);
@@ -124,7 +128,7 @@ class WorkflowTest extends TestCase
         $altSew = ProjectStage::create(['company_id' => $alt->id, 'name' => 'Этап второй фирмы', 'order' => 100, 'type' => 'project', 'is_active' => true, 'checklist' => []]);
 
         $deal = Deal::create([
-            'company_id' => $alt->id, 'number' => 'ALT-W-1', 'name' => 'Швейный заказ', 'budget' => 100000,
+            'company_id' => $alt->id, 'number' => 'ALT-W-1', 'name' => 'Заказ второй фирмы', 'budget' => 100000,
             'status' => 'active', 'deal_stage_id' => DealStage::orderBy('order')->first()->id,
         ]);
         $this->actingAs($admin)->post(route('deals.toWorkshop', $deal))->assertRedirect();

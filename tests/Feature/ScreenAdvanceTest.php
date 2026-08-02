@@ -18,42 +18,42 @@ class ScreenAdvanceTest extends TestCase
 
     public function test_screen_advances_own_workshop_order_only(): void
     {
-        $s1 = ProjectStage::create(['name' => 'Кесу', 'order' => 1, 'is_active' => true, 'workshop' => 'Металл цех']);
-        $s2 = ProjectStage::create(['name' => 'Тесу', 'order' => 2, 'is_active' => true, 'workshop' => 'Металл цех']);
-        $agashStage = ProjectStage::create(['name' => 'Кесу', 'order' => 1, 'is_active' => true, 'workshop' => 'Ағаш цех']);
+        $s1 = ProjectStage::create(['name' => 'Формовка', 'order' => 1, 'is_active' => true, 'workshop' => 'Шымкент']);
+        $s2 = ProjectStage::create(['name' => 'Шлифовка', 'order' => 2, 'is_active' => true, 'workshop' => 'Шымкент']);
+        $almatyStage = ProjectStage::create(['name' => 'Формовка', 'order' => 1, 'is_active' => true, 'workshop' => 'Алматы']);
 
-        $metal = Project::create(['number' => 'PRJ-1', 'name' => 'Стол', 'workshop' => 'Металл цех', 'project_stage_id' => $s1->id, 'status' => 'active']);
-        $agash = Project::create(['number' => 'PRJ-2', 'name' => 'Шкаф', 'workshop' => 'Ағаш цех', 'project_stage_id' => $agashStage->id, 'status' => 'active']);
+        $shymkent = Project::create(['number' => 'PRJ-1', 'name' => 'Вазон', 'workshop' => 'Шымкент', 'project_stage_id' => $s1->id, 'status' => 'active']);
+        $almaty = Project::create(['number' => 'PRJ-2', 'name' => 'Скамья', 'workshop' => 'Алматы', 'project_stage_id' => $almatyStage->id, 'status' => 'active']);
 
-        $screen = WorkshopScreen::create(['workshop' => 'Металл цех', 'kind' => 'workshop', 'code' => '123456', 'is_active' => true]);
+        $screen = WorkshopScreen::create(['workshop' => 'Шымкент', 'kind' => 'workshop', 'code' => '123456', 'is_active' => true]);
         $session = ['workshop_screen_id' => $screen->id, 'workshop_screen_code' => '123456'];
 
         // Свой цех — этап двигается.
-        $this->withSession($session)->post(route('screen.advanceProject', $metal->id))->assertRedirect();
-        $this->assertSame($s2->id, $metal->fresh()->project_stage_id);
+        $this->withSession($session)->post(route('screen.advanceProject', $shymkent->id))->assertRedirect();
+        $this->assertSame($s2->id, $shymkent->fresh()->project_stage_id);
 
         // Последний этап — дальше нельзя (Готово только в системе).
-        $this->withSession($session)->post(route('screen.advanceProject', $metal->id))->assertSessionHas('error');
-        $this->assertSame($s2->id, $metal->fresh()->project_stage_id);
+        $this->withSession($session)->post(route('screen.advanceProject', $shymkent->id))->assertSessionHas('error');
+        $this->assertSame($s2->id, $shymkent->fresh()->project_stage_id);
 
         // Чужой цех — 403.
-        $this->withSession($session)->post(route('screen.advanceProject', $agash->id))->assertForbidden();
+        $this->withSession($session)->post(route('screen.advanceProject', $almaty->id))->assertForbidden();
 
         // Без кода экрана (нет сессии) — 403.
         $this->flushSession();
-        $this->post(route('screen.advanceProject', $metal->id))->assertForbidden();
+        $this->post(route('screen.advanceProject', $shymkent->id))->assertForbidden();
     }
 
     public function test_screen_completes_order_only_from_last_stage(): void
     {
-        $s1 = ProjectStage::create(['name' => 'Кесу', 'order' => 1, 'is_active' => true, 'workshop' => 'Металл цех']);
-        $s2 = ProjectStage::create(['name' => 'Отправка', 'order' => 2, 'is_active' => true, 'workshop' => 'Металл цех']);
+        $s1 = ProjectStage::create(['name' => 'Формовка', 'order' => 1, 'is_active' => true, 'workshop' => 'Шымкент']);
+        $s2 = ProjectStage::create(['name' => 'Отправка', 'order' => 2, 'is_active' => true, 'workshop' => 'Шымкент']);
         $dealStage = \App\Models\DealStage::create(['name' => 'Закуп', 'order' => 1, 'is_active' => true]);
         $logistics = \App\Models\DealStage::create(['name' => 'Логистика', 'order' => 2, 'is_active' => true, 'stage_type' => 'logistics']);
         $deal = \App\Models\Deal::create(['number' => 'T-1', 'name' => 'X', 'company_name' => 'ТОО', 'client_name' => 'И', 'budget' => 100, 'status' => 'closed', 'deal_stage_id' => $dealStage->id]);
-        $project = Project::create(['number' => 'PRJ-3', 'name' => 'Стол', 'deal_id' => $deal->id, 'workshop' => 'Металл цех', 'project_stage_id' => $s1->id, 'status' => 'active']);
+        $project = Project::create(['number' => 'PRJ-3', 'name' => 'Вазон', 'deal_id' => $deal->id, 'workshop' => 'Шымкент', 'project_stage_id' => $s1->id, 'status' => 'active']);
 
-        $screen = WorkshopScreen::create(['workshop' => 'Металл цех', 'kind' => 'workshop', 'code' => '654321', 'is_active' => true]);
+        $screen = WorkshopScreen::create(['workshop' => 'Шымкент', 'kind' => 'workshop', 'code' => '654321', 'is_active' => true]);
         $session = ['workshop_screen_id' => $screen->id, 'workshop_screen_code' => '654321'];
 
         // Не последний этап — «Готово» недоступно.

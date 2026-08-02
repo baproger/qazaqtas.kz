@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 // Доля партнёра сделки: вводится только %, сумма = % × сумма договора.
-// Переносится из предсделки (partner_pct лота) при «Выиграл ✓» и вычитается
+// Переносится из заявки (partner_pct) при «В работу ✓» и вычитается
 // из остатка во всех расчётах (маржа, бонус, Финансы, Аналитика, Сводный отчёт).
 return new class extends Migration
 {

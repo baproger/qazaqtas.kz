@@ -58,7 +58,7 @@ class PreDealTest extends TestCase
     {
         $mgr = $this->user('manager');
         $this->actingAs($mgr)->post(route('preDeals.store'), [
-            'product' => 'Шкаф', 'customer' => 'Школа', 'contract_sum' => 1600000,
+            'product' => 'Скамья', 'customer' => 'Школа', 'contract_sum' => 1600000,
             'purchase_price' => 700000, 'delivery' => 100000, 'assembly' => 50000,
         ])->assertSessionHasNoErrors();
         $lot = PreDeal::firstOrFail();
@@ -74,13 +74,13 @@ class PreDealTest extends TestCase
         $this->assertSame('confirmed', $exp['assembly']->status);
         $this->assertNull($exp['assembly']->payment_method); // касса/банк не тронуты
 
-        // Откат ↩: авто-расходы лота не блокируют и удаляются вместе со сделкой.
+        // Откат ↩: авто-расходы заявки не блокируют и удаляются вместе со сделкой.
         $this->actingAs($mgr)->post(route('preDeals.revert', $lot->id))->assertSessionHas('success');
         $this->assertSame('new', $lot->fresh()->status);
         $this->assertSame(0, \App\Models\Expense::count());
     }
 
-    // Откат случайного «Выиграл ✓»: сделка удаляется, лот снова «В работе»;
+    // Откат случайного «В работу ✓»: сделка удаляется, заявка снова «В работе»;
     // при движении по сделке (счёт) откат запрещён.
     public function test_revert_confirmed_lot_back_to_predeal(): void
     {
@@ -99,7 +99,7 @@ class PreDealTest extends TestCase
         $this->assertNotNull($deal->fresh()?->deleted_at ?? 'deleted'); // сделка удалена (soft)
         $this->assertSame(0, \App\Models\Deal::count());
 
-        // Повторное «Выиграл» → сделка с движением (счёт) — откат запрещён.
+        // Повторное «В работу» → сделка с движением (счёт) — откат запрещён.
         $this->actingAs($mgr)->post(route('preDeals.confirm', $lot->id));
         $deal2 = $lot->fresh()->deal;
         \App\Models\Invoice::create(['number' => 'I-'.uniqid(), 'invoiceable_type' => 'deal', 'invoiceable_id' => $deal2->id, 'amount' => 100, 'status' => 'sent']);
@@ -107,7 +107,7 @@ class PreDealTest extends TestCase
         $this->assertSame('confirmed', $lot->fresh()->status);
     }
 
-    // Фильтр «месяц»: показываются только лоты, ВНЕСЁННЫЕ в выбранном месяце.
+    // Фильтр «месяц»: показываются только заявки, ВНЕСЁННЫЕ в выбранном месяце.
     public function test_month_filter_scopes_lots_by_created_date(): void
     {
         $mgr = $this->user('manager');
@@ -122,7 +122,7 @@ class PreDealTest extends TestCase
                 ->where('preDeals', fn ($lots) => collect($lots)->pluck('product')->all() === ['Старый']));
     }
 
-    // Сегодня заканчивается тендер → уведомление менеджеру лота (только new-лоты).
+    // Сегодня заканчивается срок КП → уведомление менеджеру заявки (только new-заявки).
     public function test_quote_deadline_today_notifies_manager(): void
     {
         $mgr = $this->user('manager');
@@ -135,7 +135,7 @@ class PreDealTest extends TestCase
 
         $this->assertSame(1, $mgr->notifications()->count());
         $this->assertSame('quote_deadline', $mgr->notifications()->first()->data['type']);
-        $this->assertSame(0, $other->notifications()->count()); // завтра/выигран — не беспокоим
+        $this->assertSame(0, $other->notifications()->count()); // завтра/уже в работе — не беспокоим
     }
 
     // Кнопка «Проверить №» до заполнения формы: занят/свободен + кто внёс;
@@ -156,8 +156,8 @@ class PreDealTest extends TestCase
             ->assertOk()->assertJson(['exists' => false]);
     }
 
-    // Дубль № лота запрещён: второй ввод того же лота — ошибка валидации;
-    // правка самого лота без смены номера ложно не срабатывает.
+    // Дубль № заявки запрещён: второй ввод того же заявки — ошибка валидации;
+    // правка самого заявки без смены номера ложно не срабатывает.
     public function test_duplicate_request_number_rejected(): void
     {
         $mgr = $this->user('manager');
@@ -170,7 +170,7 @@ class PreDealTest extends TestCase
         ])->assertSessionHasErrors('request_number');
         $this->assertSame(1, PreDeal::count());
 
-        // Правка своего лота с тем же номером — проходит (ignore self).
+        // Правка своего заявки с тем же номером — проходит (ignore self).
         $lot = PreDeal::firstOrFail();
         $this->actingAs($mgr)->put(route('preDeals.update', $lot), [
             'product' => 'Вазон Астана (правка)', 'contract_sum' => 120000, 'request_number' => 'ZAY-777',
@@ -199,7 +199,7 @@ class PreDealTest extends TestCase
         $mgr = $this->user('manager');
         // Маржа 9.42% (шкаф из Excel) — подтверждение отклоняется.
         $this->actingAs($mgr)->post(route('preDeals.store'), [
-            'product' => 'Шкаф', 'contract_sum' => 3225306, 'purchase_price' => 1897552.14,
+            'product' => 'Скамья', 'contract_sum' => 3225306, 'purchase_price' => 1897552.14,
             'partner_pct' => 5, 'delivery' => 766000,
         ]);
         $low = PreDeal::firstOrFail();
@@ -246,7 +246,7 @@ class PreDealTest extends TestCase
         $item = PreDealChecklistItem::where('label', 'Выставил счёт')->firstOrFail();
         $this->actingAs($mgr)->post(route('preDealItems.store'), ['label' => 'X'])->assertForbidden();
 
-        // Менеджер ставит галочку на СВОЁМ лоте.
+        // Менеджер ставит галочку на СВОЁМ заявке.
         PreDeal::create(PreDeal::calculate(['product' => 'A', 'contract_sum' => 100]) + ['user_id' => $mgr->id]);
         $lot = PreDeal::firstOrFail();
         $this->actingAs($mgr)->post(route('preDeals.check', [$lot->id, $item->id]))->assertRedirect();

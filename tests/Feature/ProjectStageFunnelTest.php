@@ -17,12 +17,12 @@ class ProjectStageFunnelTest extends TestCase
         $alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
 
         // Легаси «общие» этапы (company_id = null) с теми же названиями, что и у фирмы.
-        foreach (['Кесу', 'Упаковка'] as $i => $name) {
+        foreach (['Формовка', 'Упаковка'] as $i => $name) {
             ProjectStage::create(['name' => $name, 'order' => $i + 1, 'is_active' => true]);
             ProjectStage::create(['name' => $name, 'order' => $i + 1, 'is_active' => true, 'company_id' => $qt->id]);
         }
 
-        // У QT есть СВОИ этапы → только они, без легаси-дублей (Кесу+Кесу).
+        // У QT есть СВОИ этапы → только они, без легаси-дублей (Формовка+Формовка).
         $names = ProjectStage::funnel($qt->id)->pluck('name');
         $this->assertCount(2, $names);
         $this->assertSame($names->count(), $names->unique()->count());
@@ -37,7 +37,7 @@ class ProjectStageFunnelTest extends TestCase
     public function test_project_card_shows_only_its_company_stages(): void
     {
         // Регрессия: deal подгружался без company_id → фильтр воронки получал
-        // null и степпер заказа показывал обе фирмы (Кесу+Кесу…).
+        // null и степпер заказа показывал обе фирмы (Формовка+Формовка…).
         $this->seed(\Database\Seeders\RolePermissionSeeder::class);
         $this->seed(\Database\Seeders\StageSeeder::class);
         $admin = \App\Models\User::factory()->create();
@@ -45,7 +45,7 @@ class ProjectStageFunnelTest extends TestCase
 
         $qt = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT', 'is_active' => true]);
         $alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
-        foreach ([['Кесу', 1], ['Отправка', 2]] as [$name, $order]) {
+        foreach ([['Формовка', 1], ['Отправка', 2]] as [$name, $order]) {
             ProjectStage::create(['name' => $name, 'order' => $order, 'is_active' => true, 'company_id' => $qt->id]);
             ProjectStage::create(['name' => $name, 'order' => $order, 'is_active' => true, 'company_id' => $alt->id]);
         }

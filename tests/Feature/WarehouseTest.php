@@ -61,7 +61,7 @@ class WarehouseTest extends TestCase
             ->get(route('warehouse.index'))->assertOk();
 
         $this->actingAs($mgr)->withSession(['company_id' => $company->id])
-            ->post(route('warehouse.receipt'), ['name' => 'МДФ', 'quantity' => 10])
+            ->post(route('warehouse.receipt'), ['name' => 'Цемент белый', 'quantity' => 10])
             ->assertForbidden();
     }
 
@@ -94,7 +94,7 @@ class WarehouseTest extends TestCase
     {
         $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
-        $material = Material::create(['company_id' => $company->id, 'name' => 'МДФ', 'unit' => 'штук', 'quantity' => 10]);
+        $material = Material::create(['company_id' => $company->id, 'name' => 'Цемент белый', 'unit' => 'штук', 'quantity' => 10]);
         $receipt = $material->receipts()->create(['user_id' => $fin->id, 'quantity' => 50, 'date' => now()->toDateString()]);
         // Остаток 10 (40 уже списано в расходы) — уменьшить приход до 5 нельзя.
 
@@ -147,7 +147,7 @@ class WarehouseTest extends TestCase
     {
         $company = Company::where('code', 'QT')->firstOrFail();
         $fin = $this->user('financist', $company);
-        $material = Material::create(['company_id' => $company->id, 'name' => 'МДФ', 'unit' => 'штук', 'quantity' => 10, 'price' => 900]);
+        $material = Material::create(['company_id' => $company->id, 'name' => 'Цемент белый', 'unit' => 'штук', 'quantity' => 10, 'price' => 900]);
         $receipt = $material->receipts()->create(['user_id' => $fin->id, 'quantity' => 10, 'price' => 900, 'date' => now()->toDateString()]);
 
         $this->actingAs($fin)->put(route('warehouse.receipts.update', $receipt->id), ['quantity' => 10, 'price' => 950])
@@ -186,7 +186,7 @@ class WarehouseTest extends TestCase
         $qt = Company::where('code', 'QT')->firstOrFail();
         $alt = Company::firstOrCreate(['code' => 'ALT'], ['name' => 'ALT', 'is_active' => true]);
         Material::create(['company_id' => $qt->id, 'name' => 'Мраморная крошка QT', 'unit' => 'штук', 'quantity' => 5]);
-        Material::create(['company_id' => $alt->id, 'name' => 'МДФ ALT', 'unit' => 'штук', 'quantity' => 7]);
+        Material::create(['company_id' => $alt->id, 'name' => 'Цемент ALT', 'unit' => 'штук', 'quantity' => 7]);
 
         $fin = $this->user('financist', $qt);
 

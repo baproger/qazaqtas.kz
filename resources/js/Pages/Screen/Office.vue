@@ -76,10 +76,10 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                                 <span class="flex-shrink-0 text-xs text-slate-400">план заявок: {{ m.total }}/{{ plan }}</span>
                             </div>
                         </div>
-                        <!-- Справа — данные менеджера: воронка + выиграл -->
+                        <!-- Справа — данные менеджера: воронка + подтверждённые -->
                         <div class="text-right">
                             <div class="flex flex-wrap items-center justify-end gap-1.5">
-                                <!-- Персональная воронка: Лоты → КП/Звонок… → Выиграл -->
+                                <!-- Персональная воронка: Заявки → Звонок/Замер/КП… → В работе -->
                                 <span v-for="f in m.funnel" :key="f.label"
                                     class="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ring-1 ring-inset"
                                     :class="f.kind === 'won'
@@ -107,7 +107,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
         <!-- Заявки месяца с чек-листами: видно, кто реально работает по заявкам -->
         <div class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
-                <span class="text-base font-bold text-slate-900">Лоты месяца — чек-листы</span>
+                <span class="text-base font-bold text-slate-900">Заявки месяца — чек-листы</span>
                 <span class="text-xs text-slate-400">☑ галочки заявки («Позвонил», «Замер», «КП», «Образец»…) — работа менеджера по заявке</span>
             </div>
             <div class="divide-y divide-slate-50">

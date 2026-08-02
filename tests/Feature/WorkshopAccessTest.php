@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Доступ сотрудников по цехам QT (users.workshops): работник «Металл цеха»
+ * Доступ сотрудников по цехам QT (users.workshops): работник «Шымкента»
  * видит и двигает только свои заказы; пустой список = все цеха.
  */
 class WorkshopAccessTest extends TestCase
@@ -20,18 +20,18 @@ class WorkshopAccessTest extends TestCase
     private function setupWorkshops(): array
     {
         $this->seed(RolePermissionSeeder::class);
-        $metalStage = ProjectStage::create(['name' => 'Кесу', 'order' => 1, 'is_active' => true, 'workshop' => 'Металл цех']);
-        $agashStage = ProjectStage::create(['name' => 'Кесу', 'order' => 1, 'is_active' => true, 'workshop' => 'Ағаш цех']);
-        $metal = Project::create(['number' => 'PRJ-1', 'name' => 'Стол', 'workshop' => 'Металл цех', 'project_stage_id' => $metalStage->id, 'status' => 'active']);
-        $agash = Project::create(['number' => 'PRJ-2', 'name' => 'Шкаф', 'workshop' => 'Ағаш цех', 'project_stage_id' => $agashStage->id, 'status' => 'active']);
+        $metalStage = ProjectStage::create(['name' => 'Формовка', 'order' => 1, 'is_active' => true, 'workshop' => 'Шымкент']);
+        $almatyStage = ProjectStage::create(['name' => 'Формовка', 'order' => 1, 'is_active' => true, 'workshop' => 'Алматы']);
+        $shymkent = Project::create(['number' => 'PRJ-1', 'name' => 'Вазон', 'workshop' => 'Шымкент', 'project_stage_id' => $metalStage->id, 'status' => 'active']);
+        $almaty = Project::create(['number' => 'PRJ-2', 'name' => 'Скамья', 'workshop' => 'Алматы', 'project_stage_id' => $almatyStage->id, 'status' => 'active']);
 
-        return [$metal, $agash];
+        return [$shymkent, $almaty];
     }
 
     public function test_restricted_employee_sees_and_moves_only_his_workshop(): void
     {
-        [$metal, $agash] = $this->setupWorkshops();
-        $worker = User::factory()->create(['workshops' => ['Металл цех']]);
+        [$shymkent, $almaty] = $this->setupWorkshops();
+        $worker = User::factory()->create(['workshops' => ['Шымкент']]);
         $worker->assignRole('employee');
 
         // Канбан: только заказы и секции своего цеха.
@@ -41,22 +41,22 @@ class WorkshopAccessTest extends TestCase
         $numbers = collect($props['projects'])->pluck('number');
         $this->assertTrue($numbers->contains('PRJ-1'));
         $this->assertFalse($numbers->contains('PRJ-2'));
-        $this->assertFalse(collect($props['stages'])->contains(fn ($s) => $s['workshop'] === 'Ағаш цех'));
+        $this->assertFalse(collect($props['stages'])->contains(fn ($s) => $s['workshop'] === 'Алматы'));
 
         // Чужой цех: ни открыть, ни двинуть.
-        $this->actingAs($worker)->get(route('projects.show', $agash->id))->assertForbidden();
-        $this->actingAs($worker)->patch(route('projects.advance', $agash->id))->assertForbidden();
+        $this->actingAs($worker)->get(route('projects.show', $almaty->id))->assertForbidden();
+        $this->actingAs($worker)->patch(route('projects.advance', $almaty->id))->assertForbidden();
 
         // Свой цех — работает.
-        $this->actingAs($worker)->patch(route('projects.advance', $metal->id))->assertRedirect();
+        $this->actingAs($worker)->patch(route('projects.advance', $shymkent->id))->assertRedirect();
     }
 
     public function test_employee_with_both_or_empty_sees_everything(): void
     {
-        [$metal, $agash] = $this->setupWorkshops();
+        [$shymkent, $almaty] = $this->setupWorkshops();
 
         // Оба цеха.
-        $both = User::factory()->create(['workshops' => ['Металл цех', 'Ағаш цех']]);
+        $both = User::factory()->create(['workshops' => ['Шымкент', 'Алматы']]);
         $both->assignRole('employee');
         $numbers = collect($this->actingAs($both)->get(route('projects.index'))
             ->viewData('page')['props']['projects'])->pluck('number');
@@ -65,6 +65,6 @@ class WorkshopAccessTest extends TestCase
         // Без ограничения (null) — как раньше, всё видно.
         $free = User::factory()->create();
         $free->assignRole('employee');
-        $this->actingAs($free)->get(route('projects.show', $agash->id))->assertOk();
+        $this->actingAs($free)->get(route('projects.show', $almaty->id))->assertOk();
     }
 }

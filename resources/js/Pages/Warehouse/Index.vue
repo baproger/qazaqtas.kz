@@ -271,7 +271,7 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                     <template v-else>
                         <div class="col-span-2 sm:col-span-1">
                             <InputLabel value="Название материала *" />
-                            <TextInput v-model="form.name" class="mt-1 w-full" placeholder="ЛДСП 16мм белый" />
+                            <TextInput v-model="form.name" class="mt-1 w-full" placeholder="Мраморная крошка 0–2 мм" />
                             <InputError :message="form.errors.name" class="mt-1" />
                         </div>
                         <div class="col-span-2 sm:col-span-1">

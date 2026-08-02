@@ -44,7 +44,7 @@ const copy = (code) => navigator.clipboard?.writeText(code);
                 <span class="text-xs font-medium text-slate-500">План заявок/мес:</span>
                 <input v-model.number="planVal" @change="savePlan" type="number" min="1" max="1000"
                     class="w-20 rounded-lg border-slate-300 py-1.5 text-center text-sm font-semibold shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                <span class="text-xs font-medium text-slate-500">План выигранных/мес:</span>
+                <span class="text-xs font-medium text-slate-500">План подтверждённых/мес:</span>
                 <input v-model.number="planWonVal" @change="savePlan" type="number" min="1" max="1000"
                     class="w-20 rounded-lg border-slate-300 py-1.5 text-center text-sm font-semibold shadow-sm focus:border-emerald-500 focus:ring-emerald-500" />
             </div>

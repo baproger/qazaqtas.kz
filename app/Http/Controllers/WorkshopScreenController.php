@@ -83,7 +83,7 @@ class WorkshopScreenController extends Controller
         $mStart = $month.'-01';
         $mEnd = \Illuminate\Support\Carbon::parse($mStart)->endOfMonth()->toDateString();
         // Рейтинг по ЗАЯВКАМ за месяц: сколько заявок
-        // менеджер добавил, сколько выиграл (кнопка «Выиграл» → создана
+        // менеджер добавил, сколько перевёл в сделки (кнопка «В работу» → создана
         // сделка) и конверсия %. Деньги на экране не показываются.
         $lots = \App\Models\PreDeal::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
@@ -107,15 +107,15 @@ class WorkshopScreenController extends Controller
             ->get(['id', 'user_id', 'product', 'customer', 'margin', 'status', 'checks', 'created_at']);
         $checksDone = fn ($p) => count(array_filter($p->checks ?? []));
         $checksByUser = $monthLots->groupBy('user_id')->map(fn ($rows) => $rows->sum($checksDone));
-        // Персональная воронка менеджера: заявки → каждый пункт чек-листа → выиграл.
+        // Персональная воронка менеджера: заявки → каждый пункт чек-листа → в работе.
         $funnelFor = function ($rows) use ($checkItemsList) {
-            return collect([['label' => 'Лоты', 'count' => $rows->count(), 'kind' => 'start']])
+            return collect([['label' => 'Заявки', 'count' => $rows->count(), 'kind' => 'start']])
                 ->concat($checkItemsList->map(fn ($it) => [
                     'label' => trim(str_ireplace('через WhatsApp', '', $it->label)),
                     'count' => $rows->filter(fn ($p) => ! empty(($p->checks ?? [])[(string) $it->id]))->count(),
                     'kind' => 'step',
                 ]))
-                ->push(['label' => 'Выиграл', 'count' => $rows->where('status', 'confirmed')->count(), 'kind' => 'won'])
+                ->push(['label' => 'В работе', 'count' => $rows->where('status', 'confirmed')->count(), 'kind' => 'won'])
                 ->values();
         };
         $funnelByUser = $monthLots->groupBy('user_id')->map($funnelFor);
@@ -139,14 +139,14 @@ class WorkshopScreenController extends Controller
                 return [
                     'name' => $u->name, 'avatar' => $u->avatar,
                     'total' => $total,                          // заявок добавил
-                    'won' => $won,                              // выиграл
+                    'won' => $won,                              // переведено в сделки
                     'deals' => (int) ($m->deals ?? 0),          // из них стало сделками
                     'conversion' => $total > 0 ? (int) round($won / $total * 100) : 0,
                     'plan_pct' => min(100, (int) round($total / $plan * 100)),
                     // Чек-лист: сделано галочек / всего возможных (заявки × пункты).
                     'checks_done' => (int) ($checksByUser[$u->id] ?? 0),
                     'checks_total' => $total * $checkItems,
-                    // Персональная воронка: заявки → звонок/замер/КП… → выиграл.
+                    // Персональная воронка: заявки → звонок/замер/КП… → в работе.
                     'funnel' => $funnelByUser[$u->id] ?? $emptyFunnel,
                 ];
             })
@@ -164,7 +164,7 @@ class WorkshopScreenController extends Controller
             // Воронка отдела КРУПНО: Заявки → этапы чек-листа
             // (Звонок, КП… — любые пункты из «⚙ Чек-лист») → Выигранные.
             // План заявок и чек-листа общий (каждая заявка проходит каждый шаг),
-            // у выигранных — свой план (sales_plan_won_monthly).
+            // у подтверждённых — свой план (sales_plan_won_monthly).
             'funnel' => collect([[
                 'label' => 'Заявки',
                 'count' => $monthLots->count(),
@@ -198,7 +198,7 @@ class WorkshopScreenController extends Controller
             \App\Models\Setting::set('sales_plan_won_monthly', $data['plan_won']);
         }
 
-        return back()->with('success', 'План на месяц: заявок '.$data['plan'].(! empty($data['plan_won']) ? ', выигранных '.$data['plan_won'] : '').'.');
+        return back()->with('success', 'План на месяц: заявок '.$data['plan'].(! empty($data['plan_won']) ? ', подтверждённых '.$data['plan_won'] : '').'.');
     }
 
     public function enter(Request $request): RedirectResponse

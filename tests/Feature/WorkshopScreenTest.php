@@ -30,33 +30,33 @@ class WorkshopScreenTest extends TestCase
     public function test_code_opens_only_its_workshop(): void
     {
         $company = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT']);
-        ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Металл цех', 'name' => 'Кесу М', 'order' => 1, 'type' => 'project', 'is_active' => true]);
-        ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Ағаш цех', 'name' => 'Кесу А', 'order' => 1, 'type' => 'project', 'is_active' => true]);
+        ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Шымкент', 'name' => 'Формовка Ш', 'order' => 1, 'type' => 'project', 'is_active' => true]);
+        ProjectStage::create(['company_id' => $company->id, 'workshop' => 'Алматы', 'name' => 'Формовка А', 'order' => 1, 'type' => 'project', 'is_active' => true]);
 
-        // Заказ в Ағаш цехе.
+        // Заказ в Алматые.
         $deal = Deal::create(['number' => 'QT-001', 'name' => 'X', 'company_name' => 'ТОО Клиент', 'client_name' => 'И', 'budget' => 1, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => DealStage::orderBy('order')->first()->id]);
-        app(ProjectService::class)->createFromDeal($deal, 'Ағаш цех');
+        app(ProjectService::class)->createFromDeal($deal, 'Алматы');
 
-        // Админ выдаёт код экрану «Металл цех».
+        // Админ выдаёт код экрану «Шымкент».
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-        $this->actingAs($admin)->post(route('workshopScreens.upsert'), ['company_id' => $company->id, 'workshop' => 'Металл цех'])->assertRedirect();
-        $code = WorkshopScreen::where('workshop', 'Металл цех')->firstOrFail()->code;
+        $this->actingAs($admin)->post(route('workshopScreens.upsert'), ['company_id' => $company->id, 'workshop' => 'Шымкент'])->assertRedirect();
+        $code = WorkshopScreen::where('workshop', 'Шымкент')->firstOrFail()->code;
 
         // Неверный код — не пускает.
         $this->post(route('screen.enter'), ['code' => '000000'])->assertSessionHasErrors('code');
 
-        // Верный код (без логина!) — экран Металл цеха: свой этап, ЧУЖОЙ заказ не виден.
+        // Верный код (без логина!) — экран Шымкента: свой этап, ЧУЖОЙ заказ не виден.
         $this->post(route('screen.enter'), ['code' => $code])->assertRedirect(route('screen.show'));
         $this->get(route('screen.show'))->assertOk()->assertInertia(fn (Assert $p) => $p
             ->component('Screen/Workshop')
-            ->where('screen.workshop', 'Металл цех')
-            ->where('stages.0.name', 'Кесу М')
+            ->where('screen.workshop', 'Шымкент')
+            ->where('stages.0.name', 'Формовка Ш')
             ->has('stages', 1)
             ->has('projects', 0));
 
         // «Новый код» отключает экраны со старым кодом.
-        $this->actingAs($admin)->post(route('workshopScreens.upsert'), ['company_id' => $company->id, 'workshop' => 'Металл цех']);
+        $this->actingAs($admin)->post(route('workshopScreens.upsert'), ['company_id' => $company->id, 'workshop' => 'Шымкент']);
         auth()->logout();
         $this->get(route('screen.show'))->assertInertia(fn (Assert $p) => $p->component('Screen/Enter'));
     }

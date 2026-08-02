@@ -32,7 +32,7 @@ class CexFinanceInheritTest extends TestCase
         Expense::create(['expenseable_type' => 'deal', 'expenseable_id' => $deal->id, 'amount' => 120000, 'date' => now()->toDateString(), 'status' => 'confirmed']);
 
         // transfer to Цех
-        $this->actingAs($mgr)->post(route('deals.toWorkshop', $deal))->assertRedirect();
+        $this->actingAs($mgr)->post(route('deals.toWorkshop', $deal), ['workshop' => 'Шымкент'])->assertRedirect();
         $project = Project::where('deal_id', $deal->id)->firstOrFail();
 
         $this->actingAs($mgr)->get(route('projects.show', $project))

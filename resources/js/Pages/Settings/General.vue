@@ -58,7 +58,7 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
             </div>
             <label class="flex items-center gap-2 text-sm">
                 <input type="checkbox" v-model="form.auto_create_project" class="rounded border-slate-300 text-indigo-600" />
-                Автоматически создавать проект при выигрыше сделки
+                Автоматически создавать проект при переходе сделки в «Оплата успешно»
             </label>
             <div class="pt-2"><PrimaryButton :disabled="form.processing" @click="save">Сохранить</PrimaryButton></div>
         </div>
