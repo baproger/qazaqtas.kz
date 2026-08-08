@@ -21,7 +21,10 @@ import {
     PCFSoftShadowMap,
     PerspectiveCamera,
     PlaneGeometry,
+    RepeatWrapping,
+    SRGBColorSpace,
     Scene,
+    TextureLoader,
     WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -156,6 +159,38 @@ export function createConfiguratorScene(canvas) {
     const group = new Group();
     scene.add(group);
 
+    // Фото изделия из каталога становится текстурой плитки: конфигуратор
+    // показывает настоящую поверхность, а не абстрактный цвет.
+    const textureLoader = new TextureLoader();
+    const textureCache = new Map();
+    let onTextureLoaded = () => {};
+
+    const applyTexture = (material, url) => {
+        if (!url) {
+            material.map = null;
+            material.needsUpdate = true;
+            return;
+        }
+        const cached = textureCache.get(url);
+        if (cached) {
+            material.map = cached;
+            material.color.set(0xffffff);
+            material.needsUpdate = true;
+            return;
+        }
+        textureLoader.load(url, (map) => {
+            map.colorSpace = SRGBColorSpace;
+            map.wrapS = RepeatWrapping;
+            map.wrapT = RepeatWrapping;
+            map.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            textureCache.set(url, map);
+            material.map = map;
+            material.color.set(0xffffff);
+            material.needsUpdate = true;
+            onTextureLoaded();
+        });
+    };
+
     let tiles = null;
     let curbs = null;
     const dummy = new Object3D();
@@ -167,8 +202,11 @@ export function createConfiguratorScene(canvas) {
     };
 
     /** Пересобрать участок под новые параметры. */
-    const build = ({ tileSize, pattern, area, color, withCurb = true }) => {
-        tileMaterial.color.set(color);
+    const build = ({ tileSize, pattern, area, color, withCurb = true, texture = null, curbTexture = null }) => {
+        // Без фото — красим цветом из палитры карточки; с фото — фото главнее.
+        tileMaterial.color.set(texture ? 0xffffff : color);
+        applyTexture(tileMaterial, texture);
+        applyTexture(curbMaterial, curbTexture);
 
         clearMesh(tiles);
         clearMesh(curbs);

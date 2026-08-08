@@ -10,6 +10,7 @@ const props = defineProps({
     categories: { type: Array, default: () => [] },
     featured: { type: Array, default: () => [] },
     paving: { type: Array, default: () => [] },
+    scene: { type: Object, default: () => ({ textures: {}, models: {} }) },
     stats: { type: Array, default: () => [] },
     advantages: { type: Array, default: () => [] },
     production: { type: Array, default: () => [] },
@@ -58,8 +59,16 @@ onMounted(async () => {
 
         scene = createCourtyard(canvas.value, {
             color: heroColor.value,
+            // Фото изделий из ERP: если отмечены как текстура — сцена
+            // показывает настоящую поверхность вместо ровного цвета.
+            textures: props.scene?.textures ?? {},
             onReady: () => (sceneReady.value = true),
         });
+
+        // GLB-модели (если загружены) заменяют процедурные скамью и вазон.
+        if (Object.keys(props.scene?.models ?? {}).length) {
+            scene.setModels(props.scene.models);
+        }
 
         gsap.to({}, {
             scrollTrigger: {

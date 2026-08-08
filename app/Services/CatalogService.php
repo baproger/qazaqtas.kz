@@ -127,7 +127,40 @@ class CatalogService
                 'size' => $p->specs['size'] ?? null,
                 'pieces_per_m2' => $p->piecesPerM2(),
                 'colors' => $p->colors ?: [],
+                'texture' => $p->texture(),
+                'image' => $p->images[0]['thumb'] ?? $p->images[0]['path'] ?? null,
             ])->values();
+    }
+
+    /**
+     * Материалы для 3D-сцены главной: фото-текстуры и GLB-модели изделий
+     * из каталога. Пусто — сцена рисует процедурную геометрию цветом.
+     *
+     * @return array<string, string|null>
+     */
+    public function sceneAssets(): array
+    {
+        $pick = fn (string $categorySlug) => Product::active()
+            ->whereHas('category', fn ($q) => $q->where('slug', $categorySlug))
+            ->orderByDesc('is_featured')->orderBy('order')
+            ->get(['id', 'texture_path', 'model_path', 'images'])
+            ->first(fn (Product $p) => $p->texture() || $p->model_path);
+
+        $paving = $pick('trotuarnaya-plitka');
+        $curb = $pick('bordyury');
+        $bench = $pick('skami');
+        $vase = $pick('vazony');
+
+        return [
+            'textures' => array_filter([
+                'paving' => $paving?->texture(),
+                'curb' => $curb?->texture(),
+            ]),
+            'models' => array_filter([
+                'bench' => $bench?->model_path,
+                'vase' => $vase?->model_path,
+            ]),
+        ];
     }
 
     public static function flushCache(): void

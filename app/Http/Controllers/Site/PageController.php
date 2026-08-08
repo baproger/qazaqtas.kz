@@ -19,6 +19,8 @@ class PageController extends Controller
             'categories' => $this->catalog->categories(),
             'featured' => $this->catalog->featured(6),
             'paving' => $this->catalog->pavingCollections(),
+            // Фото-текстуры и GLB-модели для 3D-сцены (если загружены в ERP).
+            'scene' => $this->catalog->sceneAssets(),
             'stats' => SiteContent::stats(),
             'advantages' => SiteContent::advantages(),
             'production' => SiteContent::production(),

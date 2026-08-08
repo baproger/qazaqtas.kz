@@ -165,11 +165,21 @@ Route::middleware('auth')->group(function () {
     // Каталог сайта ведётся здесь: витрина читает эти же products.
     Route::get('catalog', [\App\Http\Controllers\CatalogController::class, 'index'])->name('catalog.index');
     Route::post('catalog', [\App\Http\Controllers\CatalogController::class, 'store'])->name('catalog.store');
-    Route::put('catalog/{product}', [\App\Http\Controllers\CatalogController::class, 'update'])->name('catalog.update');
-    Route::delete('catalog/{product}', [\App\Http\Controllers\CatalogController::class, 'destroy'])->name('catalog.destroy');
+    Route::put('catalog/{product:id}', [\App\Http\Controllers\CatalogController::class, 'update'])->name('catalog.update');
+    Route::delete('catalog/{product:id}', [\App\Http\Controllers\CatalogController::class, 'destroy'])->name('catalog.destroy');
+    // Медиа карточки: фото, текстура для 3D, GLB-модель, документы.
+    Route::post('catalog/{product:id}/images', [\App\Http\Controllers\CatalogMediaController::class, 'storeImages'])->name('catalogMedia.images');
+    Route::delete('catalog/{product:id}/images', [\App\Http\Controllers\CatalogMediaController::class, 'destroyImage'])->name('catalogMedia.imageDestroy');
+    Route::post('catalog/{product:id}/images/main', [\App\Http\Controllers\CatalogMediaController::class, 'makeMainImage'])->name('catalogMedia.imageMain');
+    Route::post('catalog/{product:id}/texture', [\App\Http\Controllers\CatalogMediaController::class, 'setTexture'])->name('catalogMedia.texture');
+    Route::post('catalog/{product:id}/model', [\App\Http\Controllers\CatalogMediaController::class, 'storeModel'])->name('catalogMedia.model');
+    Route::delete('catalog/{product:id}/model', [\App\Http\Controllers\CatalogMediaController::class, 'destroyModel'])->name('catalogMedia.modelDestroy');
+    Route::post('catalog/{product:id}/documents', [\App\Http\Controllers\CatalogMediaController::class, 'storeDocument'])->name('catalogMedia.document');
+    Route::delete('catalog/{product:id}/documents', [\App\Http\Controllers\CatalogMediaController::class, 'destroyDocument'])->name('catalogMedia.documentDestroy');
+
     Route::post('catalog-categories', [\App\Http\Controllers\CatalogController::class, 'storeCategory'])->name('catalogCategories.store');
-    Route::put('catalog-categories/{category}', [\App\Http\Controllers\CatalogController::class, 'updateCategory'])->name('catalogCategories.update');
-    Route::delete('catalog-categories/{category}', [\App\Http\Controllers\CatalogController::class, 'destroyCategory'])->name('catalogCategories.destroy');
+    Route::put('catalog-categories/{category:id}', [\App\Http\Controllers\CatalogController::class, 'updateCategory'])->name('catalogCategories.update');
+    Route::delete('catalog-categories/{category:id}', [\App\Http\Controllers\CatalogController::class, 'destroyCategory'])->name('catalogCategories.destroy');
 
     // Заказы с сайта → одной кнопкой превращаются в сделку.
     Route::get('site-orders', [\App\Http\Controllers\SiteOrderController::class, 'index'])->name('siteOrders.index');

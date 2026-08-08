@@ -13,7 +13,12 @@ const props = defineProps({
     ratio: { type: String, default: 'aspect-[4/3]' },
 });
 
-const image = computed(() => props.product?.images?.[0] ?? null);
+// Картинка может быть строкой (легаси) или объектом {path, thumb, alt}.
+const image = computed(() => {
+    const first = props.product?.images?.[0];
+    if (!first) return null;
+    return typeof first === 'string' ? { path: first, thumb: first, alt: '' } : first;
+});
 const slug = computed(() => props.product?.category?.slug ?? 'trotuarnaya-plitka');
 const base = computed(() => props.color || props.product?.colors?.[0]?.hex || '#B9B3A9');
 
@@ -50,8 +55,10 @@ const tiles = computed(() => {
     <div class="concrete relative overflow-hidden rounded-2xl bg-ink-700" :class="ratio">
         <img
             v-if="image"
-            :src="image"
-            :alt="product.name"
+            :src="image.path"
+            :srcset="image.thumb ? `${image.thumb} 600w, ${image.path} 1600w` : undefined"
+            sizes="(max-width: 640px) 100vw, 33vw"
+            :alt="image.alt || product.name"
             loading="lazy"
             decoding="async"
             class="h-full w-full object-cover"

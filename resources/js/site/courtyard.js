@@ -23,10 +23,14 @@ import {
     PlaneGeometry,
     Scene,
     SpotLight,
+    RepeatWrapping,
+    SRGBColorSpace,
+    TextureLoader,
     Vector2,
     Vector3,
     WebGLRenderer,
 } from 'three';
+import { loadModel } from './gltf';
 
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
@@ -94,6 +98,33 @@ export function createCourtyard(canvas, options = {}) {
         curb: new MeshStandardMaterial({ color: palette.curb, roughness: 0.8 }),
         wood: new MeshStandardMaterial({ color: palette.wood, roughness: 0.6 }),
         green: new MeshStandardMaterial({ color: palette.green, roughness: 0.9 }),
+    };
+
+    // --- Фото-текстуры из каталога ERP ---
+    // Если у карточки отмечено фото «3D», им красится изделие в сцене;
+    // пока фото нет, остаётся ровный цвет — сцена работает в обоих случаях.
+    const textureLoader = new TextureLoader();
+    const applyTexture = (material, url, repeat = 1) => {
+        if (!url) return;
+        textureLoader.load(url, (map) => {
+            map.colorSpace = SRGBColorSpace;
+            map.wrapS = RepeatWrapping;
+            map.wrapT = RepeatWrapping;
+            map.repeat.set(repeat, repeat);
+            map.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            material.map = map;
+            // Цвет фото уже несёт оттенок изделия — базовый тон делаем белым,
+            // иначе текстура «уходит» в песочный.
+            material.color.set(0xffffff);
+            material.needsUpdate = true;
+            needsRender = true;
+        });
+    };
+
+    const setTextures = (textures = {}) => {
+        applyTexture(materials.paving, textures.paving);
+        applyTexture(materials.pavingAlt, textures.paving);
+        applyTexture(materials.curb, textures.curb);
     };
 
     /** Элемент сцены: у каждого своё окно появления и стартовое смещение. */
@@ -206,6 +237,7 @@ export function createCourtyard(canvas, options = {}) {
         bush.castShadow = true;
         group.add(bush);
         group.position.copy(pos);
+        group.userData.slot = 'vase';
         addPart(group, { from, to: from + 0.16, offset: new Vector3(0, 11, 0), spin: 0.8 });
     });
 
@@ -319,10 +351,35 @@ export function createCourtyard(canvas, options = {}) {
     }, { threshold: 0.01 });
     visibility.observe(canvas);
 
+    setTextures(options.textures ?? {});
     loop();
     options.onReady?.();
 
     return {
+        setTextures,
+        /**
+         * Подменить процедурную скамью/вазон/урну настоящими GLB-моделями,
+         * если они загружены в карточке товара.
+         */
+        async setModels(models = {}) {
+            const slots = [
+                ['bench', bench, 1],
+                ['vase', world.children.find((o) => o.userData.slot === 'vase'), 1],
+            ];
+            for (const [key, target, scale] of slots) {
+                if (!models[key] || !target) continue;
+                const model = await loadModel(models[key], scale);
+                if (!model) continue;
+                model.position.copy(target.position);
+                model.rotation.copy(target.rotation);
+                model.userData = { ...target.userData };
+                world.remove(target);
+                world.add(model);
+                const i = parts.indexOf(target);
+                if (i !== -1) parts[i] = model;
+                needsRender = true;
+            }
+        },
         setProgress(value) {
             progress = clamp01(value);
             needsRender = true;

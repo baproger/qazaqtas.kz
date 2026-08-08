@@ -19,6 +19,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'name', 'slug', 'code', 'unit', 'price', 'old_price', 'min_order',
         'description', 'short_description', 'specs', 'colors', 'images', 'documents',
+        'texture_path', 'model_path',
         'is_service', 'is_active', 'is_featured', 'in_stock', 'order',
     ];
 
@@ -60,6 +61,12 @@ class Product extends Model
         $value = (float) ($this->specs['pieces_per_m2'] ?? 0);
 
         return $value > 0 ? $value : null;
+    }
+
+    /** Фото-текстура для 3D-сцен; null — сцена красит изделие цветом. */
+    public function texture(): ?string
+    {
+        return $this->texture_path ?: null;
     }
 
     /** Первый цвет считается основным — им рисуется превью и 3D-сцена. */

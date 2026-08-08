@@ -9,6 +9,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { confirmDialog } from '@/composables/useConfirm';
+import MediaManager from '@/Components/catalog/MediaManager.vue';
 
 const props = defineProps({ products: Object, categories: Array, filters: Object, units: Array });
 
@@ -28,6 +29,10 @@ watch(category, apply);
 // ---- Карточка товара ----
 const showForm = ref(false);
 const editingId = ref(null);
+const tab = ref('fields');
+// Актуальная карточка из списка: после загрузки фото Inertia обновляет props,
+// и медиа-менеджер сразу показывает новое состояние.
+const editingProduct = computed(() => props.products.data.find((p) => p.id === editingId.value) ?? null);
 const specsText = ref('');
 const colorsText = ref('');
 
@@ -40,6 +45,7 @@ const form = useForm({
 
 const openCreate = () => {
     editingId.value = null;
+    tab.value = 'fields';
     form.reset();
     form.clearErrors();
     form.category_id = props.categories[0]?.id ?? '';
@@ -50,6 +56,7 @@ const openCreate = () => {
 
 const openEdit = (p) => {
     editingId.value = p.id;
+    tab.value = 'fields';
     form.clearErrors();
     Object.assign(form, {
         category_id: p.category_id ?? '', name: p.name, slug: p.slug ?? '', code: p.code ?? '',
@@ -139,6 +146,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                 <table class="min-w-full divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>
+                            <th class="px-4 py-2.5 w-16">Фото</th>
                             <th class="px-4 py-2.5">Позиция</th>
                             <th class="px-4 py-2.5">Категория</th>
                             <th class="px-4 py-2.5">Артикул</th>
@@ -149,6 +157,11 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="p in products.data" :key="p.id" class="hover:bg-slate-50">
+                            <td class="px-4 py-2">
+                                <img v-if="p.images?.length" :src="p.images[0].thumb ?? p.images[0].path" :alt="p.name" loading="lazy"
+                                    class="h-11 w-14 rounded-lg object-cover ring-1 ring-slate-200" />
+                                <span v-else class="grid h-11 w-14 place-items-center rounded-lg bg-slate-100 text-[10px] text-slate-400">нет</span>
+                            </td>
                             <td class="px-4 py-3">
                                 <span class="font-medium text-slate-800">{{ p.name }}</span>
                                 <span class="block text-xs text-slate-400">{{ p.short_description }}</span>
@@ -169,7 +182,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                                 <button class="rounded p-1 text-slate-300 transition hover:text-rose-600" title="Удалить" @click="remove(p)">✕</button>
                             </td>
                         </tr>
-                        <tr v-if="!products.data.length"><td colspan="6" class="px-6 py-12 text-center text-slate-400">Каталог пуст — «+ Позиция»</td></tr>
+                        <tr v-if="!products.data.length"><td colspan="7" class="px-6 py-12 text-center text-slate-400">Каталог пуст — «+ Позиция»</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -185,9 +198,20 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
         <!-- Форма позиции -->
         <Modal :show="showForm" max-width="2xl" @close="showForm = false">
             <div class="p-6">
-                <h3 class="mb-4 text-base font-semibold text-slate-900">{{ editingId ? 'Изменить позицию' : 'Новая позиция каталога' }}</h3>
+                <h3 class="text-base font-semibold text-slate-900">{{ editingId ? 'Изменить позицию' : 'Новая позиция каталога' }}</h3>
 
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <!-- Медиа доступны только у сохранённой позиции: файлам нужен id. -->
+                <div v-if="editingId" class="mb-4 mt-3 flex gap-4 border-b border-slate-100">
+                    <button v-for="t2 in [['fields', 'Данные'], ['media', 'Фото, 3D и документы']]" :key="t2[0]"
+                        class="-mb-px border-b-2 pb-2 text-sm transition"
+                        :class="tab === t2[0] ? 'border-indigo-500 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'"
+                        @click="tab = t2[0]">{{ t2[1] }}</button>
+                </div>
+                <div v-else class="mb-4"></div>
+
+                <MediaManager v-if="tab === 'media' && editingProduct" :product="editingProduct" />
+
+                <div v-show="tab === 'fields'" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <InputLabel value="Категория" />
                         <select v-model="form.category_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm">
@@ -225,7 +249,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                     </div>
                 </div>
 
-                <div class="mt-4 flex flex-wrap gap-5 text-sm text-slate-600">
+                <div v-show="tab === 'fields'" class="mt-4 flex flex-wrap gap-5 text-sm text-slate-600">
                     <label class="flex items-center gap-2"><input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> Опубликована</label>
                     <label class="flex items-center gap-2"><input v-model="form.is_featured" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> На главной</label>
                     <label class="flex items-center gap-2"><input v-model="form.in_stock" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> В наличии</label>
@@ -233,8 +257,8 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                 </div>
 
                 <div class="mt-5 flex justify-end gap-2">
-                    <SecondaryButton @click="showForm = false">Отмена</SecondaryButton>
-                    <PrimaryButton :disabled="form.processing" @click="submit">{{ editingId ? 'Сохранить' : 'Добавить' }}</PrimaryButton>
+                    <SecondaryButton @click="showForm = false">{{ tab === 'media' ? 'Закрыть' : 'Отмена' }}</SecondaryButton>
+                    <PrimaryButton v-show="tab === 'fields'" :disabled="form.processing" @click="submit">{{ editingId ? 'Сохранить' : 'Добавить' }}</PrimaryButton>
                 </div>
             </div>
         </Modal>

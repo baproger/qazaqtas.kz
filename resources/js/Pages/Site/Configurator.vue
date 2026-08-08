@@ -94,10 +94,13 @@ const rebuild = () => {
         area: { width: Number(width.value) || 1, length: Number(length.value) || 1 },
         color: color.value?.hex ?? '#C8B79A',
         withCurb: withCurb.value,
+        // Фото поверхности из карточки — сцена показывает реальный материал.
+        texture: collection.value.texture ?? null,
+        curbTexture: border.value?.texture_path ?? null,
     });
 };
 
-watch([collection, color, pattern, width, length, withCurb], rebuild);
+watch([collection, color, pattern, width, length, withCurb, border], rebuild);
 watch(collection, (c) => {
     if (c?.colors?.length) color.value = c.colors[0];
 });
@@ -154,6 +157,7 @@ onBeforeUnmount(() => scene?.dispose());
 
                     <div class="pointer-events-none absolute left-5 top-5 rounded-full border border-white/10 bg-ink-900/70 px-4 py-2 text-xs text-sand-100/60 backdrop-blur">
                         {{ number(area) }} м² · {{ activePattern?.name }}
+                        <span v-if="collection?.texture" class="ml-1 text-sand-300">· фото изделия</span>
                     </div>
 
                     <button
