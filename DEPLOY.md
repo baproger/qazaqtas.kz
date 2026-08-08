@@ -7,7 +7,7 @@ Plesk только копирует файлы — `composer` и `migrate` за�
 ## 1. Один раз: настройка в Plesk
 
 **Git → Настройки репозитория:**
-- URL: `https://github.com/baproger/erp.qazaqtas.kz.git`, ветка `master`
+- URL: `https://github.com/baproger/qazaqtas.kz.git`, ветка `master`
 - Режим развёртывания: **Автоматически**
 - **Путь сервера — ВАЖНО:** для Laravel деплой должен идти в КОРЕНЬ домена (например `/erp.qazaqtas.kz`), а document root домена — в подпапку `/erp.qazaqtas.kz/public`.
   ⚠️ Если деплой настроен прямо в `.../public`, то `app/`, `.env`, `config/` окажутся в веб-доступе — это дыра (можно скачать `.env` с паролями БД). Проверить: document root сайта = `.../public`, а Git-деплой = на уровень выше.
