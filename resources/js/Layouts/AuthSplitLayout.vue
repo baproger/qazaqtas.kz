@@ -37,14 +37,9 @@ const particles = [
             </div>
 
             <!-- Logo -->
-            <div class="auth-reveal relative flex w-max items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md" style="animation-delay: 0ms">
-                <span class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-sm">
-                    <img src="/logo-qazaqtas.svg" alt="QAZAQ TAS" class="h-full w-full object-cover" />
-                </span>
-                <div class="leading-tight">
-                    <div class="text-sm font-bold text-white">QAZAQ TAS</div>
-                    <div class="text-[11px] font-medium text-emerald-200">ERP · CRM</div>
-                </div>
+            <div class="auth-reveal relative w-max rounded-2xl border border-white/15 bg-white/10 px-5 py-4 backdrop-blur-md" style="animation-delay: 0ms">
+                <img src="/logo-qazaqtas.png" alt="QAZAQ TAS" width="696" height="141" class="h-11 w-auto" />
+                <div class="mt-2 text-[11px] font-medium tracking-widest text-emerald-200">ERP · CRM</div>
             </div>
 
             <!-- Center content -->
@@ -87,14 +82,13 @@ const particles = [
         <div class="flex w-full items-center justify-center px-6 py-12 sm:px-10 lg:w-[45%]">
             <div class="auth-reveal w-full max-w-md" style="animation-delay: 150ms">
                 <!-- Mobile logo -->
-                <div class="mb-8 flex items-center gap-2.5 lg:hidden">
-                    <span class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
-                        <img src="/logo-qazaqtas.svg" alt="QAZAQ TAS" class="h-full w-full object-cover" />
+                <!-- Фон здесь светлый, а надпись в логотипе светло-серая —
+                     поэтому логотип ставим на тёмную подложку. -->
+                <div class="mb-8 flex items-center gap-3 lg:hidden">
+                    <span class="rounded-xl bg-slate-900 px-3 py-2">
+                        <img src="/logo-qazaqtas.png" alt="QAZAQ TAS" width="696" height="141" class="h-8 w-auto" />
                     </span>
-                    <div class="leading-tight">
-                        <div class="text-sm font-bold text-slate-900">QAZAQ TAS</div>
-                        <div class="text-[11px] font-medium text-emerald-600">ERP · CRM</div>
-                    </div>
+                    <div class="text-[11px] font-medium uppercase tracking-widest text-emerald-600">ERP · CRM</div>
                 </div>
 
                 <slot />

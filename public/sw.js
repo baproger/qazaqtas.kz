@@ -9,8 +9,8 @@ self.addEventListener('push', (event) => {
     try { data = { ...data, ...event.data.json() }; } catch (e) { /* пустой payload */ }
     event.waitUntil(self.registration.showNotification(data.title, {
         body: data.body,
-        icon: '/logo-qazaqtas.png',
-        badge: '/logo-qazaqtas.png',
+        icon: '/logo-mark.png',
+        badge: '/logo-mark.png',
         tag: 'qazaqtas-chat-push', // новое сообщение заменяет предыдущее уведомление
         data: { url: data.url },
     }));

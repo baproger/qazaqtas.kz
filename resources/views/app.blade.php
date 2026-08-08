@@ -4,8 +4,8 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <link rel="icon" type="image/svg+xml" href="/logo-qazaqtas.svg">
-        <link rel="apple-touch-icon" href="/logo-qazaqtas.png">
+        <link rel="icon" type="image/png" href="/logo-mark.png">
+        <link rel="apple-touch-icon" href="/logo-mark.png">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 

@@ -63,11 +63,15 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
             :class="scrolled || !transparentHeader ? 'border-b border-white/10 bg-ink-900/70 backdrop-blur-xl' : 'border-b border-transparent'"
         >
             <div class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-5 sm:h-20 sm:px-8">
-                <Link :href="route('site.home')" class="group flex items-center gap-3" aria-label="QAZAQ TAS — на главную">
-                    <span class="grid h-9 w-9 place-items-center overflow-hidden rounded-lg bg-ink-700 ring-1 ring-white/10">
-                        <img src="/logo-qazaqtas.svg" alt="" class="h-full w-full object-cover" width="36" height="36" />
-                    </span>
-                    <span class="text-[15px] font-semibold tracking-[0.18em] text-sand-50">QAZAQ TAS</span>
+                <!-- Логотип уже содержит название — отдельной подписи рядом нет. -->
+                <Link :href="route('site.home')" class="flex items-center" aria-label="QAZAQ TAS — на главную">
+                    <img
+                        src="/logo-qazaqtas.png"
+                        alt="QAZAQ TAS"
+                        width="696"
+                        height="141"
+                        class="h-8 w-auto transition-opacity duration-300 hover:opacity-80 sm:h-10"
+                    />
                 </Link>
 
                 <nav class="ml-auto hidden items-center gap-8 lg:flex" aria-label="Основная навигация">

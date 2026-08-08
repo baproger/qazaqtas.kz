@@ -153,13 +153,17 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
             ]"
             class="fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-slate-900 text-slate-300 transition-all duration-300 ease-in-out">
-            <div class="flex h-16 items-center gap-2.5 px-4">
-                <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-lg shadow-black/30">
-                    <img src="/logo-qazaqtas.svg" alt="QAZAQ TAS" class="h-full w-full object-cover" />
-                </span>
-                <div v-if="!collapsed || mobileOpen" class="leading-tight">
-                    <div class="text-sm font-semibold tracking-tight text-white">QAZAQ TAS</div>
-                    <div class="text-[10px] font-medium uppercase tracking-widest text-slate-500">ERP · CRM</div>
+            <div class="flex h-16 items-center px-4">
+                <!-- Свёрнутое меню (64 px) — только знак; развёрнутое — логотип с подписью. -->
+                <img
+                    v-if="collapsed && !mobileOpen"
+                    src="/logo-mark.png"
+                    alt="QAZAQ TAS"
+                    class="mx-auto h-9 w-9 flex-shrink-0"
+                />
+                <div v-if="!collapsed || mobileOpen" class="leading-none">
+                    <img src="/logo-qazaqtas.png" alt="QAZAQ TAS" width="696" height="141" class="h-8 w-auto" />
+                    <div class="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-slate-500">ERP · CRM</div>
                 </div>
             </div>
             <nav class="flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
