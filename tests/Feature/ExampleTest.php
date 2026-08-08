@@ -2,17 +2,20 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    use RefreshDatabase;
+
     /**
-     * A basic test example.
+     * Корень сайта — публичная витрина: открывается без логина, даже когда
+     * каталог ещё пустой. ERP начинается с /login.
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        // Root redirects guests to login (and authed users to the dashboard).
-        $this->get('/')->assertRedirect(route('login'));
+        $this->get('/')->assertOk();
+        $this->get('/dashboard')->assertRedirect(route('login'));
     }
 }

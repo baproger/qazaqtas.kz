@@ -55,6 +55,11 @@ class HandleInertiaRequests extends Middleware
             'translations' => fn () => \App\Models\UiTranslation::map(app()->getLocale()),
             // Публичный VAPID-ключ Web Push: фронт подписывает браузер на пуши чата.
             'vapidPublicKey' => (string) config('services.webpush.public_key', ''),
+            // Контакты и корзина витрины: нужны шапке/подвалу сайта на каждой
+            // странице. Ленивые — на страницах ERP не вычисляются.
+            'site' => fn () => \App\Support\SiteContent::shared() + [
+                'cartCount' => app(\App\Services\CartService::class)->count(),
+            ],
         ];
     }
 }

@@ -25,12 +25,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
-});
-
+// «/» отдаёт публичную витрину (routes/site.php); ERP начинается с /login.
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 // ТВ-экран цеха: без логина, вход по коду (один код = один цех).
@@ -166,6 +161,21 @@ Route::middleware('auth')->group(function () {
 
     // Locale
     Route::patch('locale', [LocaleController::class, 'update'])->name('locale.update');
+
+    // Каталог сайта ведётся здесь: витрина читает эти же products.
+    Route::get('catalog', [\App\Http\Controllers\CatalogController::class, 'index'])->name('catalog.index');
+    Route::post('catalog', [\App\Http\Controllers\CatalogController::class, 'store'])->name('catalog.store');
+    Route::put('catalog/{product}', [\App\Http\Controllers\CatalogController::class, 'update'])->name('catalog.update');
+    Route::delete('catalog/{product}', [\App\Http\Controllers\CatalogController::class, 'destroy'])->name('catalog.destroy');
+    Route::post('catalog-categories', [\App\Http\Controllers\CatalogController::class, 'storeCategory'])->name('catalogCategories.store');
+    Route::put('catalog-categories/{category}', [\App\Http\Controllers\CatalogController::class, 'updateCategory'])->name('catalogCategories.update');
+    Route::delete('catalog-categories/{category}', [\App\Http\Controllers\CatalogController::class, 'destroyCategory'])->name('catalogCategories.destroy');
+
+    // Заказы с сайта → одной кнопкой превращаются в сделку.
+    Route::get('site-orders', [\App\Http\Controllers\SiteOrderController::class, 'index'])->name('siteOrders.index');
+    Route::patch('site-orders/{order}', [\App\Http\Controllers\SiteOrderController::class, 'update'])->name('siteOrders.update');
+    Route::post('site-orders/{order}/deal', [\App\Http\Controllers\SiteOrderController::class, 'convert'])->name('siteOrders.convert');
+    Route::delete('site-orders/{order}', [\App\Http\Controllers\SiteOrderController::class, 'destroy'])->name('siteOrders.destroy');
 
     // Settings
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');

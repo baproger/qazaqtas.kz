@@ -12,7 +12,8 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * Стартовое наполнение QAZAQ TAS: роли, воронки сделки и цеха, склад
-     * сырья, отделы и учётка администратора (пароль сменить сразу).
+     * сырья, каталог витрины, отделы и учётка администратора
+     * (пароль сменить сразу после первого входа).
      */
     public function run(): void
     {
@@ -20,6 +21,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             StageSeeder::class,
             MaterialSeeder::class,
+            CatalogSeeder::class,
             DealCustomFieldSeeder::class,
             UiTranslationSeeder::class,
         ]);

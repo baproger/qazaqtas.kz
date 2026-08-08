@@ -20,3 +20,68 @@
         }
     }
 }
+
+/* ------------------------------------------------------------------
+   Витрина QAZAQ TAS. Тёмная «бетонная» тема живёт только на страницах
+   сайта (обёртка .site) — интерфейс ERP остаётся светлым.
+   ------------------------------------------------------------------ */
+@layer components {
+    .site {
+        @apply bg-ink-900 text-sand-50 antialiased;
+        /* Мелкое зерно + мягкая засветка: поверхность читается как бетон. */
+        background-image:
+            radial-gradient(120% 80% at 50% -20%, rgba(200, 183, 154, 0.10), transparent 60%),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+    }
+
+    /* Стеклянная панель: шапка, карточки поверх 3D, модалки. */
+    .glass {
+        @apply border border-white/10 bg-white/[0.04] backdrop-blur-xl;
+    }
+    .glass-strong {
+        @apply border border-white/10 bg-ink-800/80 backdrop-blur-2xl shadow-glass;
+    }
+
+    /* Крупная архитектурная типографика. */
+    .display {
+        @apply font-semibold tracking-display leading-[0.95];
+    }
+    .eyebrow {
+        @apply text-[11px] font-semibold uppercase tracking-[0.28em] text-sand-300/70;
+    }
+
+    /* Бетонная поверхность карточек продукции. */
+    .concrete {
+        background-image:
+            linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 45%),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23c)' opacity='0.08'/%3E%3C/svg%3E");
+    }
+
+    .btn-sand {
+        @apply inline-flex items-center justify-center gap-2 rounded-full bg-sand-300 px-6 py-3
+               text-sm font-semibold text-ink-900 transition duration-300 ease-premium
+               hover:bg-sand-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sand-300/60;
+    }
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-3
+               text-sm font-medium text-sand-50 transition duration-300 ease-premium
+               hover:border-sand-300/60 hover:bg-white/[0.06]
+               focus:outline-none focus-visible:ring-2 focus-visible:ring-sand-300/40;
+    }
+
+    /* Появление секций при скролле (IntersectionObserver добавляет .is-in). */
+    .reveal {
+        @apply translate-y-6 opacity-0;
+        transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.is-in {
+        @apply translate-y-0 opacity-100;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal {
+        @apply translate-y-0 opacity-100;
+        transition: none;
+    }
+}
