@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
 use App\Services\CatalogService;
+use App\Models\SiteProject;
 use App\Support\SiteContent;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,12 +25,28 @@ class PageController extends Controller
             'stats' => SiteContent::stats(),
             'advantages' => SiteContent::advantages(),
             'production' => SiteContent::production(),
-            'projects' => SiteContent::projects(),
+            'projects' => $this->projectList(),
+            // Скролл-история после 3D: только объекты с фотографией.
+            'story' => SiteProject::active()->withPhoto()->orderBy('order')->limit(6)->get(),
             'seo' => [
                 'title' => 'QAZAQ TAS — тротуарная плитка и малые архитектурные формы из мраморного композита',
                 'description' => 'Производство тротуарной плитки, бордюров, вазонов, скамей и урн из мраморного композита. Три площадки: Шымкент, Алматы, Тараз. Расчёт, доставка и монтаж по Казахстану.',
             ],
         ]);
+    }
+
+    /**
+     * Объекты берём из ERP. Стартовый набор из настроек подставляем ТОЛЬКО
+     * пока таблица вообще пуста: если объекты заведены, но все скрыты —
+     * это осознанное решение владельца, и подменять его нельзя.
+     */
+    private function projectList(): \Illuminate\Support\Collection
+    {
+        if (! SiteProject::exists()) {
+            return collect(SiteContent::projects());
+        }
+
+        return SiteProject::active()->orderBy('order')->orderByDesc('id')->get();
     }
 
     public function about(): Response
@@ -48,7 +65,7 @@ class PageController extends Controller
     public function projects(): Response
     {
         return Inertia::render('Site/Projects', [
-            'projects' => SiteContent::projects(),
+            'projects' => $this->projectList(),
             'seo' => [
                 'title' => 'Реализованные проекты QAZAQ TAS',
                 'description' => 'Дворы, парки, набережные и школьные территории, благоустроенные изделиями QAZAQ TAS.',

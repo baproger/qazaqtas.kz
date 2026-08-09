@@ -54,6 +54,8 @@ const allNav = [
     { key: 'nav.warehouse', name: 'Склад', route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
     // Каталог сайта: карточки продукции, которые видит витрина.
     { key: 'nav.catalog', name: 'Каталог сайта', route: 'catalog.index', icon: '▥', perm: 'product.viewAny' },
+    // Реализованные объекты: их фото идут крупными кадрами на главной.
+    { key: 'nav.siteProjects', name: 'Объекты сайта', route: 'siteProjects.index', icon: '◱', roles: ['admin', 'director', 'financist'] },
     { key: 'nav.reports', name: 'Сводный отчет', route: 'reports.deals', icon: '▦', roles: ['admin', 'director'] },
     { key: 'nav.finance', name: 'Финансы', route: 'finance.index', icon: '₸', perm: 'invoice.viewAny', leadershipOnly: true },
     { key: 'nav.payroll', name: 'Зарплата', route: 'payroll.index', icon: '💵', perm: 'payroll.view' },

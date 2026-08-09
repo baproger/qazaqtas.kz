@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             StageSeeder::class,
             MaterialSeeder::class,
             CatalogSeeder::class,
+            SiteProjectSeeder::class,
             DealCustomFieldSeeder::class,
             UiTranslationSeeder::class,
         ]);

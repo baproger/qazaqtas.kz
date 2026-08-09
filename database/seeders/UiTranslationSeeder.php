@@ -18,6 +18,7 @@ class UiTranslationSeeder extends Seeder
             ['nav.warehouse', 'nav', 'Склад', 'Қойма'],
             ['nav.catalog', 'nav', 'Каталог сайта', 'Сайт каталогы'],
             ['nav.siteOrders', 'nav', 'Заказы с сайта', 'Сайттан тапсырыстар'],
+            ['nav.siteProjects', 'nav', 'Объекты сайта', 'Сайт нысандары'],
             ['nav.reports', 'nav', 'Сводный отчет', 'Жиынтық есеп'],
             ['nav.overdue', 'nav', 'Просроченные', 'Мерзімі өткен'],
             ['nav.workshop', 'nav', 'Цех', 'Цех'],

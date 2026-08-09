@@ -182,6 +182,13 @@ Route::middleware('auth')->group(function () {
     Route::put('catalog-categories/{category:id}', [\App\Http\Controllers\CatalogController::class, 'updateCategory'])->name('catalogCategories.update');
     Route::delete('catalog-categories/{category:id}', [\App\Http\Controllers\CatalogController::class, 'destroyCategory'])->name('catalogCategories.destroy');
 
+    // Объекты сайта: реализованные проекты с фото для главной и «Проектов».
+    Route::get('site-projects', [\App\Http\Controllers\SiteProjectController::class, 'index'])->name('siteProjects.index');
+    Route::post('site-projects', [\App\Http\Controllers\SiteProjectController::class, 'store'])->name('siteProjects.store');
+    Route::put('site-projects/{project}', [\App\Http\Controllers\SiteProjectController::class, 'update'])->name('siteProjects.update');
+    Route::delete('site-projects/{project}', [\App\Http\Controllers\SiteProjectController::class, 'destroy'])->name('siteProjects.destroy');
+    Route::post('site-projects/{project}/image', [\App\Http\Controllers\SiteProjectController::class, 'uploadImage'])->name('siteProjects.image');
+
     // Заказы с сайта → одной кнопкой превращаются в сделку.
     Route::get('site-orders', [\App\Http\Controllers\SiteOrderController::class, 'index'])->name('siteOrders.index');
     Route::patch('site-orders/{order}', [\App\Http\Controllers\SiteOrderController::class, 'update'])->name('siteOrders.update');

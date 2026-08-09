@@ -15,6 +15,8 @@ const props = defineProps({
     advantages: { type: Array, default: () => [] },
     production: { type: Array, default: () => [] },
     projects: { type: Array, default: () => [] },
+    // Объекты с фотографиями — кадры скролл-истории после 3D.
+    story: { type: Array, default: () => [] },
     seo: { type: Object, default: () => ({}) },
 });
 
@@ -173,6 +175,47 @@ onBeforeUnmount(() => {
                 >
                     Прокрутите
                 </div>
+            </div>
+        </section>
+
+        <!-- ============ Реальные объекты: фото во весь экран ============ -->
+        <!-- 3D показывает технологию, дальше идут настоящие снимки: сборка
+             двора перетекает в готовые объекты без разрыва повествования. -->
+        <section v-if="story.length" class="relative bg-ink-900">
+            <div class="mx-auto max-w-7xl px-5 pb-4 pt-24 sm:px-8 sm:pt-32">
+                <p class="eyebrow reveal">Так это выглядит вживую</p>
+                <h2 class="display reveal mt-4 max-w-2xl text-[clamp(2rem,5vw,3.5rem)] text-sand-50">
+                    Объекты, сданные под ключ
+                </h2>
+            </div>
+
+            <article v-for="p in story" :key="p.id" class="relative h-[150vh]">
+                <div class="sticky top-0 flex h-screen items-end overflow-hidden">
+                    <img
+                        :src="p.image"
+                        :srcset="p.thumb ? `${p.thumb} 600w, ${p.image} 1600w` : undefined"
+                        sizes="100vw"
+                        :alt="p.title"
+                        loading="lazy"
+                        decoding="async"
+                        class="photo-zoom reveal absolute inset-0 h-full w-full object-cover"
+                    />
+                    <!-- Затемнение снизу: подпись читается на любом снимке -->
+                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/30 to-ink-900/40" />
+
+                    <div class="relative mx-auto w-full max-w-7xl px-5 pb-20 sm:px-8 sm:pb-28">
+                        <p class="text-xs uppercase tracking-[0.28em] text-sand-300/80">
+                            {{ p.city }}<template v-if="p.year"> · {{ p.year }}</template>
+                        </p>
+                        <h3 class="display mt-4 max-w-3xl text-[clamp(2rem,5.5vw,4rem)] text-sand-50">{{ p.title }}</h3>
+                        <p v-if="p.products" class="mt-4 max-w-xl text-sm text-sand-100/70">{{ p.products }}</p>
+                        <p v-if="p.area" class="display mt-6 text-3xl text-sand-300 sm:text-4xl">{{ p.area }}</p>
+                    </div>
+                </div>
+            </article>
+
+            <div class="mx-auto max-w-7xl px-5 py-16 text-center sm:px-8">
+                <Link :href="route('site.projects')" class="btn-ghost">Все объекты</Link>
             </div>
         </section>
 
