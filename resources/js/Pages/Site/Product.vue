@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductVisual from '@/Components/site/ProductVisual.vue';
@@ -13,6 +13,25 @@ const props = defineProps({
 });
 
 const color = ref(props.product.colors?.[0] ?? null);
+const activeIndex = ref(0);
+
+/**
+ * Галерея под выбранный цвет: снимки этого цвета + снимки без привязки.
+ * Если фото конкретно этого цвета нет — показываем всё, что есть, и честно
+ * говорим об этом: цвет у композита сквозной, фактура на всех одинаковая.
+ */
+const allImages = computed(() => props.product.images ?? []);
+const colorImages = computed(() => allImages.value.filter((i) => i.color === color.value?.name));
+const gallery = computed(() => {
+    if (!allImages.value.length) return [];
+    const universal = allImages.value.filter((i) => !i.color);
+    return colorImages.value.length ? [...colorImages.value, ...universal] : allImages.value;
+});
+const activeImage = computed(() => gallery.value[activeIndex.value] ?? gallery.value[0] ?? null);
+const hasColorPhoto = computed(() => colorImages.value.length > 0);
+
+// Смена цвета всегда показывает первый снимок новой подборки.
+watch(color, () => (activeIndex.value = 0));
 const quantity = ref(Number(props.product.min_order) || 1);
 const area = ref(''); // калькулятор площади: м² → количество
 const isFavorite = ref(false);
@@ -80,7 +99,21 @@ onMounted(() => {
             <div class="mt-8 grid gap-10 lg:grid-cols-2 lg:gap-16">
                 <!-- Визуал -->
                 <div class="lg:sticky lg:top-28 lg:self-start">
-                    <ProductVisual :product="product" :color="color?.hex" ratio="aspect-[4/3]" />
+                    <ProductVisual :product="product" :color="color?.hex" :image="activeImage" ratio="aspect-[4/3]" />
+
+                    <!-- Миниатюры галереи -->
+                    <div v-if="gallery.length > 1" class="mt-3 flex gap-2 overflow-x-auto pb-1">
+                        <button
+                            v-for="(img, i) in gallery"
+                            :key="img.path"
+                            class="h-16 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition"
+                            :class="i === activeIndex ? 'border-sand-300' : 'border-white/10 hover:border-white/30'"
+                            :aria-label="`Фото ${i + 1}`"
+                            @click="activeIndex = i"
+                        >
+                            <img :src="img.thumb ?? img.path" :alt="img.alt || product.name" loading="lazy" class="h-full w-full object-cover" />
+                        </button>
+                    </div>
 
                     <div v-if="product.colors?.length" class="mt-6">
                         <p class="eyebrow">Цвет · {{ color?.name }}</p>
@@ -98,7 +131,13 @@ onMounted(() => {
                             />
                         </div>
                         <p class="mt-3 text-xs text-sand-100/40">
-                            Цвет сквозной: пигмент добавляется в массу, а не наносится сверху.
+                            <template v-if="allImages.length && !hasColorPhoto">
+                                Фото именно в этом цвете пока нет — на снимке другой оттенок.
+                                Цвет сквозной: пигмент добавляется в массу, фактура и форма те же.
+                            </template>
+                            <template v-else>
+                                Цвет сквозной: пигмент добавляется в массу, а не наносится сверху.
+                            </template>
                         </p>
                     </div>
                 </div>

@@ -170,6 +170,51 @@ class CatalogMediaTest extends TestCase
         $this->assertSame(9100.0, (float) $product->fresh()->price);
     }
 
+    public function test_photo_can_be_bound_to_a_colour(): void
+    {
+        $product = $this->paving();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('catalogMedia.images', $product), [
+            'images' => [
+                UploadedFile::fake()->image('belyy.jpg', 800, 600),
+                UploadedFile::fake()->image('antratsit.jpg', 800, 600),
+            ],
+        ]);
+
+        // По умолчанию снимок показывается для всех цветов.
+        $this->assertNull($product->fresh()->images[0]['color'] ?? null);
+
+        $this->actingAs($admin)->post(route('catalogMedia.imageColor', $product), [
+            'index' => 1, 'color' => 'Антрацит',
+        ])->assertRedirect();
+
+        $images = $product->fresh()->images;
+        $this->assertNull($images[0]['color'] ?? null);
+        $this->assertSame('Антрацит', $images[1]['color']);
+
+        // Витрина получает привязку и переключает галерею при выборе цвета.
+        $this->get(route('site.product', $product->slug))
+            ->assertInertia(fn ($p) => $p->where('product.images.1.color', 'Антрацит'));
+    }
+
+    public function test_colour_binding_can_be_removed(): void
+    {
+        $product = $this->paving();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('catalogMedia.images', $product), [
+            'images' => [UploadedFile::fake()->image('foto.jpg', 600, 600)],
+        ]);
+        $this->actingAs($admin)->post(route('catalogMedia.imageColor', $product), ['index' => 0, 'color' => 'Терракота']);
+        $this->assertSame('Терракота', $product->fresh()->images[0]['color']);
+
+        $this->actingAs($admin)->post(route('catalogMedia.imageColor', $product), ['index' => 0, 'color' => null])
+            ->assertRedirect();
+
+        $this->assertNull($product->fresh()->images[0]['color']);
+    }
+
     public function test_obj_model_is_stored_with_its_materials_and_textures(): void
     {
         $product = $this->paving();

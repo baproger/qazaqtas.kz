@@ -171,6 +171,7 @@ Route::middleware('auth')->group(function () {
     Route::post('catalog/{product:id}/images', [\App\Http\Controllers\CatalogMediaController::class, 'storeImages'])->name('catalogMedia.images');
     Route::delete('catalog/{product:id}/images', [\App\Http\Controllers\CatalogMediaController::class, 'destroyImage'])->name('catalogMedia.imageDestroy');
     Route::post('catalog/{product:id}/images/main', [\App\Http\Controllers\CatalogMediaController::class, 'makeMainImage'])->name('catalogMedia.imageMain');
+    Route::post('catalog/{product:id}/images/color', [\App\Http\Controllers\CatalogMediaController::class, 'setImageColor'])->name('catalogMedia.imageColor');
     Route::post('catalog/{product:id}/texture', [\App\Http\Controllers\CatalogMediaController::class, 'setTexture'])->name('catalogMedia.texture');
     Route::post('catalog/{product:id}/model', [\App\Http\Controllers\CatalogMediaController::class, 'storeModel'])->name('catalogMedia.model');
     Route::delete('catalog/{product:id}/model', [\App\Http\Controllers\CatalogMediaController::class, 'destroyModel'])->name('catalogMedia.modelDestroy');

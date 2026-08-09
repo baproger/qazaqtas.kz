@@ -46,6 +46,10 @@ const makeMain = (index) => router.post(route('catalogMedia.imageMain', props.pr
 
 const setTexture = (index) => router.post(route('catalogMedia.texture', props.product.id), { index }, opts);
 
+// Привязка снимка к цвету: на витрине выбор цвета переключает фото.
+const setColor = (index, color) =>
+    router.post(route('catalogMedia.imageColor', props.product.id), { index, color: color || null }, opts);
+
 // GLB — один файл; OBJ — комплект (.obj + .mtl + текстуры) одной загрузкой.
 const uploadModel = (event) => {
     const files = [...event.target.files];
@@ -93,25 +97,43 @@ const removeDocument = async (index) => {
             </div>
 
             <div v-if="product.images?.length" class="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
-                <figure v-for="(img, i) in product.images" :key="img.path" class="group relative overflow-hidden rounded-xl border border-slate-200">
-                    <img :src="img.thumb ?? img.path" :alt="img.alt ?? product.name" loading="lazy" class="aspect-[4/3] w-full object-cover" />
+                <figure v-for="(img, i) in product.images" :key="img.path" class="overflow-hidden rounded-xl border border-slate-200">
+                    <div class="group relative">
+                        <img :src="img.thumb ?? img.path" :alt="img.alt ?? product.name" loading="lazy" class="aspect-[4/3] w-full object-cover" />
 
-                    <span v-if="i === 0" class="absolute left-1.5 top-1.5 rounded bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">главное</span>
-                    <span v-if="product.texture_path === img.path" class="absolute right-1.5 top-1.5 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">3D</span>
+                        <span v-if="i === 0" class="absolute left-1.5 top-1.5 rounded bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">главное</span>
+                        <span v-if="product.texture_path === img.path" class="absolute right-1.5 top-1.5 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">3D</span>
 
-                    <figcaption class="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-slate-900/80 p-1 opacity-0 transition group-hover:opacity-100">
-                        <button v-if="i !== 0" class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-white/20" title="Сделать главным" @click="makeMain(i)">★</button>
-                        <button class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-white/20"
-                            :title="product.texture_path === img.path ? 'Снять текстуру 3D' : 'Использовать как текстуру 3D'"
-                            @click="setTexture(product.texture_path === img.path ? null : i)">3D</button>
-                        <button class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-rose-500" title="Удалить" @click="removeImage(i)">✕</button>
-                    </figcaption>
+                        <div class="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-slate-900/80 p-1 opacity-0 transition group-hover:opacity-100">
+                            <button v-if="i !== 0" class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-white/20" title="Сделать главным" @click="makeMain(i)">★</button>
+                            <button class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-white/20"
+                                :title="product.texture_path === img.path ? 'Снять текстуру 3D' : 'Использовать как текстуру 3D'"
+                                @click="setTexture(product.texture_path === img.path ? null : i)">3D</button>
+                            <button class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-rose-500" title="Удалить" @click="removeImage(i)">✕</button>
+                        </div>
+                    </div>
+
+                    <!-- Цвет снимка: выбор цвета на сайте переключит галерею -->
+                    <select
+                        v-if="product.colors?.length"
+                        :value="img.color ?? ''"
+                        class="w-full border-0 border-t border-slate-100 bg-white py-1.5 text-[11px] text-slate-600 focus:ring-0"
+                        @change="setColor(i, $event.target.value)"
+                    >
+                        <option value="">— для всех цветов —</option>
+                        <option v-for="c in product.colors" :key="c.hex" :value="c.name">{{ c.name }}</option>
+                    </select>
                 </figure>
             </div>
             <p v-else class="mt-3 rounded-xl border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">
                 Пока нет фото — витрина рисует схему изделия по типу и цвету
             </p>
 
+            <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+                Под каждым снимком — <b>цвет изделия</b> на фото. Когда покупатель выбирает
+                цвет в карточке, галерея переключается на снимки этого цвета. Фото без
+                привязки («для всех цветов») показываются всегда.
+            </p>
             <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
                 Кнопка <b>3D</b> помечает снимок как текстуру: этим фото 3D-сцена красит изделие
                 на главной и в конфигураторе. Лучше всего подходит фрагмент поверхности,

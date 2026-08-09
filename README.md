@@ -51,7 +51,7 @@ php artisan serve                  # http://localhost:8000
 
 ```bash
 composer dev          # сервер + очередь + логи + vite одной командой
-php artisan test      # 291 тест, гонять перед каждым push
+php artisan test      # 293 теста, гонять перед каждым push
 npm run build         # public/build закоммичен — собрать перед push
 php artisan schedule:work   # просрочки, дни рождения, сроки КП
 ```

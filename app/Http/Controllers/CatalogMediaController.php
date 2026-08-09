@@ -82,6 +82,32 @@ class CatalogMediaController extends Controller
     }
 
     /**
+     * Привязать фото к цвету изделия. На витрине выбор цвета переключает
+     * галерею на снимки этого цвета; фото без привязки показываются всегда.
+     */
+    public function setImageColor(Request $request, Product $product): RedirectResponse
+    {
+        $this->authorize('update', $product);
+        $data = $request->validate([
+            'index' => ['required', 'integer', 'min:0'],
+            'color' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        $images = array_values($product->images ?? []);
+        if (! isset($images[$data['index']])) {
+            return back()->with('error', 'Фотография не найдена.');
+        }
+
+        $images[$data['index']]['color'] = $data['color'] ?: null;
+        $product->update(['images' => $images]);
+        CatalogService::flushCache();
+
+        return back()->with('success', $data['color']
+            ? 'Фото привязано к цвету «'.$data['color'].'».'
+            : 'Привязка к цвету снята — фото показывается для всех цветов.');
+    }
+
+    /**
      * Отметить фото как ТЕКСТУРУ для 3D: этим снимком сцена красит плитку,
      * бордюр и малые формы. Лучше всего работает фрагмент поверхности сверху.
      */

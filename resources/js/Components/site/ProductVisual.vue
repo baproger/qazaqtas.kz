@@ -11,11 +11,14 @@ const props = defineProps({
     product: { type: Object, required: true },
     color: { type: String, default: null },
     ratio: { type: String, default: 'aspect-[4/3]' },
+    // Карточка товара передаёт выбранный снимок галереи; в списках — не задан,
+    // тогда берётся главное фото.
+    image: { type: Object, default: null },
 });
 
 // Картинка может быть строкой (легаси) или объектом {path, thumb, alt}.
 const image = computed(() => {
-    const first = props.product?.images?.[0];
+    const first = props.image ?? props.product?.images?.[0];
     if (!first) return null;
     return typeof first === 'string' ? { path: first, thumb: first, alt: '' } : first;
 });
