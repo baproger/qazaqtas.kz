@@ -79,27 +79,24 @@
     }
 }
 
-@layer components {
-    /* Кадр объекта слегка «оживает» при появлении: медленный отъезд
-       масштаба вместо статичной картинки. Только transform — без дёрганья. */
-    .photo-zoom {
-        transform: scale(1.12);
-        transition: transform 1.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s ease;
-    }
-    .photo-zoom.is-in {
-        transform: scale(1);
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
-    .photo-zoom,
-    .photo-zoom.is-in {
-        transform: none;
-        transition: none;
-    }
 
     .reveal {
         @apply translate-y-0 opacity-100;
         transition: none;
+    }
+}
+
+@layer components {
+    /* Заглушка карточки объекта, пока не загружено фото: рисунок перевязки
+       вместо пустого прямоугольника — блок выглядит цельно и без снимков. */
+    .paving-pattern {
+        background-color: theme('colors.ink.700');
+        background-image:
+            linear-gradient(90deg, rgba(200, 183, 154, 0.10) 1px, transparent 1px),
+            linear-gradient(rgba(200, 183, 154, 0.10) 1px, transparent 1px),
+            radial-gradient(120% 100% at 50% 0%, rgba(200, 183, 154, 0.08), transparent 65%);
+        background-size: 96px 48px, 96px 48px, 100% 100%;
+        background-position: 0 0, 48px 24px, 0 0;
     }
 }

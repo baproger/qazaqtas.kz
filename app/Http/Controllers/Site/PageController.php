@@ -26,8 +26,6 @@ class PageController extends Controller
             'advantages' => SiteContent::advantages(),
             'production' => SiteContent::production(),
             'projects' => $this->projectList(),
-            // Скролл-история после 3D: только объекты с фотографией.
-            'story' => SiteProject::active()->withPhoto()->orderBy('order')->limit(6)->get(),
             'seo' => [
                 'title' => 'QAZAQ TAS — тротуарная плитка и малые архитектурные формы из мраморного композита',
                 'description' => 'Производство тротуарной плитки, бордюров, вазонов, скамей и урн из мраморного композита. Три площадки: Шымкент, Алматы, Тараз. Расчёт, доставка и монтаж по Казахстану.',

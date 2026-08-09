@@ -58,22 +58,26 @@ class SiteProjectTest extends TestCase
         Storage::disk('public')->assertExists(str_replace('/storage/', '', $project->thumb));
     }
 
-    public function test_home_shows_only_projects_with_photos(): void
+    public function test_project_photo_reaches_the_cards_on_the_site(): void
     {
         $admin = $this->admin();
-        SiteProject::create(['title' => 'Без фото', 'is_active' => true, 'order' => 1]);
+        SiteProject::create(['title' => 'Без фото', 'is_active' => true, 'order' => 2]);
 
-        $this->actingAs($admin)->post(route('siteProjects.store'), ['title' => 'С фото', 'is_active' => true]);
+        $this->actingAs($admin)->post(route('siteProjects.store'), ['title' => 'С фото', 'is_active' => true, 'order' => 1]);
         $withPhoto = SiteProject::where('title', 'С фото')->firstOrFail();
         $this->actingAs($admin)->post(route('siteProjects.image', $withPhoto), [
             'image' => UploadedFile::fake()->image('obekt.jpg', 1600, 900),
         ]);
 
-        // В скролл-историю идёт только объект со снимком, в списке — оба.
-        $this->get(route('site.home'))->assertInertia(fn ($p) => $p
-            ->has('story', 1)
-            ->where('story.0.title', 'С фото')
-            ->has('projects', 2));
+        // Оба объекта в блоке «Реализовано»; у первого карточка с фотографией,
+        // у второго — бетонная заливка вместо снимка.
+        foreach (['site.home', 'site.projects'] as $page) {
+            $this->get(route($page))->assertInertia(fn ($p) => $p
+                ->has('projects', 2)
+                ->where('projects.0.title', 'С фото')
+                ->whereNot('projects.0.image', null)
+                ->where('projects.1.image', null));
+        }
     }
 
     public function test_hidden_project_disappears_from_the_site(): void

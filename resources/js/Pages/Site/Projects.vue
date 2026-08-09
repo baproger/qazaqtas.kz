@@ -32,12 +32,34 @@ onBeforeUnmount(() => stop());
                 <article
                     v-for="p in projects"
                     :key="p.title"
-                    class="reveal concrete group rounded-3xl border border-white/10 bg-ink-800/60 p-8 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40 sm:p-10"
+                    class="reveal group overflow-hidden rounded-3xl border border-white/10 bg-ink-800/60 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40"
                 >
-                    <p class="text-xs uppercase tracking-[0.24em] text-sand-300/60">{{ p.city }} · {{ p.year }}</p>
-                    <h2 class="display mt-4 text-2xl text-sand-50 sm:text-3xl">{{ p.title }}</h2>
-                    <p class="mt-4 text-sm leading-relaxed text-sand-100/50">{{ p.products }}</p>
-                    <p class="mt-8 display text-4xl text-sand-300">{{ p.area }}</p>
+                    <div class="relative aspect-[16/10] overflow-hidden">
+                        <img
+                            v-if="p.image"
+                            :src="p.image"
+                            :srcset="p.thumb ? `${p.thumb} 600w, ${p.image} 1600w` : undefined"
+                            sizes="(max-width: 640px) 100vw, 50vw"
+                            :alt="p.title"
+                            loading="lazy"
+                            decoding="async"
+                            class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105"
+                        />
+                        <div v-else class="paving-pattern flex h-full w-full items-center justify-center">
+                            <span class="text-[11px] uppercase tracking-[0.28em] text-sand-100/25">фото объекта</span>
+                        </div>
+                        <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/20 to-transparent" />
+                        <p v-if="p.area" class="absolute bottom-5 left-6 display text-3xl text-sand-50 sm:text-4xl">{{ p.area }}</p>
+                    </div>
+
+                    <div class="p-7 sm:p-9">
+                        <p class="text-xs uppercase tracking-[0.24em] text-sand-300/60">
+                            {{ p.city }}<template v-if="p.year"> · {{ p.year }}</template>
+                        </p>
+                        <h2 class="display mt-3 text-2xl text-sand-50 sm:text-3xl">{{ p.title }}</h2>
+                        <p v-if="p.products" class="mt-4 text-sm leading-relaxed text-sand-100/50">{{ p.products }}</p>
+                        <p v-if="p.description" class="mt-3 text-sm leading-relaxed text-sand-100/40">{{ p.description }}</p>
+                    </div>
                 </article>
             </div>
 
