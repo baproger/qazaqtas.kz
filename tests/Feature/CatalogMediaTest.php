@@ -137,9 +137,9 @@ class CatalogMediaTest extends TestCase
         $admin = $this->admin();
 
         $this->actingAs($admin)->post(route('catalogMedia.model', $product), [
-            'model' => UploadedFile::fake()->create('vazon.glb', 512),
+            'models' => [UploadedFile::fake()->create('vazon.glb', 512)],
         ])->assertRedirect();
-        $this->assertNotNull($product->fresh()->model_path);
+        $this->assertStringEndsWith('.glb', (string) $product->fresh()->model_path);
 
         $this->actingAs($admin)->post(route('catalogMedia.document', $product), [
             'name' => 'Паспорт изделия',
@@ -168,6 +168,75 @@ class CatalogMediaTest extends TestCase
             ])->assertRedirect();
 
         $this->assertSame(9100.0, (float) $product->fresh()->price);
+    }
+
+    public function test_obj_model_is_stored_with_its_materials_and_textures(): void
+    {
+        $product = $this->paving();
+        $admin = $this->admin();
+
+        // OBJ ссылается на .mtl, а тот — на текстуры ПО ИМЕНИ: комплект
+        // должен лечь в одну папку с сохранёнными именами файлов.
+        $this->actingAs($admin)->post(route('catalogMedia.model', $product), [
+            'models' => [
+                UploadedFile::fake()->create('skamya.obj', 800),
+                UploadedFile::fake()->create('skamya.mtl', 4),
+                UploadedFile::fake()->image('derevo.jpg', 512, 512),
+            ],
+        ])->assertRedirect();
+
+        $model = $product->fresh()->model_path;
+        $this->assertStringEndsWith('skamya.obj', (string) $model);
+
+        $folder = 'catalog/'.$product->id.'/models';
+        foreach (['skamya.obj', 'skamya.mtl', 'derevo.jpg'] as $name) {
+            Storage::disk('public')->assertExists("{$folder}/{$name}");
+        }
+    }
+
+    public function test_obj_without_materials_warns_but_still_loads(): void
+    {
+        $product = $this->paving();
+
+        $this->actingAs($this->admin())->post(route('catalogMedia.model', $product), [
+            'models' => [UploadedFile::fake()->create('urna.obj', 300)],
+        ])->assertRedirect()->assertSessionHas('success', fn ($m) => str_contains($m, 'серой'));
+
+        $this->assertStringEndsWith('urna.obj', (string) $product->fresh()->model_path);
+    }
+
+    public function test_upload_without_a_model_file_is_rejected(): void
+    {
+        $product = $this->paving();
+
+        // Одни текстуры без .obj/.glb — комплект неполный.
+        $this->actingAs($this->admin())->post(route('catalogMedia.model', $product), [
+            'models' => [UploadedFile::fake()->image('tekstura.jpg')],
+        ])->assertSessionHas('error');
+
+        $this->assertNull($product->fresh()->model_path);
+    }
+
+    public function test_replacing_a_model_removes_the_previous_set(): void
+    {
+        $product = $this->paving();
+        $admin = $this->admin();
+        $folder = 'catalog/'.$product->id.'/models';
+
+        $this->actingAs($admin)->post(route('catalogMedia.model', $product), [
+            'models' => [
+                UploadedFile::fake()->create('staraya.obj', 100),
+                UploadedFile::fake()->create('staraya.mtl', 2),
+            ],
+        ]);
+
+        $this->actingAs($admin)->post(route('catalogMedia.model', $product), [
+            'models' => [UploadedFile::fake()->create('novaya.glb', 100)],
+        ]);
+
+        Storage::disk('public')->assertMissing("{$folder}/staraya.obj");
+        Storage::disk('public')->assertMissing("{$folder}/staraya.mtl");
+        Storage::disk('public')->assertExists("{$folder}/novaya.glb");
     }
 
     public function test_media_is_closed_for_users_without_rights(): void

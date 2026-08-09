@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -19,6 +19,12 @@ const modelInput = ref(null);
 const docInput = ref(null);
 
 const opts = { preserveScroll: true, onFinish: () => (uploading.value = false) };
+
+/** Подпись формата у загруженной модели: .glb / .obj. */
+const modelFormat = computed(() => {
+    const path = props.product.model_path ?? '';
+    return path.slice(path.lastIndexOf('.') + 1).toUpperCase() || '3D';
+});
 
 const uploadImages = (event) => {
     const files = [...event.target.files];
@@ -40,11 +46,12 @@ const makeMain = (index) => router.post(route('catalogMedia.imageMain', props.pr
 
 const setTexture = (index) => router.post(route('catalogMedia.texture', props.product.id), { index }, opts);
 
+// GLB — один файл; OBJ — комплект (.obj + .mtl + текстуры) одной загрузкой.
 const uploadModel = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = [...event.target.files];
+    if (!files.length) return;
     uploading.value = true;
-    router.post(route('catalogMedia.model', props.product.id), { model: file }, {
+    router.post(route('catalogMedia.model', props.product.id), { models: files }, {
         ...opts,
         forceFormData: true,
         onSuccess: () => (modelInput.value.value = ''),
@@ -114,18 +121,30 @@ const removeDocument = async (index) => {
 
         <!-- 3D-модель -->
         <section class="border-t border-slate-100 pt-5">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">3D-модель (GLB)</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">3D-модель (GLB или OBJ)</p>
 
             <div v-if="product.model_path" class="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2">
                 <span class="text-lg">🧊</span>
-                <span class="flex-1 truncate text-sm text-slate-700">Модель загружена — конфигуратор покажет её вместо схемы</span>
+                <span class="flex-1 truncate text-sm text-slate-700">
+                    Модель загружена ({{ modelFormat }}) — сцена покажет её вместо схемы
+                </span>
                 <button class="rounded p-1 text-slate-300 hover:text-rose-600" @click="removeModel">✕</button>
             </div>
 
-            <label v-else class="mt-3 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-200 py-6 text-xs text-slate-400 hover:border-indigo-300 hover:text-indigo-600">
-                Перетащите или выберите .glb (до 24 МБ)
-                <input ref="modelInput" type="file" accept=".glb,.gltf" class="hidden" @change="uploadModel" />
+            <label v-else class="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center hover:border-indigo-300">
+                <span class="text-xs font-medium text-slate-500">Перетащите или выберите файлы (до 24 МБ каждый)</span>
+                <span class="mt-1 text-[11px] text-slate-400">
+                    .glb — одним файлом · .obj — вместе с .mtl и текстурами, выделите всё сразу
+                </span>
+                <input ref="modelInput" type="file" accept=".glb,.gltf,.obj,.mtl,.bin,image/*" multiple class="hidden" @change="uploadModel" />
             </label>
+
+            <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+                У OBJ материалы и текстуры лежат в отдельных файлах, поэтому загружать нужно
+                <b>весь комплект сразу</b> — иначе изделие в сцене будет серым. Если модель
+                есть только в OBJ, надёжнее один раз пересохранить её в GLB
+                (Blender: File → Export → glTF 2.0) — это один файл со всеми материалами.
+            </p>
         </section>
 
         <!-- Документы -->

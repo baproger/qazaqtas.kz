@@ -99,30 +99,67 @@ class CatalogMediaController extends Controller
         return back()->with('success', $path ? 'Текстура для 3D выбрана.' : 'Текстура снята — сцена вернётся к цвету.');
     }
 
-    /** GLB-модель: если загружена, конфигуратор показывает её вместо схемы. */
+    /**
+     * 3D-модель изделия. Принимаем и GLB/GLTF, и комплект OBJ:
+     *  - GLB — один самодостаточный файл (материалы и текстуры внутри);
+     *  - OBJ — .obj + .mtl + файлы текстур, всё одной загрузкой: .mtl
+     *    ссылается на текстуры по именам, поэтому комплект нужен целиком.
+     */
     public function storeModel(Request $request, Product $product): RedirectResponse
     {
         $this->authorize('update', $product);
+
         $request->validate([
-            // mimes для .glb ненадёжен, проверяем расширение и размер.
-            'model' => ['required', 'file', 'max:24576', 'extensions:glb,gltf'],
+            'models' => ['required', 'array', 'min:1', 'max:12'],
+            // mimes для 3D-форматов ненадёжен — проверяем расширение и размер.
+            'models.*' => ['file', 'max:24576', 'extensions:glb,gltf,obj,mtl,bin,jpg,jpeg,png,webp'],
+        ], [
+            'models.*.extensions' => 'Допустимы: .glb, .gltf, .obj, .mtl и файлы текстур (jpg, png, webp).',
         ]);
 
-        $this->media->delete($product->model_path);
-        $product->update(['model_path' => $this->media->storeFile($request->file('model'), 'catalog/'.$product->id.'/models')]);
+        $files = $request->file('models');
+        $main = collect($files)->filter(
+            fn ($f) => in_array(strtolower($f->getClientOriginalExtension()), ['glb', 'gltf', 'obj'], true)
+        );
+
+        if ($main->count() !== 1) {
+            return back()->with('error', $main->isEmpty()
+                ? 'В комплекте нет самой модели — добавьте файл .glb или .obj.'
+                : 'В одной загрузке должна быть одна модель: либо .glb, либо .obj с сопровождением.');
+        }
+
+        // Старый комплект убираем целиком: файлы .mtl и текстур тоже.
+        $this->media->deleteDirectory($this->modelFolder($product));
+
+        $set = $this->media->storeModelSet($files, $this->modelFolder($product));
+        $product->update(['model_path' => $set['model']]);
         CatalogService::flushCache();
 
-        return back()->with('success', '3D-модель загружена.');
+        $isObj = str_ends_with(strtolower((string) $set['model']), '.obj');
+        $hasMtl = collect($set['files'])->contains(fn ($f) => str_ends_with(strtolower($f), '.mtl'));
+
+        return back()->with(
+            'success',
+            $isObj && ! $hasMtl
+                ? 'OBJ загружен, но без файла .mtl — в сцене модель будет серой, без материалов.'
+                : '3D-модель загружена ('.count($set['files']).' файл(ов)).'
+        );
     }
 
     public function destroyModel(Product $product): RedirectResponse
     {
         $this->authorize('update', $product);
-        $this->media->delete($product->model_path);
+        $this->media->deleteDirectory($this->modelFolder($product));
         $product->update(['model_path' => null]);
         CatalogService::flushCache();
 
         return back()->with('success', '3D-модель удалена.');
+    }
+
+    /** Комплект модели живёт в отдельной папке — так ссылки .mtl сходятся. */
+    private function modelFolder(Product $product): string
+    {
+        return 'catalog/'.$product->id.'/models';
     }
 
     /** Документы карточки: паспорт изделия, сертификат, схема укладки. */

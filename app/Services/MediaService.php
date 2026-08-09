@@ -57,6 +57,52 @@ class MediaService
         return Storage::url($path);
     }
 
+    /**
+     * Комплект 3D-модели. GLB самодостаточен, а OBJ ссылается на соседний
+     * .mtl, который в свою очередь ссылается на файлы текстур ПО ИМЕНИ —
+     * поэтому здесь имена файлов сохраняются как есть (только чистятся),
+     * и весь комплект кладётся в одну папку, чтобы ссылки разрешились.
+     *
+     * @param  array<int, UploadedFile>  $files
+     * @return array{model: string|null, files: array<int, string>}
+     */
+    public function storeModelSet(array $files, string $folder): array
+    {
+        $dir = trim($folder, '/');
+        $stored = [];
+        $model = null;
+
+        foreach ($files as $file) {
+            $name = $this->safeName($file->getClientOriginalName());
+            Storage::disk('public')->putFileAs($dir, $file, $name);
+            $url = Storage::url("{$dir}/{$name}");
+            $stored[] = $url;
+
+            // Главный файл — то, что открывает сцена: GLB/GLTF или OBJ.
+            if (in_array(strtolower($file->getClientOriginalExtension()), ['glb', 'gltf', 'obj'], true)) {
+                $model = $url;
+            }
+        }
+
+        return ['model' => $model, 'files' => $stored];
+    }
+
+    /** Удалить папку целиком — комплект модели вместе с .mtl и текстурами. */
+    public function deleteDirectory(string $folder): void
+    {
+        Storage::disk('public')->deleteDirectory(trim($folder, '/'));
+    }
+
+    /** Имя без путей и опасных символов — ссылки внутри .mtl должны сойтись. */
+    private function safeName(string $original): string
+    {
+        $name = basename(str_replace('\\', '/', $original));
+        $extension = Str::afterLast($name, '.');
+        $base = Str::of(Str::beforeLast($name, '.'))->slug('_')->limit(60, '')->value();
+
+        return ($base ?: Str::random(10)).'.'.Str::lower($extension);
+    }
+
     /** Удалить по публичному URL (/storage/...) — и картинку, и её превью. */
     public function delete(?string ...$urls): void
     {
