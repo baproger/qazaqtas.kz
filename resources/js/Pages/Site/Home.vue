@@ -44,7 +44,20 @@ const activeStep = computed(() => {
     return current;
 });
 
-const heroColor = computed(() => props.paving?.[0]?.colors?.[0]?.hex ?? '#C8B79A');
+/**
+ * Цвет плитки для 3D-сцены. Первый цвет палитры — «Мрамор белый»: на тёмном
+ * фоне он выглядит выцветшим пятном, поэтому берём первый ВЫРАЗИТЕЛЬНЫЙ тон
+ * (не слишком светлый и не слишком тёмный), а если такого нет — песочный.
+ */
+const heroColor = computed(() => {
+    const luminance = (hex) => {
+        const v = parseInt(String(hex).replace('#', ''), 16);
+        if (Number.isNaN(v)) return 1;
+        return (((v >> 16) & 255) * 0.299 + ((v >> 8) & 255) * 0.587 + (v & 255) * 0.114) / 255;
+    };
+    const palette = props.paving?.[0]?.colors ?? [];
+    return palette.find((c) => luminance(c.hex) > 0.35 && luminance(c.hex) < 0.78)?.hex ?? '#C8B79A';
+});
 
 onMounted(async () => {
     stopReveal = observeReveal();

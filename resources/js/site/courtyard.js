@@ -59,7 +59,7 @@ export function createCourtyard(canvas, options = {}) {
     // Тонемаппинг переводит «пересвеченный» линейный свет в фотографичную
     // картинку: без него бетон выглядит пластиковым.
     renderer.toneMapping = ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 0.82;
 
     const scene = new Scene();
     scene.fog = new Fog(0x08090b, 30, 86);
@@ -71,15 +71,17 @@ export function createCourtyard(canvas, options = {}) {
     pmrem.compileEquirectangularShader();
     const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environment;
+    // Студийная карта яркая: на полной силе она вымывает цвет композита в белый.
+    scene.environmentIntensity = 0.35;
 
     const camera = new PerspectiveCamera(38, 1, 0.1, 200);
     camera.position.set(0, 9, 20);
 
     // --- Свет: студийный, с одним «солнцем» и мягкой заливкой ---
     // Окружение уже даёт заливку, поэтому ambient — только лёгкий подмес.
-    scene.add(new AmbientLight(0xffffff, 0.18));
+    scene.add(new AmbientLight(0xffffff, 0.22));
 
-    const sun = new DirectionalLight(0xfff4e2, 2.6);
+    const sun = new DirectionalLight(0xfff4e2, 1.55);
     sun.position.set(12, 22, 10);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -111,14 +113,25 @@ export function createCourtyard(canvas, options = {}) {
     const world = new Group();
     scene.add(world);
 
+    // Основание под покрытием — песчано-цементная подушка. Без неё щели между
+    // элементами выглядели чёрными провалами: под плиткой была пустота.
+    const bedding = new Mesh(
+        new PlaneGeometry(19.6, 9.2),
+        new MeshStandardMaterial({ color: 0x4a453d, roughness: 1, metalness: 0, envMapIntensity: 0.2 }),
+    );
+    bedding.rotation.x = -Math.PI / 2;
+    bedding.position.y = -0.09;
+    bedding.receiveShadow = true;
+    world.add(bedding);
+
     // Материалы переиспользуются всеми мешами — меньше draw-call'ов.
     // Шлифованный композит — матовый с лёгким блеском; дерево мягче,
     // зелень полностью матовая. envMapIntensity подмешивает окружение.
     const materials = {
-        paving: new MeshStandardMaterial({ color: palette.paving, roughness: 0.58, metalness: 0.04, envMapIntensity: 0.9 }),
-        pavingAlt: new MeshStandardMaterial({ color: palette.paving.clone().multiplyScalar(0.9), roughness: 0.62, metalness: 0.04, envMapIntensity: 0.9 }),
-        curb: new MeshStandardMaterial({ color: palette.curb, roughness: 0.72, metalness: 0.03, envMapIntensity: 0.7 }),
-        wood: new MeshStandardMaterial({ color: palette.wood, roughness: 0.45, metalness: 0, envMapIntensity: 0.8 }),
+        paving: new MeshStandardMaterial({ color: palette.paving, roughness: 0.58, metalness: 0.04, envMapIntensity: 0.4 }),
+        pavingAlt: new MeshStandardMaterial({ color: palette.paving.clone().multiplyScalar(0.8), roughness: 0.62, metalness: 0.04, envMapIntensity: 0.4 }),
+        curb: new MeshStandardMaterial({ color: palette.curb, roughness: 0.72, metalness: 0.03, envMapIntensity: 0.35 }),
+        wood: new MeshStandardMaterial({ color: palette.wood, roughness: 0.45, metalness: 0, envMapIntensity: 0.45 }),
         green: new MeshStandardMaterial({ color: palette.green, roughness: 1, metalness: 0, envMapIntensity: 0.4 }),
     };
 
@@ -167,15 +180,15 @@ export function createCourtyard(canvas, options = {}) {
     // --- 1. Раскладка плитки со смещением (running bond) ---
     // Шов ~2 % от размера элемента: на реальной укладке это 3–5 мм.
     // Раньше зазор был 10 %, из-за чего покрытие выглядело развалившимся.
-    const tileGeo = new BoxGeometry(1.96, 0.2, 1.01);
-    const cols = 8;
+    const tileGeo = new BoxGeometry(1.94, 0.2, 0.96);
+    const cols = 9;
     const rows = 8;
     let index = 0;
     for (let r = 0; r < rows; r++) {
-        const shift = r % 2 ? -0.95 : 0;
+        const shift = r % 2 ? -0.5 : 0.5;
         for (let c = 0; c < cols; c++) {
             const x = (c - (cols - 1) / 2) * 2 + shift;
-            const z = (r - (rows - 1) / 2) * 1.05;
+            const z = (r - (rows - 1) / 2) * 1.0;
             const mesh = new Mesh(tileGeo, index % 6 === 0 ? materials.pavingAlt : materials.paving);
             mesh.position.set(x, 0, z);
             // Центральные плитки ложатся первыми — рисунок растёт от середины.
@@ -192,37 +205,22 @@ export function createCourtyard(canvas, options = {}) {
     }
 
     // --- 2. Бордюры: обрамляют площадку с четырёх сторон ---
-    const curbGeo = new BoxGeometry(2, 0.42, 0.3);
-    const halfX = (cols * 2) / 2;
-    const halfZ = (rows * 1.05) / 2;
-    // Продольные ряды короче на толщину поперечных — углы стыкуются в рамку,
-    // а не наезжают друг на друга крестом.
-    for (let i = 0; i < cols; i++) {
-        const x = (i - (cols - 1) / 2) * 2;
-        [-1, 1].forEach((side) => {
-            const mesh = new Mesh(curbGeo, materials.curb);
-            mesh.position.set(x, 0.1, side * (halfZ + 0.16));
-            addPart(mesh, {
-                from: 0.5 + i * 0.012,
-                to: 0.74,
-                offset: new Vector3(0, 0, side * 12),
-            });
-        });
-    }
-    for (let i = 0; i < rows; i++) {
-        const z = (i - (rows - 1) / 2) * 1.05;
-        [-1, 1].forEach((side) => {
-            const mesh = new Mesh(curbGeo, materials.curb);
-            mesh.scale.x = 0.52; // шаг рядов по Z вдвое короче элемента
-            mesh.position.set(side * (halfX + 0.16), 0.1, z);
-            mesh.rotation.y = Math.PI / 2;
-            addPart(mesh, {
-                from: 0.54 + i * 0.012,
-                to: 0.78,
-                offset: new Vector3(side * 12, 0, 0),
-            });
-        });
-    }
+    // Полуширина покрытия с учётом ½-сдвига перевязки.
+    const halfX = ((cols - 1) * 2) / 2 + 1.5;
+    const halfZ = (rows * 1.0) / 2;
+    const curbSide = new BoxGeometry(halfX * 2 + 0.6, 0.42, 0.3);
+    const curbEnd = new BoxGeometry(0.3, 0.42, halfZ * 2);
+
+    [-1, 1].forEach((side) => {
+        const bar = new Mesh(curbSide, materials.curb);
+        bar.position.set(0, 0.11, side * (halfZ + 0.15));
+        addPart(bar, { from: 0.5, to: 0.74, offset: new Vector3(0, 0, side * 12) });
+    });
+    [-1, 1].forEach((side) => {
+        const bar = new Mesh(curbEnd, materials.curb);
+        bar.position.set(side * (halfX + 0.15), 0.11, 0);
+        addPart(bar, { from: 0.54, to: 0.78, offset: new Vector3(side * 12, 0, 0) });
+    });
 
     // --- 3. Скамья: две опоры из композита + деревянные ламели ---
     const bench = new Group();
@@ -255,13 +253,14 @@ export function createCourtyard(canvas, options = {}) {
     ];
     const vaseGeo = new LatheGeometry(vaseProfile, 48);
     [
-        { pos: new Vector3(6.2, 0, -2.6), from: 0.74 },
-        { pos: new Vector3(6.2, 0, 1.6), from: 0.78 },
+        { pos: new Vector3(5.6, 0, -2.2), from: 0.74 },
+        { pos: new Vector3(5.6, 0, 1.4), from: 0.78 },
     ].forEach(({ pos, from }) => {
         const group = new Group();
         const vase = new Mesh(vaseGeo, materials.paving);
         vase.castShadow = true;
         group.add(vase);
+        group.scale.setScalar(0.72);
         // Куст собираем из нескольких сфер — силуэт живой, а не конус.
         [[0, 1.72, 0, 0.62], [0.34, 1.58, 0.2, 0.42], [-0.3, 1.62, -0.16, 0.38], [0.08, 1.94, -0.22, 0.34]]
             .forEach(([bx, by, bz, r]) => {
@@ -292,8 +291,8 @@ export function createCourtyard(canvas, options = {}) {
     const cameraPath = [
         { at: 0.0, pos: new Vector3(2.6, 1.5, 5.2), look: new Vector3(0, 0.4, 0) },
         { at: 0.3, pos: new Vector3(0.5, 6.5, 12), look: new Vector3(0, 0.2, 0) },
-        { at: 0.62, pos: new Vector3(-8, 8.5, 14), look: new Vector3(0, 0.4, 0) },
-        { at: 1.0, pos: new Vector3(0, 13.5, 22), look: new Vector3(0, 0.6, -0.5) },
+        { at: 0.62, pos: new Vector3(-7.5, 6.5, 12), look: new Vector3(0, 0.4, 0) },
+        { at: 1.0, pos: new Vector3(0.5, 8.5, 15), look: new Vector3(0, 0.3, 0) },
     ];
 
     const lookAt = new Vector3();
