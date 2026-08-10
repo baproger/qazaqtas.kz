@@ -163,7 +163,8 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50">
-                    <tr v-for="m in filtered" :key="m.id" class="transition-colors hover:bg-slate-50">
+                    <template v-for="m in filtered" :key="m.id">
+                    <tr class="transition-colors hover:bg-slate-50">
                         <td class="px-6 py-3 font-medium text-slate-900">{{ m.name }}<span v-if="m.note" class="ml-2 text-xs text-slate-400">{{ m.note }}</span></td>
                         <td v-if="allMode" class="px-4 py-3 text-slate-500">{{ m.company?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-slate-500">{{ m.unit }}</td>
@@ -235,6 +236,8 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                             </p>
                         </td>
                     </tr>
+                    </template>
+
                     <tr v-if="!filtered.length">
                         <td :colspan="canManage ? (allMode ? 10 : 9) : (allMode ? 9 : 8)" class="px-6 py-12 text-center">
                             <svg class="mx-auto h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>
