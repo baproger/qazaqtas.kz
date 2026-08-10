@@ -18,7 +18,7 @@ class PageController extends Controller
     {
         return Inertia::render('Site/Home', [
             'categories' => $this->catalog->categories(),
-            'featured' => $this->catalog->featured(6),
+            'featured' => $this->catalog->featured(8),
             'paving' => $this->catalog->pavingCollections(),
             // Фото-текстуры и GLB-модели для 3D-сцены (если загружены в ERP).
             'scene' => $this->catalog->sceneAssets(),

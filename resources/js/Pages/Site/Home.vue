@@ -253,7 +253,7 @@ onBeforeUnmount(() => {
                     <Link v-if="configuratorEnabled" :href="route('site.configurator')" class="btn-ghost">Рассчитать двор</Link>
                 </div>
 
-                <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     <ProductCard v-for="p in featured" :key="p.id" :product="p" class="reveal h-full" />
                 </div>
             </div>
