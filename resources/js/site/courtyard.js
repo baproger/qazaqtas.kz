@@ -421,9 +421,10 @@ export function createCourtyard(canvas, options = {}) {
         setTextures,
         setColors,
         /**
-         * Подменить схематичные изделия настоящими GLB/OBJ-моделями из
-         * карточек каталога. Модель вписывается в габарит своей заглушки,
-         * поэтому композиция сцены не меняется.
+         * Подменить схематичные изделия настоящими моделями из каталога.
+         * На категорию может быть загружено несколько моделей (например два
+         * типа вазона) — тогда местам достаются РАЗНЫЕ модели по кругу,
+         * а не одна и та же копия.
          */
         async setModels(models = {}) {
             const slots = [
@@ -433,14 +434,15 @@ export function createCourtyard(canvas, options = {}) {
             ];
 
             for (const [key, targets] of slots) {
-                if (!models[key]) continue;
+                const urls = [models[key]].flat().filter(Boolean);
+                if (!urls.length) continue;
 
-                for (const target of targets) {
+                for (const [i, target] of targets.entries()) {
                     // Вписываем в габарит заглушки целиком, иначе модель с
                     // другими пропорциями раздувается на пол-сцены.
                     const box = new Box3().setFromObject(target);
                     const size = box.getSize(new Vector3());
-                    const model = await loadModel(models[key], {
+                    const model = await loadModel(urls[i % urls.length], {
                         x: Math.max(0.4, size.x),
                         y: Math.max(0.4, size.y),
                         z: Math.max(0.4, size.z),
@@ -456,8 +458,8 @@ export function createCourtyard(canvas, options = {}) {
 
                     world.remove(target);
                     world.add(model);
-                    const i = parts.indexOf(target);
-                    if (i !== -1) parts[i] = model;
+                    const index = parts.indexOf(target);
+                    if (index !== -1) parts[index] = model;
                 }
             }
             needsRender = true;

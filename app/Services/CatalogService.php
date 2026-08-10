@@ -144,19 +144,26 @@ class CatalogService
      */
     public function sceneAssets(): array
     {
-        $pick = fn (string $categorySlug) => Product::active()
+        $group = fn (string $categorySlug) => Product::active()
             ->whereHas('category', fn ($q) => $q->where('slug', $categorySlug))
             ->orderByDesc('is_featured')->orderBy('order')
-            ->get(['id', 'texture_path', 'model_path', 'colors', 'images'])
-            ->first();
+            ->get(['id', 'texture_path', 'model_path', 'colors', 'images']);
 
-        $items = [
-            'paving' => $pick('trotuarnaya-plitka'),
-            'curb' => $pick('bordyury'),
-            'bench' => $pick('skami'),
-            'vase' => $pick('vazony'),
-            'urn' => $pick('urny'),
+        $groups = [
+            'paving' => $group('trotuarnaya-plitka'),
+            'curb' => $group('bordyury'),
+            'bench' => $group('skami'),
+            'vase' => $group('vazony'),
+            'urn' => $group('urny'),
         ];
+        $items = array_map(fn ($rows) => $rows->first(), $groups);
+
+        // Все загруженные модели категории: если их несколько (например два
+        // типа вазона), сцена расставит разные, а не продублирует одну.
+        $models = array_filter(array_map(
+            fn ($rows) => $rows->pluck('model_path')->filter()->values()->all(),
+            array_intersect_key($groups, array_flip(['bench', 'vase', 'urn'])),
+        ));
 
         return [
             // Плоские поверхности — фото работает как материал.
@@ -165,11 +172,7 @@ class CatalogService
                 'curb' => $items['curb']?->texture(),
             ]),
             // Объёмные изделия — настоящая геометрия со своими материалами.
-            'models' => array_filter([
-                'bench' => $items['bench']?->model_path,
-                'vase' => $items['vase']?->model_path,
-                'urn' => $items['urn']?->model_path,
-            ]),
+            'models' => $models,
             // Запасной вариант без модели: изделие красится своим цветом
             // из карточки, а не цветом плитки.
             'colors' => array_filter(array_map(
