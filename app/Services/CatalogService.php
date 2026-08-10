@@ -133,33 +133,49 @@ class CatalogService
     }
 
     /**
-     * Материалы для 3D-сцены главной: фото-текстуры и GLB-модели изделий
-     * из каталога. Пусто — сцена рисует процедурную геометрию цветом.
+     * Материалы 3D-сцены главной из каталога ERP.
      *
-     * @return array<string, string|null>
+     * Текстуры берём ТОЛЬКО у плитки и бордюра: это плоские повторяющиеся
+     * поверхности, фото ложится на них естественно. Натянуть снимок урны или
+     * вазона на цилиндр нельзя — изображение размажется, поэтому для малых
+     * форм используются GLB-модели, а без модели — цвет из палитры карточки.
+     *
+     * @return array{textures: array<string, string>, models: array<string, string>, colors: array<string, string>}
      */
     public function sceneAssets(): array
     {
         $pick = fn (string $categorySlug) => Product::active()
             ->whereHas('category', fn ($q) => $q->where('slug', $categorySlug))
             ->orderByDesc('is_featured')->orderBy('order')
-            ->get(['id', 'texture_path', 'model_path', 'images'])
-            ->first(fn (Product $p) => $p->texture() || $p->model_path);
+            ->get(['id', 'texture_path', 'model_path', 'colors', 'images'])
+            ->first();
 
-        $paving = $pick('trotuarnaya-plitka');
-        $curb = $pick('bordyury');
-        $bench = $pick('skami');
-        $vase = $pick('vazony');
+        $items = [
+            'paving' => $pick('trotuarnaya-plitka'),
+            'curb' => $pick('bordyury'),
+            'bench' => $pick('skami'),
+            'vase' => $pick('vazony'),
+            'urn' => $pick('urny'),
+        ];
 
         return [
+            // Плоские поверхности — фото работает как материал.
             'textures' => array_filter([
-                'paving' => $paving?->texture(),
-                'curb' => $curb?->texture(),
+                'paving' => $items['paving']?->texture(),
+                'curb' => $items['curb']?->texture(),
             ]),
+            // Объёмные изделия — настоящая геометрия со своими материалами.
             'models' => array_filter([
-                'bench' => $bench?->model_path,
-                'vase' => $vase?->model_path,
+                'bench' => $items['bench']?->model_path,
+                'vase' => $items['vase']?->model_path,
+                'urn' => $items['urn']?->model_path,
             ]),
+            // Запасной вариант без модели: изделие красится своим цветом
+            // из карточки, а не цветом плитки.
+            'colors' => array_filter(array_map(
+                fn (?Product $p) => $p?->colors ? $p->sceneColor() : null,
+                $items,
+            )),
         ];
     }
 

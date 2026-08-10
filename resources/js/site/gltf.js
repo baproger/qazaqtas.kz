@@ -54,10 +54,14 @@ async function loadObj(url) {
 }
 
 /**
- * Готовая к сцене модель: отцентрована по низу, вписана в заданную высоту
- * (в метрах), с тенями. При любой ошибке — null, без падения сцены.
+ * Готовая к сцене модель: отцентрована по низу, вписана в габарит места,
+ * с тенями. При любой ошибке — null, без падения сцены.
+ *
+ * `fit` — либо высота числом, либо габаритный ящик {x, y, z}. Вписывание по
+ * ящику надёжнее: модель с другими пропорциями (длинная скамья при низкой
+ * заглушке) не разрастается на всю сцену.
  */
-export async function loadModel(url, targetHeight = 1) {
+export async function loadModel(url, fit = 1) {
     if (!url) return null;
 
     try {
@@ -72,8 +76,15 @@ export async function loadModel(url, targetHeight = 1) {
         box.getSize(size);
         box.getCenter(center);
 
-        if (size.y > 0 && targetHeight > 0) {
-            model.scale.multiplyScalar(targetHeight / size.y);
+        const box3 = typeof fit === 'number' ? { y: fit } : fit;
+        const ratios = [
+            box3.x > 0 && size.x > 0 ? box3.x / size.x : Infinity,
+            box3.y > 0 && size.y > 0 ? box3.y / size.y : Infinity,
+            box3.z > 0 && size.z > 0 ? box3.z / size.z : Infinity,
+        ].filter((r) => Number.isFinite(r) && r > 0);
+
+        if (ratios.length) {
+            model.scale.multiplyScalar(Math.min(...ratios));
         }
         // Ставим модель «на пол» и по центру своей опоры.
         model.position.sub(center.multiplyScalar(model.scale.y)).setY(0);

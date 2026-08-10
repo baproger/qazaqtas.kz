@@ -9,6 +9,7 @@
  */
 import {
     ACESFilmicToneMapping,
+    Box3,
     AmbientLight,
     BoxGeometry,
     CylinderGeometry,
@@ -35,6 +36,9 @@ import {
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { loadModel } from './gltf';
+
+/** Верхняя грань покрытия: на этой высоте стоят все изделия. */
+const TILE_TOP = 0.1;
 
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
@@ -131,6 +135,10 @@ export function createCourtyard(canvas, options = {}) {
         paving: new MeshStandardMaterial({ color: palette.paving, roughness: 0.58, metalness: 0.04, envMapIntensity: 0.4 }),
         pavingAlt: new MeshStandardMaterial({ color: palette.paving.clone().multiplyScalar(0.8), roughness: 0.62, metalness: 0.04, envMapIntensity: 0.4 }),
         curb: new MeshStandardMaterial({ color: palette.curb, roughness: 0.72, metalness: 0.03, envMapIntensity: 0.35 }),
+        // У каждого изделия свой материал: текстура покрытия на них не попадает.
+        bench: new MeshStandardMaterial({ color: palette.paving, roughness: 0.6, metalness: 0.03, envMapIntensity: 0.4 }),
+        vase: new MeshStandardMaterial({ color: palette.paving, roughness: 0.6, metalness: 0.03, envMapIntensity: 0.4 }),
+        urn: new MeshStandardMaterial({ color: palette.curb, roughness: 0.62, metalness: 0.03, envMapIntensity: 0.4 }),
         wood: new MeshStandardMaterial({ color: palette.wood, roughness: 0.45, metalness: 0, envMapIntensity: 0.45 }),
         green: new MeshStandardMaterial({ color: palette.green, roughness: 1, metalness: 0, envMapIntensity: 0.4 }),
     };
@@ -154,6 +162,18 @@ export function createCourtyard(canvas, options = {}) {
             material.needsUpdate = true;
             needsRender = true;
         });
+    };
+
+    /** Цвет изделия из его карточки — если GLB-модели нет. */
+    const setColors = (colors = {}) => {
+        if (colors.paving) {
+            materials.paving.color.set(colors.paving);
+            materials.pavingAlt.color.set(new Color(colors.paving).multiplyScalar(0.8));
+        }
+        ['curb', 'bench', 'vase', 'urn'].forEach((key) => {
+            if (colors[key]) materials[key].color.set(colors[key]);
+        });
+        needsRender = true;
     };
 
     const setTextures = (textures = {}) => {
@@ -226,7 +246,7 @@ export function createCourtyard(canvas, options = {}) {
     const bench = new Group();
     const legGeo = new BoxGeometry(0.36, 0.86, 1.5);
     [-1.5, 1.5].forEach((x) => {
-        const leg = new Mesh(legGeo, materials.paving);
+        const leg = new Mesh(legGeo, materials.bench);
         leg.position.set(x, 0.43, 0);
         leg.castShadow = true;
         bench.add(leg);
@@ -257,7 +277,7 @@ export function createCourtyard(canvas, options = {}) {
         { pos: new Vector3(5.6, 0, 1.4), from: 0.78 },
     ].forEach(({ pos, from }) => {
         const group = new Group();
-        const vase = new Mesh(vaseGeo, materials.paving);
+        const vase = new Mesh(vaseGeo, materials.vase);
         vase.castShadow = true;
         group.add(vase);
         group.scale.setScalar(0.72);
@@ -276,15 +296,15 @@ export function createCourtyard(canvas, options = {}) {
 
     // --- 5. Урна: рядом со скамьёй ---
     const urn = new Group();
-    const urnBody = new Mesh(new CylinderGeometry(0.46, 0.4, 1.16, 32), materials.paving);
+    const urnBody = new Mesh(new CylinderGeometry(0.46, 0.4, 1.16, 32), materials.urn);
     urnBody.castShadow = true;
     urn.add(urnBody);
     // Бортик сверху — по нему читается, что это урна, а не столбик.
     const urnRim = new Mesh(new CylinderGeometry(0.5, 0.5, 0.1, 32), materials.curb);
-    urnRim.position.y = 0.6;
+    urnRim.position.y = 0.56;
     urnRim.castShadow = true;
     urn.add(urnRim);
-    urn.position.set(-2.6, 0.64, -2.4);
+    urn.position.set(-2.6, TILE_TOP + 0.58, -2.4);
     addPart(urn, { from: 0.8, to: 0.94, offset: new Vector3(0, 9, 0), spin: 1.6 });
 
     // --- Камера: пролёт от крупного плана к общему виду двора ---
@@ -392,34 +412,55 @@ export function createCourtyard(canvas, options = {}) {
     }, { threshold: 0.01 });
     visibility.observe(canvas);
 
+    setColors(options.colors ?? {});
     setTextures(options.textures ?? {});
     loop();
     options.onReady?.();
 
     return {
         setTextures,
+        setColors,
         /**
-         * Подменить процедурную скамью/вазон/урну настоящими GLB-моделями,
-         * если они загружены в карточке товара.
+         * Подменить схематичные изделия настоящими GLB/OBJ-моделями из
+         * карточек каталога. Модель вписывается в габарит своей заглушки,
+         * поэтому композиция сцены не меняется.
          */
         async setModels(models = {}) {
             const slots = [
-                ['bench', bench, 1],
-                ['vase', world.children.find((o) => o.userData.slot === 'vase'), 1],
+                ['bench', [bench]],
+                ['vase', world.children.filter((o) => o.userData.slot === 'vase')],
+                ['urn', [urn]],
             ];
-            for (const [key, target, scale] of slots) {
-                if (!models[key] || !target) continue;
-                const model = await loadModel(models[key], scale);
-                if (!model) continue;
-                model.position.copy(target.position);
-                model.rotation.copy(target.rotation);
-                model.userData = { ...target.userData };
-                world.remove(target);
-                world.add(model);
-                const i = parts.indexOf(target);
-                if (i !== -1) parts[i] = model;
-                needsRender = true;
+
+            for (const [key, targets] of slots) {
+                if (!models[key]) continue;
+
+                for (const target of targets) {
+                    // Вписываем в габарит заглушки целиком, иначе модель с
+                    // другими пропорциями раздувается на пол-сцены.
+                    const box = new Box3().setFromObject(target);
+                    const size = box.getSize(new Vector3());
+                    const model = await loadModel(models[key], {
+                        x: Math.max(0.4, size.x),
+                        y: Math.max(0.4, size.y),
+                        z: Math.max(0.4, size.z),
+                    });
+                    if (!model) continue;
+
+                    // loadModel ставит модель основанием в 0 — сажаем её на
+                    // поверхность покрытия в точке, где стояла заглушка.
+                    const base = target.userData.target.clone().setY(TILE_TOP);
+                    model.userData = { ...target.userData, target: base };
+                    model.position.copy(base);
+                    model.rotation.y = target.rotation.y;
+
+                    world.remove(target);
+                    world.add(model);
+                    const i = parts.indexOf(target);
+                    if (i !== -1) parts[i] = model;
+                }
             }
+            needsRender = true;
         },
         setProgress(value) {
             progress = clamp01(value);

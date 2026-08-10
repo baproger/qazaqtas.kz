@@ -69,10 +69,32 @@ class Product extends Model
         return $this->texture_path ?: null;
     }
 
-    /** Первый цвет считается основным — им рисуется превью и 3D-сцена. */
+    /** Первый цвет считается основным — им рисуется превью карточки. */
     public function primaryColor(): string
     {
         return $this->colors[0]['hex'] ?? '#9CA3AF';
+    }
+
+    /**
+     * Цвет для 3D-сцены. Первым в палитре обычно идёт «Мрамор белый» — на
+     * тёмном фоне он выглядит выцветшим пятном, поэтому берём первый тон
+     * средней светлоты, а если такого нет — основной.
+     */
+    public function sceneColor(): string
+    {
+        foreach ($this->colors ?? [] as $color) {
+            $hex = ltrim((string) ($color['hex'] ?? ''), '#');
+            if (strlen($hex) !== 6) {
+                continue;
+            }
+            [$r, $g, $b] = sscanf($hex, '%2x%2x%2x');
+            $luminance = ($r * 0.299 + $g * 0.587 + $b * 0.114) / 255;
+            if ($luminance > 0.35 && $luminance < 0.78) {
+                return '#'.$hex;
+            }
+        }
+
+        return $this->primaryColor();
     }
 
     protected static function booted(): void

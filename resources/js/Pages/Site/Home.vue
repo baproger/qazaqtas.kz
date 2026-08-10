@@ -10,7 +10,7 @@ const props = defineProps({
     categories: { type: Array, default: () => [] },
     featured: { type: Array, default: () => [] },
     paving: { type: Array, default: () => [] },
-    scene: { type: Object, default: () => ({ textures: {}, models: {} }) },
+    scene: { type: Object, default: () => ({ textures: {}, models: {}, colors: {} }) },
     stats: { type: Array, default: () => [] },
     advantages: { type: Array, default: () => [] },
     production: { type: Array, default: () => [] },
@@ -75,6 +75,8 @@ onMounted(async () => {
             // Фото изделий из ERP: если отмечены как текстура — сцена
             // показывает настоящую поверхность вместо ровного цвета.
             textures: props.scene?.textures ?? {},
+            // Цвета изделий из их карточек — используются там, где нет модели.
+            colors: props.scene?.colors ?? {},
             onReady: () => (sceneReady.value = true),
         });
 
