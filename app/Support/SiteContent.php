@@ -127,12 +127,22 @@ class SiteContent
         ]);
     }
 
+    /**
+     * Показывать ли 3D-конфигуратор двора. Пока выключен: включается в
+     * ERP → Настройки. Проверяется и в меню, и на самом маршруте.
+     */
+    public static function configuratorEnabled(): bool
+    {
+        return (bool) Setting::get('configurator_enabled', false);
+    }
+
     /** Всё сразу — шапка и подвал сайта на каждой странице. */
     public static function shared(): array
     {
         return [
             'contacts' => self::contacts(),
             'branches' => self::branches(),
+            'configurator' => self::configuratorEnabled(),
         ];
     }
 }

@@ -39,9 +39,40 @@ class SiteShopTest extends TestCase
 
     public function test_public_pages_open_without_login(): void
     {
-        foreach (['site.home', 'site.catalog', 'site.configurator', 'site.cart', 'site.about', 'site.projects', 'site.contacts'] as $name) {
+        foreach (['site.home', 'site.catalog', 'site.cart', 'site.about', 'site.projects', 'site.contacts'] as $name) {
             $this->get(route($name))->assertOk();
         }
+    }
+
+    public function test_configurator_is_hidden_until_enabled_in_erp(): void
+    {
+        // По умолчанию выключен: страница недоступна даже по прямой ссылке,
+        // и витрина не показывает пункт меню.
+        $this->get(route('site.configurator'))->assertNotFound();
+        $this->get(route('site.home'))
+            ->assertInertia(fn (Assert $p) => $p->where('site.configurator', false));
+
+        \App\Models\Setting::set('configurator_enabled', true);
+
+        $this->get(route('site.configurator'))->assertOk();
+        $this->get(route('site.home'))
+            ->assertInertia(fn (Assert $p) => $p->where('site.configurator', true));
+    }
+
+    public function test_admin_switches_the_configurator_from_settings(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)->put(route('settings.update'), [
+            'company_name' => 'QAZAQ TAS',
+            'currency' => '₸',
+            'default_locale' => 'ru',
+            'tax_percent' => 3,
+            'configurator_enabled' => true,
+        ])->assertRedirect();
+
+        $this->get(route('site.configurator'))->assertOk();
     }
 
     public function test_catalog_shows_only_published_products(): void

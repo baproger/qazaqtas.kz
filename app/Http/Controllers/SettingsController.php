@@ -18,6 +18,8 @@ class SettingsController extends Controller
         // bonus_percent удалён: бонус теперь ступенчатый от маржи сделки
         // (PayrollService::bonusRateForMargin), настройкой не регулируется.
         'tax_percent' => 3,
+        // 3D-конфигуратор двора на сайте: пока выключен, включается здесь.
+        'configurator_enabled' => false,
     ];
 
     private function authorizeManage(Request $request): void
@@ -47,6 +49,7 @@ class SettingsController extends Controller
             'auto_create_project' => ['boolean'],
             'default_locale' => ['required', 'in:ru,kk'],
             'tax_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+            'configurator_enabled' => ['boolean'],
         ]);
 
         foreach ($validated as $key => $value) {

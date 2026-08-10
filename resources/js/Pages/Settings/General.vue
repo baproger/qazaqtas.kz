@@ -10,6 +10,7 @@ const form = useForm({
     company_name: props.settings.company_name,
     currency: props.settings.currency,
     auto_create_project: !!props.settings.auto_create_project,
+    configurator_enabled: !!props.settings.configurator_enabled,
     default_locale: props.settings.default_locale,
     tax_percent: props.settings.tax_percent,
 });
@@ -59,6 +60,16 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
             <label class="flex items-center gap-2 text-sm">
                 <input type="checkbox" v-model="form.auto_create_project" class="rounded border-slate-300 text-indigo-600" />
                 Автоматически создавать проект при переходе сделки в «Оплата успешно»
+            </label>
+
+            <label class="flex items-start gap-2 text-sm text-slate-700">
+                <input type="checkbox" v-model="form.configurator_enabled" class="mt-0.5 rounded border-slate-300 text-indigo-600" />
+                <span>
+                    Показывать 3D-конфигуратор двора на сайте
+                    <span class="block text-xs text-slate-400">
+                        Пока выключен, пункт скрыт в меню, а страница отдаёт 404
+                    </span>
+                </span>
             </label>
             <div class="pt-2"><PrimaryButton :disabled="form.processing" @click="save">Сохранить</PrimaryButton></div>
         </div>

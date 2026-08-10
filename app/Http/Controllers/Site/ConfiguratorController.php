@@ -25,6 +25,9 @@ class ConfiguratorController extends Controller
 
     public function show(): Response
     {
+        // Выключенный конфигуратор недоступен и по прямой ссылке.
+        abort_unless(\App\Support\SiteContent::configuratorEnabled(), 404);
+
         return Inertia::render('Site/Configurator', [
             'collections' => $this->catalog->pavingCollections(),
             'patterns' => self::PATTERNS,

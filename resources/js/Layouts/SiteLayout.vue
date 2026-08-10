@@ -14,13 +14,15 @@ const contacts = computed(() => site.value.contacts ?? {});
 const branches = computed(() => site.value.branches ?? []);
 const cartCount = computed(() => site.value.cartCount ?? 0);
 
-const nav = [
+// Конфигуратор включается в ERP → Настройки: пока выключен, пункта нет
+// ни в меню, ни в подвале, а сам маршрут отдаёт 404.
+const nav = computed(() => [
     { label: 'Каталог', route: 'site.catalog' },
-    { label: 'Конфигуратор', route: 'site.configurator' },
+    ...(site.value.configurator ? [{ label: 'Конфигуратор', route: 'site.configurator' }] : []),
     { label: 'Завод', route: 'site.about' },
     { label: 'Проекты', route: 'site.projects' },
     { label: 'Контакты', route: 'site.contacts' },
-];
+]);
 
 const scrolled = ref(false);
 const menuOpen = ref(false);

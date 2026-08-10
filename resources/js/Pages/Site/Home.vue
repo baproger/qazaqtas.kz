@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import { money, observeReveal } from '@/utils/site';
@@ -19,6 +19,9 @@ const props = defineProps({
 });
 
 useSmoothScroll();
+
+// Конфигуратор включается в ERP → Настройки.
+const configuratorEnabled = computed(() => usePage().props.site?.configurator ?? false);
 
 const canvas = ref(null);
 const storyEl = ref(null);
@@ -134,15 +137,19 @@ onBeforeUnmount(() => {
                     <div class="mx-auto w-full max-w-7xl">
                         <p class="eyebrow">Производство мраморного композита · с 2013 года</p>
                         <h1 class="display mt-6 max-w-4xl text-[clamp(2.75rem,8vw,6.5rem)] text-sand-50">
-                            Камень,<br />который делает<br />город красивым
+                            Двор,<br />который переживёт<br />200 зим
                         </h1>
                         <p class="mt-8 max-w-xl text-base leading-relaxed text-sand-100/60 sm:text-lg">
-                            Тротуарная плитка, бордюры и малые архитектурные формы из мраморного
-                            композита. Собственные площадки в Шымкенте, Алматы и Таразе.
+                            Мраморный композит вместо бетона: цвет сквозной, не выгорает и не
+                            стирается. Гарантия 5 лет, собственные площадки в Шымкенте,
+                            Алматы и Таразе.
                         </p>
                         <div class="mt-10 flex flex-wrap gap-3">
                             <Link :href="route('site.catalog')" class="btn-sand">Смотреть каталог</Link>
-                            <Link :href="route('site.configurator')" class="btn-ghost">Собрать двор в 3D</Link>
+                            <Link
+                                :href="configuratorEnabled ? route('site.configurator') : route('site.contacts')"
+                                class="btn-ghost"
+                            >{{ configuratorEnabled ? 'Собрать двор в 3D' : 'Рассчитать стоимость' }}</Link>
                         </div>
                     </div>
                 </div>
@@ -243,7 +250,7 @@ onBeforeUnmount(() => {
                         <p class="eyebrow">Выбирают чаще всего</p>
                         <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Готовы к отгрузке</h2>
                     </div>
-                    <Link :href="route('site.configurator')" class="btn-ghost">Рассчитать двор</Link>
+                    <Link v-if="configuratorEnabled" :href="route('site.configurator')" class="btn-ghost">Рассчитать двор</Link>
                 </div>
 
                 <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -343,12 +350,20 @@ onBeforeUnmount(() => {
                     Посчитаем ваш двор за пару минут
                 </h2>
                 <p class="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-sand-100/55 sm:text-base">
-                    Укажите площадь и выберите раскладку — конфигуратор покажет результат в 3D,
-                    рассчитает количество плитки и бордюра и соберёт заказ.
+                    <template v-if="configuratorEnabled">
+                        Укажите площадь и выберите раскладку — конфигуратор покажет результат в 3D,
+                        рассчитает количество плитки и бордюра и соберёт заказ.
+                    </template>
+                    <template v-else>
+                        Пришлите площадь участка — сделаем замер, подберём раскладку и посчитаем
+                        смету. Расчёт и выезд замерщика бесплатны.
+                    </template>
                 </p>
                 <div class="mt-10 flex flex-wrap justify-center gap-3">
-                    <Link :href="route('site.configurator')" class="btn-sand">Открыть конфигуратор</Link>
-                    <Link :href="route('site.contacts')" class="btn-ghost">Связаться с отделом продаж</Link>
+                    <Link v-if="configuratorEnabled" :href="route('site.configurator')" class="btn-sand">Открыть конфигуратор</Link>
+                    <Link :href="route('site.contacts')" :class="configuratorEnabled ? 'btn-ghost' : 'btn-sand'">
+                        Связаться с отделом продаж
+                    </Link>
                 </div>
                 <p v-if="paving.length" class="mt-10 text-xs text-sand-100/35">
                     Плитка от {{ money(Math.min(...paving.map((p) => p.price))) }} за м²
