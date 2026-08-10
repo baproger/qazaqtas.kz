@@ -6,9 +6,9 @@ use App\Models\Company;
 use App\Models\Deal;
 use App\Models\DealStage;
 use App\Models\Order;
-use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\SiteOrderReceived;
+use App\Support\SiteContent;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -109,7 +109,7 @@ class OrderService
     /** Ссылка «Заказать в WhatsApp» с составом корзины. */
     public function whatsappLink(array $cart, ?string $note = null): string
     {
-        $phone = preg_replace('/\D+/', '', (string) Setting::get('whatsapp_phone', '77000000000'));
+        $phone = SiteContent::contacts()['whatsapp'];
 
         $lines = ['Здравствуйте! Хочу заказать в QAZAQ TAS:'];
         foreach ($cart['items'] as $item) {

@@ -11,14 +11,18 @@ use App\Models\Setting;
  */
 class SiteContent
 {
-    public const DEFAULT_PHONE = '+7 (700) 000-00-00';
+    /** Телефон call-центра — он же по умолчанию у филиалов. */
+    public const DEFAULT_PHONE = '+7 707 372 22 22';
+
+    /** WhatsApp отдела продаж: только цифры, из них собирается ссылка wa.me. */
+    public const DEFAULT_WHATSAPP = '77716107770';
 
     /** Общие данные шапки/подвала — уходят во все страницы сайта. */
     public static function contacts(): array
     {
         return [
             'phone' => (string) Setting::get('site_phone', self::DEFAULT_PHONE),
-            'whatsapp' => preg_replace('/\D+/', '', (string) Setting::get('whatsapp_phone', '77000000000')),
+            'whatsapp' => preg_replace('/\D+/', '', (string) Setting::get('whatsapp_phone', self::DEFAULT_WHATSAPP)),
             'email' => (string) Setting::get('site_email', 'sales@qazaqtas.kz'),
             'instagram' => (string) Setting::get('site_instagram', 'https://instagram.com/qazaqtas'),
             'hours' => (string) Setting::get('site_hours', 'Пн–Сб, 09:00–18:00'),
