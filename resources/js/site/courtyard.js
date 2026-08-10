@@ -107,7 +107,7 @@ export function createCourtyard(canvas, options = {}) {
     // --- Основание: тёмная площадка под двором ---
     const ground = new Mesh(
         new PlaneGeometry(160, 160),
-        new MeshStandardMaterial({ color: 0x16181c, roughness: 1, metalness: 0, envMapIntensity: 0.35 }),
+        new MeshStandardMaterial({ color: 0x0b0c0e, roughness: 1, metalness: 0, envMapIntensity: 0.15 }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.12;
@@ -121,7 +121,12 @@ export function createCourtyard(canvas, options = {}) {
     // элементами выглядели чёрными провалами: под плиткой была пустота.
     const bedding = new Mesh(
         new PlaneGeometry(19.6, 9.2),
-        new MeshStandardMaterial({ color: 0x4a453d, roughness: 1, metalness: 0, envMapIntensity: 0.2 }),
+        // Прозрачность: на первом экране подушки ещё нет — она проявляется
+        // вместе с первыми плитками, иначе светлый клин лезет за заголовок.
+        new MeshStandardMaterial({
+            color: 0x4a453d, roughness: 1, metalness: 0, envMapIntensity: 0.2,
+            transparent: true, opacity: 0,
+        }),
     );
     bedding.rotation.x = -Math.PI / 2;
     bedding.position.y = -0.09;
@@ -329,7 +334,7 @@ export function createCourtyard(canvas, options = {}) {
 
     // --- Камера: пролёт от крупного плана к общему виду двора ---
     const cameraPath = [
-        { at: 0.0, pos: new Vector3(2.6, 1.5, 5.2), look: new Vector3(0, 0.4, 0) },
+        { at: 0.0, pos: new Vector3(2.4, 3.4, 6.4), look: new Vector3(0, 0.9, 0) },
         { at: 0.3, pos: new Vector3(0.5, 6.5, 12), look: new Vector3(0, 0.2, 0) },
         { at: 0.62, pos: new Vector3(-7.5, 6.5, 12), look: new Vector3(0, 0.4, 0) },
         { at: 1.0, pos: new Vector3(0.5, 8.5, 15), look: new Vector3(0, 0.3, 0) },
@@ -369,6 +374,11 @@ export function createCourtyard(canvas, options = {}) {
             }
             part.visible = t > 0.001;
         }
+
+        // Подушка проявляется в окне 0.10–0.32 — ровно когда ложатся первые
+        // элементы. До этого фон первого экрана остаётся чистым.
+        bedding.material.opacity = easeOut(stage(progress, 0.10, 0.32));
+        bedding.visible = bedding.material.opacity > 0.01;
 
         // Первая плитка живёт отдельно: медленно вращается в начале истории.
         const hero = parts[Math.floor((rows * cols) / 2 + cols / 2)];
