@@ -14,7 +14,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'department_id', 'workshops', 'phone', 'birth_date', 'hired_at', 'salary', 'contract_path', 'avatar', 'language', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'department_id', 'workshops', 'phone', 'birth_date', 'hired_at', 'salary', 'bonus_percent', 'contract_path', 'avatar', 'language', 'is_active'])]
 // salary/contract_path скрыты по умолчанию: не утекут при случайной
 // сериализации сырой модели User во фронт. Админ-список читает их явно
 // ($u->salary) — на прямой доступ $hidden не влияет.
@@ -101,5 +101,12 @@ class User extends Authenticatable
     public function getAvatarAttribute(?string $value): ?string
     {
         return $value ? route('profile.avatar.show', $this->id).'?v='.optional($this->updated_at)->timestamp : null;
+    }
+
+    protected static function booted(): void
+    {
+        // Процент бонуса кэшируется в PayrollService на время запроса —
+        // после правки сотрудника кэш обязан устареть.
+        static::saved(fn () => \App\Services\PayrollService::forgetBonusPercents());
     }
 }

@@ -49,12 +49,23 @@ class PayrollService
     }
 
     /**
-     * Эффективная ставка бонуса (доля, не %): ручной % финансиста по сделке
-     * (deals.bonus_rate_override) или авто-ступень от маржи.
+     * Эффективная ставка бонуса (доля, не %). Приоритет — от частного к общему:
+     *   1. ручной % по конкретной сделке (deals.bonus_rate_override);
+     *   2. личный % сотрудника (users.bonus_percent) — основной режим;
+     *   3. авто-ступень от маржи — только если у сотрудника % не задан,
+     *      чтобы старые расчёты не обнулились.
      */
-    public static function effectiveBonusRate(float $marginPct, ?float $override = null): float
+    public static function effectiveBonusRate(float $marginPct, ?float $override = null, ?float $userPercent = null): float
     {
-        return $override !== null ? $override / 100 : self::bonusRateForMargin($marginPct);
+        if ($override !== null) {
+            return $override / 100;
+        }
+
+        if ($userPercent !== null) {
+            return $userPercent / 100;
+        }
+
+        return self::bonusRateForMargin($marginPct);
     }
 
     /**
@@ -62,13 +73,51 @@ class PayrollService
      * by the PRE-TAX margin (the one shown on the deal card) and applied to the
      * remainder. $override — ручной % финансиста по этой сделке (null = авто).
      */
-    public static function marginBonus(float $budget, float $remainder, float $tax = 0, ?float $override = null): float
-    {
+    public static function marginBonus(
+        float $budget,
+        float $remainder,
+        float $tax = 0,
+        ?float $override = null,
+        ?float $userPercent = null,
+    ): float {
         if ($budget <= 0 || $remainder <= 0) {
             return 0.0;
         }
 
-        return round($remainder * self::effectiveBonusRate(self::marginPct($budget, $remainder, $tax), $override), 2);
+        // Процент считается от ЧИСТОГО ОСТАТКА сделки (после налога и расходов).
+        $rate = self::effectiveBonusRate(self::marginPct($budget, $remainder, $tax), $override, $userPercent);
+
+        return round($remainder * $rate, 2);
+    }
+
+    /**
+     * Личный % бонуса сотрудника; null — процент не задан.
+     *
+     * Значения кэшируются на время запроса: расчёт ЗП и Сводный отчёт
+     * перебирают сотни сделок, и запрос на каждую был бы лишним. Кэш
+     * сбрасывается при любом сохранении сотрудника (User::booted), иначе
+     * после смены процента деньги считались бы по старому значению.
+     */
+    private static array $bonusPercentCache = [];
+
+    public static function userBonusPercent(?int $userId): ?float
+    {
+        if (! $userId) {
+            return null;
+        }
+
+        if (! array_key_exists($userId, self::$bonusPercentCache)) {
+            $value = \App\Models\User::whereKey($userId)->value('bonus_percent');
+            self::$bonusPercentCache[$userId] = $value === null ? null : (float) $value;
+        }
+
+        return self::$bonusPercentCache[$userId];
+    }
+
+    /** Сбросить кэш процентов — вызывается при сохранении сотрудника. */
+    public static function forgetBonusPercents(): void
+    {
+        self::$bonusPercentCache = [];
     }
 
     /**
@@ -161,7 +210,8 @@ class PayrollService
             // Пропорционально оплаченному — как в perUser, строки сходятся с итогом.
             $payRatio = $budget > 0 ? min(1, $paid / $budget) : 0;
             $override = $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null;
-            $bonus = round(self::marginBonus($budget, $remainder, $tax, $override) * $payRatio, 2);
+            $userPercent = self::userBonusPercent($d->responsible_user_id);
+            $bonus = round(self::marginBonus($budget, $remainder, $tax, $override, $userPercent) * $payRatio, 2);
             $marginPct = self::marginPct($budget, $remainder, $tax);
 
             return [
@@ -229,8 +279,13 @@ class PayrollService
                 'budget' => $budget,
                 'tax' => $tax,
                 'remainder' => $remainder,
-                'bonus' => round(self::marginBonus($budget, $remainder, $tax,
-                    $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null) * $payRatio, 2),
+                'bonus' => round(self::marginBonus(
+                    $budget,
+                    $remainder,
+                    $tax,
+                    $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
+                    self::userBonusPercent($d->responsible_user_id),
+                ) * $payRatio, 2),
             ];
         })->groupBy('uid');
 

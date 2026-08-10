@@ -17,7 +17,7 @@ import { UNITS, SOURCES } from '@/utils/dealOptions';
 import { formatDate, money } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 
-const props = defineProps({ deals: [Array, Object], stages: Array, view: String, filters: Object, users: Array, can: Object, isLeadership: Boolean, companies: { type: Array, default: () => [] }, currentCompanyId: Number, workshopsByCompany: { type: Object, default: () => ({}) } });
+const props = defineProps({ deals: [Array, Object], stages: Array, view: String, filters: Object, users: Array, can: Object, isLeadership: Boolean, companies: { type: Array, default: () => [] }, currentCompanyId: Number, workshopsByCompany: { type: Object, default: () => ({}) }, branches: { type: Array, default: () => [] }, catalog: { type: Array, default: () => [] } });
 
 const list = computed(() => Array.isArray(props.deals) ? props.deals : props.deals.data);
 const byStage = (id) => list.value.filter((d) => d.deal_stage_id === id);
@@ -115,7 +115,16 @@ const bulkDelete = async () => {
 };
 
 const showModal = ref(false);
-const form = useForm({ company_id: props.currentCompanyId || props.companies[0]?.id || '', company_name: '', address: '', bin: '', contract_date: '', client_name: '', lot_number: '', unit: '', source: '', responsible_user_id: '', budget: 0, partner_pct: '', deadline: '', description: '', note: '' });
+const form = useForm({ company_id: props.currentCompanyId || props.companies[0]?.id || '', branch: '', company_name: '', address: '', bin: '', contract_date: '', client_name: '', product_id: '', lot_number: '', unit: '', area_m2: '', source: '', responsible_user_id: '', budget: 0, partner_pct: '', deadline: '', description: '', note: '' });
+
+// Товар выбирается из каталога: подставляем название и единицу измерения,
+// чтобы менеджер не вводил их руками и не расходился с прайсом.
+const pickProduct = (id) => {
+    const product = props.catalog.find((p) => p.id === Number(id));
+    if (!product) return;
+    form.client_name = product.name;
+    if (product.unit) form.unit = product.unit;
+};
 const openCreate = () => { form.reset(); form.company_id = props.currentCompanyId || props.companies[0]?.id || ''; binMatch.value = null; showBinModal.value = false; showModal.value = true; };
 const submit = () => form.post(route('deals.store'), { preserveScroll: true, onSuccess: () => (showModal.value = false) });
 
@@ -218,7 +227,8 @@ const applyBinMatch = () => {
                             <!-- Куда и что -->
                             <div class="mt-1.5 space-y-0.5 text-[11px] leading-4 text-slate-500">
                                 <div v-if="deal.address" class="truncate">📍 {{ deal.address }}</div>
-                                <div class="truncate">📦 {{ deal.client_name || '—' }}<template v-if="deal.lot_number"> · {{ deal.lot_number }} {{ deal.unit || '' }}</template></div>
+                                <div class="truncate">📦 {{ deal.client_name || '—' }}<template v-if="deal.lot_number"> · {{ deal.lot_number }} {{ deal.unit || '' }}</template><template v-if="deal.area_m2"> · {{ Number(deal.area_m2) }} м²</template></div>
+                                <div v-if="deal.branch" class="truncate text-[11px] text-slate-400">🏭 {{ deal.branch }}</div>
                             </div>
                             <!-- Когда и кто ведёт -->
                             <div class="mt-1.5 flex items-center justify-between gap-2">
@@ -262,7 +272,7 @@ const applyBinMatch = () => {
                             <input type="checkbox" :checked="allSelected" @change="toggleAllSel"
                                 class="rounded border-slate-300 text-rose-600 focus:ring-rose-500" title="Выбрать все на странице" />
                         </th>
-                        <th class="px-4 py-3">Номер</th><th class="px-4 py-3">Компания</th><th class="px-4 py-3">Товар</th><th class="px-4 py-3">Этап</th><th class="px-4 py-3">Сумма</th><th class="px-4 py-3">Завершение</th><th class="px-4 py-3">Ответственный</th>
+                        <th class="px-4 py-3">Номер</th><th class="px-4 py-3">Компания</th><th class="px-4 py-3">Филиал</th><th class="px-4 py-3">Товар</th><th class="px-4 py-3">Этап</th><th class="px-4 py-3">Сумма</th><th class="px-4 py-3">Завершение</th><th class="px-4 py-3">Ответственный</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -277,6 +287,7 @@ const applyBinMatch = () => {
                         <td class="px-4 py-3">
                             <div class="line-clamp-2 max-w-md font-medium leading-snug text-slate-900" :title="deal.company_name || deal.name">{{ deal.company_name || deal.name }}</div>
                         </td>
+                        <td class="px-4 py-3 text-slate-500">{{ deal.branch || '—' }}</td>
                         <td class="px-4 py-3"><div class="max-w-40 truncate text-slate-500" :title="deal.client_name || deal.client?.name">{{ deal.client_name || deal.client?.name || '—' }}</div></td>
                         <td class="px-4 py-3"><StatusBadge :status="deal.stage?.name" :color="deal.stage?.color" /></td>
                         <td class="px-4 py-3">{{ money(deal.budget) }}</td>
@@ -308,12 +319,28 @@ const applyBinMatch = () => {
                     <div class="sm:col-span-2"><InputLabel value="Адрес *" /><TextInput v-model="form.address" class="mt-1 w-full" placeholder="Город, улица, дом" /><InputError :message="form.errors.address" class="mt-1" /></div>
                     <div><InputLabel value="Дата договора" /><TextInput v-model="form.contract_date" type="date" class="mt-1 w-full" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
                     <div>
+                        <InputLabel value="Филиал" />
+                        <select v-model="form.branch" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
+                            <option value="">—</option>
+                            <option v-for="b in branches" :key="b" :value="b">{{ b }}</option>
+                        </select>
+                        <InputError :message="form.errors.branch" class="mt-1" />
+                    </div>
+                    <div>
                         <InputLabel value="Источник (портал)" />
                         <select v-model="form.source" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
                             <option value="">—</option>
                             <option v-for="s in SOURCES" :key="s" :value="s">{{ s }}</option>
                         </select>
                         <InputError :message="form.errors.source" class="mt-1" />
+                    </div>
+                    <div class="sm:col-span-2">
+                        <InputLabel value="Товар из каталога" />
+                        <select v-model="form.product_id" class="mt-1 w-full rounded-md border-slate-300 shadow-sm" @change="pickProduct(form.product_id)">
+                            <option value="">— выбрать из каталога —</option>
+                            <option v-for="p in catalog" :key="p.id" :value="p.id">{{ p.name }}</option>
+                        </select>
+                        <p class="mt-1 text-[11px] text-slate-400">Название и единица подставятся сами; поле ниже можно поправить руками.</p>
                     </div>
                     <div><InputLabel value="Наименование товара *" /><TextInput v-model="form.client_name" class="mt-1 w-full" /><InputError :message="form.errors.client_name" class="mt-1" /></div>
                     <div>
@@ -326,6 +353,11 @@ const applyBinMatch = () => {
                             </select>
                         </div>
                         <InputError :message="form.errors.unit || form.errors.lot_number" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel value="Площадь, м²" />
+                        <TextInput v-model="form.area_m2" type="number" min="0" step="any" class="mt-1 w-full" />
+                        <InputError :message="form.errors.area_m2" class="mt-1" />
                     </div>
                     <div v-if="isLeadership">
                         <InputLabel value="Ответственный" />

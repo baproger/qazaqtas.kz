@@ -114,6 +114,11 @@ class DealController extends Controller
                 'delete' => $request->user()->hasRole('admin'),
             ],
             'companies' => $request->user()->companies()->where('is_active', true)->orderBy('name')->get(['companies.id', 'name', 'code']),
+            // Филиалы = производственные площадки; каталог — источник товара.
+            'branches' => \Database\Seeders\StageSeeder::WORKSHOPS,
+            'catalog' => \App\Models\Product::active()->orderBy('name')
+                ->get(['id', 'name', 'unit', 'price'])
+                ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'unit' => $p->unit, 'price' => (float) $p->price]),
             'currentCompanyId' => \App\Support\CurrentCompany::id(),
             // Цеха фирмы: если их несколько, кнопка «В цех» открывает выбор.
             'workshopsByCompany' => \App\Models\Company::where('is_active', true)->pluck('id')
@@ -183,8 +188,10 @@ class DealController extends Controller
         $dealMarginPct = \App\Services\PayrollService::marginPct($dealBudget, $dealRemainder, $dealTax);
         // Ручной % финансиста по этой сделке (null = авто-ступень от маржи).
         $bonusOverride = $deal->bonus_rate_override !== null ? (float) $deal->bonus_rate_override : null;
-        $dealBonusRate = \App\Services\PayrollService::effectiveBonusRate($dealMarginPct, $bonusOverride);
-        $dealBonus = \App\Services\PayrollService::marginBonus($dealBudget, $dealRemainder, $dealTax, $bonusOverride);
+        // Личный % ответственного менеджера — та же ставка, что и в ЗП.
+        $dealUserPercent = \App\Services\PayrollService::userBonusPercent($deal->responsible_user_id);
+        $dealBonusRate = \App\Services\PayrollService::effectiveBonusRate($dealMarginPct, $bonusOverride, $dealUserPercent);
+        $dealBonus = \App\Services\PayrollService::marginBonus($dealBudget, $dealRemainder, $dealTax, $bonusOverride, $dealUserPercent);
 
         // Галочка-гейт текущего этапа (настраивается в Настройки → Этапы).
         $gateStage = self::gateStage($deal);

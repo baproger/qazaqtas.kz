@@ -85,7 +85,7 @@ class FinanceService
                 // и строгий whereBetween терял сделки последнего дня месяца.
                 ->where(fn ($c) => $c->whereDate('contract_date', '>=', $from)->whereDate('contract_date', '<=', $to))
                 ->orWhere(fn ($n) => $n->whereNull('contract_date')->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to))))
-            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override']);
+            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id']);
 
         $expByDeal = \App\Models\Expense::where('status', 'confirmed')
             ->where('expenseable_type', 'deal')
@@ -99,7 +99,8 @@ class FinanceService
                 - \App\Services\PayrollService::partnerSum($budget, $d->partner_pct), 2);
 
             return $remainder - \App\Services\PayrollService::marginBonus($budget, $remainder, $tax,
-                $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null);
+                $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
+                \App\Services\PayrollService::userBonusPercent($d->responsible_user_id));
         }), 2);
     }
 

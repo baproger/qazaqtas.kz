@@ -148,6 +148,11 @@ class StageController extends Controller
             $updates['is_completed'] = $isCompleted;
         }
 
+        // Требование документа — только у этапов сделок.
+        if ($kind !== 'project' && $request->has('requires_document')) {
+            $updates['requires_document'] = (bool) $data['requires_document'];
+        }
+
         // Тип и гейт — только у этапов сделок.
         if ($kind !== 'project' && $request->hasAny(['stage_type', 'gate_task_title', 'gate_task_role', 'gate_task_days'])) {
             if ($request->has('stage_type')) {
@@ -264,6 +269,7 @@ class StageController extends Controller
             'gate_task_role' => ['nullable', Rule::in(['financist', 'designer', 'supplier', 'manager', 'director', 'admin'])],
             'gate_task_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'is_completed' => ['nullable', 'boolean'],
+            'requires_document' => ['nullable', 'boolean'],
             'workshop' => ['nullable', 'string', 'max:100'],
         ]);
     }

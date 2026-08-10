@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
     // Склад (приход товара + остатки, у каждой компании свой)
     Route::get('warehouse', [\App\Http\Controllers\WarehouseController::class, 'index'])->name('warehouse.index');
     Route::post('warehouse/receipt', [\App\Http\Controllers\WarehouseController::class, 'receipt'])->name('warehouse.receipt');
+    Route::put('warehouse/materials/{material}', [\App\Http\Controllers\WarehouseController::class, 'updateMaterial'])->name('warehouse.materials.update');
     Route::delete('warehouse/materials/{material}', [\App\Http\Controllers\WarehouseController::class, 'destroyMaterial'])->name('warehouse.materials.destroy');
     Route::put('warehouse/receipts/{receipt}', [\App\Http\Controllers\WarehouseController::class, 'updateReceipt'])->name('warehouse.receipts.update');
     Route::delete('warehouse/receipts/{receipt}', [\App\Http\Controllers\WarehouseController::class, 'destroyReceipt'])->name('warehouse.receipts.destroy');

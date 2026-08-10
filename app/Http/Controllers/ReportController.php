@@ -95,7 +95,8 @@ class ReportController extends Controller
             $remainder = round($budget - $tax - $expense - $partner, 2);
             // Та же формула бонуса, что на карточке сделки и в ЗП (с ручным % финансиста).
             $bonus = PayrollService::marginBonus($budget, $remainder, $tax,
-                $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null);
+                $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
+                PayrollService::userBonusPercent($d->responsible_user_id));
             $company = round($remainder - $bonus, 2);
 
             return [

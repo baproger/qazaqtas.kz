@@ -40,6 +40,21 @@ const submit = () => {
     form.transform((d) => ({ ...d, ...payload }))
         .post(route('warehouse.receipt'), { preserveScroll: true, onSuccess: () => (showModal.value = false) });
 };
+// Правка позиции склада: название, единица, закупочная цена, заметка.
+// Остаток здесь не меняем — он считается приходами и списаниями.
+const editingMaterial = ref(null);
+const materialForm = useForm({ name: '', unit: '', price: '', note: '' });
+const startEditMaterial = (m) => {
+    editingMaterial.value = m.id;
+    materialForm.clearErrors();
+    Object.assign(materialForm, {
+        name: m.name, unit: m.unit ?? '', price: m.price ?? '', note: m.note ?? '',
+    });
+};
+const saveMaterial = (m) => materialForm.put(route('warehouse.materials.update', m.id), {
+    preserveScroll: true, onSuccess: () => (editingMaterial.value = null),
+});
+
 const removeMaterial = async (m) => {
     if (await confirmDialog({ title: 'Удалить позицию', message: `«${m.name}» и вся история прихода будут удалены.`, confirmText: 'Удалить', danger: true })) {
         router.delete(route('warehouse.materials.destroy', m.id), { preserveScroll: true });
@@ -176,10 +191,48 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                                 {{ qty(m.quantity) }}
                             </span>
                         </td>
-                        <td v-if="canManage" class="px-4 py-3 text-right">
+                        <td v-if="canManage" class="whitespace-nowrap px-4 py-3 text-right">
+                            <button class="mr-1 text-slate-300 transition-colors hover:text-indigo-600" title="Изменить позицию" @click="startEditMaterial(m)">
+                                <svg class="inline h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                            </button>
                             <button class="text-slate-300 transition-colors hover:text-rose-600" title="Удалить позицию" @click="removeMaterial(m)">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                             </button>
+                        </td>
+                    </tr>
+
+                    <!-- Правка позиции: разворачивается прямо под строкой -->
+                    <tr v-if="editingMaterial === m.id">
+                        <td :colspan="canManage ? (allMode ? 10 : 9) : (allMode ? 9 : 8)" class="bg-indigo-50/40 px-4 py-3">
+                            <div class="flex flex-wrap items-end gap-3">
+                                <label class="flex-1 min-w-48">
+                                    <span class="text-xs text-slate-500">Название</span>
+                                    <TextInput v-model="materialForm.name" class="mt-1 w-full" />
+                                    <InputError :message="materialForm.errors.name" class="mt-1" />
+                                </label>
+                                <label>
+                                    <span class="text-xs text-slate-500">Ед. изм.</span>
+                                    <select v-model="materialForm.unit" class="mt-1 rounded-md border-slate-300 text-sm shadow-sm">
+                                        <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    <span class="text-xs text-slate-500">Цена закупки</span>
+                                    <TextInput v-model="materialForm.price" type="number" min="0" step="any" class="mt-1 w-32" />
+                                </label>
+                                <label class="flex-1 min-w-40">
+                                    <span class="text-xs text-slate-500">Заметка</span>
+                                    <TextInput v-model="materialForm.note" class="mt-1 w-full" />
+                                </label>
+                                <div class="flex gap-2">
+                                    <PrimaryButton :disabled="materialForm.processing" @click="saveMaterial(m)">Сохранить</PrimaryButton>
+                                    <SecondaryButton @click="editingMaterial = null">Отмена</SecondaryButton>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-[11px] text-slate-400">
+                                Остаток правится приходами и списаниями — здесь его нельзя изменить,
+                                иначе склад разойдётся с расходами сделок.
+                            </p>
                         </td>
                     </tr>
                     <tr v-if="!filtered.length">

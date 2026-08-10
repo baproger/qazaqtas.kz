@@ -175,7 +175,8 @@ class AnalyticsController extends Controller
             $remainder = round($budget - $tax - $expense - PayrollService::partnerSum($budget, $d->partner_pct), 2);
             // Бонус: ручной % финансиста по сделке (bonus_rate_override) или авто-ступень.
             $bonus = PayrollService::marginBonus($budget, $remainder, $tax,
-                $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null);
+                $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
+                PayrollService::userBonusPercent($d->responsible_user_id));
             $company = round($remainder - $bonus, 2);
 
             return [

@@ -36,6 +36,11 @@ class DealRequest extends FormRequest
             // В UI — «Количество» (историческое имя колонки — lot_number) + ед. изм.
             'lot_number' => ['nullable', 'string', 'max:100'],
             'unit' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Deal::UNITS)],
+            // Филиал сделки: те же площадки, что и цеха производства.
+            'branch' => ['nullable', \Illuminate\Validation\Rule::in(\Database\Seeders\StageSeeder::WORKSHOPS)],
+            'area_m2' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+            // Товар выбирается из каталога; название дублируется в client_name.
+            'product_id' => ['nullable', 'exists:products,id'],
             'source' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Deal::SOURCES)],
             'client_id' => ['nullable', 'exists:clients,id'],
             'responsible_user_id' => ['nullable', 'exists:users,id'],

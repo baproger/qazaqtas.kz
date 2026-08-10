@@ -57,7 +57,7 @@ const move = (stage, direction) => router.patch(route('stages.move', [kind.value
 
 // Редактор этапа: имя + цвет + (для сделок) тип и гейт / (для цеха) завершающий.
 const editing = ref(null);
-const editForm = useForm({ name: '', color: '#6366F1', stage_type: '', gate_task_title: '', gate_task_role: 'financist', gate_task_days: '', is_completed: false, workshop: '' });
+const editForm = useForm({ name: '', color: '#6366F1', stage_type: '', gate_task_title: '', gate_task_role: 'financist', gate_task_days: '', is_completed: false, requires_document: false, workshop: '' });
 const startEdit = (stage) => {
     editing.value = stage.id;
     adding.value = false;
@@ -69,6 +69,7 @@ const startEdit = (stage) => {
     editForm.gate_task_role = stage.gate_task_role ?? 'financist';
     editForm.gate_task_days = stage.gate_task_days ?? '';
     editForm.is_completed = !!stage.is_completed;
+    editForm.requires_document = !!stage.requires_document;
     editForm.workshop = stage.workshop ?? '';
 };
 const saveEdit = (stage) => editForm
@@ -80,6 +81,7 @@ const saveEdit = (stage) => editForm
             gate_task_title: d.gate_task_title || null,
             gate_task_role: d.gate_task_role || null,
             gate_task_days: d.gate_task_days || null,
+            requires_document: d.requires_document,
         })
     .put(route('stages.update', [kind.value, stage.id]), { preserveScroll: true, onSuccess: () => (editing.value = null) });
 
@@ -216,6 +218,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                             <span v-if="typeBadge(stage)" class="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">{{ typeBadge(stage) }}</span>
                             <span v-if="stage.gate_task_title" class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700" :title="`Задача: ${stage.gate_task_title} · ${gateRoles[stage.gate_task_role] ?? stage.gate_task_role} · ${stage.gate_task_days} дн.`">🔒 гейт</span>
                             <span v-if="stage.is_completed" class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700" title="Заказ готов → сделка на Логистику">🏁 завершающий</span>
+                        <span v-if="stage.requires_document" class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700" title="Без прикреплённого документа сделка дальше не идёт">📎 нужен документ</span>
                             <span v-if="stage.workshop" class="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">{{ stage.workshop }}</span>
                             <span v-if="occupants(stage)" class="text-[11px] text-slate-400">· {{ occupants(stage) }} {{ isWorkshop ? 'заказ.' : 'сдел.' }}</span>
                         </div>
@@ -282,6 +285,16 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                                     <TextInput v-model="editForm.gate_task_days" type="number" min="1" max="365" class="mt-1 w-full" />
                                 </div>
                             </div>
+
+                            <label class="mt-3 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+                                <input type="checkbox" v-model="editForm.requires_document" class="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500" />
+                                <span>
+                                    Требуется прикреплённый документ
+                                    <span class="block text-xs text-slate-400">
+                                        Пока к сделке не приложен файл, с этого этапа она дальше не перейдёт
+                                    </span>
+                                </span>
+                            </label>
                         </template>
 
                         <div class="mt-4 flex gap-2">

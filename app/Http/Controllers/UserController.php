@@ -40,6 +40,7 @@ class UserController extends Controller
                 'company_ids' => $u->companies->pluck('id'),
                 'company_names' => $u->companies->pluck('name')->join(', '),
                 'salary' => (float) $u->salary,
+                'bonus_percent' => $u->bonus_percent !== null ? (float) $u->bonus_percent : null,
                 'has_contract' => (bool) $u->contract_path,
             ])
             ->values();
@@ -145,6 +146,7 @@ class UserController extends Controller
                 'role' => $user->roles->first()?->name,
                 'companies' => $user->companies->pluck('name'),
                 'salary' => $seesMoney ? (float) $user->salary : null,
+                'bonus_percent' => $seesMoney && $user->bonus_percent !== null ? (float) $user->bonus_percent : null,
                 'has_contract' => (bool) $user->contract_path,
             ],
             'deals' => $deals,
@@ -209,6 +211,7 @@ class UserController extends Controller
             'birth_date' => $data['birth_date'] ?? null,
             'hired_at' => $data['hired_at'] ?? null,
             'salary' => $data['salary'] ?? 0,
+            'bonus_percent' => $data['bonus_percent'] ?? null,
             'contract_path' => $request->hasFile('contract') ? $request->file('contract')->store('contracts') : null,
             'is_active' => $data['is_active'] ?? true,
             'language' => 'ru',
@@ -242,6 +245,7 @@ class UserController extends Controller
             'birth_date' => $data['birth_date'] ?? null,
             'hired_at' => $data['hired_at'] ?? null,
             'salary' => $data['salary'] ?? 0,
+            'bonus_percent' => $data['bonus_percent'] ?? null,
             'is_active' => $data['is_active'] ?? true,
         ]);
         if ($request->hasFile('contract')) {

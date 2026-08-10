@@ -26,6 +26,8 @@ class UserRequest extends FormRequest
             'birth_date' => ['nullable', 'date', 'before:today'],
             'hired_at' => ['nullable', 'date'],
             'salary' => ['nullable', 'numeric', 'min:0'],
+            // Личный % бонуса менеджера: считается от чистого остатка сделки.
+            'bonus_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             // Трудовой договор — необязательный файл (PDF/фото/скан).
             'contract' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx', 'max:10240'],
             'role' => ['required', Rule::exists('roles', 'name')],

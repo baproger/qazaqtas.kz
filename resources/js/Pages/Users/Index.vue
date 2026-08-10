@@ -117,7 +117,7 @@ const editing = ref(null);
 
 const form = useForm({
     name: '', email: '', password: '', password_confirmation: '',
-    department_id: '', workshops: [], phone: '', birth_date: '', hired_at: '', salary: 0, contract: null, role: 'employee', is_active: true,
+    department_id: '', workshops: [], phone: '', birth_date: '', hired_at: '', salary: 0, bonus_percent: '', contract: null, role: 'employee', is_active: true,
     company_ids: props.companies.map((c) => c.id),
 });
 const toggleWorkshop = (w) => {
@@ -140,7 +140,7 @@ const openEdit = (u) => {
         name: u.name, email: u.email, password: '', password_confirmation: '',
         department_id: u.department_id ?? '', workshops: [...(u.workshops ?? [])], phone: u.phone ?? '',
         birth_date: u.birth_date ?? '', hired_at: u.hired_at ?? '',
-        salary: u.salary ?? 0, contract: null,
+        salary: u.salary ?? 0, bonus_percent: u.bonus_percent ?? '', contract: null,
         role: u.role ?? 'employee', is_active: u.is_active,
         company_ids: [...(u.company_ids ?? [])],
     });
@@ -332,6 +332,12 @@ const deactivate = async (u) => {
                         <InputLabel value="Оклад, ₸ (ЗП = оклад + бонус)" />
                         <TextInput v-model="form.salary" type="number" step="0.01" min="0" class="mt-1 w-full" />
                         <InputError :message="form.errors.salary" class="mt-1" />
+                    </div>
+                    <div>
+                        <InputLabel value="% бонуса" />
+                        <TextInput v-model="form.bonus_percent" type="number" step="0.01" min="0" max="100" class="mt-1 w-full" placeholder="например 1" />
+                        <p class="mt-1 text-[11px] text-slate-400">Считается от чистого остатка сделки. Пусто — ступени от маржи.</p>
+                        <InputError :message="form.errors.bonus_percent" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel value="Договор (файл, необязательно)" />

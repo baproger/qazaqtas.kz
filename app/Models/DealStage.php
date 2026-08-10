@@ -29,12 +29,13 @@ class DealStage extends Model
 
     protected $fillable = [
         'company_id', 'name', 'order', 'color', 'checklist', 'type', 'stage_type',
-        'gate_task_title', 'gate_task_role', 'gate_task_days', 'is_won', 'is_active',
+        'gate_task_title', 'gate_task_role', 'gate_task_days', 'requires_document', 'is_won', 'is_active',
     ];
 
     protected $casts = [
         'checklist' => 'array',
         'is_won' => 'boolean',
+        'requires_document' => 'boolean',
         'is_active' => 'boolean',
     ];
 

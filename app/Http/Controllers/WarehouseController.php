@@ -230,6 +230,36 @@ class WarehouseController extends Controller
         $material->update(['price' => $last?->price ?? 0]);
     }
 
+    /**
+     * Правка позиции склада: название, единица, закупочная цена и заметка.
+     * Остаток здесь не трогаем — он считается приходами и списаниями, иначе
+     * склад разойдётся с расходами сделок.
+     */
+    public function updateMaterial(Request $request, Material $material): RedirectResponse
+    {
+        abort_unless($this->canManage($request), 403);
+        abort_unless($request->user()->worksInCompany($material->company_id ? (int) $material->company_id : null), 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255',
+                Rule::unique('materials', 'name')->where('company_id', $material->company_id)->ignore($material->id)],
+            'unit' => ['nullable', Rule::in(Deal::UNITS)],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ], [
+            'name.unique' => 'Позиция с таким названием на складе уже есть.',
+        ]);
+
+        $material->update([
+            'name' => trim($data['name']),
+            'unit' => $data['unit'] ?? $material->unit,
+            'price' => $data['price'] ?? $material->price,
+            'note' => $data['note'] ?? null,
+        ]);
+
+        return back()->with('success', 'Позиция склада обновлена.');
+    }
+
     public function destroyMaterial(Request $request, Material $material): RedirectResponse
     {
         abort_unless($this->canManage($request), 403);
