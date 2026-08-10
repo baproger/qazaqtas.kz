@@ -204,8 +204,29 @@ export function createCourtyard(canvas, options = {}) {
     const cols = 9;
     const rows = 8;
     let index = 0;
+    // Полуширина покрытия: до неё ряд должен доходить вплотную к бордюру.
+    const paveHalfX = ((cols - 1) * 2) / 2 + 1.5;
+
     for (let r = 0; r < rows; r++) {
         const shift = r % 2 ? -0.5 : 0.5;
+
+        // Перевязка сдвигает ряд, и с одной стороны остаётся полоса шириной
+        // в половину элемента. На объекте туда кладут подрезку — иначе видно
+        // основание. Добавляем такой обрезанный элемент в конец ряда.
+        const cutWidth = 1.0;
+        const cutX = shift > 0
+            ? -paveHalfX + cutWidth / 2 + 0.03
+            : paveHalfX - cutWidth / 2 - 0.03;
+        const cut = new Mesh(tileGeo, materials.pavingAlt);
+        cut.scale.x = cutWidth / 1.94;
+        cut.position.set(cutX, 0, (r - (rows - 1) / 2) * 1.0);
+        addPart(cut, {
+            from: 0.3 + r * 0.02,
+            to: 0.6,
+            offset: new Vector3((Math.random() - 0.5) * 10, 8 + Math.random() * 5, (Math.random() - 0.5) * 10),
+            spin: (Math.random() - 0.5) * 2,
+        });
+
         for (let c = 0; c < cols; c++) {
             const x = (c - (cols - 1) / 2) * 2 + shift;
             const z = (r - (rows - 1) / 2) * 1.0;
@@ -225,8 +246,7 @@ export function createCourtyard(canvas, options = {}) {
     }
 
     // --- 2. Бордюры: обрамляют площадку с четырёх сторон ---
-    // Полуширина покрытия с учётом ½-сдвига перевязки.
-    const halfX = ((cols - 1) * 2) / 2 + 1.5;
+    const halfX = paveHalfX;
     const halfZ = (rows * 1.0) / 2;
     const curbSide = new BoxGeometry(halfX * 2 + 0.6, 0.42, 0.3);
     const curbEnd = new BoxGeometry(0.3, 0.42, halfZ * 2);
