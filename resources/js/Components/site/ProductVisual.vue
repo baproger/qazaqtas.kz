@@ -37,20 +37,38 @@ const shade = (hex, amount) => {
     return `rgb(${r}, ${g}, ${b})`;
 };
 
-const light = computed(() => shade(base.value, 1.12));
-const dark = computed(() => shade(base.value, 0.72));
-const deep = computed(() => shade(base.value, 0.5));
+const light = computed(() => shade(base.value, 0.92));
+const dark = computed(() => shade(base.value, 0.62));
+const deep = computed(() => shade(base.value, 0.42));
 
-/** Раскладка плитки: элементы со смещением в половину ряда. */
+/**
+ * Раскладка плитки рисуется по РЕАЛЬНЫМ размерам из характеристик:
+ * «Квадрат» 300×300 и «Кирпичик» 200×100 должны выглядеть по-разному,
+ * иначе схема обманывает покупателя.
+ */
+const tileShape = computed(() => {
+    const nums = String(props.product?.specs?.size ?? '').match(/\d+/g);
+    const w = Number(nums?.[0]) || 300;
+    const h = Number(nums?.[1]) || 300;
+    return { ratio: w / h || 1 };
+});
+
 const tiles = computed(() => {
-    const rows = [];
-    for (let row = 0; row < 5; row++) {
-        const offset = row % 2 ? -30 : 0;
-        for (let col = -1; col < 5; col++) {
-            rows.push({ x: 20 + col * 62 + offset, y: 30 + row * 34, w: 58, h: 30 });
+    const gap = 3;
+    // Под ширину 300 подбираем элемент так, чтобы в ряд вошло 3–7 штук.
+    const cols = Math.max(3, Math.min(7, Math.round(4 * Math.sqrt(tileShape.value.ratio))));
+    const w = (300 - gap) / cols - gap;
+    const h = Math.max(14, w / tileShape.value.ratio);
+    const rows = Math.ceil(190 / (h + gap)) + 1;
+
+    const list = [];
+    for (let row = 0; row < rows; row++) {
+        const offset = row % 2 ? -(w + gap) / 2 : 0;
+        for (let col = -1; col <= cols; col++) {
+            list.push({ x: gap + col * (w + gap) + offset, y: 24 + row * (h + gap), w, h });
         }
     }
-    return rows;
+    return list;
 });
 </script>
 
@@ -64,14 +82,17 @@ const tiles = computed(() => {
             :alt="image.alt || product.name"
             loading="lazy"
             decoding="async"
-            class="h-full w-full object-cover"
+            class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-[1.03]"
         />
+        <!-- Фото товаров часто сняты на белом: мягкая виньетка сажает их
+             в тёмную карточку, чтобы плитка карточек не пестрила. -->
+        <div v-if="image" class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900/45 via-transparent to-ink-900/10" />
 
         <svg v-else viewBox="0 0 300 220" class="h-full w-full" role="img" :aria-label="product.name">
             <defs>
                 <linearGradient :id="`sky-${product.id}`" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stop-color="#1B1F24" />
-                    <stop offset="1" stop-color="#0C0E11" />
+                    <stop offset="0" stop-color="#20242A" />
+                    <stop offset="1" stop-color="#14171B" />
                 </linearGradient>
             </defs>
             <rect width="300" height="220" :fill="`url(#sky-${product.id})`" />
@@ -82,8 +103,7 @@ const tiles = computed(() => {
                     <rect :x="t.x" :y="t.y" :width="t.w" :height="t.h" rx="3"
                         :fill="i % 7 === 0 ? light : i % 5 === 0 ? dark : base" />
                 </g>
-                <rect x="0" y="0" width="300" height="30" fill="#0C0E11" opacity="0.85" />
-                <rect x="0" y="196" width="300" height="24" :fill="deep" />
+                <rect x="0" y="0" width="300" height="24" fill="#14171B" />
             </g>
 
             <!-- Бордюр: ряд блоков вдоль дорожки -->
@@ -136,7 +156,7 @@ const tiles = computed(() => {
             </g>
 
             <!-- Мягкая виньетка: изображение садится в тёмную сцену -->
-            <rect width="300" height="220" fill="url(#vignette)" opacity="0.5" />
+            <rect width="300" height="220" fill="url(#vignette)" opacity="0.35" />
             <defs>
                 <radialGradient id="vignette" cx="0.5" cy="0.45" r="0.75">
                     <stop offset="0.55" stop-color="#000" stop-opacity="0" />

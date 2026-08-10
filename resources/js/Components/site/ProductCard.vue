@@ -13,7 +13,10 @@ const emit = defineEmits(['favorite']);
 
 const favorite = defineModel('favorite', { type: Boolean, default: false });
 
-const perUnit = computed(() => `${money(props.product.price)} / ${props.product.unit}`);
+/** Размер изделия — главная характеристика при выборе, выносим на карточку. */
+const size = computed(() => props.product.specs?.size ?? null);
+
+const adding = computed(() => false);
 
 const addToCart = () => {
     router.post(route('site.cart.add', props.product.slug), {
@@ -23,45 +26,74 @@ const addToCart = () => {
 </script>
 
 <template>
-    <article class="group relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-ink-800/60 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40">
-        <Link :href="route('site.product', product.slug)" class="block" :aria-label="product.name">
-            <ProductVisual :product="product" :ratio="compact ? 'aspect-[16/10]' : 'aspect-[4/3]'" />
-        </Link>
+    <article class="group flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-ink-800/60 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40">
+        <!-- Изображение: фиксированная пропорция, чтобы плитка карточек
+             не «прыгала» при разной высоте фото. -->
+        <div class="relative">
+            <Link :href="route('site.product', product.slug)" class="block" :aria-label="product.name">
+                <ProductVisual :product="product" :ratio="compact ? 'aspect-[16/10]' : 'aspect-[4/3]'" />
+            </Link>
 
-        <button
-            class="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-ink-900/60 backdrop-blur transition hover:border-sand-300/60"
-            :aria-pressed="favorite"
-            :aria-label="favorite ? 'Убрать из избранного' : 'В избранное'"
-            @click.prevent="favorite = !favorite; emit('favorite', product.id)"
-        >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" :fill="favorite ? '#C8B79A' : 'none'" stroke="#C8B79A" stroke-width="1.6">
-                <path d="M12 20s-7-4.35-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 3.5C19 15.65 12 20 12 20z" />
-            </svg>
-        </button>
+            <button
+                class="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-ink-900/70 backdrop-blur transition hover:border-sand-300/60"
+                :aria-pressed="favorite"
+                :aria-label="favorite ? 'Убрать из избранного' : 'В избранное'"
+                @click.prevent="favorite = !favorite; emit('favorite', product.id)"
+            >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" :fill="favorite ? '#C8B79A' : 'none'" stroke="#C8B79A" stroke-width="1.6">
+                    <path d="M12 20s-7-4.35-7-9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 7 3.5C19 15.65 12 20 12 20z" />
+                </svg>
+            </button>
+
+            <!-- Наличие: важно для решения, поэтому видно сразу на снимке -->
+            <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-ink-900/75 px-2.5 py-1 text-[11px] font-medium text-sand-50 backdrop-blur">
+                <span class="h-1.5 w-1.5 rounded-full" :class="product.in_stock ? 'bg-emerald-400' : 'bg-amber-400'" />
+                {{ product.in_stock ? 'На складе' : 'Под заказ' }}
+            </span>
+        </div>
 
         <div class="flex flex-1 flex-col p-5 sm:p-6">
             <p v-if="product.category" class="eyebrow">{{ product.category.name }}</p>
 
-            <h3 class="mt-2 text-lg font-medium leading-snug text-sand-50">
+            <h3 class="mt-2.5 text-[17px] font-medium leading-snug text-sand-50">
                 <Link :href="route('site.product', product.slug)" class="transition hover:text-sand-300">{{ product.name }}</Link>
             </h3>
 
-            <p v-if="product.short_description" class="mt-2 line-clamp-2 text-sm text-sand-100/50">
-                {{ product.short_description }}
+            <!-- Размер чипом: сравнивать позиции удобнее, чем в строке текста -->
+            <p v-if="size" class="mt-3 inline-flex w-fit rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] text-sand-100/60">
+                {{ size }}
             </p>
 
-            <div class="mt-5 flex items-end justify-between gap-4 pt-4">
-                <div>
-                    <p class="text-xl font-semibold text-sand-50">{{ perUnit }}</p>
-                    <p v-if="product.old_price > 0" class="text-xs text-sand-100/40 line-through">{{ money(product.old_price) }}</p>
-                </div>
-                <button class="btn-sand !px-5 !py-2.5 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100" @click="addToCart">
-                    В корзину
-                </button>
-            </div>
+            <!-- Распорка прижимает цену и кнопку к низу: карточки в ряду
+                 заканчиваются на одной линии независимо от длины названия. -->
+            <div class="flex-1" />
 
-            <!-- На тач-устройствах кнопка всегда видна -->
-            <button class="btn-sand mt-4 w-full sm:hidden" @click="addToCart">В корзину</button>
+            <div class="mt-5 border-t border-white/[0.07] pt-4">
+                <div class="flex items-baseline gap-2">
+                    <span class="text-xl font-semibold text-sand-50">{{ money(product.price) }}</span>
+                    <span class="text-sm text-sand-100/45">/ {{ product.unit }}</span>
+                    <span v-if="product.old_price > 0" class="ml-auto text-xs text-sand-100/35 line-through">{{ money(product.old_price) }}</span>
+                </div>
+
+                <p v-if="product.min_order > 0" class="mt-1 text-[11px] text-sand-100/35">
+                    минимум {{ Number(product.min_order) }} {{ product.unit }}
+                </p>
+
+                <!-- Действие видно всегда: скрывать его до наведения — значит
+                     терять покупателей на телефоне и на первом взгляде. -->
+                <div class="mt-4 flex gap-2">
+                    <button class="btn-sand flex-1 !px-4 !py-2.5 text-[13px]" :disabled="adding" @click="addToCart">
+                        В корзину
+                    </button>
+                    <Link
+                        :href="route('site.product', product.slug)"
+                        class="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full border border-white/12 text-sand-100/70 transition hover:border-sand-300/60 hover:text-sand-50"
+                        aria-label="Подробнее о товаре"
+                    >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    </Link>
+                </div>
+            </div>
         </div>
     </article>
 </template>

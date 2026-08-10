@@ -181,17 +181,17 @@ onBeforeUnmount(() => stopReveal());
                     </div>
 
                     <div v-if="products.data.length" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                        <div v-for="p in products.data" :key="p.id" class="reveal">
+                        <div v-for="p in products.data" :key="p.id" class="reveal flex flex-col">
                             <ProductCard
                                 :product="p"
                                 :favorite="favIds.includes(p.id)"
                                 @favorite="toggleFavorite"
                             />
                             <button
-                                class="mt-2 w-full rounded-lg border border-white/10 py-2 text-xs transition"
-                                :class="compareIds.includes(p.id) ? 'border-sand-300/60 text-sand-300' : 'text-sand-100/45 hover:text-sand-100'"
+                                class="mx-auto mt-2 block text-[11px] uppercase tracking-[0.18em] transition"
+                                :class="compareIds.includes(p.id) ? 'text-sand-300' : 'text-sand-100/35 hover:text-sand-100/70'"
                                 @click="toggleCompare(p.id)"
-                            >{{ compareIds.includes(p.id) ? '✓ В сравнении' : 'Сравнить' }}</button>
+                            >{{ compareIds.includes(p.id) ? '✓ в сравнении' : 'сравнить' }}</button>
                         </div>
                     </div>
 
