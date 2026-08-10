@@ -85,6 +85,9 @@ class CatalogMediaTest extends TestCase
         // Главная отдаёт текстуру сцене, конфигуратор — коллекции плитки.
         $this->get(route('site.home'))
             ->assertInertia(fn ($p) => $p->where('scene.textures.paving', $texture));
+
+        // Конфигуратор выключен по умолчанию — включаем, чтобы проверить.
+        \App\Models\Setting::set('configurator_enabled', true);
         $this->get(route('site.configurator'))
             ->assertInertia(fn ($p) => $p->where('collections.0.texture', $texture));
     }
