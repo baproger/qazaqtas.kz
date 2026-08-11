@@ -199,6 +199,9 @@ Route::middleware('auth')->group(function () {
     // Settings
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+    // Контент витрины: контакты, филиалы, тарифы доставки, FAQ.
+    Route::get('settings/site', [\App\Http\Controllers\SiteSettingsController::class, 'index'])->name('siteSettings.index');
+    Route::put('settings/site', [\App\Http\Controllers\SiteSettingsController::class, 'update'])->name('siteSettings.update');
     Route::get('settings/stages', [StageController::class, 'index'])->name('stages.index');
     Route::post('settings/stages', [StageController::class, 'store'])->name('stages.store');
     Route::put('settings/stages/{kind}/{id}', [StageController::class, 'update'])->name('stages.update');

@@ -27,6 +27,7 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
             <Link :href="route('stages.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Этапы</Link>
             <Link :href="route('screens.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Экраны</Link>
             <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Доп. поля</Link>
+            <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Сайт</Link>
         </div>
 
         <div class="max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">

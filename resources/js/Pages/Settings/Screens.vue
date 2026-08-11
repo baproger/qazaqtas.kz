@@ -30,6 +30,7 @@ const copy = (code) => navigator.clipboard?.writeText(code);
             <Link :href="route('stages.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Этапы</Link>
             <Link :href="route('screens.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">Экраны</Link>
             <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Доп. поля</Link>
+            <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Сайт</Link>
         </div>
 
         <!-- Инструкция -->
