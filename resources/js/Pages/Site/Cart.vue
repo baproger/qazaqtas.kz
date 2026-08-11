@@ -41,10 +41,10 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
 
             <div v-if="!cart.items.length" class="mt-12 rounded-3xl border border-white/10 bg-ink-800/50 px-8 py-20 text-center">
                 <p class="display text-2xl text-sand-50">Пока пусто</p>
-                <p class="mt-3 text-sm text-sand-100/50">Загляните в каталог или соберите двор в конфигураторе.</p>
+                <p class="mt-3 text-sm text-sand-100/50">Загляните в каталог — подберём материал и посчитаем смету.</p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
                     <Link :href="route('site.catalog')" class="btn-sand">В каталог</Link>
-                    <Link :href="route('site.configurator')" class="btn-ghost">Конфигуратор</Link>
+                    <Link v-if="$page.props.site?.configurator" :href="route('site.configurator')" class="btn-ghost">Конфигуратор</Link>
                 </div>
             </div>
 
@@ -124,6 +124,7 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
 
                         <Link :href="route('site.checkout')" class="btn-sand mt-6 w-full">Оформить заказ</Link>
                         <a :href="whatsapp" target="_blank" rel="noopener" class="btn-ghost mt-3 w-full">Заказать в WhatsApp</a>
+                        <a :href="route('site.quotation')" class="btn-ghost mt-3 w-full">Скачать КП в PDF</a>
 
                         <p class="mt-4 text-[11px] leading-relaxed text-sand-100/35">
                             Стоимость доставки предварительная — менеджер подтвердит её после расчёта объёма и адреса.

@@ -31,6 +31,10 @@ Route::patch('/korzina', [CartController::class, 'update'])->name('site.cart.upd
 Route::delete('/korzina/pozitsiya', [CartController::class, 'remove'])->name('site.cart.remove');
 Route::delete('/korzina', [CartController::class, 'clear'])->name('site.cart.clear');
 
+// Коммерческое предложение в PDF по составу корзины.
+Route::get('/kp', [\App\Http\Controllers\Site\QuotationController::class, 'download'])
+    ->middleware('throttle:20,1')->name('site.quotation');
+
 Route::get('/oformlenie', [CheckoutController::class, 'show'])->name('site.checkout');
 Route::post('/oformlenie', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('site.checkout.store');
 Route::get('/spasibo', [CheckoutController::class, 'thanks'])->name('site.thanks');
