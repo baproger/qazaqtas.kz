@@ -100,3 +100,75 @@
         background-position: 0 0, 48px 24px, 0 0;
     }
 }
+
+/* ------------------------------------------------------------------
+   День и ночь на витрине. Палитра вынесена в переменные, поэтому вся
+   существующая вёрстка (bg-ink-800, text-sand-50…) переключается сама.
+   Интерфейс ERP этих токенов не использует и остаётся светлым всегда.
+   ------------------------------------------------------------------ */
+.site {
+    --ink-900: 8 9 11;
+    --ink-800: 13 15 18;
+    --ink-700: 20 23 27;
+    --ink-600: 28 32 37;
+    --ink-500: 39 44 51;
+    --ink-400: 58 64 72;
+
+    --sand-50: 247 244 239;
+    --sand-100: 237 231 220;
+    --sand-200: 220 210 193;
+    --sand-300: 200 183 154;
+    --sand-400: 180 156 119;
+    --sand-500: 154 128 91;
+}
+
+.site[data-theme='light'] {
+    /* Дневная тема: фон — тёплая бумага, текст — графит, акцент темнее,
+       иначе песочный не читается на светлом. */
+    --ink-900: 250 248 245;
+    --ink-800: 255 255 255;
+    --ink-700: 241 238 232;
+    --ink-600: 230 226 217;
+    --ink-500: 214 209 198;
+    --ink-400: 150 145 135;
+
+    --sand-50: 22 24 28;
+    --sand-100: 46 50 57;
+    --sand-200: 82 87 95;
+    --sand-300: 138 109 59;
+    --sand-400: 120 94 50;
+    --sand-500: 99 78 41;
+}
+
+/* Полупрозрачный белый в тёмной теме — это «свет»; на светлом фоне он
+   исчезает, поэтому в дневном режиме те же линии и подложки становятся
+   полупрозрачным графитом. */
+.site[data-theme='light'] .border-white\/5 { border-color: rgb(15 18 22 / 0.06); }
+.site[data-theme='light'] .border-white\/10,
+.site[data-theme='light'] .border-white\/\[0\.07\] { border-color: rgb(15 18 22 / 0.10); }
+.site[data-theme='light'] .border-white\/12 { border-color: rgb(15 18 22 / 0.14); }
+.site[data-theme='light'] .border-white\/15 { border-color: rgb(15 18 22 / 0.18); }
+.site[data-theme='light'] .border-white\/20 { border-color: rgb(15 18 22 / 0.22); }
+.site[data-theme='light'] .border-white\/25 { border-color: rgb(15 18 22 / 0.26); }
+.site[data-theme='light'] .border-white\/30 { border-color: rgb(15 18 22 / 0.30); }
+.site[data-theme='light'] .border-white\/40 { border-color: rgb(15 18 22 / 0.38); }
+
+.site[data-theme='light'] .bg-white\/\[0\.02\] { background-color: rgb(15 18 22 / 0.02); }
+.site[data-theme='light'] .bg-white\/\[0\.03\] { background-color: rgb(15 18 22 / 0.03); }
+.site[data-theme='light'] .bg-white\/\[0\.04\] { background-color: rgb(15 18 22 / 0.04); }
+.site[data-theme='light'] .bg-white\/\[0\.05\],
+.site[data-theme='light'] .bg-white\/5 { background-color: rgb(15 18 22 / 0.05); }
+.site[data-theme='light'] .bg-white\/\[0\.06\] { background-color: rgb(15 18 22 / 0.06); }
+.site[data-theme='light'] .bg-white\/\[0\.07\] { background-color: rgb(15 18 22 / 0.07); }
+.site[data-theme='light'] .bg-white\/10 { background-color: rgb(15 18 22 / 0.08); }
+
+.site[data-theme='light'] .divide-white\/5 > * + * { border-color: rgb(15 18 22 / 0.06); }
+.site[data-theme='light'] .divide-white\/8 > * + * { border-color: rgb(15 18 22 / 0.08); }
+.site[data-theme='light'] .divide-white\/10 > * + * { border-color: rgb(15 18 22 / 0.10); }
+
+/* Зерно и засветка фона в дневной теме почти незаметны. */
+.site[data-theme='light'] {
+    background-image:
+        radial-gradient(120% 80% at 50% -20%, rgb(138 109 59 / 0.07), transparent 60%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+}

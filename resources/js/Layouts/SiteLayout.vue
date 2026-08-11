@@ -24,11 +24,34 @@ const nav = computed(() => [
     { label: 'Контакты', route: 'site.contacts' },
 ]);
 
+/**
+ * День/ночь на витрине. По умолчанию берём системную тему, выбор
+ * запоминаем. Тема живёт на обёртке .site — интерфейс ERP её не видит.
+ */
+const theme = ref('dark');
+const applyTheme = (value) => {
+    theme.value = value;
+    document.documentElement.style.colorScheme = value;
+    try {
+        localStorage.setItem('qt.theme', value);
+    } catch {
+        /* приватный режим — просто не запоминаем */
+    }
+};
+const toggleTheme = () => applyTheme(theme.value === 'dark' ? 'light' : 'dark');
+
 const scrolled = ref(false);
 const menuOpen = ref(false);
 const onScroll = () => (scrolled.value = window.scrollY > 24);
 
 onMounted(() => {
+    let saved = null;
+    try {
+        saved = localStorage.getItem('qt.theme');
+    } catch { /* приватный режим */ }
+    const system = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    applyTheme(saved ?? system);
+
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 });
@@ -51,10 +74,10 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
         <meta property="og:title" :content="seo.title ?? 'QAZAQ TAS'" />
         <meta property="og:description" :content="seo.description ?? ''" />
         <meta property="og:type" content="website" />
-        <meta name="theme-color" content="#08090B" />
+        <meta name="theme-color" :content="theme === 'dark' ? '#08090B' : '#FAF8F5'" />
     </Head>
 
-    <div class="site min-h-screen">
+    <div class="site min-h-screen" :data-theme="theme">
         <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-sand-300 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink-900">
             К содержимому
         </a>
@@ -62,11 +85,18 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
         <!-- Шапка: стекло появляется при скролле, над 3D — прозрачная -->
         <header
             class="fixed inset-x-0 top-0 z-50 transition duration-500 ease-premium"
-            :class="scrolled || !transparentHeader ? 'border-b border-white/10 bg-ink-900/70 backdrop-blur-xl' : 'border-b border-transparent'"
+            :class="scrolled || !transparentHeader ? 'border-b border-white/10 bg-ink-900/80 backdrop-blur-xl' : 'border-b border-transparent'"
         >
             <div class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-5 sm:h-20 sm:px-8">
                 <!-- Логотип уже содержит название — отдельной подписи рядом нет. -->
-                <Link :href="route('site.home')" class="flex items-center" aria-label="QAZAQ TAS — на главную">
+                <!-- Надпись в логотипе светло-серая: на дневном фоне она
+                     теряется, поэтому там он живёт на тёмной плашке. -->
+                <Link
+                    :href="route('site.home')"
+                    class="flex items-center transition"
+                    :class="theme === 'light' ? 'rounded-xl bg-ink-500 px-3 py-2' : ''"
+                    aria-label="QAZAQ TAS — на главную"
+                >
                     <img
                         src="/logo-qazaqtas.png"
                         alt="QAZAQ TAS"
@@ -96,6 +126,21 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                     <a :href="telHref" class="hidden text-sm font-medium text-sand-50 transition hover:text-sand-300 xl:block">
                         {{ contacts.phone }}
                     </a>
+
+                    <button
+                        class="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-sand-50 transition hover:border-sand-300/60 hover:bg-white/5"
+                        :aria-label="theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'"
+                        :title="theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'"
+                        @click="toggleTheme"
+                    >
+                        <svg v-if="theme === 'dark'" class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="4" />
+                            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+                        </svg>
+                        <svg v-else class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+                        </svg>
+                    </button>
 
                     <Link
                         :href="route('site.cart')"

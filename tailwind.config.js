@@ -21,21 +21,25 @@ export default {
                 primary: colors.indigo,   // accent #4F46E5 family
                 // Витрина сайта: тёмная «бетонная» палитра + песочный акцент
                 // мраморного композита. ERP остаётся на светлой primary-теме.
+                // Значения живут в CSS-переменных (resources/css/app.css):
+                // витрина переключает день/ночь одним атрибутом, а вся
+                // существующая вёрстка (bg-ink-800, text-sand-50…) следует за
+                // ними без правок. ERP эти токены не использует.
                 ink: {
-                    900: '#08090B',
-                    800: '#0D0F12',
-                    700: '#14171B',
-                    600: '#1C2025',
-                    500: '#272C33',
-                    400: '#3A4048',
+                    900: 'rgb(var(--ink-900) / <alpha-value>)',
+                    800: 'rgb(var(--ink-800) / <alpha-value>)',
+                    700: 'rgb(var(--ink-700) / <alpha-value>)',
+                    600: 'rgb(var(--ink-600) / <alpha-value>)',
+                    500: 'rgb(var(--ink-500) / <alpha-value>)',
+                    400: 'rgb(var(--ink-400) / <alpha-value>)',
                 },
                 sand: {
-                    50: '#F7F4EF',
-                    100: '#EDE7DC',
-                    200: '#DCD2C1',
-                    300: '#C8B79A',
-                    400: '#B49C77',
-                    500: '#9A805B',
+                    50: 'rgb(var(--sand-50) / <alpha-value>)',
+                    100: 'rgb(var(--sand-100) / <alpha-value>)',
+                    200: 'rgb(var(--sand-200) / <alpha-value>)',
+                    300: 'rgb(var(--sand-300) / <alpha-value>)',
+                    400: 'rgb(var(--sand-400) / <alpha-value>)',
+                    500: 'rgb(var(--sand-500) / <alpha-value>)',
                 },
                 success: colors.emerald,  // incomes / active
                 danger: colors.rose,      // overdue / negative
