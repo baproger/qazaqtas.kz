@@ -35,9 +35,9 @@ onBeforeUnmount(() => stop());
             </div>
         </section>
 
-        <section class="border-b border-white/10">
-            <div class="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-white/10 lg:grid-cols-4">
-                <div v-for="s in stats" :key="s.label" class="bg-ink-900 px-6 py-10 sm:px-8 sm:py-14">
+        <section class="band band-stone">
+            <div class="stat-grid mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-4">
+                <div v-for="s in stats" :key="s.label" class="px-6 py-10 sm:px-8 sm:py-14">
                     <p class="display text-3xl text-sand-50 sm:text-5xl">{{ s.value }}</p>
                     <p class="mt-3 text-sm text-sand-100/50">{{ s.label }}</p>
                 </div>
@@ -66,8 +66,8 @@ onBeforeUnmount(() => stop());
         <section class="band band-stone">
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <p class="eyebrow reveal">Преимущества</p>
-                <div class="mt-12 grid gap-px bg-white/10 sm:grid-cols-2">
-                    <div v-for="a in advantages" :key="a.title" class="reveal bg-ink-900 p-8 sm:p-12">
+                <div class="duo-grid mt-12 grid sm:grid-cols-2">
+                    <div v-for="a in advantages" :key="a.title" class="reveal p-8 sm:p-12">
                         <h3 class="display text-2xl text-sand-50 sm:text-3xl">{{ a.title }}</h3>
                         <p class="mt-4 max-w-md text-sm leading-relaxed text-sand-100/55">{{ a.text }}</p>
                     </div>

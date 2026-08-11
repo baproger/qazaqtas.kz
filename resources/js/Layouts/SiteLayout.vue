@@ -181,7 +181,7 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
         </main>
 
         <!-- Подвал -->
-        <footer class="border-t border-white/10 bg-ink-800/60">
+        <footer class="site-footer">
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
                 <div class="grid gap-12 lg:grid-cols-[1.2fr_1fr_1fr]">
                     <div>
