@@ -16,7 +16,7 @@ const openFaq = ref(0);
 
 <template>
     <SiteLayout :seo="seo">
-        <section class="border-b border-white/10 bg-ink-800/40">
+        <section class="band band-hero">
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
                 <p class="eyebrow">Контакты</p>
                 <h1 class="display mt-6 text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">Поговорим о вашем объекте</h1>
@@ -45,7 +45,7 @@ const openFaq = ref(0);
             </div>
         </section>
 
-        <section class="border-t border-white/10 bg-ink-800/30">
+        <section class="band band-stone">
             <div class="mx-auto max-w-4xl px-5 py-20 sm:px-8 sm:py-28">
                 <h2 class="display text-[clamp(1.75rem,4vw,3rem)] text-sand-50">Частые вопросы</h2>
                 <div class="mt-10 divide-y divide-white/10 border-y border-white/10">

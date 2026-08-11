@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import { money, observeReveal } from '@/utils/site';
 import { useSmoothScroll, loadScrollTrigger } from '@/site/useSmoothScroll';
+import { theme } from '@/site/theme';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -75,6 +76,9 @@ onMounted(async () => {
 
         scene = createCourtyard(canvas.value, {
             color: heroColor.value,
+            // Двор освещается по теме страницы: тёмный асфальт ночью,
+            // светлая площадка днём.
+            theme: theme.value,
             // Фото изделий из ERP: если отмечены как текстура — сцена
             // показывает настоящую поверхность вместо ровного цвета.
             textures: props.scene?.textures ?? {},
@@ -104,6 +108,10 @@ onMounted(async () => {
         ScrollTrigger.refresh();
     };
 
+    // Переключатель дня и ночи перекрашивает и сцену — иначе на светлой
+    // странице остаётся тёмное пятно.
+    watch(theme, (value) => scene?.setTheme(value));
+
     const io = new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting) {
             io.disconnect();
@@ -126,8 +134,10 @@ onBeforeUnmount(() => {
             <div class="sticky top-0 h-screen overflow-hidden">
                 <canvas ref="canvas" class="absolute inset-0 h-full w-full" aria-hidden="true" />
 
-                <!-- Затемнение по краям, чтобы текст читался поверх сцены -->
-                <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink-900/85 via-transparent to-ink-900" />
+                <!-- Вуаль поверх сцены: гасит верх под шапку и растворяет
+                     нижний край двора в фоне страницы. Градиент собран на
+                     токенах, поэтому работает и днём, и ночью. -->
+                <div class="hero-veil pointer-events-none absolute inset-0" />
 
                 <!-- Первый экран -->
                 <div
@@ -199,7 +209,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Цифры ======================= -->
-        <section class="border-y border-white/10 bg-ink-800/40">
+        <section class="band band-stone">
             <div class="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-white/10 lg:grid-cols-4">
                 <div v-for="s in stats" :key="s.label" class="bg-ink-900 px-6 py-10 sm:px-8 sm:py-14">
                     <p class="display text-3xl text-sand-50 sm:text-5xl">{{ s.value }}</p>
@@ -209,7 +219,8 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Каталог по категориям ======================= -->
-        <section class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+        <section class="band band-sand">
+          <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
                     <p class="eyebrow">Каталог</p>
@@ -228,7 +239,7 @@ onBeforeUnmount(() => {
                     class="reveal concrete group relative overflow-hidden rounded-3xl border border-white/10 bg-ink-800/60 p-7 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40 sm:p-8"
                 >
                     <span
-                        class="absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-20 blur-2xl transition group-hover:opacity-40"
+                        class="accent-glow absolute -right-10 -top-10 h-32 w-32 rounded-full blur-2xl transition"
                         :style="{ background: c.accent ?? '#C8B79A' }"
                     />
                     <p class="text-xs text-sand-100/40">{{ c.products_count }} позиций</p>
@@ -240,10 +251,11 @@ onBeforeUnmount(() => {
                     </span>
                 </Link>
             </div>
+          </div>
         </section>
 
         <!-- ======================= Хиты ======================= -->
-        <section v-if="featured.length" class="border-y border-white/10 bg-ink-800/30">
+        <section v-if="featured.length" class="band band-stone">
             <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
                 <div class="reveal flex flex-wrap items-end justify-between gap-6">
                     <div>
@@ -260,7 +272,8 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Преимущества ======================= -->
-        <section class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+        <section class="band band-sand">
+          <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
             <p class="eyebrow reveal">Почему композит</p>
             <div class="mt-12 grid gap-px bg-white/10 sm:grid-cols-2">
                 <div v-for="a in advantages" :key="a.title" class="reveal bg-ink-900 p-8 sm:p-12">
@@ -268,10 +281,11 @@ onBeforeUnmount(() => {
                     <p class="mt-4 max-w-md text-sm leading-relaxed text-sand-100/55">{{ a.text }}</p>
                 </div>
             </div>
+          </div>
         </section>
 
         <!-- ======================= Производство ======================= -->
-        <section class="border-y border-white/10 bg-ink-800/30">
+        <section class="band band-stone">
             <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
                 <div class="reveal max-w-2xl">
                     <p class="eyebrow">Производство</p>
@@ -295,7 +309,8 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Проекты ======================= -->
-        <section class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+        <section class="band band-sand">
+          <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
                     <p class="eyebrow">Реализовано</p>
@@ -341,10 +356,11 @@ onBeforeUnmount(() => {
                     </div>
                 </article>
             </div>
+          </div>
         </section>
 
         <!-- ======================= CTA ======================= -->
-        <section class="border-t border-white/10 bg-gradient-to-b from-ink-800/40 to-ink-900">
+        <section class="band band-deep">
             <div class="mx-auto max-w-7xl px-5 py-24 text-center sm:px-8 sm:py-36">
                 <h2 class="display mx-auto max-w-3xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">
                     Посчитаем ваш двор за пару минут

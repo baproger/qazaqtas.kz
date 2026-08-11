@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { theme } from '@/site/theme';
 
 /**
  * Превью изделия. Пока в карточке ERP нет загруженных фото, рисуем честную
@@ -53,6 +54,15 @@ const tileShape = computed(() => {
     return { ratio: w / h || 1 };
 });
 
+/**
+ * Схема нарисована как сцена: фон, тень под изделием, виньетка. Ночью это
+ * тёмная студия, днём — светлая. Без этого на дневной странице карточки
+ * оставались чёрными прямоугольниками.
+ */
+const scene = computed(() => (theme.value === 'light'
+    ? { top: '#F4F1EB', bottom: '#E6E0D6', band: '#E6E0D6', hole: '#B4ABA0', vignette: '#4A4238', vignetteOpacity: 0.16 }
+    : { top: '#20242A', bottom: '#14171B', band: '#14171B', hole: '#0C0E11', vignette: '#000000', vignetteOpacity: 0.35 }));
+
 const tiles = computed(() => {
     const gap = 3;
     // Под ширину 300 подбираем элемент так, чтобы в ряд вошло 3–7 штук.
@@ -84,15 +94,15 @@ const tiles = computed(() => {
             decoding="async"
             class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-[1.03]"
         />
-        <!-- Фото товаров часто сняты на белом: мягкая виньетка сажает их
-             в тёмную карточку, чтобы плитка карточек не пестрила. -->
-        <div v-if="image" class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900/45 via-transparent to-ink-900/10" />
+        <!-- Фото товаров часто сняты на белом: лёгкая виньетка сажает снимок
+             в карточку. Днём она мягче — иначе съедает светлый фон кадра. -->
+        <div v-if="image" class="photo-veil pointer-events-none absolute inset-0" />
 
         <svg v-else viewBox="0 0 300 220" class="h-full w-full" role="img" :aria-label="product.name">
             <defs>
                 <linearGradient :id="`sky-${product.id}`" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stop-color="#20242A" />
-                    <stop offset="1" stop-color="#14171B" />
+                    <stop offset="0" :stop-color="scene.top" />
+                    <stop offset="1" :stop-color="scene.bottom" />
                 </linearGradient>
             </defs>
             <rect width="300" height="220" :fill="`url(#sky-${product.id})`" />
@@ -103,7 +113,7 @@ const tiles = computed(() => {
                     <rect :x="t.x" :y="t.y" :width="t.w" :height="t.h" rx="3"
                         :fill="i % 7 === 0 ? light : i % 5 === 0 ? dark : base" />
                 </g>
-                <rect x="0" y="0" width="300" height="24" fill="#14171B" />
+                <rect x="0" y="0" width="300" height="24" :fill="scene.band" />
             </g>
 
             <!-- Бордюр: ряд блоков вдоль дорожки -->
@@ -113,7 +123,7 @@ const tiles = computed(() => {
                     <rect :x="-10 + (i - 1) * 66" y="112" width="62" height="34" rx="3" :fill="base" />
                     <rect :x="-10 + (i - 1) * 66" y="106" width="62" height="8" rx="2" :fill="light" />
                 </g>
-                <rect x="0" y="60" width="300" height="46" fill="#12161A" />
+                <rect x="0" y="60" width="300" height="46" :fill="scene.band" />
             </g>
 
             <!-- Вазон: усечённый конус с растением -->
@@ -143,7 +153,7 @@ const tiles = computed(() => {
                 <path d="M112 66 L120 176 H180 L188 66 Z" :fill="base" />
                 <path d="M150 66 L180 176 H150 Z" :fill="dark" opacity="0.5" />
                 <ellipse cx="150" cy="66" rx="38" ry="10" :fill="light" />
-                <ellipse cx="150" cy="66" rx="28" ry="7" fill="#0C0E11" />
+                <ellipse cx="150" cy="66" rx="28" ry="7" :fill="scene.hole" />
                 <ellipse cx="150" cy="176" rx="30" ry="8" :fill="deep" />
             </g>
 
@@ -156,11 +166,11 @@ const tiles = computed(() => {
             </g>
 
             <!-- Мягкая виньетка: изображение садится в тёмную сцену -->
-            <rect width="300" height="220" fill="url(#vignette)" opacity="0.35" />
+            <rect width="300" height="220" :fill="`url(#vignette-${product.id})`" :opacity="scene.vignetteOpacity" />
             <defs>
-                <radialGradient id="vignette" cx="0.5" cy="0.45" r="0.75">
-                    <stop offset="0.55" stop-color="#000" stop-opacity="0" />
-                    <stop offset="1" stop-color="#000" stop-opacity="0.8" />
+                <radialGradient :id="`vignette-${product.id}`" cx="0.5" cy="0.45" r="0.75">
+                    <stop offset="0.55" :stop-color="scene.vignette" stop-opacity="0" />
+                    <stop offset="1" :stop-color="scene.vignette" stop-opacity="0.8" />
                 </radialGradient>
             </defs>
         </svg>

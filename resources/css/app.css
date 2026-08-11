@@ -166,9 +166,176 @@
 .site[data-theme='light'] .divide-white\/8 > * + * { border-color: rgb(15 18 22 / 0.08); }
 .site[data-theme='light'] .divide-white\/10 > * + * { border-color: rgb(15 18 22 / 0.10); }
 
-/* Зерно и засветка фона в дневной теме почти незаметны. */
+/* Дневной фон — не белый лист, а тёплая бумага: сверху песочная засветка,
+   снизу прохладный камень, поверх — зерно бетона. */
 .site[data-theme='light'] {
     background-image:
-        radial-gradient(120% 80% at 50% -20%, rgb(138 109 59 / 0.07), transparent 60%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+        radial-gradient(90% 55% at 12% -10%, rgb(200 172 118 / 0.20), transparent 62%),
+        radial-gradient(70% 45% at 92% 4%, rgb(150 158 168 / 0.16), transparent 60%),
+        linear-gradient(180deg, rgb(255 253 250) 0%, rgb(248 245 240) 42%, rgb(240 236 229) 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-attachment: fixed, fixed, fixed, scroll;
+}
+
+/* Панели и кнопки собраны через @apply, поэтому правила выше до них не
+   достают — дневные варианты задаём явно. */
+.site[data-theme='light'] .glass {
+    border-color: rgb(15 18 22 / 0.08);
+    background-color: rgb(255 255 255 / 0.72);
+}
+.site[data-theme='light'] .glass-strong {
+    border-color: rgb(15 18 22 / 0.08);
+    background-color: rgb(255 255 255 / 0.88);
+    box-shadow: 0 18px 50px -24px rgb(30 26 20 / 0.28);
+}
+.site[data-theme='light'] .btn-ghost {
+    border-color: rgb(15 18 22 / 0.16);
+}
+.site[data-theme='light'] .btn-ghost:hover {
+    border-color: rgb(138 109 59 / 0.55);
+    background-color: rgb(15 18 22 / 0.04);
+}
+/* Днём объём держится на тени, а не на подсветке сверху: заливка остаётся
+   чистой бумагой, карточка приподнята мягкой тенью. */
+.site[data-theme='light'] .concrete {
+    background-image:
+        linear-gradient(150deg, rgb(255 255 255 / 0.96), rgb(252 250 246 / 0.8) 55%, rgb(241 236 228 / 0.9)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23c)' opacity='0.035'/%3E%3C/svg%3E");
+    box-shadow: 0 22px 48px -32px rgb(46 38 26 / 0.45);
+}
+.site[data-theme='light'] .concrete:hover {
+    box-shadow: 0 30px 60px -30px rgb(46 38 26 / 0.5);
+}
+/* Перевязка на светлом фоне тонет — линии приходится усилить. */
+.site[data-theme='light'] .paving-pattern {
+    background-image:
+        linear-gradient(90deg, rgb(120 105 82 / 0.20) 1px, transparent 1px),
+        linear-gradient(rgb(120 105 82 / 0.20) 1px, transparent 1px),
+        radial-gradient(120% 100% at 50% 0%, rgb(138 109 59 / 0.10), transparent 65%);
+}
+
+/* Вуаль поверх 3D-двора. Токены фона делают её тёмной ночью и светлой днём:
+   верх уходит под шапку, низ растворяет площадку в странице. */
+.hero-veil {
+    background-image: linear-gradient(
+        180deg,
+        rgb(var(--ink-900) / 0.88) 0%,
+        rgb(var(--ink-900) / 0.35) 22%,
+        rgb(var(--ink-900) / 0) 46%,
+        rgb(var(--ink-900) / 0.55) 82%,
+        rgb(var(--ink-900)) 100%
+    );
+}
+/* Днём заголовок стоит на светлой площадке — ему нужна опора слева,
+   иначе графит теряется на бликах. */
+.site[data-theme='light'] .hero-veil {
+    background-image:
+        linear-gradient(105deg, rgb(255 253 250 / 0.62) 0%, rgb(255 253 250 / 0.20) 34%, transparent 56%),
+        linear-gradient(
+            180deg,
+            rgb(var(--ink-900) / 0.75) 0%,
+            rgb(var(--ink-900) / 0.15) 26%,
+            rgb(var(--ink-900) / 0) 50%,
+            rgb(var(--ink-900) / 0.6) 84%,
+            rgb(var(--ink-900)) 100%
+        );
+}
+
+
+/* ------------------------------------------------------------------
+   Ритм страницы. Секции идут не ровной заливкой, а мягкими градиентными
+   полосами: тёплая — там, где говорим о материале, холодная — о
+   производстве, глубокая — под акцентными блоками. Все три собраны на
+   токенах, поэтому одинаково работают днём и ночью.
+   ------------------------------------------------------------------ */
+@layer components {
+    .band {
+        @apply relative isolate;
+    }
+    /* Волосяная линия сверху: граница секций читается без жёсткого бордера. */
+    .band::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgb(var(--sand-300) / 0.35), transparent);
+    }
+
+    /* Тёплый песок — материал, каталог, изделия. */
+    .band-sand {
+        background-image:
+            radial-gradient(80% 60% at 15% 0%, rgb(var(--sand-400) / 0.14), transparent 62%),
+            linear-gradient(180deg, rgb(var(--ink-800) / 0.55), rgb(var(--ink-900) / 0));
+    }
+    /* Холодный камень — цех, технология, цифры. */
+    .band-stone {
+        background-image:
+            radial-gradient(75% 60% at 85% 0%, rgb(122 138 154 / 0.16), transparent 60%),
+            linear-gradient(180deg, rgb(var(--ink-800) / 0.65), rgb(var(--ink-900) / 0));
+    }
+    /* Шапка раздела: диагональный свет из угла, чтобы заголовок страницы
+       не висел на плоской заливке. */
+    .band-hero {
+        background-image:
+            radial-gradient(60% 90% at 8% 0%, rgb(var(--sand-400) / 0.18), transparent 58%),
+            radial-gradient(50% 80% at 95% 10%, rgb(122 138 154 / 0.14), transparent 62%),
+            linear-gradient(180deg, rgb(var(--ink-800) / 0.7), rgb(var(--ink-900) / 0));
+    }
+
+    /* Глубокая — под финальным призывом. */
+    .band-deep {
+        background-image:
+            radial-gradient(90% 70% at 50% 120%, rgb(var(--sand-400) / 0.18), transparent 60%),
+            linear-gradient(180deg, rgb(var(--ink-900) / 0), rgb(var(--ink-800) / 0.7));
+    }
+}
+
+/* Днём полосы держатся на плотности, а не на свечении: белая подложка и
+   мягкая тень отделяют блок от бумажного фона. */
+.site[data-theme='light'] .band-sand {
+    background-image:
+        radial-gradient(80% 60% at 15% 0%, rgb(198 168 112 / 0.22), transparent 62%),
+        linear-gradient(180deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.25));
+}
+.site[data-theme='light'] .band-stone {
+    background-image:
+        radial-gradient(75% 60% at 85% 0%, rgb(120 138 158 / 0.20), transparent 60%),
+        linear-gradient(180deg, rgb(255 255 255 / 0.9), rgb(246 244 240 / 0.5));
+}
+.site[data-theme='light'] .band-deep {
+    background-image:
+        radial-gradient(90% 70% at 50% 120%, rgb(198 168 112 / 0.26), transparent 62%),
+        linear-gradient(180deg, rgb(255 255 255 / 0.2), rgb(244 240 233 / 0.95));
+}
+.site[data-theme='light'] .band-hero {
+    background-image:
+        radial-gradient(60% 90% at 8% 0%, rgb(198 168 112 / 0.24), transparent 58%),
+        radial-gradient(50% 80% at 95% 10%, rgb(120 138 158 / 0.18), transparent 62%),
+        linear-gradient(180deg, rgb(255 255 255 / 0.9), rgb(250 248 244 / 0.35));
+}
+.site[data-theme='light'] .band::before {
+    background: linear-gradient(90deg, transparent, rgb(15 18 22 / 0.12), transparent);
+}
+
+/* Цветная засветка в углу карточки. Ночью она светится, днём тот же приём
+   читается как грязь — оставляем едва заметный оттенок. */
+.accent-glow { opacity: 0.2; }
+.group:hover .accent-glow { opacity: 0.4; }
+.site[data-theme='light'] .accent-glow { opacity: 0.1; }
+.site[data-theme='light'] .group:hover .accent-glow { opacity: 0.2; }
+
+/* Виньетка на фото товара. Ночью тянем к фону страницы, днём — только
+   лёгкая тень снизу, чтобы снимок не выглядел вырезанным. */
+.photo-veil {
+    background-image: linear-gradient(0deg, rgb(var(--ink-900) / 0.45), transparent 55%, rgb(var(--ink-900) / 0.10));
+}
+.site[data-theme='light'] .photo-veil {
+    background-image: linear-gradient(0deg, rgb(60 52 40 / 0.16), transparent 45%);
+}
+
+/* Надпись в логотипе светло-серая. Днём она тонет на бумаге, поэтому знак
+   живёт на тёмной плашке — та же графитовая база, что и в ночной теме. */
+.logo-chip {
+    background: linear-gradient(150deg, #1b1f24, #0d0f12);
+    box-shadow: 0 10px 26px -16px rgb(20 16 10 / 0.6);
 }

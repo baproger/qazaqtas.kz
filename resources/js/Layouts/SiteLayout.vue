@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
+import { theme, toggleTheme, initTheme } from '@/site/theme';
 
 const props = defineProps({
     seo: { type: Object, default: () => ({}) },
@@ -24,33 +25,13 @@ const nav = computed(() => [
     { label: 'Контакты', route: 'site.contacts' },
 ]);
 
-/**
- * День/ночь на витрине. По умолчанию берём системную тему, выбор
- * запоминаем. Тема живёт на обёртке .site — интерфейс ERP её не видит.
- */
-const theme = ref('dark');
-const applyTheme = (value) => {
-    theme.value = value;
-    document.documentElement.style.colorScheme = value;
-    try {
-        localStorage.setItem('qt.theme', value);
-    } catch {
-        /* приватный режим — просто не запоминаем */
-    }
-};
-const toggleTheme = () => applyTheme(theme.value === 'dark' ? 'light' : 'dark');
 
 const scrolled = ref(false);
 const menuOpen = ref(false);
 const onScroll = () => (scrolled.value = window.scrollY > 24);
 
 onMounted(() => {
-    let saved = null;
-    try {
-        saved = localStorage.getItem('qt.theme');
-    } catch { /* приватный режим */ }
-    const system = window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    applyTheme(saved ?? system);
+    initTheme();
 
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -94,7 +75,7 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                 <Link
                     :href="route('site.home')"
                     class="flex items-center transition"
-                    :class="theme === 'light' ? 'rounded-xl bg-ink-500 px-3 py-2' : ''"
+                    :class="theme === 'light' ? 'logo-chip rounded-xl px-3 py-2' : ''"
                     aria-label="QAZAQ TAS — на главную"
                 >
                     <img

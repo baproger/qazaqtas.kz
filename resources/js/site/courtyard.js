@@ -40,6 +40,28 @@ import { loadModel } from './gltf';
 /** Верхняя грань покрытия: на этой высоте стоят все изделия. */
 const TILE_TOP = 0.1;
 
+/**
+ * Свет двора по времени суток. Ночью двор стоит на тёмном асфальте под
+ * тёплым прожектором; днём — на светлой площадке под открытым небом.
+ * Туман каждый раз совпадает с фоном страницы, поэтому дальний край
+ * площадки растворяется в ней, а не обрывается полосой.
+ */
+const THEMES = {
+    dark: {
+        fog: 0x08090b, fogNear: 30, fogFar: 86,
+        ground: 0x0b0c0e, bedding: 0x4a453d,
+        ambient: 0.22, sun: 1.55, rim: 40, environment: 0.35, exposure: 0.82,
+    },
+    light: {
+        // Дневной свет легко пересвечивает сцену в белое молоко: держим
+        // экспозицию ниже единицы, а площадку — заметно темнее страницы,
+        // иначе плитка сливается с фоном и рельеф пропадает.
+        fog: 0xf1ece4, fogNear: 30, fogFar: 88,
+        ground: 0xcfc8bb, bedding: 0xa89e8d,
+        ambient: 0.30, sun: 1.5, rim: 10, environment: 0.55, exposure: 0.88,
+    },
+};
+
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
 
@@ -56,6 +78,8 @@ export function createCourtyard(canvas, options = {}) {
         green: new Color('#4A6B5B'),
     };
 
+    let look = THEMES[options.theme === 'light' ? 'light' : 'dark'];
+
     const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
@@ -63,10 +87,10 @@ export function createCourtyard(canvas, options = {}) {
     // Тонемаппинг переводит «пересвеченный» линейный свет в фотографичную
     // картинку: без него бетон выглядит пластиковым.
     renderer.toneMapping = ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.82;
+    renderer.toneMappingExposure = look.exposure;
 
     const scene = new Scene();
-    scene.fog = new Fog(0x08090b, 30, 86);
+    scene.fog = new Fog(look.fog, look.fogNear, look.fogFar);
 
     // Освещение по окружению (IBL): материалы получают мягкие отражения и
     // полутени, как в студии. RoomEnvironment генерируется на лету —
@@ -76,16 +100,17 @@ export function createCourtyard(canvas, options = {}) {
     const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environment;
     // Студийная карта яркая: на полной силе она вымывает цвет композита в белый.
-    scene.environmentIntensity = 0.35;
+    scene.environmentIntensity = look.environment;
 
     const camera = new PerspectiveCamera(38, 1, 0.1, 200);
     camera.position.set(0, 9, 20);
 
     // --- Свет: студийный, с одним «солнцем» и мягкой заливкой ---
     // Окружение уже даёт заливку, поэтому ambient — только лёгкий подмес.
-    scene.add(new AmbientLight(0xffffff, 0.22));
+    const ambient = new AmbientLight(0xffffff, look.ambient);
+    scene.add(ambient);
 
-    const sun = new DirectionalLight(0xfff4e2, 1.55);
+    const sun = new DirectionalLight(0xfff4e2, look.sun);
     sun.position.set(12, 22, 10);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -100,14 +125,14 @@ export function createCourtyard(canvas, options = {}) {
     sun.shadow.camera.bottom = -26;
     scene.add(sun);
 
-    const rim = new SpotLight(0xc8b79a, 40, 60, 0.6, 0.7, 1.4);
+    const rim = new SpotLight(0xc8b79a, look.rim, 60, 0.6, 0.7, 1.4);
     rim.position.set(-16, 14, -12);
     scene.add(rim);
 
     // --- Основание: тёмная площадка под двором ---
     const ground = new Mesh(
         new PlaneGeometry(160, 160),
-        new MeshStandardMaterial({ color: 0x0b0c0e, roughness: 1, metalness: 0, envMapIntensity: 0.15 }),
+        new MeshStandardMaterial({ color: look.ground, roughness: 1, metalness: 0, envMapIntensity: 0.15 }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.12;
@@ -124,7 +149,7 @@ export function createCourtyard(canvas, options = {}) {
         // Прозрачность: на первом экране подушки ещё нет — она проявляется
         // вместе с первыми плитками, иначе светлый клин лезет за заголовок.
         new MeshStandardMaterial({
-            color: 0x4a453d, roughness: 1, metalness: 0, envMapIntensity: 0.2,
+            color: look.bedding, roughness: 1, metalness: 0, envMapIntensity: 0.2,
             transparent: true, opacity: 0,
         }),
     );
@@ -450,6 +475,21 @@ export function createCourtyard(canvas, options = {}) {
     return {
         setTextures,
         setColors,
+        /** Переключение дня и ночи без пересборки сцены. */
+        setTheme(value) {
+            look = THEMES[value === 'light' ? 'light' : 'dark'];
+            renderer.toneMappingExposure = look.exposure;
+            scene.fog.color.set(look.fog);
+            scene.fog.near = look.fogNear;
+            scene.fog.far = look.fogFar;
+            scene.environmentIntensity = look.environment;
+            ambient.intensity = look.ambient;
+            sun.intensity = look.sun;
+            rim.intensity = look.rim;
+            ground.material.color.set(look.ground);
+            bedding.material.color.set(look.bedding);
+            needsRender = true;
+        },
         /**
          * Подменить схематичные изделия настоящими моделями из каталога.
          * На категорию может быть загружено несколько моделей (например два
