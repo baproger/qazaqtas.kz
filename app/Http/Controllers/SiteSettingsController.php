@@ -21,6 +21,8 @@ class SiteSettingsController extends Controller
 
         return Inertia::render('Settings/Site', [
             'site' => [
+                'hero' => SiteContent::heroStyle(),
+                'heroSlidesCount' => count(app(\App\Services\CatalogService::class)->heroSlides()),
                 'contacts' => SiteContent::contacts(),
                 'branches' => SiteContent::branches(),
                 'delivery' => SiteContent::delivery(),
@@ -34,6 +36,9 @@ class SiteSettingsController extends Controller
         $this->guard($request);
 
         $data = $request->validate([
+            // Необязательное: частичное сохранение настроек не должно
+            // сбрасывать оформление первого экрана.
+            'hero' => ['nullable', 'string', 'in:'.implode(',', SiteContent::HERO_STYLES)],
             'phone' => ['required', 'string', 'max:40'],
             'whatsapp' => ['required', 'string', 'max:40'],
             'email' => ['nullable', 'email', 'max:120'],
@@ -60,6 +65,7 @@ class SiteSettingsController extends Controller
             'faq.*.a' => ['required', 'string', 'max:2000'],
         ]);
 
+        Setting::set('site_hero', $data['hero'] ?? SiteContent::heroStyle());
         Setting::set('site_phone', $data['phone']);
         // В ссылку wa.me уходят только цифры — храним как ввели, чистим при чтении.
         Setting::set('whatsapp_phone', $data['whatsapp']);

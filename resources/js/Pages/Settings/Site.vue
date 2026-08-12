@@ -9,6 +9,7 @@ import InputError from '@/Components/InputError.vue';
 const props = defineProps({ site: Object });
 
 const form = useForm({
+    hero: props.site.hero ?? 'scene3d',
     phone: props.site.contacts.phone ?? '',
     whatsapp: props.site.contacts.whatsapp ?? '',
     email: props.site.contacts.email ?? '',
@@ -18,6 +19,19 @@ const form = useForm({
     delivery: props.site.delivery.map((d) => ({ city: d.city ?? '', base: d.base ?? 0, per_km: d.per_km ?? 0, free_from: d.free_from ?? 0 })),
     faq: props.site.faq.map((f) => ({ q: f.q ?? '', a: f.a ?? '' })),
 });
+
+const heroOptions = [
+    {
+        value: 'scene3d',
+        title: '3D-сборка двора',
+        text: 'Двор собирается по мере прокрутки: плитка, бордюр, малые формы. Показывает технологию.',
+    },
+    {
+        value: 'showcase',
+        title: 'Витрина изделий',
+        text: 'Слайдер по товарам: рендер, цена, характеристики и кнопка «В корзину». Продаёт напрямую.',
+    },
+];
 
 const addRow = (list, row) => form[list].push(row);
 const removeRow = (list, i) => form[list].splice(i, 1);
@@ -38,6 +52,33 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
         </div>
 
         <div class="space-y-4">
+            <!-- Первый экран -->
+            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-900">Первый экран сайта</h3>
+                <p class="mt-1 text-xs text-slate-400">Что видит посетитель до прокрутки. Переключается мгновенно.</p>
+
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label
+                        v-for="option in heroOptions"
+                        :key="option.value"
+                        class="flex cursor-pointer gap-3 rounded-xl border p-4 transition"
+                        :class="form.hero === option.value ? 'border-indigo-500 bg-indigo-50/60' : 'border-slate-200 hover:border-slate-300'"
+                    >
+                        <input v-model="form.hero" type="radio" :value="option.value" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
+                        <span>
+                            <span class="block text-sm font-medium text-slate-900">{{ option.title }}</span>
+                            <span class="mt-1 block text-xs leading-relaxed text-slate-500">{{ option.text }}</span>
+                        </span>
+                    </label>
+                </div>
+
+                <p v-if="form.hero === 'showcase' && !site.heroSlidesCount" class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    Ни у одного товара нет фото — витрине нечего показывать, поэтому сайт останется на 3D-сцене.
+                    Загрузите снимки в «Каталог сайта».
+                </p>
+                <InputError :message="form.errors.hero" class="mt-1" />
+            </section>
+
             <!-- Контакты -->
             <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 class="text-sm font-semibold text-slate-900">Контакты</h3>

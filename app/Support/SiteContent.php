@@ -137,6 +137,19 @@ class SiteContent
     }
 
     /** Всё сразу — шапка и подвал сайта на каждой странице. */
+    /**
+     * Оформление первого экрана: 3D-сборка двора при прокрутке или витрина
+     * изделий со слайдером. Выбирается в ERP → Настройки → Сайт.
+     */
+    public const HERO_STYLES = ['scene3d', 'showcase'];
+
+    public static function heroStyle(): string
+    {
+        $value = (string) Setting::get('site_hero', 'scene3d');
+
+        return in_array($value, self::HERO_STYLES, true) ? $value : 'scene3d';
+    }
+
     public static function shared(): array
     {
         return [

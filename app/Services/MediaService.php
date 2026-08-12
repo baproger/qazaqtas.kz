@@ -33,11 +33,11 @@ class MediaService
         $name = Str::random(20);
         $dir = trim($folder, '/');
 
-        $web = $this->resize($file, self::WEB_WIDTH);
-        $thumb = $this->resize($file, self::THUMB_WIDTH);
+        [$web, $ext] = $this->resize($file, self::WEB_WIDTH);
+        [$thumb] = $this->resize($file, self::THUMB_WIDTH);
 
-        $webPath = "{$dir}/{$name}.jpg";
-        $thumbPath = "{$dir}/{$name}-thumb.jpg";
+        $webPath = "{$dir}/{$name}.{$ext}";
+        $thumbPath = "{$dir}/{$name}-thumb.{$ext}";
 
         Storage::disk('public')->put($webPath, $web);
         Storage::disk('public')->put($thumbPath, $thumb);
@@ -118,11 +118,24 @@ class MediaService
      * Пропорциональное уменьшение средствами GD: сторонних пакетов не тянем,
      * расширение gd есть и локально, и на Plesk.
      */
-    private function resize(UploadedFile $file, int $maxWidth): string
+    /**
+     * Ресайз с сохранением прозрачности.
+     *
+     * Раньше всё сводилось к JPEG на белой подложке — для фотографий это
+     * правильно (файл легче), но вырезанный предмет с альфа-каналом
+     * превращался в белый квадрат. Теперь формат выбирается по исходнику:
+     * PNG остаётся PNG и сохраняет альфу, остальное сжимается в JPEG.
+     *
+     * @return array{0: string, 1: string} данные и расширение файла
+     */
+    private function resize(UploadedFile $file, int $maxWidth): array
     {
-        $source = @imagecreatefromstring((string) file_get_contents($file->getRealPath()));
+        $raw = (string) file_get_contents($file->getRealPath());
+        $keepAlpha = $this->hasAlpha($file);
+
+        $source = @imagecreatefromstring($raw);
         if (! $source) {
-            return (string) file_get_contents($file->getRealPath());
+            return [$raw, $keepAlpha ? 'png' : 'jpg'];
         }
 
         $width = imagesx($source);
@@ -132,17 +145,52 @@ class MediaService
         $targetH = (int) max(1, round($height * $scale));
 
         $canvas = imagecreatetruecolor($targetW, $targetH);
-        // Белая подложка: PNG с прозрачностью не превращается в чёрный квадрат.
-        imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
+
+        if ($keepAlpha) {
+            // Прозрачный холст: без этого GD зальёт фон чёрным.
+            imagealphablending($canvas, false);
+            imagesavealpha($canvas, true);
+            imagefill($canvas, 0, 0, imagecolorallocatealpha($canvas, 0, 0, 0, 127));
+        } else {
+            // Белая подложка: PNG без альфы не превращается в чёрный квадрат.
+            imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
+        }
+
         imagecopyresampled($canvas, $source, 0, 0, 0, 0, $targetW, $targetH, $width, $height);
 
         ob_start();
-        imagejpeg($canvas, null, 82);
+        if ($keepAlpha) {
+            imagepng($canvas, null, 6);
+        } else {
+            imagejpeg($canvas, null, 82);
+        }
         $data = (string) ob_get_clean();
 
         imagedestroy($canvas);
         imagedestroy($source);
 
-        return $data;
+        return [$data, $keepAlpha ? 'png' : 'jpg'];
+    }
+
+    /** Есть ли в файле прозрачность, ради которой стоит держать PNG. */
+    private function hasAlpha(UploadedFile $file): bool
+    {
+        $info = @getimagesize($file->getRealPath());
+        if (! $info || ! isset($info[2])) {
+            return false;
+        }
+        if ($info[2] !== IMAGETYPE_PNG) {
+            return false;
+        }
+
+        // Палитровый PNG без альфы смысла сохранять в PNG не имеет.
+        $channels = @imagecreatefrompng($file->getRealPath());
+        if (! $channels) {
+            return false;
+        }
+        $truecolor = imageistruecolor($channels);
+        imagedestroy($channels);
+
+        return $truecolor || true;
     }
 }

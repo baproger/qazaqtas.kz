@@ -113,6 +113,88 @@ class CatalogService
     }
 
     /** Данные конфигуратора: коллекции плитки с шт/м², палитрой и ценой. */
+    /**
+     * Слайды витрины первого экрана — по одному на категорию.
+     *
+     * Показываем только категории с загруженным снимком: без вырезанного PNG
+     * слайд выглядел бы дырой. Цена берётся минимальная по разделу — это
+     * честное «от», а не цена случайной позиции.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function heroSlides(): array
+    {
+        return ProductCategory::query()
+            ->where('is_active', true)
+            ->whereNotNull('image')
+            ->withCount(['products' => fn ($q) => $q->where('is_active', true)])
+            ->orderBy('order')->orderBy('name')
+            ->get()
+            ->map(function (ProductCategory $category) {
+                $cheapest = Product::active()
+                    ->where('category_id', $category->id)
+                    ->orderBy('price')
+                    ->first();
+
+                return [
+                    'id' => $category->slug,
+                    'category' => mb_strtoupper($category->name),
+                    'title' => $category->tagline ?: $category->name,
+                    'price' => $cheapest ? (float) $cheapest->price : null,
+                    'unit' => $cheapest?->unit,
+                    'minOrder' => $cheapest ? (float) ($cheapest->min_order ?: 1) : 1,
+                    'lead' => (string) ($category->description ?: $category->tagline),
+                    'href' => route('site.catalog', ['category' => $category->slug]),
+                    'count' => $category->products_count,
+                    'buyId' => $cheapest?->slug,
+                    'image' => [
+                        'path' => $category->image,
+                        'thumb' => $category->thumb ?: $category->image,
+                        'alt' => $category->name.' — изделия из мраморного композита',
+                    ],
+                    'specs' => $this->heroSpecs($cheapest),
+                    'thumbSpec' => $category->products_count.' позиций',
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * Выноски вокруг предмета. Позиция задаётся порядком: ERP хранит
+     * характеристики без координат, а на макете их ровно четыре места.
+     *
+     * @return array<int, array{label: string, value: string, pos: string}>
+     */
+    private function heroSpecs(?Product $p): array
+    {
+        if (! $p) {
+            return [];
+        }
+
+        $specs = $p->specs ?: [];
+        $candidates = [
+            ['label' => 'Морозостойкость', 'value' => $specs['frost'] ?? null],
+            ['label' => 'Толщина', 'value' => isset($specs['thickness_mm']) ? $specs['thickness_mm'].' мм' : null],
+            ['label' => 'Штук в м²', 'value' => isset($specs['pieces_per_m2']) ? str_replace('.', ',', (string) $specs['pieces_per_m2']) : null],
+            ['label' => 'Прочность', 'value' => $specs['strength'] ?? null],
+            ['label' => 'Размер', 'value' => $specs['size'] ?? null],
+            ['label' => 'Цвет', 'value' => count($p->colors ?: []) ? 'сквозной, '.count($p->colors).' оттенков' : null],
+        ];
+
+        $positions = ['top-right', 'left', 'right', 'bottom'];
+
+        return collect($candidates)
+            ->filter(fn (array $c) => filled($c['value']))
+            ->take(count($positions))
+            ->values()
+            ->map(fn (array $c, int $i) => [
+                'label' => $c['label'],
+                'value' => (string) $c['value'],
+                'pos' => $positions[$i],
+            ])
+            ->all();
+    }
+
     public function pavingCollections(): Collection
     {
         return Product::active()

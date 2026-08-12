@@ -4,6 +4,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import PavingParallax from '@/Components/site/PavingParallax.vue';
+import HeroShowcase from '@/Components/site/HeroShowcase.vue';
 import { observeReveal } from '@/utils/site';
 import { useSmoothScroll, loadScrollTrigger } from '@/site/useSmoothScroll';
 import { theme } from '@/site/theme';
@@ -17,6 +18,9 @@ const props = defineProps({
     advantages: { type: Array, default: () => [] },
     production: { type: Array, default: () => [] },
     projects: { type: Array, default: () => [] },
+    // Оформление первого экрана из ERP → Настройки → Сайт.
+    hero: { type: String, default: 'scene3d' },
+    heroSlides: { type: Array, default: () => [] },
     seo: { type: Object, default: () => ({}) },
 });
 
@@ -53,6 +57,12 @@ const activeStep = computed(() => {
  * (не слишком светлый и не слишком тёмный), а если такого нет — песочный.
  */
 /**
+ * Первый экран: 3D-сборка двора или витрина изделий. Витрина требует
+ * загруженных снимков — без них честнее показать сцену, чем пустой слайдер.
+ */
+const showcase = computed(() => props.hero === 'showcase' && props.heroSlides.length > 0);
+
+/**
  * Снимки брусчатки для слоя глубины. Собираем их из коллекций каталога —
  * отдельного хранилища не заводим: что загружено в ERP, то и на витрине.
  * Пока фото нет, слой просто не отрисовывается.
@@ -74,7 +84,7 @@ onMounted(async () => {
 
     // 3D грузим отдельным чанком и только когда секция близко к экрану:
     // первый экран остаётся лёгким, Core Web Vitals не страдают.
-    if (!canvas.value || !storyEl.value) return;
+    if (showcase.value || !canvas.value || !storyEl.value) return;
 
     const start = async () => {
         const [{ createCourtyard }, { gsap, ScrollTrigger }] = await Promise.all([
@@ -137,8 +147,11 @@ onBeforeUnmount(() => {
 
 <template>
     <SiteLayout :seo="seo" transparent-header>
+        <!-- ======================= Витрина изделий ======================= -->
+        <HeroShowcase v-if="showcase" :slides="heroSlides" />
+
         <!-- ======================= 3D-история двора ======================= -->
-        <section ref="storyEl" class="relative h-[520vh]">
+        <section v-else ref="storyEl" class="relative h-[520vh]">
             <div class="sticky top-0 h-screen overflow-hidden">
                 <canvas ref="canvas" class="absolute inset-0 h-full w-full" aria-hidden="true" />
 

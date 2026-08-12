@@ -124,6 +124,11 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
     <AppLayout>
         <template #header>Каталог сайта</template>
 
+        <div class="mb-4 flex gap-2 border-b">
+            <Link :href="route('catalog.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">Позиции</Link>
+            <Link :href="route('catalogCategories.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Категории</Link>
+        </div>
+
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <PrimaryButton @click="openCreate">+ Позиция</PrimaryButton>
             <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50" @click="showCats = true">

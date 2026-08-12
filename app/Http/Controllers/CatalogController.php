@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Services\CatalogService;
+use App\Services\MediaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -128,6 +129,61 @@ class CatalogController extends Controller
         $data['min_order'] ??= 0;
 
         return $data;
+    }
+
+    /** Отдельная страница: категории со снимками и порядком. */
+    public function categories(): Response
+    {
+        $this->authorize('viewAny', Product::class);
+
+        return Inertia::render('Catalog/Categories', [
+            'categories' => ProductCategory::withCount('products')
+                ->orderBy('order')->orderBy('name')->get()
+                ->map(fn (ProductCategory $c) => [
+                    'id' => $c->id,
+                    'name' => $c->name,
+                    'slug' => $c->slug,
+                    'tagline' => $c->tagline,
+                    'description' => $c->description,
+                    'accent' => $c->accent,
+                    'order' => $c->order,
+                    'is_active' => $c->is_active,
+                    'image' => $c->image,
+                    'thumb' => $c->thumb,
+                    'products_count' => $c->products_count,
+                ]),
+        ]);
+    }
+
+    /** Снимок категории: вырезанный предмет на прозрачном фоне. */
+    public function storeCategoryImage(Request $request, ProductCategory $category, MediaService $media): RedirectResponse
+    {
+        $this->authorize('create', Product::class);
+
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:png,webp', 'max:8192'],
+        ], [
+            'image.mimes' => 'Нужен PNG или WebP с прозрачным фоном: JPG не умеет альфа-канал.',
+        ]);
+
+        $media->delete($category->image, $category->thumb);
+        $stored = $media->storeImage($request->file('image'), 'categories/'.$category->id, $category->name);
+
+        $category->update(['image' => $stored['path'], 'thumb' => $stored['thumb']]);
+        CatalogService::flushCache();
+
+        return back()->with('success', 'Снимок категории обновлён.');
+    }
+
+    public function destroyCategoryImage(ProductCategory $category, MediaService $media): RedirectResponse
+    {
+        $this->authorize('create', Product::class);
+
+        $media->delete($category->image, $category->thumb);
+        $category->update(['image' => null, 'thumb' => null]);
+        CatalogService::flushCache();
+
+        return back()->with('success', 'Снимок категории удалён.');
     }
 
     /** @return array<string, mixed> */

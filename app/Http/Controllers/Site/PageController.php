@@ -20,6 +20,10 @@ class PageController extends Controller
             'categories' => $this->catalog->categories(),
             'featured' => $this->catalog->featured(8),
             'paving' => $this->catalog->pavingCollections(),
+            // Оформление первого экрана и слайды витрины. Слайды считаются
+            // всегда: переключение в настройках не должно требовать чистки кэша.
+            'hero' => SiteContent::heroStyle(),
+            'heroSlides' => $this->catalog->heroSlides(),
             // Фото-текстуры и GLB-модели для 3D-сцены (если загружены в ERP).
             'scene' => $this->catalog->sceneAssets(),
             'stats' => SiteContent::stats(),

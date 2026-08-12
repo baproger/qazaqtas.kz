@@ -981,3 +981,303 @@
         transition: none;
     }
 }
+
+/* ==================================================================
+   Витрина изделий на первом экране.
+   Единый тайминг перехода; движется только transform и opacity.
+   ================================================================== */
+.hero-showcase {
+    --dur: 520ms;
+    --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+    outline: none;
+}
+.hero-showcase.is-reduced {
+    --dur: 150ms;
+}
+
+/* --- Текстовая колонка ------------------------------------------- */
+/* Описание клэмпится в три строки: у разных товаров текст разной длины,
+   а высота блока меняться не должна. */
+.hero-lead {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 4.5em;
+}
+.hero-copy {
+    min-height: 30rem;
+}
+@media (max-width: 1023px) {
+    .hero-copy {
+        min-height: 0;
+    }
+}
+
+/* Появление строк лесенкой: каждая со своей задержкой из --d. */
+.hero-anim {
+    animation: hero-in 420ms var(--ease) var(--d, 0ms) both;
+}
+@keyframes hero-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+}
+.hero-title {
+    animation: hero-in 420ms var(--ease) var(--d, 0ms) both,
+               hero-title-in 520ms var(--ease) var(--d, 0ms) both;
+}
+@keyframes hero-title-in {
+    from { clip-path: inset(0 0 100% 0); }
+    to { clip-path: inset(0 0 0 0); }
+}
+.is-reduced .hero-anim,
+.is-reduced .hero-title {
+    animation: hero-fade 150ms linear both;
+}
+@keyframes hero-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* --- Визуал ------------------------------------------------------- */
+/* Ни overflow, ни radius, ни маски: вырезанный предмет не должен
+   обрезаться краем контейнера. Запас по краям даёт padding. */
+.hero-visual {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    padding: 24px;
+    isolation: isolate;
+}
+.hero-img {
+    position: absolute;
+    inset: 24px;
+    width: calc(100% - 48px);
+    height: calc(100% - 48px);
+    object-fit: contain;
+    object-position: center;
+    /* drop-shadow работает по альфе, box-shadow нарисовал бы рамку. */
+    filter: drop-shadow(0 50px 70px rgb(0 0 0 / 0.75));
+    animation: hero-img-in var(--dur) var(--ease) 60ms both;
+    z-index: 1;
+}
+@keyframes hero-img-in {
+    from { opacity: 0; transform: scale(0.965) translateX(calc(18px * var(--dir, 1))); }
+    to { opacity: 1; transform: none; }
+}
+.is-reduced .hero-img {
+    animation: hero-fade 150ms linear both;
+}
+.site[data-theme='light'] .hero-img {
+    filter: drop-shadow(0 40px 60px rgb(46 38 26 / 0.28));
+}
+
+/* Свечение под предметом — отдельным слоем ниже картинки. */
+.hero-glow {
+    position: absolute;
+    left: 50%;
+    bottom: 12%;
+    width: 68%;
+    height: 26%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(var(--glow-warm) / 0.55), transparent 72%);
+    filter: blur(10px);
+    animation: hero-glow-breath var(--dur) var(--ease) both;
+    z-index: 0;
+}
+@keyframes hero-glow-breath {
+    0% { opacity: 0.55; }
+    50% { opacity: 0.25; }
+    100% { opacity: 0.55; }
+}
+
+/* --- Выноски ------------------------------------------------------ */
+.hero-specs {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+.hero-spec {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: hero-spec-in 380ms var(--ease) var(--d, 0ms) both;
+}
+@keyframes hero-spec-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: none; }
+}
+.is-reduced .hero-spec {
+    animation: hero-fade 150ms linear both;
+}
+.hero-spec.is-top-right { top: 12%; right: 2%; }
+.hero-spec.is-left { top: 46%; left: 0; flex-direction: row-reverse; }
+.hero-spec.is-right { top: 62%; right: 2%; }
+.hero-spec.is-bottom { bottom: 8%; left: 50%; transform: translateX(-50%); }
+.hero-spec.is-bottom { animation-name: hero-spec-in-bottom; }
+@keyframes hero-spec-in-bottom {
+    from { opacity: 0; transform: translateX(-50%) scale(0.96); }
+    to { opacity: 1; transform: translateX(-50%); }
+}
+
+.hero-spec-line {
+    display: block;
+    width: 2.5rem;
+    height: 1px;
+    background: linear-gradient(90deg, rgb(var(--sand-300) / 0.6), transparent);
+    transform: scaleX(0);
+    transform-origin: right center;
+    animation: hero-line-in 320ms var(--ease) var(--d, 0ms) both;
+}
+.hero-spec.is-left .hero-spec-line,
+.hero-spec.is-bottom .hero-spec-line { transform-origin: left center; }
+@keyframes hero-line-in {
+    to { transform: scaleX(1); }
+}
+.hero-spec-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: rgb(var(--sand-300));
+    transform: scale(0);
+    animation: hero-dot-in 200ms var(--ease) calc(var(--d, 0ms) + 320ms) both;
+}
+@keyframes hero-dot-in {
+    to { transform: scale(1); }
+}
+.hero-spec-pill {
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+    border-radius: 14px;
+    padding: 0.5rem 0.85rem;
+    background-color: rgb(var(--card-bg) / var(--card-alpha));
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));
+    box-shadow: var(--card-shadow);
+}
+.hero-spec-pill b {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: rgb(var(--sand-50));
+}
+.hero-spec-pill em {
+    font-style: normal;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(var(--sand-100) / 0.45);
+}
+
+/* --- Лента переключателей ----------------------------------------- */
+.hero-arrow {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    color: rgb(var(--sand-100) / 0.7);
+    border: 1px solid rgb(var(--card-border) / 0.12);
+    transition: transform 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.hero-arrow:hover {
+    transform: translateY(-2px);
+    color: rgb(var(--sand-50));
+    border-color: rgb(var(--glow-warm) / 0.4);
+}
+.hero-arrow:focus-visible,
+.hero-thumb:focus-visible {
+    outline: 2px solid rgb(var(--sand-300));
+    outline-offset: 3px;
+}
+
+.hero-rail {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 0.5rem;
+}
+.hero-rail::-webkit-scrollbar { display: none; }
+
+.hero-thumb {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 0 0 auto;
+    width: 15rem;
+    scroll-snap-align: start;
+    text-align: left;
+    border-radius: 18px;
+    padding: 0.625rem;
+    background-color: rgb(var(--card-bg) / var(--card-alpha));
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));
+    transition: transform 280ms var(--ease), border-color 280ms var(--ease), background-color 280ms var(--ease);
+}
+.hero-thumb img {
+    width: 3.25rem;
+    height: 3.25rem;
+    flex-shrink: 0;
+    border-radius: 12px;
+    object-fit: cover;
+}
+.hero-thumb span {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+}
+.hero-thumb b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgb(var(--sand-50));
+}
+.hero-thumb em {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-style: normal;
+    font-size: 0.6875rem;
+    color: rgb(var(--sand-100) / 0.45);
+}
+.hero-thumb.is-active {
+    transform: translateY(-4px);
+    border-color: rgb(var(--glow-warm) / 0.45);
+    background-color: rgb(var(--sand-300) / 0.12);
+}
+
+.hero-progress {
+    margin-top: 0.75rem;
+    height: 2px;
+    border-radius: 9999px;
+    background: rgb(var(--card-border) / 0.1);
+    overflow: hidden;
+}
+.hero-progress i {
+    display: block;
+    height: 100%;
+    background: rgb(var(--sand-300));
+    transform-origin: left center;
+    transform: scaleX(0);
+}
+
+/* --- Адаптив ------------------------------------------------------ */
+@media (max-width: 1279px) {
+    .hero-spec.is-left,
+    .hero-spec.is-right { display: none; }
+}
+@media (max-width: 1023px) {
+    .hero-visual { aspect-ratio: auto; height: 420px; }
+    .hero-img { inset: 16px; width: calc(100% - 32px); height: calc(100% - 32px); }
+}
+@media (max-width: 767px) {
+    .hero-visual { height: 320px; }
+    .hero-thumb { width: 13rem; }
+    .hero-showcase .btn-sand { width: 100%; }
+}
