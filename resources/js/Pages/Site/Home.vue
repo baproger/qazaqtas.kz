@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
-import { money, observeReveal } from '@/utils/site';
+import { observeReveal } from '@/utils/site';
 import { useSmoothScroll, loadScrollTrigger } from '@/site/useSmoothScroll';
 import { theme } from '@/site/theme';
 
@@ -362,11 +362,13 @@ onBeforeUnmount(() => {
         <!-- ======================= CTA ======================= -->
         <section class="band band-deep ambient">
             <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-36">
-              <div class="card mx-auto max-w-4xl px-6 py-16 text-center sm:px-12 sm:py-20">
-                <h2 class="display mx-auto max-w-3xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">
+              <!-- Заголовок держим уже самой панели: у крупного набора должны
+                   остаться поля, иначе текст распирает карточку изнутри. -->
+              <div class="card mx-auto max-w-3xl px-8 py-14 text-center sm:px-16 sm:py-16">
+                <h2 class="display mx-auto max-w-lg text-balance text-[clamp(1.75rem,4vw,2.75rem)] text-sand-50">
                     Посчитаем ваш двор за пару минут
                 </h2>
-                <p class="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-sand-100/55 sm:text-base">
+                <p class="mx-auto mt-5 max-w-md text-pretty text-sm leading-relaxed text-sand-100/55">
                     <template v-if="configuratorEnabled">
                         Укажите площадь и выберите раскладку — конфигуратор покажет результат в 3D,
                         рассчитает количество плитки и бордюра и соберёт заказ.
@@ -376,15 +378,12 @@ onBeforeUnmount(() => {
                         смету. Расчёт и выезд замерщика бесплатны.
                     </template>
                 </p>
-                <div class="mt-10 flex flex-wrap justify-center gap-3">
+                <div class="mt-8 flex flex-wrap justify-center gap-3">
                     <Link v-if="configuratorEnabled" :href="route('site.configurator')" class="btn-sand">Открыть конфигуратор</Link>
                     <Link :href="route('site.contacts')" :class="configuratorEnabled ? 'btn-ghost' : 'btn-sand'">
                         Связаться с отделом продаж
                     </Link>
                 </div>
-                <p v-if="paving.length" class="mt-10 text-xs text-sand-100/35">
-                    Плитка от {{ money(Math.min(...paving.map((p) => p.price))) }} за м²
-                </p>
               </div>
             </div>
         </section>

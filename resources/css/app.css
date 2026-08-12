@@ -31,6 +31,11 @@
        фон у них общий и он не скроллится вместе с ними. */
     .site {
         @apply text-sand-50 antialiased;
+        /* Пятна света намеренно выходят за края секций — иначе они обрываются
+           жёсткой линией. Обрезаем их по горизонтали здесь: `clip`, а не
+           `hidden`, потому что hidden создал бы контейнер прокрутки и убил
+           бы sticky у первого экрана и ленты категорий. */
+        overflow-x: clip;
         background-color: rgb(var(--ink-900));
         background-image:
             radial-gradient(100% 60% at 50% 0%, rgb(var(--glow-warm) / 0.06), transparent 62%),
