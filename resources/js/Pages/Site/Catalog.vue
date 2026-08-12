@@ -3,6 +3,7 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
+import CategoryNav from '@/Components/site/CategoryNav.vue';
 import { favorites, compare, recent, money, observeReveal } from '@/utils/site';
 
 const props = defineProps({
@@ -105,21 +106,10 @@ onBeforeUnmount(() => stopReveal());
             </div>
         </section>
 
-        <!-- Категории -->
-        <div class="site-bar sticky top-16 z-30 sm:top-20">
-            <div class="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-5 py-4 sm:px-8">
-                <Link
-                    :href="route('site.catalog')"
-                    class="shrink-0 rounded-full border px-4 py-2 text-sm transition"
-                    :class="!filters.category ? 'border-sand-300 bg-sand-300 text-ink-900' : 'border-white/12 text-sand-100/70 hover:border-sand-300/50'"
-                >Все</Link>
-                <Link
-                    v-for="c in categories"
-                    :key="c.id"
-                    :href="route('site.catalog', { category: c.slug })"
-                    class="shrink-0 rounded-full border px-4 py-2 text-sm transition"
-                    :class="filters.category === c.slug ? 'border-sand-300 bg-sand-300 text-ink-900' : 'border-white/12 text-sand-100/70 hover:border-sand-300/50'"
-                >{{ c.name }}</Link>
+        <!-- Категории: плавающая панель, а не строка ссылок -->
+        <div class="sticky top-16 z-30 px-5 py-4 sm:top-20 sm:px-8">
+            <div class="mx-auto max-w-7xl">
+                <CategoryNav :categories="categories" :current="filters.category ?? ''" />
             </div>
         </div>
 

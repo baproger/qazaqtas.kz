@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import ProductVisual from './ProductVisual.vue';
 import { money } from '@/utils/site';
@@ -16,21 +16,41 @@ const favorite = defineModel('favorite', { type: Boolean, default: false });
 /** Размер изделия — главная характеристика при выборе, выносим на карточку. */
 const size = computed(() => props.product.specs?.size ?? null);
 
-const adding = computed(() => false);
+/**
+ * Состояние кнопки: idle → adding → added. Галочка держится пару секунд —
+ * подтверждение должно случиться на самой кнопке, иначе покупатель жмёт
+ * второй раз, не поняв, сработало ли.
+ */
+const state = ref('idle');
+let resetTimer = null;
 
 const addToCart = () => {
+    if (state.value === 'adding') return;
+    state.value = 'adding';
     router.post(route('site.cart.add', props.product.slug), {
         quantity: Number(props.product.min_order) || 1,
-    }, { preserveScroll: true });
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            state.value = 'added';
+            clearTimeout(resetTimer);
+            resetTimer = setTimeout(() => (state.value = 'idle'), 2200);
+        },
+        onError: () => (state.value = 'idle'),
+    });
 };
+
+onBeforeUnmount(() => clearTimeout(resetTimer));
 </script>
 
 <template>
-    <article class="card card-hover group flex h-full flex-col overflow-hidden">
+    <article class="card card-sm card-lift group flex h-full flex-col overflow-hidden">
         <!-- Изображение: фиксированная пропорция, чтобы плитка карточек
              не «прыгала» при разной высоте фото. -->
-        <div class="relative">
-            <Link :href="route('site.product', product.slug)" class="block" :aria-label="product.name">
+        <!-- Зона снимка: своя подложка с внутренней тенью, чтобы изделие
+             стояло в нише, а не лежало на плоскости. -->
+        <div class="media-well relative">
+            <Link :href="route('site.product', product.slug)" class="block overflow-hidden" :aria-label="product.name">
                 <ProductVisual :product="product" :ratio="compact ? 'aspect-[16/10]' : 'aspect-[4/3]'" shape="rounded-none" />
             </Link>
 
@@ -82,8 +102,20 @@ const addToCart = () => {
                 <!-- Действие видно всегда: скрывать его до наведения — значит
                      терять покупателей на телефоне и на первом взгляде. -->
                 <div class="mt-4 flex gap-2">
-                    <button class="btn-sand flex-1 !px-4 !py-2.5 text-[13px]" :disabled="adding" @click="addToCart">
-                        В корзину
+                    <button
+                        class="btn-sand btn-cart flex-1 !px-4 !py-2.5 text-[13px]"
+                        :class="state === 'added' ? 'is-added' : ''"
+                        :disabled="state === 'adding'"
+                        @click="addToCart"
+                    >
+                        <svg v-if="state !== 'added'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 4h2l2.4 11.2A2 2 0 0 0 9.35 17h8.4a2 2 0 0 0 1.95-1.55L21 8H6" />
+                            <circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" />
+                        </svg>
+                        <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 12.5 9.5 18 20 6.5" />
+                        </svg>
+                        <span>{{ state === 'added' ? 'В корзине' : 'В корзину' }}</span>
                     </button>
                     <Link
                         :href="route('site.product', product.slug)"

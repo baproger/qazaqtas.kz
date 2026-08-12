@@ -95,13 +95,13 @@ const tiles = computed(() => {
             :alt="image.alt || product.name"
             loading="lazy"
             decoding="async"
-            class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-[1.03]"
+            class="h-full w-full object-cover transition-transform duration-[900ms] ease-premium group-hover:scale-[1.05]"
         />
         <!-- Фото товаров часто сняты на белом: лёгкая виньетка сажает снимок
              в карточку. Днём она мягче — иначе съедает светлый фон кадра. -->
         <div v-if="image" class="photo-veil pointer-events-none absolute inset-0" />
 
-        <svg v-else viewBox="0 0 300 220" class="h-full w-full" role="img" :aria-label="product.name">
+        <svg v-else viewBox="0 0 300 220" class="h-full w-full transition-transform duration-[900ms] ease-premium group-hover:scale-[1.05]" role="img" :aria-label="product.name">
             <defs>
                 <linearGradient :id="`sky-${product.id}`" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" :stop-color="scene.top" />
