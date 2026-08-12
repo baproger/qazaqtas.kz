@@ -22,7 +22,7 @@ defineProps({
                 Заявка уже в работе у отдела продаж.
             </p>
 
-            <div v-if="order" class="mx-auto mt-10 w-full max-w-md rounded-3xl border border-white/10 bg-ink-800/50 p-6 text-left">
+            <div v-if="order" class="card mx-auto mt-10 w-full max-w-md p-6 text-left">
                 <p class="eyebrow">Заказ {{ order.number }}</p>
                 <ul class="mt-4 space-y-2 text-sm">
                     <li v-for="(item, i) in order.items" :key="i" class="flex justify-between gap-4 text-sand-100/60">
@@ -30,7 +30,7 @@ defineProps({
                         <b class="text-sand-50">{{ money(item.sum) }}</b>
                     </li>
                 </ul>
-                <div class="mt-5 flex justify-between border-t border-white/10 pt-4">
+                <div class="divider-top mt-5 flex justify-between pt-4">
                     <span class="text-sand-100/60">Итого</span>
                     <b class="text-xl text-sand-50">{{ money(order.total) }}</b>
                 </div>

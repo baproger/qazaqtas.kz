@@ -91,7 +91,7 @@ const submit = () => form.post(route('site.checkout.store'), { preserveScroll: t
 
                 <!-- Состав заказа -->
                 <aside class="lg:sticky lg:top-28 lg:self-start">
-                    <div class="glass-strong rounded-3xl p-6 sm:p-7">
+                    <div class="card p-6 sm:p-7">
                         <p class="eyebrow">Ваш заказ</p>
                         <ul class="mt-5 space-y-3 text-sm">
                             <li v-for="item in cart.items" :key="item.key" class="flex justify-between gap-4">
@@ -103,7 +103,7 @@ const submit = () => form.post(route('site.checkout.store'), { preserveScroll: t
                             </li>
                         </ul>
 
-                        <div class="mt-6 flex items-baseline justify-between border-t border-white/10 pt-5">
+                        <div class="divider-top mt-6 flex items-baseline justify-between pt-5">
                             <span class="text-sand-100/60">Материалы</span>
                             <b class="display text-2xl text-sand-50">{{ money(cart.total) }}</b>
                         </div>

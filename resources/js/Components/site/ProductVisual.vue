@@ -12,6 +12,9 @@ const props = defineProps({
     product: { type: Object, required: true },
     color: { type: String, default: null },
     ratio: { type: String, default: 'aspect-[4/3]' },
+    // Внутри карточки скругление даёт сама карточка; своё создало бы
+    // двойной угол.
+    shape: { type: String, default: 'rounded-2xl' },
     // Карточка товара передаёт выбранный снимок галереи; в списках — не задан,
     // тогда берётся главное фото.
     image: { type: Object, default: null },
@@ -83,7 +86,7 @@ const tiles = computed(() => {
 </script>
 
 <template>
-    <div class="concrete relative overflow-hidden rounded-2xl bg-ink-700" :class="ratio">
+    <div class="concrete relative overflow-hidden bg-ink-700" :class="[ratio, shape]">
         <img
             v-if="image"
             :src="image.path"

@@ -36,10 +36,10 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
 
 <template>
     <SiteLayout :seo="seo">
-        <section class="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
+        <section class="ambient mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
             <h1 class="display text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Корзина</h1>
 
-            <div v-if="!cart.items.length" class="mt-12 rounded-3xl border border-white/10 bg-ink-800/50 px-8 py-20 text-center">
+            <div v-if="!cart.items.length" class="card mt-12 px-8 py-20 text-center">
                 <p class="display text-2xl text-sand-50">Пока пусто</p>
                 <p class="mt-3 text-sm text-sand-100/50">Загляните в каталог — подберём материал и посчитаем смету.</p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
@@ -54,7 +54,7 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
                     <article
                         v-for="item in cart.items"
                         :key="item.key"
-                        class="flex flex-wrap items-center gap-5 rounded-2xl border border-white/10 bg-ink-800/50 p-5"
+                        class="card card-sm flex flex-wrap items-center gap-5 p-5"
                     >
                         <div class="min-w-0 flex-1">
                             <p class="text-xs text-sand-100/40">{{ item.category }}</p>
@@ -93,7 +93,7 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
 
                 <!-- Итоги -->
                 <aside class="lg:sticky lg:top-28 lg:self-start">
-                    <div class="glass-strong rounded-3xl p-6 sm:p-7">
+                    <div class="card p-6 sm:p-7">
                         <p class="eyebrow">Итого</p>
 
                         <div class="mt-5 space-y-3 text-sm">
@@ -101,7 +101,7 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
                                 <span>Материалы</span><b class="text-sand-50">{{ money(cart.total) }}</b>
                             </div>
 
-                            <div class="border-t border-white/10 pt-4">
+                            <div class="divider-top pt-4">
                                 <label class="text-xs text-sand-100/45">Доставка в город</label>
                                 <select v-model="city" class="mt-1.5 w-full rounded-xl border-white/12 bg-white/[0.04] px-3 py-2.5 text-sm text-sand-50 focus:border-sand-300 focus:ring-0">
                                     <option v-for="d in delivery" :key="d.city" :value="d.city" class="bg-ink-800">{{ d.city }}</option>
@@ -116,7 +116,7 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
                                 </div>
                             </div>
 
-                            <div class="flex items-baseline justify-between border-t border-white/10 pt-4">
+                            <div class="divider-top flex items-baseline justify-between pt-4">
                                 <span class="text-sand-100/60">К оплате</span>
                                 <b class="display text-3xl text-sand-50">{{ money(grandTotal) }}</b>
                             </div>

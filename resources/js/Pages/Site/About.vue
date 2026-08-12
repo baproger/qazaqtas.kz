@@ -50,11 +50,11 @@ onBeforeUnmount(() => stop());
                 <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Как рождается изделие</h2>
             </div>
 
-            <ol class="mt-14 space-y-px">
+            <ol class="mt-14 space-y-3">
                 <li
                     v-for="p in production"
                     :key="p.step"
-                    class="reveal grid gap-4 border-t border-white/10 py-8 transition hover:bg-white/[0.02] sm:grid-cols-[80px_260px_1fr] sm:items-baseline sm:gap-8"
+                    class="card card-hover reveal grid gap-4 p-6 sm:grid-cols-[80px_260px_1fr] sm:items-baseline sm:gap-8 sm:p-8"
                 >
                     <span class="text-sm font-semibold tracking-[0.2em] text-sand-300/70">{{ p.step }}</span>
                     <h3 class="display text-2xl text-sand-50">{{ p.title }}</h3>
@@ -78,7 +78,7 @@ onBeforeUnmount(() => stop());
         <section class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <p class="eyebrow reveal">Производственные площадки</p>
             <div class="mt-10 grid gap-4 sm:grid-cols-3">
-                <article v-for="b in branches" :key="b.city" class="reveal concrete rounded-3xl border border-white/10 bg-ink-800/60 p-8">
+                <article v-for="b in branches" :key="b.city" class="card card-hover reveal p-8">
                     <h3 class="display text-2xl text-sand-50">{{ b.city }}</h3>
                     <p class="mt-2 text-xs uppercase tracking-[0.2em] text-sand-300/60">{{ b.role }}</p>
                     <p class="mt-5 text-sm text-sand-100/55">{{ b.address }}</p>

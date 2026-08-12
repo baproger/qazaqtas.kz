@@ -26,12 +26,12 @@ const addToCart = () => {
 </script>
 
 <template>
-    <article class="group flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-ink-800/60 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40">
+    <article class="card card-hover group flex h-full flex-col overflow-hidden">
         <!-- Изображение: фиксированная пропорция, чтобы плитка карточек
              не «прыгала» при разной высоте фото. -->
         <div class="relative">
             <Link :href="route('site.product', product.slug)" class="block" :aria-label="product.name">
-                <ProductVisual :product="product" :ratio="compact ? 'aspect-[16/10]' : 'aspect-[4/3]'" />
+                <ProductVisual :product="product" :ratio="compact ? 'aspect-[16/10]' : 'aspect-[4/3]'" shape="rounded-none" />
             </Link>
 
             <button
@@ -68,7 +68,7 @@ const addToCart = () => {
                  заканчиваются на одной линии независимо от длины названия. -->
             <div class="flex-1" />
 
-            <div class="mt-5 border-t border-white/[0.07] pt-4">
+            <div class="divider-top mt-5 pt-4">
                 <div class="flex items-baseline gap-2">
                     <span class="text-xl font-semibold text-sand-50">{{ money(product.price) }}</span>
                     <span class="text-sm text-sand-100/45">/ {{ product.unit }}</span>

@@ -106,7 +106,7 @@ onBeforeUnmount(() => stopReveal());
         </section>
 
         <!-- Категории -->
-        <div class="sticky top-16 z-30 border-b border-white/10 bg-ink-900/85 backdrop-blur-xl sm:top-20">
+        <div class="site-bar sticky top-16 z-30 sm:top-20">
             <div class="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-5 py-4 sm:px-8">
                 <Link
                     :href="route('site.catalog')"
@@ -123,7 +123,7 @@ onBeforeUnmount(() => stopReveal());
             </div>
         </div>
 
-        <section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
+        <section class="ambient mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
             <div class="grid gap-10 lg:grid-cols-[260px_1fr]">
                 <!-- Фильтры -->
                 <aside class="lg:sticky lg:top-40 lg:self-start">
@@ -133,7 +133,7 @@ onBeforeUnmount(() => stopReveal());
                         @click="filtersOpen = !filtersOpen"
                     >{{ filtersOpen ? 'Скрыть фильтры' : 'Фильтры и поиск' }}</button>
 
-                    <div :class="['mt-4 space-y-8 lg:mt-0 lg:block', filtersOpen ? 'block' : 'hidden']">
+                    <div :class="['card mt-4 space-y-8 p-6 lg:mt-0 lg:block', filtersOpen ? 'block' : 'hidden']">
                         <div>
                             <label for="q" class="eyebrow">Поиск</label>
                             <input
@@ -195,7 +195,7 @@ onBeforeUnmount(() => stopReveal());
                         </div>
                     </div>
 
-                    <div v-else class="rounded-3xl border border-white/10 bg-ink-800/50 px-8 py-20 text-center">
+                    <div v-else class="card px-8 py-20 text-center">
                         <p class="display text-2xl text-sand-50">Ничего не нашлось</p>
                         <p class="mt-3 text-sm text-sand-100/50">Попробуйте изменить фильтры или сбросить их.</p>
                         <button class="btn-ghost mt-8" @click="reset">Сбросить фильтры</button>
@@ -220,7 +220,7 @@ onBeforeUnmount(() => stopReveal());
                     <!-- Сравнение -->
                     <section v-if="compareProducts.length > 1" class="mt-20">
                         <h2 class="display text-2xl text-sand-50">Сравнение</h2>
-                        <div class="mt-6 overflow-x-auto rounded-3xl border border-white/10">
+                        <div class="card mt-6 overflow-x-auto">
                             <table class="w-full min-w-[560px] text-sm">
                                 <thead class="bg-white/[0.04] text-left text-xs uppercase tracking-wider text-sand-100/40">
                                     <tr>

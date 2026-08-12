@@ -66,7 +66,7 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
         <!-- Шапка: стекло появляется при скролле, над 3D — прозрачная -->
         <header
             class="fixed inset-x-0 top-0 z-50 transition duration-500 ease-premium"
-            :class="scrolled || !transparentHeader ? 'border-b border-white/10 bg-ink-900/80 backdrop-blur-xl' : 'border-b border-transparent'"
+            :class="scrolled || !transparentHeader ? 'site-bar' : ''"
         >
             <div class="mx-auto flex h-16 max-w-7xl items-center gap-6 px-5 sm:h-20 sm:px-8">
                 <!-- Логотип уже содержит название — отдельной подписи рядом нет. -->
@@ -159,7 +159,7 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                 leave-active-class="transition duration-200"
                 leave-to-class="opacity-0"
             >
-                <div v-if="menuOpen" class="border-t border-white/10 bg-ink-900/95 backdrop-blur-xl lg:hidden">
+                <div v-if="menuOpen" class="site-bar relative lg:hidden">
                     <nav class="mx-auto max-w-7xl px-5 py-6 sm:px-8">
                         <Link
                             v-for="item in nav"
@@ -216,7 +216,7 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                     </div>
                 </div>
 
-                <div class="mt-14 flex flex-col gap-4 border-t border-white/10 pt-8 text-xs text-sand-100/40 sm:flex-row sm:items-center sm:justify-between">
+                <div class="divider-top mt-14 flex flex-col gap-4 pt-8 text-xs text-sand-100/40 sm:flex-row sm:items-center sm:justify-between">
                     <p>© {{ new Date().getFullYear() }} QAZAQ TAS · Производство изделий из мраморного композита</p>
                     <p>{{ contacts.hours }} · {{ contacts.email }}</p>
                 </div>

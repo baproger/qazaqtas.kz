@@ -27,12 +27,12 @@ onBeforeUnmount(() => stop());
             </div>
         </section>
 
-        <section class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
+        <section class="ambient mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
             <div class="grid gap-4 sm:grid-cols-2">
                 <article
                     v-for="p in projects"
                     :key="p.title"
-                    class="reveal group overflow-hidden rounded-3xl border border-white/10 bg-ink-800/60 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40"
+                    class="card card-hover reveal group overflow-hidden"
                 >
                     <div class="relative aspect-[16/10] overflow-hidden">
                         <img
@@ -63,7 +63,7 @@ onBeforeUnmount(() => stop());
                 </article>
             </div>
 
-            <div class="mt-16 rounded-3xl border border-white/10 bg-ink-800/40 p-10 text-center sm:p-16">
+            <div class="card mt-16 p-10 text-center sm:p-16">
                 <h2 class="display text-[clamp(1.75rem,4vw,3rem)] text-sand-50">Посчитаем ваш объект</h2>
                 <p class="mx-auto mt-4 max-w-lg text-sm text-sand-100/55">
                     Пришлите площадь и пожелания — подготовим раскладку, смету и сроки.

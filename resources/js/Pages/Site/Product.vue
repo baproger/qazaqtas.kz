@@ -86,7 +86,7 @@ onMounted(() => {
 
 <template>
     <SiteLayout :seo="seo">
-        <section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
+        <section class="ambient mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
             <nav class="flex flex-wrap items-center gap-2 text-xs text-sand-100/40" aria-label="Хлебные крошки">
                 <Link :href="route('site.home')" class="transition hover:text-sand-300">Главная</Link><span>/</span>
                 <Link :href="route('site.catalog')" class="transition hover:text-sand-300">Каталог</Link>
@@ -159,7 +159,7 @@ onMounted(() => {
                     </div>
 
                     <!-- Калькулятор площади -->
-                    <div v-if="isAreaBased" class="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+                    <div v-if="isAreaBased" class="card card-sm mt-8 p-5 sm:p-6">
                         <p class="eyebrow">Калькулятор площади</p>
                         <div class="mt-4 flex flex-wrap items-end gap-3">
                             <label class="flex-1">
@@ -210,7 +210,7 @@ onMounted(() => {
                     </p>
 
                     <!-- Вкладки -->
-                    <div class="mt-12 border-b border-white/10">
+                    <div class="divider-bottom mt-12">
                         <div class="flex gap-6">
                             <button
                                 v-for="t in [['specs', 'Характеристики'], ['about', 'Описание'], ['delivery', 'Доставка']]"

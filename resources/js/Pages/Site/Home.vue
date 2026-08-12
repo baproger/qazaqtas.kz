@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Каталог по категориям ======================= -->
-        <section class="band band-sand">
+        <section class="band band-sand ambient">
           <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
@@ -236,7 +236,7 @@ onBeforeUnmount(() => {
                     v-for="c in categories"
                     :key="c.id"
                     :href="route('site.catalog', { category: c.slug })"
-                    class="reveal concrete group relative overflow-hidden rounded-3xl border border-white/10 bg-ink-800/60 p-7 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40 sm:p-8"
+                    class="card card-hover reveal group relative overflow-hidden p-7 sm:p-8"
                 >
                     <span
                         class="accent-glow absolute -right-10 -top-10 h-32 w-32 rounded-full blur-2xl transition"
@@ -255,7 +255,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Хиты ======================= -->
-        <section v-if="featured.length" class="band band-stone">
+        <section v-if="featured.length" class="band band-stone ambient ambient-flip">
             <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
                 <div class="reveal flex flex-wrap items-end justify-between gap-6">
                     <div>
@@ -292,11 +292,11 @@ onBeforeUnmount(() => {
                     <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Пять шагов от сырья до паллеты</h2>
                 </div>
 
-                <ol class="mt-14 space-y-px">
+                <ol class="mt-14 space-y-3">
                     <li
                         v-for="p in production"
                         :key="p.step"
-                        class="reveal group grid gap-4 border-t border-white/10 py-8 transition hover:bg-white/[0.02] sm:grid-cols-[80px_260px_1fr] sm:items-baseline sm:gap-8"
+                        class="card card-hover reveal group grid gap-4 p-6 sm:grid-cols-[80px_260px_1fr] sm:items-baseline sm:gap-8 sm:p-8"
                     >
                         <span class="text-sm font-semibold tracking-[0.2em] text-sand-300/70">{{ p.step }}</span>
                         <h3 class="display text-2xl text-sand-50">{{ p.title }}</h3>
@@ -323,7 +323,7 @@ onBeforeUnmount(() => {
                 <article
                     v-for="p in projects.slice(0, 4)"
                     :key="p.title"
-                    class="reveal group overflow-hidden rounded-3xl border border-white/10 bg-ink-800/60 transition duration-500 ease-premium hover:-translate-y-1 hover:border-sand-300/40"
+                    class="card card-hover reveal group overflow-hidden"
                 >
                     <!-- Фото объекта из ERP; пока его нет — бетонная заливка,
                          чтобы плитка карточки не разъезжалась по высоте. -->
@@ -360,8 +360,9 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= CTA ======================= -->
-        <section class="band band-deep">
-            <div class="mx-auto max-w-7xl px-5 py-24 text-center sm:px-8 sm:py-36">
+        <section class="band band-deep ambient">
+            <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-36">
+              <div class="card mx-auto max-w-4xl px-6 py-16 text-center sm:px-12 sm:py-20">
                 <h2 class="display mx-auto max-w-3xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">
                     Посчитаем ваш двор за пару минут
                 </h2>
@@ -384,6 +385,7 @@ onBeforeUnmount(() => {
                 <p v-if="paving.length" class="mt-10 text-xs text-sand-100/35">
                     Плитка от {{ money(Math.min(...paving.map((p) => p.price))) }} за м²
                 </p>
+              </div>
             </div>
         </section>
     </SiteLayout>

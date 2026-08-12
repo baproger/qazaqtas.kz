@@ -148,7 +148,7 @@ onBeforeUnmount(() => scene?.dispose());
 
             <div class="mt-10 grid gap-6 lg:grid-cols-[1fr_380px]">
                 <!-- 3D-сцена -->
-                <div class="relative min-h-[420px] overflow-hidden rounded-3xl border border-white/10 bg-ink-800/50 lg:min-h-[620px]">
+                <div class="card relative min-h-[420px] overflow-hidden lg:min-h-[620px]">
                     <canvas ref="canvas" class="h-full w-full cursor-grab active:cursor-grabbing" />
 
                     <div v-if="loading" class="absolute inset-0 grid place-items-center">
@@ -277,7 +277,7 @@ onBeforeUnmount(() => scene?.dispose());
             </div>
 
             <!-- Смета -->
-            <div class="glass-strong mt-6 rounded-3xl p-6 sm:p-8">
+            <div class="card mt-6 p-6 sm:p-8">
                 <div class="grid gap-8 lg:grid-cols-[1fr_320px]">
                     <div>
                         <p class="eyebrow">Расчёт</p>
