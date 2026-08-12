@@ -220,7 +220,7 @@ onBeforeUnmount(() => {
 
         <!-- ======================= Каталог по категориям ======================= -->
         <section class="band band-sand ambient">
-          <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+          <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
                     <p class="eyebrow">Каталог</p>
@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
 
         <!-- ======================= Хиты ======================= -->
         <section v-if="featured.length" class="band band-stone ambient ambient-flip">
-            <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+            <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <div class="reveal flex flex-wrap items-end justify-between gap-6">
                     <div>
                         <p class="eyebrow">Выбирают чаще всего</p>
@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
 
         <!-- ======================= Преимущества ======================= -->
         <section class="band band-sand">
-          <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+          <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <p class="eyebrow reveal">Почему композит</p>
             <div class="duo-grid mt-12 grid sm:grid-cols-2">
                 <div v-for="a in advantages" :key="a.title" class="reveal p-8 sm:p-12">
@@ -286,7 +286,7 @@ onBeforeUnmount(() => {
 
         <!-- ======================= Производство ======================= -->
         <section class="band band-stone">
-            <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+            <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <div class="reveal max-w-2xl">
                     <p class="eyebrow">Производство</p>
                     <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Пять шагов от сырья до паллеты</h2>
@@ -310,7 +310,7 @@ onBeforeUnmount(() => {
 
         <!-- ======================= Проекты ======================= -->
         <section class="band band-sand">
-          <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32">
+          <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
                     <p class="eyebrow">Реализовано</p>
@@ -361,10 +361,11 @@ onBeforeUnmount(() => {
 
         <!-- ======================= CTA ======================= -->
         <section class="band band-deep ambient">
-            <div class="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-36">
-              <!-- Заголовок держим уже самой панели: у крупного набора должны
-                   остаться поля, иначе текст распирает карточку изнутри. -->
-              <div class="card mx-auto max-w-3xl px-8 py-14 text-center sm:px-16 sm:py-16">
+            <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
+              <!-- Панель идёт во всю ширину колонки, как остальные блоки.
+                   Воздух вокруг заголовка даёт не рамка, а его собственная
+                   мера строки. -->
+              <div class="card px-8 py-16 text-center sm:px-16 sm:py-20">
                 <h2 class="display mx-auto max-w-lg text-balance text-[clamp(1.75rem,4vw,2.75rem)] text-sand-50">
                     Посчитаем ваш двор за пару минут
                 </h2>

@@ -22,7 +22,7 @@ onBeforeUnmount(() => stop());
 <template>
     <SiteLayout :seo="seo">
         <section class="band band-hero">
-            <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-28">
+            <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
                 <p class="eyebrow">О заводе</p>
                 <h1 class="display mt-6 max-w-4xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">
                     Делаем камень, который переживёт нас

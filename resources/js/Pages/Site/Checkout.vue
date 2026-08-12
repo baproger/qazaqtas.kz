@@ -25,7 +25,7 @@ const submit = () => form.post(route('site.checkout.store'), { preserveScroll: t
 
 <template>
     <SiteLayout :seo="seo">
-        <section class="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
+        <section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
             <Link :href="route('site.cart')" class="text-sm text-sand-100/45 transition hover:text-sand-300">← Вернуться в корзину</Link>
             <h1 class="display mt-6 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Оформление заказа</h1>
             <p class="mt-4 max-w-xl text-sm text-sand-100/55">

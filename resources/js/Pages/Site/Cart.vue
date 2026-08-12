@@ -36,7 +36,7 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
 
 <template>
     <SiteLayout :seo="seo">
-        <section class="ambient mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
+        <section class="ambient mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
             <h1 class="display text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Корзина</h1>
 
             <div v-if="!cart.items.length" class="card mt-12 px-8 py-20 text-center">
