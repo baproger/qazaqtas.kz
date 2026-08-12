@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
@@ -79,6 +79,18 @@ const pageLinks = computed(() => props.products.links.map((link, i) => {
         label: link.label,
         aria: previous ? 'Предыдущая страница' : next ? 'Следующая страница' : `Страница ${link.label}`,
     };
+}));
+
+/**
+ * Смена категории и сортировка идут без перезагрузки страницы: экземпляр
+ * компонента сохраняется, поэтому onMounted второй раз не срабатывает. Новые
+ * карточки при этом рождаются с классом .reveal — то есть прозрачными — и
+ * без повторной подписки так и остаются невидимыми. Переподписываемся на
+ * каждый новый набор товаров.
+ */
+watch(() => props.products.data, () => nextTick(() => {
+    stopReveal();
+    stopReveal = observeReveal();
 }));
 
 onMounted(async () => {
