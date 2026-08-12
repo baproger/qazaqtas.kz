@@ -63,6 +63,24 @@ const toggleCompare = (id) => (compareIds.value = compare.toggle(id));
 
 const compareProducts = computed(() => props.products.data.filter((p) => compareIds.value.includes(p.id)));
 
+/**
+ * Пагинатор Laravel отдаёт подписи с HTML-сущностями («&laquo; Previous»).
+ * Разбираем их здесь, чтобы шаблон выводил номера обычной интерполяцией, а
+ * стрелки рисовал иконками: v-html на витрине не остаётся вовсе.
+ */
+const pageLinks = computed(() => props.products.links.map((link, i) => {
+    const previous = i === 0;
+    const next = i === props.products.links.length - 1;
+    return {
+        key: `${i}-${link.label}`,
+        url: link.url,
+        active: link.active,
+        arrow: previous ? 'prev' : next ? 'next' : null,
+        label: link.label,
+        aria: previous ? 'Предыдущая страница' : next ? 'Следующая страница' : `Страница ${link.label}`,
+    };
+}));
+
 onMounted(async () => {
     stopReveal = observeReveal();
     favIds.value = favorites.all();
@@ -194,17 +212,22 @@ onBeforeUnmount(() => stopReveal());
                     <!-- Пагинация -->
                     <nav v-if="products.last_page > 1" class="mt-12 flex flex-wrap justify-center gap-2">
                         <Link
-                            v-for="link in products.links"
-                            :key="link.label"
+                            v-for="link in pageLinks"
+                            :key="link.key"
                             :href="link.url ?? ''"
                             preserve-scroll
-                            class="min-w-10 rounded-lg border px-3 py-2 text-center text-sm transition"
+                            class="grid h-10 min-w-10 place-items-center rounded-xl border px-3 text-center text-sm transition"
                             :class="[
                                 link.active ? 'border-sand-300 bg-sand-300 text-ink-900' : 'border-white/12 text-sand-100/60 hover:border-sand-300/50',
                                 !link.url && 'pointer-events-none opacity-30',
                             ]"
-                            v-html="link.label"
-                        />
+                            :aria-label="link.aria"
+                        >
+                            <svg v-if="link.arrow" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path :d="link.arrow === 'prev' ? 'M19 12H5M11 18l-6-6 6-6' : 'M5 12h14M13 6l6 6-6 6'" />
+                            </svg>
+                            <template v-else>{{ link.label }}</template>
+                        </Link>
                     </nav>
 
                     <!-- Сравнение -->

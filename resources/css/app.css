@@ -110,12 +110,14 @@
     .media-well {
         background-image: radial-gradient(120% 100% at 50% 0%, rgb(255 255 255 / 0.05), transparent 68%);
         box-shadow: inset 0 -1px 0 rgb(var(--card-border) / 0.08),
-                    inset 0 18px 40px -30px rgb(0 0 0 / 0.8);
+                    inset 0 2px 4px 0 rgb(0 0 0 / 0.35),
+                    inset 0 20px 44px -28px rgb(0 0 0 / 0.85);
     }
     .site[data-theme='light'] .media-well {
         background-image: radial-gradient(120% 100% at 50% 0%, rgb(255 255 255 / 0.7), transparent 70%);
         box-shadow: inset 0 -1px 0 rgb(15 18 22 / 0.06),
-                    inset 0 18px 40px -32px rgb(46 38 26 / 0.35);
+                    inset 0 2px 4px 0 rgb(46 38 26 / 0.06),
+                    inset 0 20px 44px -30px rgb(46 38 26 / 0.3);
     }
 
     /* Старые имена оставлены как псевдонимы: шапка и модалки уже на них. */
@@ -211,7 +213,7 @@
     }
     /* Нажатие: кнопка чуть проседает — тактильный отклик без задержки. */
     .btn-sand:active {
-        transform: scale(0.98);
+        transform: scale(0.95);
         transition-duration: 0.12s;
     }
     /* Подтверждение прямо на кнопке: галочка вместо тележки. */
@@ -220,8 +222,10 @@
         color: rgb(252 255 253);
         box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 0 22px -6px rgb(84 158 122 / 0.55);
     }
+    /* Иконка появляется с задержкой: сначала глаз замечает смену заливки,
+       потом — символ. Одновременно они читаются как рябь. */
     .btn-cart svg {
-        animation: cart-icon-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+        animation: cart-icon-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
     }
     @keyframes cart-icon-in {
         from { opacity: 0; transform: scale(0.6) rotate(-12deg); }
@@ -242,7 +246,7 @@
                     box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-ghost:active {
-        transform: scale(0.98);
+        transform: scale(0.95);
         transition-duration: 0.12s;
     }
     .btn-ghost:hover {
@@ -324,10 +328,10 @@
        оно идёт слоем фона, где отдельным opacity его уже не приглушить. */
     --grain-card: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
 
-    --card-bg: 18 18 22;
-    --card-alpha: 0.55;
+    --card-bg: 24 24 27;
+    --card-alpha: 0.4;
     --card-border: 255 255 255;
-    --card-border-alpha: 0.07;
+    --card-border-alpha: 0.05;
     --card-shadow: 0 20px 50px rgb(0 0 0 / 0.5);
     --card-shadow-hover: 0 30px 64px rgb(0 0 0 / 0.55);
     --grain-alpha: 0.028;
@@ -356,11 +360,11 @@
     /* Днём стекло матовое и светлое, тень мягче — тяжёлая чернота на бумаге
        выглядит грязью, а не объёмом. */
     --card-bg: 255 255 255;
-    --card-alpha: 0.72;
-    --card-border: 15 18 22;
-    --card-border-alpha: 0.08;
-    --card-shadow: 0 20px 45px -28px rgb(46 38 26 / 0.45);
-    --card-shadow-hover: 0 30px 60px -28px rgb(46 38 26 / 0.5);
+    --card-alpha: 0.4;
+    --card-border: 0 0 0;
+    --card-border-alpha: 0.05;
+    --card-shadow: 0 8px 32px rgb(0 0 0 / 0.03), 0 20px 45px -30px rgb(46 38 26 / 0.28);
+    --card-shadow-hover: 0 12px 40px rgb(0 0 0 / 0.05), 0 30px 60px -30px rgb(46 38 26 / 0.34);
     --grain-alpha: 0.02;
     --grain-card: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
 }
@@ -547,6 +551,10 @@
    -------------------------------------------------------------- */
 .segmented {
     position: relative;
+    /* Плашка меняет ширину под длину названия — сохранить форму капсулы
+       через scaleX нельзя, углы вытянутся в эллипс. Вместо этого запираем
+       пересчёт раскладки внутри панели: наружу он не выходит. */
+    contain: layout style;
     display: flex;
     gap: 0.25rem;
     overflow-x: auto;
