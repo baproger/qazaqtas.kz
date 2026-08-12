@@ -38,7 +38,10 @@ class SiteSettingsController extends Controller
             'whatsapp' => ['required', 'string', 'max:40'],
             'email' => ['nullable', 'email', 'max:120'],
             'hours' => ['nullable', 'string', 'max:120'],
-            'instagram' => ['nullable', 'string', 'max:255'],
+            // Значение уходит в href плавающей кнопки. Пропускаем только
+            // http(s) или голое имя профиля: схема javascript: в ссылке —
+            // готовый XSS, и Vue её не экранирует.
+            'instagram' => ['nullable', 'string', 'max:255', 'regex:/^(https?:\/\/[^\s]+|@?[A-Za-z0-9._]+)$/'],
 
             'branches' => ['array', 'max:10'],
             'branches.*.city' => ['required', 'string', 'max:80'],

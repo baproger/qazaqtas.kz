@@ -57,6 +57,40 @@ class SiteSettingsTest extends TestCase
             ->assertSessionHasErrors('phone');
     }
 
+    public function test_instagram_rejects_a_javascript_url(): void
+    {
+        // Значение подставляется в href плавающей кнопки связи; схема
+        // javascript: там сработала бы как XSS.
+        $this->actingAs($this->admin())->put(route('siteSettings.update'), [
+            'phone' => '+7 707 372 22 22',
+            'whatsapp' => '+7 771 610 77 70',
+            'instagram' => 'javascript:alert(document.cookie)',
+        ])->assertSessionHasErrors('instagram');
+
+        $this->assertSame('https://instagram.com/qazaqtas', SiteContent::contacts()['instagram']);
+    }
+
+    public function test_instagram_accepts_a_bare_handle(): void
+    {
+        $this->actingAs($this->admin())->put(route('siteSettings.update'), [
+            'phone' => '+7 707 372 22 22',
+            'whatsapp' => '+7 771 610 77 70',
+            'instagram' => '@qazaqtas.kz',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('@qazaqtas.kz', SiteContent::contacts()['instagram']);
+    }
+
+    public function test_every_storefront_page_receives_contacts_for_the_floating_button(): void
+    {
+        foreach (['site.home', 'site.catalog', 'site.about', 'site.projects', 'site.contacts', 'site.cart'] as $route) {
+            $this->get(route($route))->assertInertia(fn ($p) => $p
+                ->where('site.contacts.phone', '+7 707 372 22 22')
+                ->where('site.contacts.whatsapp', '77716107770')
+                ->has('site.contacts.instagram'));
+        }
+    }
+
     public function test_page_is_closed_for_managers(): void
     {
         $manager = User::factory()->create();

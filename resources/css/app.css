@@ -822,3 +822,162 @@
         transition: none;
     }
 }
+
+/* --------------------------------------------------------------
+   Плавающая кнопка связи. Раскрытие и наведение — только transform и
+   opacity, чтобы не будить пересчёт раскладки рядом с живым WebGL.
+   -------------------------------------------------------------- */
+.socialbtn-trigger {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 9999px;
+    color: rgb(var(--ink-900));
+    background-image: linear-gradient(180deg, rgb(var(--sand-200)) 0%, rgb(var(--sand-300)) 55%, rgb(var(--sand-400)) 100%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35),
+                0 14px 34px -12px rgb(var(--glow-warm) / 0.6),
+                0 0 0 1px rgb(var(--card-border) / 0.08);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.socialbtn-trigger:hover {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4),
+                0 0 28px rgb(var(--glow-warm) / 0.35),
+                0 18px 40px -14px rgb(var(--glow-warm) / 0.65);
+}
+.socialbtn-trigger:active {
+    transform: scale(0.95);
+    transition-duration: 0.12s;
+}
+.socialbtn-trigger:focus-visible {
+    outline: 2px solid rgb(var(--sand-300));
+    outline-offset: 3px;
+}
+.socialbtn-trigger.is-open {
+    transform: rotate(90deg);
+}
+
+/* Расходящаяся волна: зовёт нажать, но не мигает и не дёргает раскладку. */
+.socialbtn-pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgb(var(--sand-300) / 0.5);
+    animation: socialbtn-pulse 2.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    pointer-events: none;
+    /* Отдельный слой композитора: иначе бесконечная волна дёргает перерисовку
+       родителя с градиентом и тенью, и рядом с живым WebGL это стоило кадра. */
+    will-change: transform, opacity;
+    transform: translateZ(0);
+}
+@keyframes socialbtn-pulse {
+    0% { transform: scale(1); opacity: 0.45; }
+    70% { transform: scale(1.75); opacity: 0; }
+    100% { transform: scale(1.75); opacity: 0; }
+}
+
+/* Каналы. Пока меню закрыто, они физически не кликабельны. */
+.socialbtn-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transform: translateY(12px) scale(0.8);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.socialbtn-item.is-open {
+    transform: none;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.socialbtn-icon {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    color: rgb(var(--sand-50));
+    background-color: rgb(var(--card-bg) / 0.75);
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));
+    box-shadow: var(--card-shadow);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.socialbtn-icon svg {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+.socialbtn-item:hover .socialbtn-icon {
+    transform: translateY(-2px) scale(1.06);
+    border-color: rgb(var(--glow-warm) / 0.4);
+}
+.socialbtn-item:focus-visible {
+    outline: none;
+}
+.socialbtn-item:focus-visible .socialbtn-icon {
+    outline: 2px solid rgb(var(--sand-300));
+    outline-offset: 3px;
+}
+/* Фирменный тон канала проступает только при наведении. */
+.socialbtn-item.is-whatsapp:hover .socialbtn-icon {
+    color: rgb(94 200 130);
+    box-shadow: var(--card-shadow), 0 0 22px -6px rgb(94 200 130 / 0.5);
+}
+.socialbtn-item.is-instagram:hover .socialbtn-icon {
+    color: rgb(224 128 168);
+    box-shadow: var(--card-shadow), 0 0 22px -6px rgb(224 128 168 / 0.5);
+}
+.socialbtn-item.is-phone:hover .socialbtn-icon {
+    color: rgb(var(--sand-300));
+    box-shadow: var(--card-shadow), 0 0 22px -6px rgb(var(--glow-warm) / 0.5);
+}
+
+/* Подпись выезжает из-под кнопки, а не занимает место постоянно. */
+.socialbtn-label {
+    white-space: nowrap;
+    border-radius: 9999px;
+    padding: 0.5rem 0.95rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgb(var(--sand-50));
+    background-color: rgb(var(--card-bg) / 0.75);
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));
+    box-shadow: var(--card-shadow);
+    transform: translateX(10px);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.socialbtn-item:hover .socialbtn-label,
+.socialbtn-item:focus-visible .socialbtn-label {
+    transform: none;
+    opacity: 1;
+}
+/* На узком экране подпись не показываем: она перекрыла бы половину кадра. */
+@media (max-width: 639px) {
+    .socialbtn-label {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .socialbtn-pulse {
+        animation: none;
+    }
+    .socialbtn-trigger,
+    .socialbtn-item,
+    .socialbtn-icon,
+    .socialbtn-label {
+        transition: none;
+    }
+}
