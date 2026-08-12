@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
+import PavingParallax from '@/Components/site/PavingParallax.vue';
 import { observeReveal } from '@/utils/site';
 import { useSmoothScroll, loadScrollTrigger } from '@/site/useSmoothScroll';
 import { theme } from '@/site/theme';
@@ -51,6 +52,13 @@ const activeStep = computed(() => {
  * фоне он выглядит выцветшим пятном, поэтому берём первый ВЫРАЗИТЕЛЬНЫЙ тон
  * (не слишком светлый и не слишком тёмный), а если такого нет — песочный.
  */
+/**
+ * Снимки брусчатки для слоя глубины. Собираем их из коллекций каталога —
+ * отдельного хранилища не заводим: что загружено в ERP, то и на витрине.
+ * Пока фото нет, слой просто не отрисовывается.
+ */
+const pavingPhotos = computed(() => props.paving.flatMap((p) => p.images ?? []));
+
 const heroColor = computed(() => {
     const luminance = (hex) => {
         const v = parseInt(String(hex).replace('#', ''), 16);
@@ -137,11 +145,14 @@ onBeforeUnmount(() => {
                 <!-- Вуаль поверх сцены: гасит верх под шапку и растворяет
                      нижний край двора в фоне страницы. Градиент собран на
                      токенах, поэтому работает и днём, и ночью. -->
-                <div class="hero-veil pointer-events-none absolute inset-0" />
+                <div class="hero-veil pointer-events-none absolute inset-0 z-10" />
+
+                <!-- Плиты брусчатки: висят над сценой, но под заголовком -->
+                <PavingParallax :photos="pavingPhotos" :progress="progress" />
 
                 <!-- Первый экран -->
                 <div
-                    class="absolute inset-x-0 top-0 flex h-screen flex-col justify-center px-5 sm:px-8"
+                    class="absolute inset-x-0 top-0 z-30 flex h-screen flex-col justify-center px-5 sm:px-8"
                     :style="{ opacity: Math.max(0, 1 - progress * 5), transform: `translateY(${progress * -60}px)` }"
                 >
                     <div class="mx-auto w-full max-w-7xl">
@@ -166,7 +177,7 @@ onBeforeUnmount(() => {
 
                 <!-- Подписи сюжета -->
                 <div
-                    class="absolute inset-x-0 bottom-0 px-5 pb-16 sm:px-8 sm:pb-20"
+                    class="absolute inset-x-0 bottom-0 z-30 px-5 pb-16 sm:px-8 sm:pb-20"
                     :style="{ opacity: progress > 0.06 && progress < 0.99 ? 1 : 0 }"
                     style="transition: opacity 0.5s ease"
                 >
@@ -200,7 +211,7 @@ onBeforeUnmount(() => {
 
                 <!-- Подсказка «крутите вниз» -->
                 <div
-                    class="absolute bottom-8 left-1/2 -translate-x-1/2 text-[11px] uppercase tracking-[0.3em] text-sand-100/40"
+                    class="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 text-[11px] uppercase tracking-[0.3em] text-sand-100/40"
                     :style="{ opacity: Math.max(0, 1 - progress * 12) }"
                 >
                     Прокрутите

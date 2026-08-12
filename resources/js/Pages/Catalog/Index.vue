@@ -10,6 +10,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import MediaManager from '@/Components/catalog/MediaManager.vue';
+import Pagination from '@/Components/Pagination.vue';
 
 const props = defineProps({ products: Object, categories: Array, filters: Object, units: Array });
 
@@ -188,11 +189,8 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
             </div>
         </div>
 
-        <div v-if="products.last_page > 1" class="mt-4 flex flex-wrap justify-center gap-1.5">
-            <Link v-for="link in products.links" :key="link.label" :href="link.url ?? ''" preserve-scroll
-                class="min-w-9 rounded-lg border px-2.5 py-1.5 text-center text-sm"
-                :class="[link.active ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50', !link.url && 'pointer-events-none opacity-40']"
-                v-html="link.label" />
+        <div v-if="products.last_page > 1" class="mt-4 flex justify-center">
+            <Pagination :links="products.links" />
         </div>
 
         <!-- Форма позиции -->

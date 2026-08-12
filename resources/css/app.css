@@ -556,10 +556,6 @@
    -------------------------------------------------------------- */
 .segmented {
     position: relative;
-    /* Плашка меняет ширину под длину названия — сохранить форму капсулы
-       через scaleX нельзя, углы вытянутся в эллипс. Вместо этого запираем
-       пересчёт раскладки внутри панели: наружу он не выходит. */
-    contain: layout style;
     display: flex;
     gap: 0.25rem;
     overflow-x: auto;
@@ -574,18 +570,26 @@
 .segmented::-webkit-scrollbar {
     display: none;
 }
+/* Геометрия плашки целиком на transform: ширина задаётся множителем
+   scaleX от опорных 100px, положение — translate3d. Раскладка при движении
+   не пересчитывается. */
 .segmented-pill {
     position: absolute;
     left: 0;
     top: 0.375rem;
     bottom: 0.375rem;
-    border-radius: 9999px;
+    transform-origin: left center;
     background-image: linear-gradient(180deg, rgb(var(--sand-200)), rgb(var(--sand-300)) 55%, rgb(var(--sand-400)));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 6px 18px -8px rgb(var(--glow-warm) / 0.55);
     transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                border-radius 0.5s cubic-bezier(0.16, 1, 0.3, 1),
                 opacity 0.3s ease;
-    will-change: transform, width;
+    will-change: transform;
+}
+/* Первый кадр и пересчёт по ресайзу — без перехода, чтобы плашка не летела
+   из угла. */
+.segmented-pill.is-instant {
+    transition: none;
 }
 .segmented-item {
     position: relative;
@@ -786,5 +790,35 @@
     }
     ::view-transition-new(root) {
         animation: none;
+    }
+}
+
+/* --------------------------------------------------------------
+   Плиты брусчатки над 3D-двором. Рядом с живым WebGL самое дорогое —
+   размытие, поэтому объём даём тенью и рамкой, а не backdrop-filter.
+   -------------------------------------------------------------- */
+.paving-plate {
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgb(var(--card-border) / 0.1);
+    box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.65),
+                inset 0 1px 0 rgb(255 255 255 / 0.12);
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+.site[data-theme='light'] .paving-plate {
+    box-shadow: 0 30px 60px -30px rgb(46 38 26 / 0.45),
+                inset 0 1px 0 rgb(255 255 255 / 0.6);
+}
+@media (max-width: 767px) {
+    /* На телефоне слой глубины скрыт: узкий кадр он только загромождает,
+       а бюджет кадра там жёстче. */
+    .paving-plate {
+        display: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .paving-plate {
+        transition: none;
     }
 }

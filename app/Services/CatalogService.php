@@ -129,6 +129,17 @@ class CatalogService
                 'colors' => $p->colors ?: [],
                 'texture' => $p->texture(),
                 'image' => $p->images[0]['thumb'] ?? $p->images[0]['path'] ?? null,
+                // Все снимки коллекции: из них собирается слой глубины на
+                // главной. Пусто, пока фото не загружены в ERP.
+                'images' => collect($p->images ?: [])
+                    ->map(fn (array $img) => [
+                        'path' => $img['path'] ?? null,
+                        'thumb' => $img['thumb'] ?? $img['path'] ?? null,
+                        'alt' => $img['alt'] ?? $p->name,
+                    ])
+                    ->filter(fn (array $img) => (bool) $img['path'])
+                    ->values()
+                    ->all(),
             ])->values();
     }
 

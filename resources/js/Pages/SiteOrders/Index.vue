@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { confirmDialog } from '@/composables/useConfirm';
+import Pagination from '@/Components/Pagination.vue';
 
 const props = defineProps({ orders: Object, filters: Object, statuses: Object, stats: Object });
 
@@ -144,11 +145,8 @@ const remove = async (order) => {
             </div>
         </div>
 
-        <div v-if="orders.last_page > 1" class="mt-4 flex flex-wrap justify-center gap-1.5">
-            <Link v-for="link in orders.links" :key="link.label" :href="link.url ?? ''" preserve-scroll
-                class="min-w-9 rounded-lg border px-2.5 py-1.5 text-center text-sm"
-                :class="[link.active ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50', !link.url && 'pointer-events-none opacity-40']"
-                v-html="link.label" />
+        <div v-if="orders.last_page > 1" class="mt-4 flex justify-center">
+            <Pagination :links="orders.links" />
         </div>
     </AppLayout>
 </template>
