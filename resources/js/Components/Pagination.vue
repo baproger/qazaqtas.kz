@@ -1,24 +1,12 @@
 <script setup>
-import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { usePageLinks } from '@/utils/pagination';
 
 const props = defineProps({
     links: { type: Array, default: () => [] },
 });
 
-/**
- * Пагинатор Laravel отдаёт подписи с HTML-сущностями («&laquo; Previous»).
- * Разбираем их здесь: стрелки рисуем иконками, номер выводим интерполяцией.
- * v-html в проекте не остаётся — обходить автоэкранировку Vue незачем.
- */
-const pageLinks = computed(() => props.links.map((link, i) => ({
-    key: `${i}-${link.label}`,
-    url: link.url,
-    active: link.active,
-    arrow: i === 0 ? 'prev' : i === props.links.length - 1 ? 'next' : null,
-    label: link.label,
-    aria: i === 0 ? 'Предыдущая страница' : i === props.links.length - 1 ? 'Следующая страница' : `Страница ${link.label}`,
-})));
+const pageLinks = usePageLinks(() => props.links);
 </script>
 
 <template>

@@ -67,7 +67,8 @@ class SiteSettingsTest extends TestCase
             'instagram' => 'javascript:alert(document.cookie)',
         ])->assertSessionHasErrors('instagram');
 
-        $this->assertSame('https://instagram.com/qazaqtas', SiteContent::contacts()['instagram']);
+        // Значение по умолчанию пустое: выдуманного аккаунта в проекте нет.
+        $this->assertSame('', SiteContent::contacts()['instagram']);
     }
 
     public function test_instagram_accepts_a_bare_handle(): void

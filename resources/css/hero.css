@@ -1,0 +1,382 @@
+/*
+ * Витрина изделий на первом экране: слайдер, выноски, лента разделов.
+ */
+
+/* ==================================================================
+   Витрина изделий на первом экране.
+   Единый тайминг перехода; движется только transform и opacity.
+   ================================================================== */
+.hero-showcase {
+    --dur: 520ms;
+    --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+    outline: none;
+}
+.hero-showcase.is-reduced {
+    --dur: 150ms;
+}
+
+/* --- Текстовая колонка ------------------------------------------- */
+/* Описание клэмпится в три строки: у разных товаров текст разной длины,
+   а высота блока меняться не должна. */
+.hero-lead {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 4.5em;
+}
+.hero-copy {
+    min-height: 30rem;
+}
+@media (max-width: 1023px) {
+    .hero-copy {
+        min-height: 0;
+    }
+}
+
+/* Появление строк лесенкой: каждая со своей задержкой из --d. */
+.hero-anim {
+    animation: hero-in 420ms var(--ease) var(--d, 0ms) both;
+}
+@keyframes hero-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+}
+.hero-title {
+    animation: hero-in 420ms var(--ease) var(--d, 0ms) both,
+               hero-title-in 520ms var(--ease) var(--d, 0ms) both;
+}
+@keyframes hero-title-in {
+    from { clip-path: inset(0 0 100% 0); }
+    to { clip-path: inset(0 0 0 0); }
+}
+.is-reduced .hero-anim,
+.is-reduced .hero-title {
+    animation: hero-fade 150ms linear both;
+}
+@keyframes hero-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* --- Визуал ------------------------------------------------------- */
+/* Ни overflow, ни radius, ни маски: вырезанный предмет не должен
+   обрезаться краем контейнера. Запас по краям даёт padding. */
+.hero-visual {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    padding: 24px;
+    isolation: isolate;
+}
+.hero-img {
+    position: absolute;
+    inset: 24px;
+    width: calc(100% - 48px);
+    height: calc(100% - 48px);
+    object-fit: contain;
+    object-position: center;
+    /* drop-shadow работает по альфе, box-shadow нарисовал бы рамку. */
+    filter: drop-shadow(0 50px 70px rgb(0 0 0 / 0.75));
+    animation: hero-img-in var(--dur) var(--ease) 60ms both;
+    z-index: 1;
+}
+@keyframes hero-img-in {
+    from { opacity: 0; transform: scale(0.965) translateX(calc(18px * var(--dir, 1))); }
+    to { opacity: 1; transform: none; }
+}
+.is-reduced .hero-img {
+    animation: hero-fade 150ms linear both;
+}
+.site[data-theme='light'] .hero-img {
+    filter: drop-shadow(0 40px 60px rgb(46 38 26 / 0.28));
+}
+
+/* Свечение под предметом — отдельным слоем ниже картинки. */
+.hero-glow {
+    position: absolute;
+    left: 50%;
+    bottom: 12%;
+    width: 68%;
+    height: 26%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(var(--glow-warm) / 0.55), transparent 72%);
+    filter: blur(10px);
+    animation: hero-glow-breath var(--dur) var(--ease) both;
+    z-index: 0;
+}
+@keyframes hero-glow-breath {
+    0% { opacity: 0.55; }
+    50% { opacity: 0.25; }
+    100% { opacity: 0.55; }
+}
+
+/* --- Выноски ------------------------------------------------------ */
+/* Каждая выноска — полоса от края кадра к предмету: подпись стоит снаружи,
+   линия тянется внутрь, точка садится на изделие. Раньше линия была
+   коротким огрызком у самой подписи, и связи с предметом не читалось. */
+.hero-specs {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+.hero-spec {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: hero-spec-in 380ms var(--ease) var(--d, 0ms) both;
+}
+@keyframes hero-spec-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+}
+.is-reduced .hero-spec {
+    animation: hero-fade 150ms linear both;
+}
+
+/* Четыре места вокруг предмета. Высоты подобраны под кадр, где изделие
+   стоит по центру и занимает примерно от 20% до 85% высоты. */
+.hero-spec.is-top-right {
+    top: 14%;
+    right: 0;
+    width: 46%;
+    flex-direction: row-reverse;
+}
+.hero-spec.is-right {
+    top: 58%;
+    right: 0;
+    width: 42%;
+    flex-direction: row-reverse;
+}
+.hero-spec.is-left {
+    top: 40%;
+    left: 0;
+    width: 42%;
+}
+.hero-spec.is-bottom {
+    bottom: 8%;
+    left: 4%;
+    width: 46%;
+}
+
+/* Линия занимает всё, что осталось между подписью и точкой, — поэтому она
+   всегда достаёт до предмета, какой бы длины ни оказалась подпись. */
+.hero-spec-line {
+    flex: 1;
+    min-width: 1.5rem;
+    height: 1px;
+    background: linear-gradient(90deg, rgb(var(--sand-300) / 0.15), rgb(var(--sand-300) / 0.7));
+    transform: scaleX(0);
+    transform-origin: left center;
+    animation: hero-line-in 420ms var(--ease) calc(var(--d, 0ms) + 120ms) both;
+}
+.hero-spec.is-top-right .hero-spec-line,
+.hero-spec.is-right .hero-spec-line {
+    background: linear-gradient(270deg, rgb(var(--sand-300) / 0.15), rgb(var(--sand-300) / 0.7));
+    transform-origin: right center;
+}
+@keyframes hero-line-in {
+    to { transform: scaleX(1); }
+}
+
+/* Точка садится на изделие и подсвечивается кольцом — видно, к чему подпись. */
+.hero-spec-dot {
+    position: relative;
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: rgb(var(--sand-300));
+    box-shadow: 0 0 0 4px rgb(var(--sand-300) / 0.14);
+    transform: scale(0);
+    animation: hero-dot-in 260ms var(--ease) calc(var(--d, 0ms) + 420ms) both;
+}
+@keyframes hero-dot-in {
+    to { transform: scale(1); }
+}
+
+.hero-spec-pill {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    max-width: 62%;
+    white-space: nowrap;
+    border-radius: 14px;
+    padding: 0.5rem 0.9rem;
+    background-color: rgb(var(--card-bg) / var(--card-alpha));
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));
+}
+.hero-spec-pill b {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: rgb(var(--sand-50));
+}
+.hero-spec-pill em {
+    font-style: normal;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(var(--sand-100) / 0.45);
+}
+
+/* --- Лента переключателей ----------------------------------------- */
+.hero-arrow {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    color: rgb(var(--sand-100) / 0.7);
+    border: 1px solid rgb(var(--card-border) / 0.12);
+    transition: transform 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.hero-arrow:hover {
+    transform: translateY(-2px);
+    color: rgb(var(--sand-50));
+    border-color: rgb(var(--glow-warm) / 0.4);
+}
+.hero-arrow:focus-visible,
+.hero-thumb:focus-visible {
+    outline: 2px solid rgb(var(--sand-300));
+    outline-offset: 3px;
+}
+
+/* Лента переключателей.
+   Верхний отступ обязателен: активная карточка приподнимается на 4px, а
+   горизонтальная прокрутка подрезает и по вертикали — без запаса у карточки
+   срезало бы макушку. */
+.hero-rail {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    padding: 0.75rem 0.25rem 0.9rem;
+    margin: -0.75rem -0.25rem -0.9rem;
+}
+.hero-rail::-webkit-scrollbar { display: none; }
+
+.hero-thumb {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex: 0 0 auto;
+    width: 16.5rem;
+    scroll-snap-align: start;
+    text-align: left;
+    border-radius: 20px;
+    padding: 0.7rem 1rem 0.7rem 0.7rem;
+    background-color: rgb(var(--card-bg) / var(--card-alpha));
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));
+    transition: transform 280ms var(--ease), border-color 280ms var(--ease),
+                background-color 280ms var(--ease);
+}
+.hero-thumb:hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--glow-warm) / 0.28);
+}
+
+/* Снимок лежит прямо в карточке: подложка и внутренняя тень только
+   утяжеляли ленту. */
+.hero-thumb-img {
+    width: 3.25rem;
+    height: 3.25rem;
+    flex-shrink: 0;
+    /* contain, а не cover: предмет нельзя обрезать краем. */
+    object-fit: contain;
+    transition: transform 280ms var(--ease);
+}
+.hero-thumb:hover .hero-thumb-img,
+.hero-thumb.is-active .hero-thumb-img {
+    transform: scale(1.06);
+}
+
+.hero-thumb-text {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.hero-thumb b {
+    /* Название раздела короткое — обрезать его нечем и незачем. */
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    color: rgb(var(--sand-100) / 0.75);
+    transition: color 280ms var(--ease);
+}
+.hero-thumb em {
+    font-style: normal;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(var(--sand-100) / 0.35);
+}
+
+/* Активный раздел: тёплая заливка, золотая рамка и точка-отметка. */
+.hero-thumb.is-active {
+    transform: translateY(-4px);
+    border-color: rgb(var(--glow-warm) / 0.5);
+    background-color: rgb(var(--sand-300) / 0.1);
+}
+.hero-thumb.is-active b {
+    font-weight: 600;
+    color: rgb(var(--sand-50));
+}
+.hero-thumb.is-active em {
+    color: rgb(var(--sand-300) / 0.75);
+}
+
+.hero-thumb-mark {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.7rem;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgb(var(--sand-300));
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity 280ms var(--ease), transform 280ms var(--ease);
+}
+.hero-thumb.is-active .hero-thumb-mark {
+    opacity: 1;
+    transform: none;
+}
+
+.hero-progress {
+    margin-top: 0.75rem;
+    height: 2px;
+    border-radius: 9999px;
+    background: rgb(var(--card-border) / 0.1);
+    overflow: hidden;
+}
+.hero-progress i {
+    display: block;
+    height: 100%;
+    background: rgb(var(--sand-300));
+    transform-origin: left center;
+    transform: scaleX(0);
+}
+
+/* --- Адаптив ------------------------------------------------------ */
+@media (max-width: 1279px) {
+    .hero-spec.is-left,
+    .hero-spec.is-right { display: none; }
+}
+@media (max-width: 1023px) {
+    .hero-visual { aspect-ratio: auto; height: 420px; }
+    .hero-img { inset: 16px; width: calc(100% - 32px); height: calc(100% - 32px); }
+}
+@media (max-width: 767px) {
+    .hero-visual { height: 320px; }
+    .hero-thumb { width: 13rem; }
+    .hero-showcase .btn-sand { width: 100%; }
+}

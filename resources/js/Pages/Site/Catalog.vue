@@ -5,6 +5,7 @@ import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import CategoryNav from '@/Components/site/CategoryNav.vue';
 import { favorites, compare, recent, money, observeReveal } from '@/utils/site';
+import { usePageLinks } from '@/utils/pagination';
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -63,23 +64,7 @@ const toggleCompare = (id) => (compareIds.value = compare.toggle(id));
 
 const compareProducts = computed(() => props.products.data.filter((p) => compareIds.value.includes(p.id)));
 
-/**
- * Пагинатор Laravel отдаёт подписи с HTML-сущностями («&laquo; Previous»).
- * Разбираем их здесь, чтобы шаблон выводил номера обычной интерполяцией, а
- * стрелки рисовал иконками: v-html на витрине не остаётся вовсе.
- */
-const pageLinks = computed(() => props.products.links.map((link, i) => {
-    const previous = i === 0;
-    const next = i === props.products.links.length - 1;
-    return {
-        key: `${i}-${link.label}`,
-        url: link.url,
-        active: link.active,
-        arrow: previous ? 'prev' : next ? 'next' : null,
-        label: link.label,
-        aria: previous ? 'Предыдущая страница' : next ? 'Следующая страница' : `Страница ${link.label}`,
-    };
-}));
+const pageLinks = usePageLinks(() => props.products.links);
 
 /**
  * Смена категории и сортировка идут без перезагрузки страницы: экземпляр

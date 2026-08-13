@@ -17,22 +17,22 @@ class SiteContent
     /** WhatsApp отдела продаж: только цифры, из них собирается ссылка wa.me. */
     public const DEFAULT_WHATSAPP = '77716107770';
 
-    /** Общие данные шапки/подвала — уходят во все страницы сайта. */
-    public static function contacts(): array
-    {
-        return [
-            'phone' => (string) Setting::get('site_phone', self::DEFAULT_PHONE),
-            'whatsapp' => preg_replace('/\D+/', '', (string) Setting::get('whatsapp_phone', self::DEFAULT_WHATSAPP)),
-            'email' => (string) Setting::get('site_email', 'sales@qazaqtas.kz'),
-            'instagram' => (string) Setting::get('site_instagram', 'https://instagram.com/qazaqtas'),
-            'hours' => (string) Setting::get('site_hours', 'Пн–Сб, 09:00–18:00'),
-        ];
-    }
-
-    /** Производственные площадки — те же три города, что и цеха в ERP. */
-    public static function branches(): array
-    {
-        return (array) Setting::get('site_branches', [
+    /**
+     * Значения по умолчанию — единственное место, где они описаны.
+     * Отсюда их читают геттеры и отсюда же сидер раскладывает их в
+     * настройки, чтобы владелец видел готовый текст и правил его в ERP,
+     * а не пустые поля.
+     */
+    public const DEFAULTS = [
+        'site_phone' => self::DEFAULT_PHONE,
+        'whatsapp_phone' => self::DEFAULT_WHATSAPP,
+        'site_email' => 'sales@qazaqtas.kz',
+        // Instagram по умолчанию пуст: реального аккаунта у нас нет, а
+        // выдуманный адрес вёл бы посетителей в никуда. Пустое значение —
+        // канал просто не показывается.
+        'site_instagram' => '',
+        'site_hours' => 'Пн–Сб, 09:00–18:00',
+        'site_branches' => [
             [
                 'city' => 'Шымкент',
                 'role' => 'Головное производство',
@@ -54,63 +54,98 @@ class SiteContent
                 'phone' => self::DEFAULT_PHONE,
                 'coords' => '42.9000, 71.3667',
             ],
-        ]);
-    }
-
-    /** Цифры для главной: их правит владелец, поэтому тоже в настройках. */
-    public static function stats(): array
-    {
-        return (array) Setting::get('site_stats', [
+        ],
+        'site_stats' => [
             ['value' => '3', 'label' => 'производственные площадки'],
             ['value' => '12 лет', 'label' => 'на рынке благоустройства'],
             ['value' => 'F200', 'label' => 'морозостойкость изделий'],
             ['value' => '250 000 м²', 'label' => 'уложено на объектах'],
-        ]);
-    }
-
-    /** Этапы производства — сторителлинг раздела «Производство». */
-    public static function production(): array
-    {
-        return (array) Setting::get('site_production', [
+        ],
+        'site_production' => [
             ['step' => '01', 'title' => 'Сырьё', 'text' => 'Мраморная крошка фракций 0–2 и 2–5 мм, белый цемент М500, полиэфирная смола и пигменты. Каждая партия проходит входной контроль.'],
             ['step' => '02', 'title' => 'Формовка', 'text' => 'Вибролитьё в полиуретановые матрицы: смесь уплотняется до плотной структуры без пустот и раковин.'],
             ['step' => '03', 'title' => 'Выдержка', 'text' => 'Набор прочности в камере с контролем температуры и влажности — изделие не даёт усадочных трещин.'],
             ['step' => '04', 'title' => 'Шлифовка', 'text' => 'Открываем мраморное зерно: глянец, матовая или рустованная фактура — по проекту.'],
             ['step' => '05', 'title' => 'Упаковка', 'text' => 'Плёнка, паллеты, маркировка партии. Отгрузка своим транспортом по Казахстану.'],
-        ]);
-    }
-
-    /** Преимущества — короткие тезисы под hero. */
-    public static function advantages(): array
-    {
-        return (array) Setting::get('site_advantages', [
+        ],
+        'site_advantages' => [
             ['title' => 'Мраморный композит', 'text' => 'Не бетон с краской: цвет сквозной, поверхность не выцветает и не стирается.'],
             ['title' => 'Морозостойкость F200', 'text' => 'Выдерживает 200 циклов заморозки — рассчитано на континентальный климат.'],
             ['title' => 'Собственное производство', 'text' => 'Три площадки: Шымкент, Алматы, Тараз. Сроки и объёмы контролируем сами.'],
             ['title' => 'Проектная поддержка', 'text' => 'Замер, расчёт раскладки и смета — до подписания договора.'],
-        ]);
-    }
-
-    public static function faq(): array
-    {
-        return (array) Setting::get('site_faq', [
+        ],
+        'site_faq' => [
             ['q' => 'Чем мраморный композит отличается от обычной плитки?', 'a' => 'В составе мраморная крошка и мука вместо песка, сквозное окрашивание и вибролитьё. Поверхность плотнее, водопоглощение ниже, цвет держится годами.'],
             ['q' => 'Какой минимальный заказ?', 'a' => 'Плитка — от 10 м², малые формы (вазоны, скамьи, урны) — от 1 шт. Точный объём поможет посчитать менеджер после замера.'],
             ['q' => 'Сколько ждать изготовление?', 'a' => 'Складские позиции отгружаем в течение 1–3 дней. Изготовление под заказ — от 7 до 21 дня в зависимости от объёма и цвета.'],
             ['q' => 'Вы доставляете в другие города?', 'a' => 'Да. Отгружаем по всему Казахстану со всех трёх площадок — стоимость доставки считаем по адресу объекта.'],
             ['q' => 'Даёте ли гарантию?', 'a' => 'Гарантия на изделия — 5 лет при соблюдении технологии укладки. Схему укладки и рекомендации выдаём вместе с заказом.'],
-        ]);
+        ],
+        'site_projects' => [
+            ['title' => 'Благоустройство ЖК «Керемет»', 'city' => 'Шымкент', 'area' => '4 200 м²', 'year' => '2025', 'products' => 'Плитка «Квадрат», бордюр дорожный, вазоны Ø900'],
+            ['title' => 'Центральный парк', 'city' => 'Тараз', 'area' => '7 800 м²', 'year' => '2025', 'products' => 'Плитка «Кирпичик», скамьи «Парковая», урны «Сити»'],
+            ['title' => 'Набережная', 'city' => 'Алматы', 'area' => '3 100 м²', 'year' => '2024', 'products' => 'Плитка «Большой формат», ступени накладные'],
+            ['title' => 'Школьный двор №42', 'city' => 'Шымкент', 'area' => '2 400 м²', 'year' => '2024', 'products' => 'Плитка «Ромб», бордюр садовый'],
+        ],
+        'site_delivery' => [
+            ['city' => 'Шымкент', 'base' => 15000, 'per_km' => 250, 'free_from' => 1500000],
+            ['city' => 'Алматы', 'base' => 18000, 'per_km' => 280, 'free_from' => 1500000],
+            ['city' => 'Тараз', 'base' => 15000, 'per_km' => 250, 'free_from' => 1500000],
+            ['city' => 'Другой город', 'base' => 25000, 'per_km' => 320, 'free_from' => 2500000],
+        ],
+    ];
+
+    /** Настройка либо значение по умолчанию из реестра. */
+    private static function value(string $key): mixed
+    {
+        return Setting::get($key, self::DEFAULTS[$key] ?? null);
+    }
+
+    /** Общие данные шапки/подвала — уходят во все страницы сайта. */
+    public static function contacts(): array
+    {
+        return [
+            'phone' => (string) self::value('site_phone'),
+            'whatsapp' => preg_replace('/\D+/', '', (string) self::value('whatsapp_phone')),
+            'email' => (string) self::value('site_email'),
+            'instagram' => (string) self::value('site_instagram'),
+            'hours' => (string) self::value('site_hours'),
+        ];
+    }
+
+    /** Производственные площадки — те же три города, что и цеха в ERP. */
+    public static function branches(): array
+    {
+        return (array) self::value('site_branches');
+    }
+
+    /** Цифры для главной: их правит владелец, поэтому тоже в настройках. */
+    public static function stats(): array
+    {
+        return (array) self::value('site_stats');
+    }
+
+    /** Этапы производства — сторителлинг раздела «Производство». */
+    public static function production(): array
+    {
+        return (array) self::value('site_production');
+    }
+
+    /** Преимущества — короткие тезисы под hero. */
+    public static function advantages(): array
+    {
+        return (array) self::value('site_advantages');
+    }
+
+    public static function faq(): array
+    {
+        return (array) self::value('site_faq');
     }
 
     /** Реализованные проекты — витрина «Completed Projects». */
     public static function projects(): array
     {
-        return (array) Setting::get('site_projects', [
-            ['title' => 'Благоустройство ЖК «Керемет»', 'city' => 'Шымкент', 'area' => '4 200 м²', 'year' => '2025', 'products' => 'Плитка «Квадрат», бордюр дорожный, вазоны Ø900'],
-            ['title' => 'Центральный парк', 'city' => 'Тараз', 'area' => '7 800 м²', 'year' => '2025', 'products' => 'Плитка «Кирпичик», скамьи «Парковая», урны «Сити»'],
-            ['title' => 'Набережная', 'city' => 'Алматы', 'area' => '3 100 м²', 'year' => '2024', 'products' => 'Плитка «Большой формат», ступени накладные'],
-            ['title' => 'Школьный двор №42', 'city' => 'Шымкент', 'area' => '2 400 м²', 'year' => '2024', 'products' => 'Плитка «Ромб», бордюр садовый'],
-        ]);
+        return (array) self::value('site_projects');
     }
 
     /**
@@ -119,12 +154,7 @@ class SiteContent
      */
     public static function delivery(): array
     {
-        return (array) Setting::get('site_delivery', [
-            ['city' => 'Шымкент', 'base' => 15000, 'per_km' => 250, 'free_from' => 1500000],
-            ['city' => 'Алматы', 'base' => 18000, 'per_km' => 280, 'free_from' => 1500000],
-            ['city' => 'Тараз', 'base' => 15000, 'per_km' => 250, 'free_from' => 1500000],
-            ['city' => 'Другой город', 'base' => 25000, 'per_km' => 320, 'free_from' => 2500000],
-        ]);
+        return (array) self::value('site_delivery');
     }
 
     /**

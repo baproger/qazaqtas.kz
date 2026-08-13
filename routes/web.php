@@ -179,12 +179,12 @@ Route::middleware('auth')->group(function () {
     Route::post('catalog/{product:id}/documents', [\App\Http\Controllers\CatalogMediaController::class, 'storeDocument'])->name('catalogMedia.document');
     Route::delete('catalog/{product:id}/documents', [\App\Http\Controllers\CatalogMediaController::class, 'destroyDocument'])->name('catalogMedia.documentDestroy');
 
-    Route::get('catalog-categories', [\App\Http\Controllers\CatalogController::class, 'categories'])->name('catalogCategories.index');
-    Route::post('catalog-categories/{category:id}/image', [\App\Http\Controllers\CatalogController::class, 'storeCategoryImage'])->name('catalogCategories.image');
-    Route::delete('catalog-categories/{category:id}/image', [\App\Http\Controllers\CatalogController::class, 'destroyCategoryImage'])->name('catalogCategories.imageDestroy');
-    Route::post('catalog-categories', [\App\Http\Controllers\CatalogController::class, 'storeCategory'])->name('catalogCategories.store');
-    Route::put('catalog-categories/{category:id}', [\App\Http\Controllers\CatalogController::class, 'updateCategory'])->name('catalogCategories.update');
-    Route::delete('catalog-categories/{category:id}', [\App\Http\Controllers\CatalogController::class, 'destroyCategory'])->name('catalogCategories.destroy');
+    Route::get('catalog-categories', [\App\Http\Controllers\CategoryController::class, 'categories'])->name('catalogCategories.index');
+    Route::post('catalog-categories/{category:id}/image', [\App\Http\Controllers\CategoryController::class, 'storeCategoryImage'])->name('catalogCategories.image');
+    Route::delete('catalog-categories/{category:id}/image', [\App\Http\Controllers\CategoryController::class, 'destroyCategoryImage'])->name('catalogCategories.imageDestroy');
+    Route::post('catalog-categories', [\App\Http\Controllers\CategoryController::class, 'storeCategory'])->name('catalogCategories.store');
+    Route::put('catalog-categories/{category:id}', [\App\Http\Controllers\CategoryController::class, 'updateCategory'])->name('catalogCategories.update');
+    Route::delete('catalog-categories/{category:id}', [\App\Http\Controllers\CategoryController::class, 'destroyCategory'])->name('catalogCategories.destroy');
 
     // Объекты сайта: реализованные проекты с фото для главной и «Проектов».
     Route::get('site-projects', [\App\Http\Controllers\SiteProjectController::class, 'index'])->name('siteProjects.index');

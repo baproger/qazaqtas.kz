@@ -1,0 +1,326 @@
+/*
+ * Поверхности витрины: полотно страницы, матовое стекло, кнопки,
+ * появление секций, заглушки. Токены палитр — в tokens.css.
+ */
+
+@layer base {
+    /* Normalize weights of the existing Figtree setup (400/500/600/700). */
+    body {
+        @apply font-sans antialiased text-slate-900;
+    }
+}
+
+/* ------------------------------------------------------------------
+   Витрина QAZAQ TAS. Тёмная «бетонная» тема живёт только на страницах
+   сайта (обёртка .site) — интерфейс ERP остаётся светлым.
+   ------------------------------------------------------------------ */
+@layer components {
+    /* Полотно страницы. Один непрерывный градиент на всю высоту вьюпорта
+       (attachment: fixed) — секции не могут разойтись по тону, потому что
+       фон у них общий и он не скроллится вместе с ними. */
+    .site {
+        @apply text-sand-50 antialiased;
+        /* Стартовое состояние света. Скрипт прокрутки переопределяет эти
+           значения инлайном — объявлять их на самом слое нельзя, там они
+           перекрыли бы унаследованные. */
+        --amb-warm: 1;
+        --amb-cool: 0;
+        --amb-deep: 0;
+        /* Пятна света намеренно выходят за края секций — иначе они обрываются
+           жёсткой линией. Обрезаем их по горизонтали здесь: `clip`, а не
+           `hidden`, потому что hidden создал бы контейнер прокрутки и убил
+           бы sticky у первого экрана и ленты категорий. */
+        overflow-x: clip;
+        background-color: rgb(var(--ink-900));
+        background-image:
+            linear-gradient(175deg,
+                rgb(var(--ink-900)) 0%,
+                rgb(var(--ink-800)) 34%,
+                rgb(var(--ink-700) / 0.9) 52%,
+                rgb(var(--ink-800)) 70%,
+                rgb(var(--ink-900)) 100%);
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+    /* Зерно отдельным слоем: тайлится по всей длине страницы, а не растягивается
+       вместе с градиентом. */
+    .site::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image: var(--grain);
+        opacity: var(--grain-alpha);
+        mix-blend-mode: overlay;
+    }
+
+    /* --------------------------------------------------------------
+       Живой фон. Три фиксированных слоя света перетекают друг в друга по
+       мере прокрутки: меняется только opacity, поэтому страница не
+       перекрашивается и кадр не проседает.
+       -------------------------------------------------------------- */
+    /* Слой света уходит за содержимое отрицательным z-index: он всё равно
+       остаётся над фоном страницы, а вот поднимать над ним каждого потомка
+       .site нельзя — правило с :not() перебивало утилиту .fixed, и шапка,
+       кнопка связи и ссылка «К содержимому» теряли своё позиционирование. */
+    .site-ambience {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+    }
+    .amb {
+        position: absolute;
+        inset: 0;
+        display: block;
+        will-change: opacity;
+    }
+    /* Тёплый студийный свет над первым экраном. */
+    .amb-warm {
+        opacity: var(--amb-warm);
+        background-image:
+            radial-gradient(85% 60% at 18% 0%, rgb(var(--glow-warm) / 0.2), transparent 64%),
+            radial-gradient(60% 45% at 88% 12%, rgb(var(--glow-warm) / 0.07), transparent 60%);
+    }
+    /* Холодный камень: каталог, цех, характеристики. */
+    .amb-cool {
+        opacity: var(--amb-cool);
+        background-image:
+            radial-gradient(75% 60% at 85% 22%, rgb(var(--glow-cool) / 0.22), transparent 66%),
+            radial-gradient(60% 50% at 8% 62%, rgb(var(--glow-cool) / 0.1), transparent 62%);
+    }
+    /* Глубокая тёплая подсветка под призывом и подвалом. */
+    .amb-deep {
+        opacity: var(--amb-deep);
+        background-image:
+            radial-gradient(95% 65% at 50% 100%, rgb(var(--glow-warm) / 0.24), transparent 66%),
+            radial-gradient(50% 40% at 12% 78%, rgb(var(--glow-cool) / 0.08), transparent 60%);
+    }
+    /* --------------------------------------------------------------
+       Матовое стекло — единая поверхность для всех карточек и панелей.
+       -------------------------------------------------------------- */
+    .card {
+        position: relative;
+        border-radius: 24px;
+        background-color: rgb(var(--card-bg) / var(--card-alpha));
+        background-image: linear-gradient(158deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0) 46%);
+        backdrop-filter: blur(20px) saturate(160%);
+        border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));
+        box-shadow: var(--card-shadow);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* Внутренний отблеск: проявляется при наведении, будто по стеклу
+       скользнул студийный свет. */
+    .card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        opacity: 0;
+        background-image: radial-gradient(120% 90% at 50% -10%, rgb(255 255 255 / 0.09), transparent 62%);
+        transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card-hover:hover {
+        transform: translateY(-6px);
+        border-color: rgb(var(--glow-warm) / 0.3);
+        box-shadow: var(--card-shadow-hover), 0 0 32px -8px rgb(var(--glow-warm) / 0.18);
+    }
+    .card-hover:hover::after {
+        opacity: 1;
+    }
+    .card-sm {
+        border-radius: 20px;
+    }
+    /* Карточка товара поднимается выше обычной панели — она главный
+       интерактивный объект страницы. */
+    .card-lift:hover {
+        transform: translateY(-8px);
+        border-color: rgb(var(--glow-warm) / 0.32);
+        box-shadow: var(--card-shadow-hover), 0 0 40px -10px rgb(var(--glow-warm) / 0.22);
+    }
+    .card-lift:hover::after {
+        opacity: 1;
+    }
+
+    /* Ниша под изделие: снимок стоит в углублении, а не лежит на плоскости. */
+    .media-well {
+        background-image: radial-gradient(120% 100% at 50% 0%, rgb(255 255 255 / 0.05), transparent 68%);
+        box-shadow: inset 0 -1px 0 rgb(var(--card-border) / 0.08),
+                    inset 0 2px 4px 0 rgb(0 0 0 / 0.35),
+                    inset 0 20px 44px -28px rgb(0 0 0 / 0.85);
+    }
+    .site[data-theme='light'] .media-well {
+        background-image: radial-gradient(120% 100% at 50% 0%, rgb(255 255 255 / 0.7), transparent 70%);
+        box-shadow: inset 0 -1px 0 rgb(15 18 22 / 0.06),
+                    inset 0 2px 4px 0 rgb(46 38 26 / 0.06),
+                    inset 0 20px 44px -30px rgb(46 38 26 / 0.3);
+    }
+
+    /* --------------------------------------------------------------
+       Мягкое фоновое свечение. Два размытых пятна за содержимым секции:
+       тёплое студийное и холодная тень.
+       -------------------------------------------------------------- */
+    .ambient {
+        position: relative;
+        isolation: isolate;
+    }
+    .ambient::before,
+    .ambient::after {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        pointer-events: none;
+        border-radius: 9999px;
+        filter: blur(120px);
+    }
+    .ambient::before {
+        width: min(58vw, 780px);
+        aspect-ratio: 1;
+        left: -14vw;
+        top: -12%;
+        background: radial-gradient(circle, rgb(var(--glow-warm) / 0.55), transparent 70%);
+        opacity: 0.22;
+    }
+    .ambient::after {
+        width: min(50vw, 660px);
+        aspect-ratio: 1;
+        right: -12vw;
+        bottom: -18%;
+        background: radial-gradient(circle, rgb(var(--glow-cool) / 0.5), transparent 70%);
+        opacity: 0.18;
+    }
+    /* Зеркальная раскладка, чтобы соседние секции не светились одинаково. */
+    .ambient-flip::before {
+        left: auto;
+        right: -14vw;
+    }
+    .ambient-flip::after {
+        right: auto;
+        left: -12vw;
+    }
+
+    /* Крупная архитектурная типографика. */
+    .display {
+        @apply font-semibold tracking-display leading-[0.95];
+    }
+    .eyebrow {
+        @apply text-[11px] font-semibold uppercase tracking-[0.28em] text-sand-300/70;
+    }
+
+    /* Шлифованный камень: тот же приём, что и у фона страницы, но на
+       поверхности карточки — блик сверху плюс мелкое зерно. */
+    .concrete {
+        background-image:
+            linear-gradient(158deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0) 45%),
+            var(--grain-card);
+    }
+
+    /* Главная кнопка: объём даёт вертикальный градиент и блик по верхней
+       кромке, при наведении вокруг появляется тёплое свечение. */
+    .btn-sand {
+        @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3
+               text-sm font-semibold text-ink-900 focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-sand-300/60;
+        background-image: linear-gradient(180deg, rgb(var(--sand-200)) 0%, rgb(var(--sand-300)) 55%, rgb(var(--sand-400)) 100%);
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3),
+                    inset 0 -1px 0 rgb(0 0 0 / 0.08),
+                    0 10px 24px -14px rgb(var(--glow-warm) / 0.55);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-sand:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.06);
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35),
+                    0 0 25px rgb(var(--glow-warm) / 0.3),
+                    0 14px 30px -16px rgb(var(--glow-warm) / 0.6);
+    }
+    /* Нажатие: кнопка чуть проседает — тактильный отклик без задержки. */
+    .btn-sand:active {
+        transform: scale(0.95);
+        transition-duration: 0.12s;
+    }
+    /* Подтверждение прямо на кнопке: галочка вместо тележки. */
+    .btn-cart.is-added {
+        background-image: linear-gradient(180deg, rgb(134 196 160), rgb(84 158 122) 60%, rgb(62 132 99));
+        color: rgb(252 255 253);
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 0 22px -6px rgb(84 158 122 / 0.55);
+    }
+    /* Иконка появляется с задержкой: сначала глаз замечает смену заливки,
+       потом — символ. Одновременно они читаются как рябь. */
+    .btn-cart svg {
+        animation: cart-icon-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+    }
+    @keyframes cart-icon-in {
+        from { opacity: 0; transform: scale(0.6) rotate(-12deg); }
+        to { opacity: 1; transform: none; }
+    }
+
+    /* Второстепенная — из того же матового стекла, что и карточки. */
+    .btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3
+               text-sm font-medium text-sand-50 focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-sand-300/40;
+        background-color: rgb(255 255 255 / 0.05);
+        backdrop-filter: blur(16px) saturate(150%);
+        border: 1px solid rgb(var(--card-border) / 0.12);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-ghost:active {
+        transform: scale(0.95);
+        transition-duration: 0.12s;
+    }
+    .btn-ghost:hover {
+        transform: translateY(-2px);
+        border-color: rgb(var(--glow-warm) / 0.35);
+        background-color: rgb(255 255 255 / 0.08);
+        box-shadow: 0 0 22px -6px rgb(var(--glow-warm) / 0.22);
+    }
+    .site[data-theme='light'] .btn-ghost {
+        background-color: rgb(255 255 255 / 0.6);
+    }
+    .site[data-theme='light'] .btn-ghost:hover {
+        background-color: rgb(255 255 255 / 0.85);
+    }
+
+    /* Появление секций при скролле (IntersectionObserver добавляет .is-in). */
+    .reveal {
+        @apply translate-y-6 opacity-0;
+        transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.is-in {
+        @apply translate-y-0 opacity-100;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .reveal {
+        @apply translate-y-0 opacity-100;
+        transition: none;
+    }
+}
+
+@layer components {
+    /* Заглушка карточки объекта, пока не загружено фото: рисунок перевязки
+       вместо пустого прямоугольника — блок выглядит цельно и без снимков. */
+    .paving-pattern {
+        background-color: theme('colors.ink.700');
+        background-image:
+            linear-gradient(90deg, rgba(200, 183, 154, 0.10) 1px, transparent 1px),
+            linear-gradient(rgba(200, 183, 154, 0.10) 1px, transparent 1px),
+            radial-gradient(120% 100% at 50% 0%, rgba(200, 183, 154, 0.08), transparent 65%);
+        background-size: 96px 48px, 96px 48px, 100% 100%;
+        background-position: 0 0, 48px 24px, 0 0;
+    }
+}
+
