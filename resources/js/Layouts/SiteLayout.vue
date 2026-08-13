@@ -3,6 +3,7 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { theme, toggleTheme, initTheme } from '@/site/theme';
 import FloatingSocial from '@/Components/site/FloatingSocial.vue';
+import { useScrollAmbience } from '@/site/ambience';
 
 const props = defineProps({
     seo: { type: Object, default: () => ({}) },
@@ -26,6 +27,10 @@ const nav = computed(() => [
     { label: 'Контакты', route: 'site.contacts' },
 ]);
 
+
+/** Фон меняет настроение по мере прокрутки. */
+const siteRoot = ref(null);
+useScrollAmbience(siteRoot);
 
 const scrolled = ref(false);
 const menuOpen = ref(false);
@@ -59,7 +64,14 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
         <meta name="theme-color" :content="theme === 'dark' ? '#08090B' : '#FAF8F5'" />
     </Head>
 
-    <div class="site min-h-screen" :data-theme="theme">
+    <div ref="siteRoot" class="site min-h-screen" :data-theme="theme">
+        <!-- Свет за содержимым: три слоя перетекают друг в друга при прокрутке -->
+        <div class="site-ambience" aria-hidden="true">
+            <i class="amb amb-warm" />
+            <i class="amb amb-cool" />
+            <i class="amb amb-deep" />
+        </div>
+
         <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-sand-300 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink-900">
             К содержимому
         </a>

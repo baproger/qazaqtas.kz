@@ -31,6 +31,12 @@
        фон у них общий и он не скроллится вместе с ними. */
     .site {
         @apply text-sand-50 antialiased;
+        /* Стартовое состояние света. Скрипт прокрутки переопределяет эти
+           значения инлайном — объявлять их на самом слое нельзя, там они
+           перекрыли бы унаследованные. */
+        --amb-warm: 1;
+        --amb-cool: 0;
+        --amb-deep: 0;
         /* Пятна света намеренно выходят за края секций — иначе они обрываются
            жёсткой линией. Обрезаем их по горизонтали здесь: `clip`, а не
            `hidden`, потому что hidden создал бы контейнер прокрутки и убил
@@ -38,7 +44,6 @@
         overflow-x: clip;
         background-color: rgb(var(--ink-900));
         background-image:
-            radial-gradient(100% 60% at 50% 0%, rgb(var(--glow-warm) / 0.06), transparent 62%),
             linear-gradient(175deg,
                 rgb(var(--ink-900)) 0%,
                 rgb(var(--ink-800)) 34%,
@@ -60,6 +65,50 @@
         background-image: var(--grain);
         opacity: var(--grain-alpha);
         mix-blend-mode: overlay;
+    }
+
+    /* --------------------------------------------------------------
+       Живой фон. Три фиксированных слоя света перетекают друг в друга по
+       мере прокрутки: меняется только opacity, поэтому страница не
+       перекрашивается и кадр не проседает.
+       -------------------------------------------------------------- */
+    .site-ambience {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+    }
+    .amb {
+        position: absolute;
+        inset: 0;
+        display: block;
+        will-change: opacity;
+    }
+    /* Тёплый студийный свет над первым экраном. */
+    .amb-warm {
+        opacity: var(--amb-warm);
+        background-image:
+            radial-gradient(80% 55% at 18% 0%, rgb(var(--glow-warm) / 0.16), transparent 62%),
+            radial-gradient(60% 45% at 88% 12%, rgb(var(--glow-warm) / 0.07), transparent 60%);
+    }
+    /* Холодный камень: каталог, цех, характеристики. */
+    .amb-cool {
+        opacity: var(--amb-cool);
+        background-image:
+            radial-gradient(70% 55% at 85% 22%, rgb(var(--glow-cool) / 0.18), transparent 64%),
+            radial-gradient(60% 50% at 8% 62%, rgb(var(--glow-cool) / 0.1), transparent 62%);
+    }
+    /* Глубокая тёплая подсветка под призывом и подвалом. */
+    .amb-deep {
+        opacity: var(--amb-deep);
+        background-image:
+            radial-gradient(90% 60% at 50% 100%, rgb(var(--glow-warm) / 0.2), transparent 64%),
+            radial-gradient(50% 40% at 12% 78%, rgb(var(--glow-cool) / 0.08), transparent 60%);
+    }
+    /* Содержимое встаёт над светом. */
+    .site > *:not(.site-ambience) {
+        position: relative;
+        z-index: 1;
     }
 
     /* --------------------------------------------------------------
@@ -404,8 +453,6 @@
    песочная засветка сверху, прохладный камень снизу. */
 .site[data-theme='light'] {
     background-image:
-        radial-gradient(80% 50% at 12% 0%, rgb(var(--glow-warm) / 0.16), transparent 62%),
-        radial-gradient(60% 45% at 92% 6%, rgb(var(--glow-cool) / 0.12), transparent 60%),
         linear-gradient(175deg,
             rgb(252 253 254) 0%,
             rgb(248 249 250) 30%,
