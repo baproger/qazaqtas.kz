@@ -176,3 +176,46 @@ php artisan test                   # перед каждым push
 - Модуль «Предв. сделки (лоты госзакупок)» → **«Заявки / запросы КП»**: `request_number`, `valid_until`, `object_address`, `quantity` + `unit` + `unit_price` (сумма КП = объём × цена); команда `pre-deals:notify-quote-deadline`, уведомление `QuoteDeadlineToday`.
 - Справочники: каналы продаж вместо порталов госзакупок, единицы измерения производства, категории расходов, доп-поля сделки (тип изделия, цвет/пигмент, фактура), номенклатура склада, отделы.
 - Роль `designer` называется «Технолог».
+
+## Чек-лист перед выкладкой в прод
+
+Безопасность:
+
+- [ ] `APP_DEBUG=false`, `APP_ENV=production`
+- [ ] `ADMIN_PASSWORD` задан в `.env` до первого `db:seed` — иначе пароль
+      сгенерируется и будет напечатан в консоль один раз
+- [ ] `SESSION_SECURE_COOKIE=true`, `SESSION_SAME_SITE=lax`
+- [ ] `TRUSTED_PROXIES` под реальный прокси, иначе `$request->secure()`
+      вернёт false и HSTS не выставится
+- [ ] Лимит размера тела запроса в nginx (`client_max_body_size 24m`) —
+      под загрузку 3D-моделей
+- [ ] `composer audit` чистый
+- [ ] `php artisan config:cache route:cache view:cache`
+
+Заголовки отдаёт `App\Http\Middleware\SecureHeaders`: `X-Frame-Options: DENY`,
+`X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS при HTTPS.
+CSP пока в режиме `Content-Security-Policy-Report-Only` — собирает нарушения
+в консоль браузера, ничего не блокируя. Перед переводом в блокирующий режим
+неделю понаблюдать за отчётами: Vue раздаёт инлайн-стили, зерно фона лежит
+в `data:`-URI, шрифты приходят с fonts.bunny.net.
+
+Данные:
+
+- [ ] Бэкап базы и `storage/app/public` настроен (фото — единственный
+      источник, в git их нет)
+- [ ] `php artisan storage:link` выполнен
+
+## Права: действие ↔ право
+
+| Модуль | Действие | Право |
+|---|---|---|
+| Каталог, позиции | просмотр / создание / правка / удаление | `product.viewAny` / `product.create` / `product.update` / `product.delete` |
+| Каталог, категории | те же, через `ProductCategoryPolicy` | те же `product.*` |
+| Снимок категории | загрузка и удаление | `product.update` (это правка категории) |
+| Медиа позиции | загрузка и удаление | `product.update` |
+| Доска цеха | перенос по этапам | `project.view` — намеренно: у цеховых ролей нет `project.update`, изоляцию держит `assertWorkshopAccess` |
+
+Удаление медиа проверяет владение по папке: позиция удаляет только файлы
+из `catalog/{id}/`, категория — только из `categories/{id}/`. Путь в JSON
+мог быть скопирован из другой записи, и без проверки удаление стирало бы
+чужой снимок.

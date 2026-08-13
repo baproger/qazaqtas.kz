@@ -71,7 +71,7 @@ class CatalogController extends Controller
 
     public function storeCategory(Request $request): RedirectResponse
     {
-        $this->authorize('create', Product::class);
+        $this->authorize('create', ProductCategory::class);
         ProductCategory::create($this->validatedCategory($request));
         CatalogService::flushCache();
 
@@ -80,7 +80,7 @@ class CatalogController extends Controller
 
     public function updateCategory(Request $request, ProductCategory $category): RedirectResponse
     {
-        $this->authorize('create', Product::class);
+        $this->authorize('update', $category);
         $category->update($this->validatedCategory($request, $category));
         CatalogService::flushCache();
 
@@ -89,7 +89,7 @@ class CatalogController extends Controller
 
     public function destroyCategory(ProductCategory $category): RedirectResponse
     {
-        $this->authorize('delete', Product::class);
+        $this->authorize('delete', $category);
         if ($category->products()->exists()) {
             return back()->with('error', 'В категории есть товары — сначала перенесите или удалите их.');
         }
@@ -134,7 +134,7 @@ class CatalogController extends Controller
     /** Отдельная страница: категории со снимками и порядком. */
     public function categories(): Response
     {
-        $this->authorize('viewAny', Product::class);
+        $this->authorize('viewAny', ProductCategory::class);
 
         return Inertia::render('Catalog/Categories', [
             'categories' => ProductCategory::withCount('products')
@@ -159,7 +159,7 @@ class CatalogController extends Controller
     /** Снимок категории: вырезанный предмет на прозрачном фоне. */
     public function storeCategoryImage(Request $request, ProductCategory $category, MediaService $media): RedirectResponse
     {
-        $this->authorize('create', Product::class);
+        $this->authorize('update', $category);
 
         $request->validate([
             'image' => ['required', 'image', 'mimes:png,webp', 'max:8192'],
@@ -178,7 +178,7 @@ class CatalogController extends Controller
 
     public function destroyCategoryImage(ProductCategory $category, MediaService $media): RedirectResponse
     {
-        $this->authorize('create', Product::class);
+        $this->authorize('update', $category);
 
         $this->dropOwnedImage($category, $media);
         $category->update(['image' => null, 'thumb' => null]);

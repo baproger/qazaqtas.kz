@@ -17,6 +17,16 @@ class CatalogMediaController extends Controller
     public function __construct(private MediaService $media) {}
 
     /** Загрузка фотографий товара (можно несколько за раз). */
+    /**
+     * Файлы позиции лежат в собственной папке catalog/{id}. Путь в JSON мог
+     * быть проставлен вручную или скопирован из другой записи — тогда
+     * удаление стёрло бы чужой снимок. Владение проверяем по папке.
+     */
+    private function ownedPath(Product $product, ?string $url): ?string
+    {
+        return str_starts_with((string) $url, '/storage/catalog/'.$product->id.'/') ? $url : null;
+    }
+
     public function storeImages(Request $request, Product $product): RedirectResponse
     {
         $this->authorize('update', $product);
@@ -50,7 +60,10 @@ class CatalogMediaController extends Controller
         }
 
         unset($images[$data['index']]);
-        $this->media->delete($removed['path'] ?? null, $removed['thumb'] ?? null);
+        $this->media->delete(
+            $this->ownedPath($product, $removed['path'] ?? null),
+            $this->ownedPath($product, $removed['thumb'] ?? null),
+        );
 
         $updates = ['images' => array_values($images)];
         if ($product->texture_path === ($removed['path'] ?? null)) {
@@ -175,6 +188,8 @@ class CatalogMediaController extends Controller
     public function destroyModel(Product $product): RedirectResponse
     {
         $this->authorize('update', $product);
+        // modelFolder всегда собирается из id позиции, поэтому чужого
+        // каталога тут не будет; удаляем как есть.
         $this->media->deleteDirectory($this->modelFolder($product));
         $product->update(['model_path' => null]);
         CatalogService::flushCache();
@@ -217,7 +232,7 @@ class CatalogMediaController extends Controller
         $documents = $product->documents ?? [];
         $removed = $documents[$data['index']] ?? null;
         if ($removed) {
-            $this->media->delete($removed['path'] ?? null);
+            $this->media->delete($this->ownedPath($product, $removed['path'] ?? null));
             unset($documents[$data['index']]);
             $product->update(['documents' => array_values($documents)]);
             CatalogService::flushCache();

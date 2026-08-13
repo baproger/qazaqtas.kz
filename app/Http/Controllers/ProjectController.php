@@ -204,6 +204,12 @@ class ProjectController extends Controller
 
     public function updateStage(Request $request, Project $project): RedirectResponse
     {
+        // Право на просмотр здесь намеренно: доской цеха пользуются
+        // сотрудники, у которых нет project.update (employee, технолог,
+        // снабженец, повар, юрист). Правило — «видишь доску своего цеха,
+        // значит двигаешь карточки в ней»; изоляцию цеха держит
+        // assertWorkshopAccess ниже. Поднимать до update можно только вместе
+        // с выдачей этого права цеховым ролям — это решение владельца.
         $this->authorize('view', $project);
         $this->assertWorkshopAccess($project);
 

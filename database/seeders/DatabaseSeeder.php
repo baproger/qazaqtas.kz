@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -47,11 +48,22 @@ class DatabaseSeeder extends Seeder
             $sales ??= $dept;
         }
 
+        // Пароль берём из окружения. Если его не задали — генерируем случайный
+        // и печатаем один раз: молча оставлять всем известный «password»
+        // на боевом сервере нельзя.
+        $password = (string) env('ADMIN_PASSWORD', '');
+        if ($password === '') {
+            $password = Str::password(16);
+            $this->command?->warn("Пароль администратора не задан в ADMIN_PASSWORD.");
+            $this->command?->warn("Сгенерирован: {$password}");
+            $this->command?->warn('Сохраните его — второй раз он показан не будет.');
+        }
+
         $admin = User::firstOrCreate(
             ['email' => 'admin@qazaqtas.kz'],
             [
                 'name' => 'Администратор',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($password),
                 'department_id' => $sales->id,
                 'language' => 'ru',
                 'is_active' => true,

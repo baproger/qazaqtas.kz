@@ -172,25 +172,19 @@ class MediaService
         return [$data, $keepAlpha ? 'png' : 'jpg'];
     }
 
-    /** Есть ли в файле прозрачность, ради которой стоит держать PNG. */
+    /**
+     * Держать ли файл в PNG.
+     *
+     * Отличить PNG с реальной прозрачностью от полностью непрозрачного можно
+     * только пройдя все пиксели — на снимке 1600×1600 это лишние миллионы
+     * операций на каждую загрузку. Считаем проще: раз загрузили PNG, значит
+     * альфа могла понадобиться, и формат сохраняем. Фотографии приходят
+     * в JPEG и по-прежнему сжимаются.
+     */
     private function hasAlpha(UploadedFile $file): bool
     {
         $info = @getimagesize($file->getRealPath());
-        if (! $info || ! isset($info[2])) {
-            return false;
-        }
-        if ($info[2] !== IMAGETYPE_PNG) {
-            return false;
-        }
 
-        // Палитровый PNG без альфы смысла сохранять в PNG не имеет.
-        $channels = @imagecreatefrompng($file->getRealPath());
-        if (! $channels) {
-            return false;
-        }
-        $truecolor = imageistruecolor($channels);
-        imagedestroy($channels);
-
-        return $truecolor || true;
+        return ($info[2] ?? null) === IMAGETYPE_PNG;
     }
 }
