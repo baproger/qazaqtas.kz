@@ -68,8 +68,30 @@ class HeroStyleTest extends TestCase
             // Цена — минимальная по разделу: это честное «от».
             ->where('heroSlides.0.price', 52000)
             ->where('heroSlides.0.image.path', '/storage/categories/1/a.png')
+            // Порядок запасных подписей: размер первым — он нужнее всего.
             ->where('heroSlides.0.specs.0.pos', 'top-right')
-            ->where('heroSlides.0.specs.0.value', 'F200'));
+            ->where('heroSlides.0.specs.0.value', 'Ø 900 × 700 мм')
+            ->where('heroSlides.0.specs.1.value', 'F200'));
+    }
+
+    public function test_category_specs_win_over_the_fallback(): void
+    {
+        $category = $this->category([
+            'image' => '/storage/categories/1/a.png',
+            // Подписи относятся к снимку категории, а не к позиции каталога.
+            'specs' => [
+                ['label' => 'Диаметр', 'value' => 'Ø 900 мм'],
+                ['label' => 'Высота', 'value' => '700 мм'],
+            ],
+        ]);
+        $this->product($category);
+        Setting::set('site_hero', 'showcase');
+
+        $this->get(route('site.home'))->assertInertia(fn ($p) => $p
+            ->has('heroSlides.0.specs', 2)
+            ->where('heroSlides.0.specs.0.label', 'Диаметр')
+            ->where('heroSlides.0.specs.0.pos', 'top-right')
+            ->where('heroSlides.0.specs.1.label', 'Высота'));
     }
 
     public function test_categories_without_a_photo_never_become_slides(): void
