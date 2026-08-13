@@ -83,3 +83,35 @@ php artisan optimize
 ```bash
 chmod -R 775 storage bootstrap/cache
 ```
+
+## Бэкапы
+
+Фотографии товаров, категорий, объектов и 3D-модели лежат только в
+`storage/app/public` — в git их нет. Без архива этой папки восстановить
+их невозможно.
+
+```bash
+./scripts/backup.sh /var/backups/qazaqtas
+```
+
+Скрипт кладёт рядом дамп базы и `files_*.tar.gz` с загруженными файлами,
+сам подчищает архивы старше 14 дней (`BACKUP_KEEP_DAYS` меняет срок).
+
+По расписанию:
+
+```
+0 3 * * *  /var/www/qazaqtas/scripts/backup.sh /var/backups/qazaqtas
+```
+
+Раз в месяц проверять восстановление: развернуть дамп на копии и открыть
+каталог — фотографии должны быть на месте.
+
+## Сборка фронтенда
+
+`public/build` в репозитории не хранится. Собранные файлы приезжают
+артефактом из GitHub Actions (`.github/workflows/ci.yml`, артефакт `build`)
+либо собираются на сервере:
+
+```bash
+npm ci && npm run build
+```
