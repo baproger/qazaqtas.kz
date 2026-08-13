@@ -326,11 +326,12 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
                     :class="['hero-thumb', i === index ? 'is-active' : '']"
                     @click="select(i)"
                 >
-                    <img :src="slide.image.thumb" :alt="slide.title" loading="lazy" decoding="async" />
-                    <span>
-                        <b>{{ slide.title }}</b>
+                    <img class="hero-thumb-img" :src="slide.image.thumb" :alt="slide.name" loading="lazy" decoding="async" />
+                    <span class="hero-thumb-text">
+                        <b>{{ slide.name }}</b>
                         <em>{{ slide.thumbSpec }}</em>
                     </span>
+                    <span class="hero-thumb-mark" aria-hidden="true" />
                 </button>
             </div>
 

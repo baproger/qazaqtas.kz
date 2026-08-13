@@ -138,6 +138,7 @@ class CatalogService
 
                 return [
                     'id' => $category->slug,
+                    'name' => $category->name,
                     'category' => mb_strtoupper($category->name),
                     'title' => $category->tagline ?: $category->name,
                     'price' => $cheapest ? (float) $cheapest->price : null,
