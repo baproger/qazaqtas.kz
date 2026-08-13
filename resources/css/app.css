@@ -88,21 +88,21 @@
     .amb-warm {
         opacity: var(--amb-warm);
         background-image:
-            radial-gradient(80% 55% at 18% 0%, rgb(var(--glow-warm) / 0.16), transparent 62%),
+            radial-gradient(85% 60% at 18% 0%, rgb(var(--glow-warm) / 0.2), transparent 64%),
             radial-gradient(60% 45% at 88% 12%, rgb(var(--glow-warm) / 0.07), transparent 60%);
     }
     /* Холодный камень: каталог, цех, характеристики. */
     .amb-cool {
         opacity: var(--amb-cool);
         background-image:
-            radial-gradient(70% 55% at 85% 22%, rgb(var(--glow-cool) / 0.18), transparent 64%),
+            radial-gradient(75% 60% at 85% 22%, rgb(var(--glow-cool) / 0.22), transparent 66%),
             radial-gradient(60% 50% at 8% 62%, rgb(var(--glow-cool) / 0.1), transparent 62%);
     }
     /* Глубокая тёплая подсветка под призывом и подвалом. */
     .amb-deep {
         opacity: var(--amb-deep);
         background-image:
-            radial-gradient(90% 60% at 50% 100%, rgb(var(--glow-warm) / 0.2), transparent 64%),
+            radial-gradient(95% 65% at 50% 100%, rgb(var(--glow-warm) / 0.24), transparent 66%),
             radial-gradient(50% 40% at 12% 78%, rgb(var(--glow-cool) / 0.08), transparent 60%);
     }
     /* Содержимое встаёт над светом. */
@@ -524,78 +524,21 @@
         @apply relative isolate;
     }
 
-    /* Тёплый песок — материал, каталог, изделия. */
-    .band-sand {
-        background-image:
-            radial-gradient(70% 45% at 16% 50%, rgb(var(--sand-400) / 0.10), transparent 72%),
-            linear-gradient(180deg,
-                rgb(var(--ink-800) / 0) 0%,
-                rgb(var(--ink-800) / 0.42) 38%,
-                rgb(var(--ink-800) / 0.42) 62%,
-                rgb(var(--ink-800) / 0) 100%);
-    }
-    /* Холодный камень — цех, технология, цифры. */
-    .band-stone {
-        background-image:
-            radial-gradient(60% 45% at 82% 50%, rgb(122 138 154 / 0.10), transparent 72%),
-            linear-gradient(180deg,
-                rgb(var(--ink-800) / 0) 0%,
-                rgb(var(--ink-800) / 0.5) 38%,
-                rgb(var(--ink-800) / 0.5) 62%,
-                rgb(var(--ink-800) / 0) 100%);
-    }
-    /* Шапка раздела. Сверху её граница — край страницы, гасить нечего;
-       вниз она растворяется в фоне. */
-    .band-hero {
-        background-image:
-            radial-gradient(55% 80% at 8% 20%, rgb(var(--sand-400) / 0.14), transparent 62%),
-            radial-gradient(45% 70% at 92% 15%, rgb(122 138 154 / 0.10), transparent 66%),
-            linear-gradient(180deg, rgb(var(--ink-800) / 0.6) 0%, rgb(var(--ink-800) / 0) 100%);
-    }
-    /* Глубокая — под финальным призывом, перед подвалом. */
+    /* Полосы больше не красят секции.
+       Любая заливка обрывается на границе блока — там, где одна кончается
+       непрозрачностью, а следующая начинается нулём, глаз видит ступеньку.
+       Настроение теперь целиком на общем слое света (.site-ambience): он
+       фиксирован, перетекает по прокрутке и границ не знает. Классы
+       оставлены — по ним размечены секции и к ним привязано свечение. */
+    .band-sand,
+    .band-stone,
+    .band-hero,
     .band-deep {
-        background-image:
-            radial-gradient(70% 60% at 50% 90%, rgb(var(--sand-400) / 0.12), transparent 68%),
-            linear-gradient(180deg,
-                rgb(var(--ink-800) / 0) 0%,
-                rgb(var(--ink-800) / 0.45) 55%,
-                rgb(var(--ink-800) / 0.2) 100%);
+        background-image: none;
     }
 }
 
-/* Днём тот же приём, только вместо свечения — плотность бумаги. */
-.site[data-theme='light'] .band-sand {
-    background-image:
-        radial-gradient(70% 45% at 16% 50%, rgb(198 168 112 / 0.16), transparent 72%),
-        linear-gradient(180deg,
-            rgb(255 255 255 / 0) 0%,
-            rgb(255 255 255 / 0.72) 38%,
-            rgb(255 255 255 / 0.72) 62%,
-            rgb(255 255 255 / 0) 100%);
-}
-.site[data-theme='light'] .band-stone {
-    background-image:
-        radial-gradient(60% 45% at 82% 50%, rgb(120 138 158 / 0.12), transparent 72%),
-        linear-gradient(180deg,
-            rgb(255 255 255 / 0) 0%,
-            rgb(255 255 255 / 0.8) 38%,
-            rgb(255 255 255 / 0.8) 62%,
-            rgb(255 255 255 / 0) 100%);
-}
-.site[data-theme='light'] .band-hero {
-    background-image:
-        radial-gradient(55% 80% at 8% 20%, rgb(198 168 112 / 0.18), transparent 62%),
-        radial-gradient(45% 70% at 92% 15%, rgb(120 138 158 / 0.14), transparent 66%),
-        linear-gradient(180deg, rgb(255 255 255 / 0.8) 0%, rgb(255 255 255 / 0) 100%);
-}
-.site[data-theme='light'] .band-deep {
-    background-image:
-        radial-gradient(70% 60% at 50% 90%, rgb(198 168 112 / 0.18), transparent 68%),
-        linear-gradient(180deg,
-            rgb(255 255 255 / 0) 0%,
-            rgb(255 255 255 / 0.7) 55%,
-            rgb(252 250 246 / 0.35) 100%);
-}
+/* Днём полосы тоже не красят секции — фон единый на всю страницу. */
 
 /* --------------------------------------------------------------
    Сегмент-контрол категорий: плавающая панель матового стекла, внутри
@@ -772,17 +715,21 @@
 
 /* Подвал не начинается ступенькой: заливка проявляется из прозрачности,
    поэтому граница с последней секцией не читается линией. */
+/* Заливка набирается медленно, на половину высоты подвала: при коротком
+   разгоне глаз ловил уступ там, где она появлялась. */
 .site-footer {
     background-image: linear-gradient(180deg,
         rgb(var(--ink-800) / 0) 0%,
-        rgb(var(--ink-800) / 0.5) 16%,
-        rgb(var(--ink-800) / 0.72) 100%);
+        rgb(var(--ink-800) / 0.18) 22%,
+        rgb(var(--ink-800) / 0.45) 55%,
+        rgb(var(--ink-800) / 0.62) 100%);
 }
 .site[data-theme='light'] .site-footer {
     background-image: linear-gradient(180deg,
         rgb(255 255 255 / 0) 0%,
-        rgb(255 255 255 / 0.6) 16%,
-        rgb(252 250 246 / 0.9) 100%);
+        rgb(255 255 255 / 0.25) 22%,
+        rgb(255 255 255 / 0.6) 55%,
+        rgb(252 250 246 / 0.85) 100%);
 }
 
 /* --------------------------------------------------------------

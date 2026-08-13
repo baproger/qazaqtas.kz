@@ -187,6 +187,36 @@ class HeroStyleTest extends TestCase
         @unlink($tmp);
     }
 
+    public function test_replacing_a_category_photo_never_touches_a_foreign_file(): void
+    {
+        Storage::fake('public');
+        $this->seed(RolePermissionSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        // Поле указывает на файл товара, а не на собственный снимок категории.
+        Storage::disk('public')->put('catalog/9/foreign.jpg', 'фото товара');
+        $category = $this->category([
+            'image' => '/storage/catalog/9/foreign.jpg',
+            'thumb' => '/storage/catalog/9/foreign-thumb.jpg',
+        ]);
+
+        $canvas = imagecreatetruecolor(120, 120);
+        imagesavealpha($canvas, true);
+        $tmp = tempnam(sys_get_temp_dir(), 'qt').'.png';
+        imagepng($canvas, $tmp);
+        imagedestroy($canvas);
+
+        $this->actingAs($admin)->post(route('catalogCategories.image', $category->id), [
+            'image' => new UploadedFile($tmp, 'render.png', 'image/png', null, true),
+        ])->assertRedirect();
+
+        // Чужой файл обязан остаться на месте.
+        Storage::disk('public')->assertExists('catalog/9/foreign.jpg');
+
+        @unlink($tmp);
+    }
+
     public function test_photographs_are_still_stored_as_jpeg(): void
     {
         Storage::fake('public');

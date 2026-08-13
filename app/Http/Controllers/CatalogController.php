@@ -167,7 +167,7 @@ class CatalogController extends Controller
             'image.mimes' => 'Нужен PNG или WebP с прозрачным фоном: JPG не умеет альфа-канал.',
         ]);
 
-        $media->delete($category->image, $category->thumb);
+        $this->dropOwnedImage($category, $media);
         $stored = $media->storeImage($request->file('image'), 'categories/'.$category->id, $category->name);
 
         $category->update(['image' => $stored['path'], 'thumb' => $stored['thumb']]);
@@ -180,11 +180,28 @@ class CatalogController extends Controller
     {
         $this->authorize('create', Product::class);
 
-        $media->delete($category->image, $category->thumb);
+        $this->dropOwnedImage($category, $media);
         $category->update(['image' => null, 'thumb' => null]);
         CatalogService::flushCache();
 
         return back()->with('success', 'Снимок категории удалён.');
+    }
+
+    /**
+     * Удаляем только те файлы, что лежат в собственной папке категории.
+     *
+     * Путь в поле image мог быть проставлен вручную и указывать на чужой
+     * файл — например, на снимок товара. Тогда замена картинки категории
+     * стёрла бы фотографию из каталога. Владение проверяем по папке.
+     */
+    private function dropOwnedImage(ProductCategory $category, MediaService $media): void
+    {
+        $own = '/storage/categories/'.$category->id.'/';
+
+        $media->delete(
+            str_starts_with((string) $category->image, $own) ? $category->image : null,
+            str_starts_with((string) $category->thumb, $own) ? $category->thumb : null,
+        );
     }
 
     /** @return array<string, mixed> */
