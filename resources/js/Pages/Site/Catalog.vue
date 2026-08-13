@@ -4,7 +4,7 @@ import { Link, router } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import CategoryNav from '@/Components/site/CategoryNav.vue';
-import { favorites, compare, recent, money, observeReveal } from '@/utils/site';
+import { favorites, recent, observeReveal } from '@/utils/site';
 import { usePageLinks } from '@/utils/pagination';
 
 const props = defineProps({
@@ -21,7 +21,6 @@ const sort = ref(props.filters.sort ?? 'popular');
 const min = ref(props.filters.min ?? '');
 const max = ref(props.filters.max ?? '');
 const favIds = ref([]);
-const compareIds = ref([]);
 const recentProducts = ref([]);
 const filtersOpen = ref(false);
 let stopReveal = () => {};
@@ -60,9 +59,6 @@ const reset = () => {
 };
 
 const toggleFavorite = (id) => (favIds.value = favorites.toggle(id));
-const toggleCompare = (id) => (compareIds.value = compare.toggle(id));
-
-const compareProducts = computed(() => props.products.data.filter((p) => compareIds.value.includes(p.id)));
 
 const pageLinks = usePageLinks(() => props.products.links);
 
@@ -81,7 +77,6 @@ watch(() => props.products.data, () => nextTick(() => {
 onMounted(async () => {
     stopReveal = observeReveal();
     favIds.value = favorites.all();
-    compareIds.value = compare.all();
 
     // Недавно просмотренные подтягиваем из ERP по id из localStorage.
     const ids = recent.all();
@@ -178,12 +173,7 @@ onBeforeUnmount(() => stopReveal());
 
                 <!-- Товары -->
                 <div>
-                    <div class="mb-6 flex items-center justify-between text-sm text-sand-100/45">
-                        <p>Найдено: {{ products.total }}</p>
-                        <button v-if="compareIds.length" class="text-sand-300 hover:underline" @click="compareIds = compare.clear() ?? []">
-                            Очистить сравнение ({{ compareIds.length }})
-                        </button>
-                    </div>
+                    <p class="mb-6 text-sm text-sand-100/45">Найдено: {{ products.total }}</p>
 
                     <div v-if="products.data.length" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         <div v-for="p in products.data" :key="p.id" class="reveal flex flex-col">
@@ -192,11 +182,6 @@ onBeforeUnmount(() => stopReveal());
                                 :favorite="favIds.includes(p.id)"
                                 @favorite="toggleFavorite"
                             />
-                            <button
-                                class="mx-auto mt-2 block text-[11px] uppercase tracking-[0.18em] transition"
-                                :class="compareIds.includes(p.id) ? 'text-sand-300' : 'text-sand-100/35 hover:text-sand-100/70'"
-                                @click="toggleCompare(p.id)"
-                            >{{ compareIds.includes(p.id) ? '✓ в сравнении' : 'сравнить' }}</button>
                         </div>
                     </div>
 
@@ -226,31 +211,6 @@ onBeforeUnmount(() => stopReveal());
                             <template v-else>{{ link.label }}</template>
                         </Link>
                     </nav>
-
-                    <!-- Сравнение -->
-                    <section v-if="compareProducts.length > 1" class="mt-20">
-                        <h2 class="display text-2xl text-sand-50">Сравнение</h2>
-                        <div class="card mt-6 overflow-x-auto">
-                            <table class="w-full min-w-[560px] text-sm">
-                                <thead class="bg-white/[0.04] text-left text-xs uppercase tracking-wider text-sand-100/40">
-                                    <tr>
-                                        <th class="px-5 py-3">Позиция</th>
-                                        <th class="px-5 py-3">Цена</th>
-                                        <th class="px-5 py-3">Размер</th>
-                                        <th class="px-5 py-3">Морозостойкость</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-white/5">
-                                    <tr v-for="p in compareProducts" :key="p.id">
-                                        <td class="px-5 py-4 text-sand-50">{{ p.name }}</td>
-                                        <td class="px-5 py-4 text-sand-300">{{ money(p.price) }} / {{ p.unit }}</td>
-                                        <td class="px-5 py-4 text-sand-100/60">{{ p.specs?.size ?? '—' }}</td>
-                                        <td class="px-5 py-4 text-sand-100/60">{{ p.specs?.frost ?? '—' }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
 
                     <!-- Недавно смотрели -->
                     <section v-if="recentProducts.length" class="mt-20">

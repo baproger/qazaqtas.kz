@@ -53,7 +53,6 @@ export const localList = (key, limit = 50) => ({
 });
 
 export const favorites = localList('qt.favorites');
-export const compare = localList('qt.compare', 4);
 export const recent = localList('qt.recent', 8);
 
 /** Плавное появление секций: одна общая IntersectionObserver-обёртка. */

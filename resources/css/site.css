@@ -15,7 +15,9 @@
     overflow-x: auto;
     scrollbar-width: none;
     padding: 0.375rem;
-    border-radius: 9999px;
+    /* Раньше была капсула. Остальные элементы витрины ушли на мягкий
+       прямоугольник, и панель осталась единственной таблеткой на экране. */
+    border-radius: 18px;
     background-color: rgb(var(--card-bg) / var(--card-alpha));
     backdrop-filter: blur(16px) saturate(160%);
     border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));

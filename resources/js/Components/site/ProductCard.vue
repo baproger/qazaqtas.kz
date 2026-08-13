@@ -55,7 +55,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             </Link>
 
             <button
-                class="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-ink-900/70 backdrop-blur transition hover:border-sand-300/60"
+                class="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-ink-900/70 backdrop-blur transition hover:border-sand-300/60"
                 :aria-pressed="favorite"
                 :aria-label="favorite ? 'Убрать из избранного' : 'В избранное'"
                 @click.prevent="favorite = !favorite; emit('favorite', product.id)"
@@ -66,7 +66,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             </button>
 
             <!-- Наличие: важно для решения, поэтому видно сразу на снимке -->
-            <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-ink-900/75 px-2.5 py-1 text-[11px] font-medium text-sand-50 backdrop-blur">
+            <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-ink-900/75 px-2.5 py-1 text-[11px] font-medium text-sand-50 backdrop-blur">
                 <span class="h-1.5 w-1.5 rounded-full" :class="product.in_stock ? 'bg-emerald-400' : 'bg-amber-400'" />
                 {{ product.in_stock ? 'На складе' : 'Под заказ' }}
             </span>
@@ -80,7 +80,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             </h3>
 
             <!-- Размер чипом: сравнивать позиции удобнее, чем в строке текста -->
-            <p v-if="size" class="mt-3 inline-flex w-fit rounded-full bg-white/[0.06] px-2.5 py-1 text-[11px] text-sand-100/60">
+            <p v-if="size" class="mt-3 inline-flex w-fit rounded-lg bg-white/[0.06] px-2.5 py-1 text-[11px] text-sand-100/60">
                 {{ size }}
             </p>
 
@@ -119,7 +119,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                     </button>
                     <Link
                         :href="route('site.product', product.slug)"
-                        class="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full border border-white/12 text-sand-100/70 transition hover:border-sand-300/60 hover:text-sand-50"
+                        class="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[14px] border border-white/12 text-sand-100/70 transition hover:border-sand-300/60 hover:text-sand-50"
                         aria-label="Подробнее о товаре"
                     >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>

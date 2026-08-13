@@ -51,7 +51,9 @@ const place = (el) => {
     pill.value = {
         x: el.offsetLeft,
         scale: (el.offsetWidth || BASE_WIDTH) / BASE_WIDTH,
-        radius: height / 2,
+        // 13px вместо половины высоты: плашка перестаёт быть капсулой и
+        // ложится в общий язык форм витрины.
+        radius: 13,
         ready: true,
     };
 };

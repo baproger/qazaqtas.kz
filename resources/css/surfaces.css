@@ -223,10 +223,14 @@
     /* Главная кнопка: объём даёт вертикальный градиент и блик по верхней
        кромке, при наведении вокруг появляется тёплое свечение. */
     .btn-sand {
-        @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3
+        /* Скругление 14px вместо капсулы: у карточек радиус 20px, и кнопка
+           внутри не должна выглядеть таблеткой из другого набора. */
+        @apply inline-flex items-center justify-center gap-2 rounded-[14px] px-6 py-3
                text-sm font-semibold text-ink-900 focus:outline-none
                focus-visible:ring-2 focus-visible:ring-sand-300/60;
-        background-image: linear-gradient(180deg, rgb(var(--sand-200)) 0%, rgb(var(--sand-300)) 55%, rgb(var(--sand-400)) 100%);
+        /* Тон глубже прежнего: бледный беж на тёмном читался как выцветший,
+           а не как латунь. Верхняя кромка светлая, тело — насыщенное. */
+        background-image: linear-gradient(180deg, rgb(var(--sand-200)) 0%, rgb(var(--sand-400)) 52%, rgb(var(--sand-500)) 100%);
         box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3),
                     inset 0 -1px 0 rgb(0 0 0 / 0.08),
                     0 10px 24px -14px rgb(var(--glow-warm) / 0.55);
@@ -264,7 +268,7 @@
 
     /* Второстепенная — из того же матового стекла, что и карточки. */
     .btn-ghost {
-        @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3
+        @apply inline-flex items-center justify-center gap-2 rounded-[14px] px-6 py-3
                text-sm font-medium text-sand-50 focus:outline-none
                focus-visible:ring-2 focus-visible:ring-sand-300/40;
         background-color: rgb(255 255 255 / 0.05);
@@ -285,6 +289,13 @@
         background-color: rgb(255 255 255 / 0.08);
         box-shadow: 0 0 22px -6px rgb(var(--glow-warm) / 0.22);
     }
+    /* Днём токены sand-* другие: sand-200 там серо-синий, и градиент кнопки
+       начинался с серого, отчего латунь выглядела грязной. Держим весь
+       переход внутри бронзовой части палитры. */
+    .site[data-theme='light'] .btn-sand {
+        background-image: linear-gradient(180deg, rgb(166 132 74) 0%, rgb(var(--sand-300)) 45%, rgb(var(--sand-400)) 100%);
+    }
+
     .site[data-theme='light'] .btn-ghost {
         background-color: rgb(255 255 255 / 0.6);
     }
