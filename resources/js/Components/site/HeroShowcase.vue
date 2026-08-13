@@ -225,7 +225,7 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
     <section
         v-if="slides.length"
         ref="root"
-        class="hero-showcase band band-hero ambient"
+        class="hero-showcase ambient"
         :class="reduced ? 'is-reduced' : ''"
         :style="{ '--dir': direction }"
         aria-roledescription="carousel"
@@ -329,7 +329,7 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
                     <img class="hero-thumb-img" :src="slide.image.thumb" :alt="slide.name" loading="lazy" decoding="async" />
                     <span class="hero-thumb-text">
                         <b>{{ slide.name }}</b>
-                        <em>{{ slide.thumbSpec }}</em>
+                        <em>{{ slide.count }} {{ slide.count === 1 ? 'позиция' : 'позиций' }}</em>
                     </span>
                     <span class="hero-thumb-mark" aria-hidden="true" />
                 </button>

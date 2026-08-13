@@ -143,18 +143,15 @@ class CatalogService
                     'title' => $category->tagline ?: $category->name,
                     'price' => $cheapest ? (float) $cheapest->price : null,
                     'unit' => $cheapest?->unit,
-                    'minOrder' => $cheapest ? (float) ($cheapest->min_order ?: 1) : 1,
                     'lead' => (string) ($category->description ?: $category->tagline),
                     'href' => route('site.catalog', ['category' => $category->slug]),
                     'count' => $category->products_count,
-                    'buyId' => $cheapest?->slug,
                     'image' => [
                         'path' => $category->image,
                         'thumb' => $category->thumb ?: $category->image,
                         'alt' => $category->name.' — изделия из мраморного композита',
                     ],
                     'specs' => $this->heroSpecs($category, $cheapest),
-                    'thumbSpec' => $category->products_count.' позиций',
                 ];
             })
             ->all();

@@ -28,3 +28,7 @@ Thumbs.db
 
 # Локальная база для разработки (SQLite)
 /database/*.sqlite
+
+# Сборка фронтенда. Приезжает артефактом из GitHub Actions либо собирается
+# на сервере: npm ci && npm run build. В репозитории не хранится.
+/public/build

@@ -21,7 +21,7 @@ onBeforeUnmount(() => stop());
 
 <template>
     <SiteLayout :seo="seo">
-        <section class="band band-hero">
+        <section>
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
                 <p class="eyebrow">О заводе</p>
                 <h1 class="display mt-6 max-w-4xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">
@@ -35,7 +35,7 @@ onBeforeUnmount(() => stop());
             </div>
         </section>
 
-        <section class="band band-stone">
+        <section>
             <div class="stat-grid mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-4">
                 <div v-for="s in stats" :key="s.label" class="px-6 py-10 sm:px-8 sm:py-14">
                     <p class="display text-3xl text-sand-50 sm:text-5xl">{{ s.value }}</p>
@@ -63,7 +63,7 @@ onBeforeUnmount(() => stop());
             </ol>
         </section>
 
-        <section class="band band-stone">
+        <section>
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <p class="eyebrow reveal">Преимущества</p>
                 <div class="duo-grid mt-12 grid sm:grid-cols-2">

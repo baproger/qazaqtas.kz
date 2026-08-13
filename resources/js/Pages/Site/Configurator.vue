@@ -173,7 +173,7 @@ onBeforeUnmount(() => scene?.dispose());
                 <!-- Панель управления -->
                 <aside class="space-y-6">
                     <!-- Коллекция -->
-                    <div class="glass rounded-3xl p-5 sm:p-6">
+                    <div class="card p-5 sm:p-6">
                         <p class="eyebrow">Коллекция плитки</p>
                         <div class="mt-4 space-y-2">
                             <button
@@ -193,7 +193,7 @@ onBeforeUnmount(() => scene?.dispose());
                     </div>
 
                     <!-- Цвет -->
-                    <div v-if="collection?.colors?.length" class="glass rounded-3xl p-5 sm:p-6">
+                    <div v-if="collection?.colors?.length" class="card p-5 sm:p-6">
                         <p class="eyebrow">Цвет · {{ color?.name }}</p>
                         <div class="mt-4 flex flex-wrap gap-2.5">
                             <button
@@ -209,7 +209,7 @@ onBeforeUnmount(() => scene?.dispose());
                     </div>
 
                     <!-- Раскладка -->
-                    <div class="glass rounded-3xl p-5 sm:p-6">
+                    <div class="card p-5 sm:p-6">
                         <p class="eyebrow">Раскладка</p>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <button
@@ -227,7 +227,7 @@ onBeforeUnmount(() => scene?.dispose());
                     </div>
 
                     <!-- Размеры -->
-                    <div class="glass rounded-3xl p-5 sm:p-6">
+                    <div class="card p-5 sm:p-6">
                         <p class="eyebrow">Размеры участка, м</p>
                         <div class="mt-4 flex items-center gap-3">
                             <label class="flex-1">
@@ -255,7 +255,7 @@ onBeforeUnmount(() => scene?.dispose());
                     </div>
 
                     <!-- Малые формы -->
-                    <div v-if="accessories.length" class="glass rounded-3xl p-5 sm:p-6">
+                    <div v-if="accessories.length" class="card p-5 sm:p-6">
                         <p class="eyebrow">Добавить малые формы</p>
                         <div class="mt-4 space-y-3">
                             <div v-for="a in accessories" :key="a.id" class="flex items-center gap-3">

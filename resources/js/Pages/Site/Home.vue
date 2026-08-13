@@ -63,9 +63,13 @@ const activeStep = computed(() => {
 const showcase = computed(() => props.hero === 'showcase' && props.heroSlides.length > 0);
 
 /**
- * Снимки брусчатки для слоя глубины. Собираем их из коллекций каталога —
- * отдельного хранилища не заводим: что загружено в ERP, то и на витрине.
- * Пока фото нет, слой просто не отрисовывается.
+ * Снимки брусчатки для слоя глубины над 3D-двором. Собираем их из коллекций
+ * каталога — отдельного хранилища не заводим: что загружено в ERP, то и на
+ * витрине.
+ *
+ * Сейчас у коллекций брусчатки фото нет, поэтому слой не отрисовывается и в
+ * разметку не попадает. Это не мёртвый код: он оживает сам, как только
+ * снимки появятся в «Каталог сайта → Позиции».
  */
 const pavingPhotos = computed(() => props.paving.flatMap((p) => p.images ?? []));
 
@@ -233,7 +237,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Цифры ======================= -->
-        <section class="band band-stone">
+        <section>
             <div class="stat-grid mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-4">
                 <div v-for="s in stats" :key="s.label" class="px-6 py-10 sm:px-8 sm:py-14">
                     <p class="display text-3xl text-sand-50 sm:text-5xl">{{ s.value }}</p>
@@ -243,7 +247,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Каталог по категориям ======================= -->
-        <section class="band band-sand ambient">
+        <section class="ambient">
           <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
@@ -279,7 +283,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Хиты ======================= -->
-        <section v-if="featured.length" class="band band-stone ambient ambient-flip">
+        <section v-if="featured.length" class="ambient ambient-flip">
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <div class="reveal flex flex-wrap items-end justify-between gap-6">
                     <div>
@@ -296,7 +300,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Преимущества ======================= -->
-        <section class="band band-sand">
+        <section>
           <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <p class="eyebrow reveal">Почему композит</p>
             <div class="duo-grid mt-12 grid sm:grid-cols-2">
@@ -309,7 +313,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Производство ======================= -->
-        <section class="band band-stone">
+        <section>
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <div class="reveal max-w-2xl">
                     <p class="eyebrow">Производство</p>
@@ -333,7 +337,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Проекты ======================= -->
-        <section class="band band-sand">
+        <section>
           <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
@@ -384,7 +388,7 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= CTA ======================= -->
-        <section class="band band-deep ambient">
+        <section class="ambient">
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
               <!-- Панель идёт во всю ширину колонки, как остальные блоки.
                    Воздух вокруг заголовка даёт не рамка, а его собственная

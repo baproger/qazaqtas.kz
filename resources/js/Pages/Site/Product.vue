@@ -253,7 +253,7 @@ onMounted(() => {
         </section>
 
         <!-- Похожие -->
-        <section v-if="related.length" class="band band-stone">
+        <section v-if="related.length" >
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8">
                 <h2 class="display text-2xl text-sand-50 sm:text-3xl">Смотрят вместе с этим</h2>
                 <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

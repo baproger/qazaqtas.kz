@@ -116,7 +116,7 @@ onBeforeUnmount(() => stopReveal());
 <template>
     <SiteLayout :seo="seo">
         <!-- Шапка раздела -->
-        <section class="band band-hero">
+        <section>
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
                 <nav class="flex items-center gap-2 text-xs text-sand-100/40" aria-label="Хлебные крошки">
                     <Link :href="route('site.home')" class="transition hover:text-sand-300">Главная</Link>
