@@ -294,12 +294,12 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
                         :class="`is-${spec.pos}`"
                         :style="{ '--d': `${i * 70}ms` }"
                     >
-                        <i class="hero-spec-line" />
-                        <i class="hero-spec-dot" />
                         <span class="hero-spec-pill">
                             <b>{{ spec.value }}</b>
                             <em>{{ spec.label }}</em>
                         </span>
+                        <i class="hero-spec-line" />
+                        <i class="hero-spec-dot" />
                     </li>
                 </ul>
             </div>

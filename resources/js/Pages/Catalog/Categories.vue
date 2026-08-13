@@ -21,13 +21,18 @@ const form = useForm({
     accent: '#C8B79A',
     order: 0,
     is_active: true,
+    specs: [],
 });
+
+/** Четыре подписи к снимку — ровно столько мест на витрине. */
+const emptySpecs = () => Array.from({ length: 4 }, () => ({ label: '', value: '' }));
 
 const openCreate = () => {
     editing.value = null;
     form.reset();
     form.clearErrors();
     form.order = props.categories.length;
+    form.specs = emptySpecs();
     showForm.value = true;
 };
 
@@ -42,6 +47,10 @@ const openEdit = (category) => {
         accent: category.accent ?? '#C8B79A',
         order: category.order ?? 0,
         is_active: category.is_active,
+        specs: emptySpecs().map((row, i) => ({
+            label: category.specs?.[i]?.label ?? '',
+            value: category.specs?.[i]?.value ?? '',
+        })),
     });
     showForm.value = true;
 };
@@ -85,6 +94,13 @@ const dropImage = (category) => {
     if (!confirm('Удалить снимок категории?')) return;
     router.delete(route('catalogCategories.imageDestroy', category.id), { preserveScroll: true });
 };
+
+const specHints = [
+    { label: 'Размер', value: '1000 × 200 × 80 мм' },
+    { label: 'Морозостойкость', value: 'F200' },
+    { label: 'Прочность', value: 'B30' },
+    { label: 'Цвет', value: 'сквозной, 6 оттенков' },
+];
 
 const withoutImage = computed(() => props.categories.filter((c) => !c.image).length);
 </script>
@@ -194,6 +210,26 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
                         <input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-indigo-600" />
                         Показывать на сайте
                     </label>
+                </div>
+
+                <div class="mt-6 border-t border-slate-100 pt-5">
+                    <p class="text-sm font-medium text-slate-900">Подписи к снимку</p>
+                    <p class="mt-1 text-xs text-slate-400">
+                        Выноски вокруг изделия на витрине. Пишите то, что относится
+                        <b>к этому кадру</b>: размер именно с фото, а не самой дешёвой позиции.
+                        Пустые строки не показываются. Порядок — по часовой стрелке:
+                        справа сверху, слева, справа снизу, снизу.
+                    </p>
+
+                    <div class="mt-3 space-y-2">
+                        <div v-for="(row, i) in form.specs" :key="i" class="grid gap-2 sm:grid-cols-[1fr_1.4fr]">
+                            <TextInput v-model="row.label" :placeholder="specHints[i].label" />
+                            <TextInput v-model="row.value" :placeholder="specHints[i].value" />
+                        </div>
+                    </div>
+                    <p class="mt-2 text-[11px] text-slate-400">
+                        Если оставить всё пустым, подписи соберутся из характеристик самой дешёвой позиции раздела.
+                    </p>
                 </div>
 
                 <p v-if="!editing" class="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">

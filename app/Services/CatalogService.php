@@ -153,7 +153,7 @@ class CatalogService
                         'thumb' => $category->thumb ?: $category->image,
                         'alt' => $category->name.' — изделия из мраморного композита',
                     ],
-                    'specs' => $this->heroSpecs($cheapest),
+                    'specs' => $this->heroSpecs($category, $cheapest),
                     'thumbSpec' => $category->products_count.' позиций',
                 ];
             })
@@ -161,28 +161,45 @@ class CatalogService
     }
 
     /**
-     * Выноски вокруг предмета. Позиция задаётся порядком: ERP хранит
-     * характеристики без координат, а на макете их ровно четыре места.
+     * Выноски вокруг предмета.
+     *
+     * Сначала берём подписи, заданные у самой категории — они относятся к её
+     * снимку. Если их нет, собираем из характеристик самой дешёвой позиции
+     * раздела: лучше показать общие данные, чем пустоту.
+     *
+     * Позиция задаётся порядком: на макете под выноски ровно четыре места.
      *
      * @return array<int, array{label: string, value: string, pos: string}>
      */
-    private function heroSpecs(?Product $p): array
+    private function heroSpecs(ProductCategory $category, ?Product $fallback): array
     {
-        if (! $p) {
+        $positions = ['top-right', 'left', 'right', 'bottom'];
+
+        $own = collect($category->specs ?: [])
+            ->filter(fn ($row) => is_array($row) && filled($row['label'] ?? null) && filled($row['value'] ?? null))
+            ->values();
+
+        if ($own->isNotEmpty()) {
+            return $own->take(count($positions))
+                ->map(fn (array $row, int $i) => [
+                    'label' => (string) $row['label'],
+                    'value' => (string) $row['value'],
+                    'pos' => $positions[$i],
+                ])
+                ->all();
+        }
+
+        if (! $fallback) {
             return [];
         }
 
-        $specs = $p->specs ?: [];
+        $specs = $fallback->specs ?: [];
         $candidates = [
-            ['label' => 'Морозостойкость', 'value' => $specs['frost'] ?? null],
-            ['label' => 'Толщина', 'value' => isset($specs['thickness_mm']) ? $specs['thickness_mm'].' мм' : null],
-            ['label' => 'Штук в м²', 'value' => isset($specs['pieces_per_m2']) ? str_replace('.', ',', (string) $specs['pieces_per_m2']) : null],
-            ['label' => 'Прочность', 'value' => $specs['strength'] ?? null],
             ['label' => 'Размер', 'value' => $specs['size'] ?? null],
-            ['label' => 'Цвет', 'value' => count($p->colors ?: []) ? 'сквозной, '.count($p->colors).' оттенков' : null],
+            ['label' => 'Морозостойкость', 'value' => $specs['frost'] ?? null],
+            ['label' => 'Прочность', 'value' => $specs['strength'] ?? null],
+            ['label' => 'Цвет', 'value' => count($fallback->colors ?: []) ? 'сквозной, '.count($fallback->colors).' оттенков' : null],
         ];
-
-        $positions = ['top-right', 'left', 'right', 'bottom'];
 
         return collect($candidates)
             ->filter(fn (array $c) => filled($c['value']))

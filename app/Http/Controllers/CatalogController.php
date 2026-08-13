@@ -150,6 +150,7 @@ class CatalogController extends Controller
                     'is_active' => $c->is_active,
                     'image' => $c->image,
                     'thumb' => $c->thumb,
+                    'specs' => $c->specs ?: [],
                     'products_count' => $c->products_count,
                 ]),
         ]);
@@ -195,6 +196,10 @@ class CatalogController extends Controller
             'tagline' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'accent' => ['nullable', 'string', 'max:20'],
+            // До четырёх подписей к снимку категории: больше мест на макете нет.
+            'specs' => ['nullable', 'array', 'max:4'],
+            'specs.*.label' => ['nullable', 'string', 'max:40'],
+            'specs.*.value' => ['nullable', 'string', 'max:60'],
             'order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
         ]);

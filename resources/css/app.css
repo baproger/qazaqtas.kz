@@ -1092,6 +1092,9 @@
 }
 
 /* --- Выноски ------------------------------------------------------ */
+/* Каждая выноска — полоса от края кадра к предмету: подпись стоит снаружи,
+   линия тянется внутрь, точка садится на изделие. Раньше линия была
+   коротким огрызком у самой подписи, и связи с предметом не читалось. */
 .hero-specs {
     position: absolute;
     inset: 0;
@@ -1106,61 +1109,90 @@
     animation: hero-spec-in 380ms var(--ease) var(--d, 0ms) both;
 }
 @keyframes hero-spec-in {
-    from { opacity: 0; transform: scale(0.96); }
+    from { opacity: 0; transform: translateY(6px) scale(0.97); }
     to { opacity: 1; transform: none; }
 }
 .is-reduced .hero-spec {
     animation: hero-fade 150ms linear both;
 }
-.hero-spec.is-top-right { top: 12%; right: 2%; }
-.hero-spec.is-left { top: 46%; left: 0; flex-direction: row-reverse; }
-.hero-spec.is-right { top: 62%; right: 2%; }
-.hero-spec.is-bottom { bottom: 8%; left: 50%; transform: translateX(-50%); }
-.hero-spec.is-bottom { animation-name: hero-spec-in-bottom; }
-@keyframes hero-spec-in-bottom {
-    from { opacity: 0; transform: translateX(-50%) scale(0.96); }
-    to { opacity: 1; transform: translateX(-50%); }
+
+/* Четыре места вокруг предмета. Высоты подобраны под кадр, где изделие
+   стоит по центру и занимает примерно от 20% до 85% высоты. */
+.hero-spec.is-top-right {
+    top: 14%;
+    right: 0;
+    width: 46%;
+    flex-direction: row-reverse;
+}
+.hero-spec.is-right {
+    top: 58%;
+    right: 0;
+    width: 42%;
+    flex-direction: row-reverse;
+}
+.hero-spec.is-left {
+    top: 40%;
+    left: 0;
+    width: 42%;
+}
+.hero-spec.is-bottom {
+    bottom: 8%;
+    left: 4%;
+    width: 46%;
 }
 
+/* Линия занимает всё, что осталось между подписью и точкой, — поэтому она
+   всегда достаёт до предмета, какой бы длины ни оказалась подпись. */
 .hero-spec-line {
-    display: block;
-    width: 2.5rem;
+    flex: 1;
+    min-width: 1.5rem;
     height: 1px;
-    background: linear-gradient(90deg, rgb(var(--sand-300) / 0.6), transparent);
+    background: linear-gradient(90deg, rgb(var(--sand-300) / 0.15), rgb(var(--sand-300) / 0.7));
     transform: scaleX(0);
-    transform-origin: right center;
-    animation: hero-line-in 320ms var(--ease) var(--d, 0ms) both;
+    transform-origin: left center;
+    animation: hero-line-in 420ms var(--ease) calc(var(--d, 0ms) + 120ms) both;
 }
-.hero-spec.is-left .hero-spec-line,
-.hero-spec.is-bottom .hero-spec-line { transform-origin: left center; }
+.hero-spec.is-top-right .hero-spec-line,
+.hero-spec.is-right .hero-spec-line {
+    background: linear-gradient(270deg, rgb(var(--sand-300) / 0.15), rgb(var(--sand-300) / 0.7));
+    transform-origin: right center;
+}
 @keyframes hero-line-in {
     to { transform: scaleX(1); }
 }
+
+/* Точка садится на изделие и подсвечивается кольцом — видно, к чему подпись. */
 .hero-spec-dot {
-    width: 5px;
-    height: 5px;
+    position: relative;
+    width: 6px;
+    height: 6px;
+    flex-shrink: 0;
     border-radius: 9999px;
     background: rgb(var(--sand-300));
+    box-shadow: 0 0 0 4px rgb(var(--sand-300) / 0.14);
     transform: scale(0);
-    animation: hero-dot-in 200ms var(--ease) calc(var(--d, 0ms) + 320ms) both;
+    animation: hero-dot-in 260ms var(--ease) calc(var(--d, 0ms) + 420ms) both;
 }
 @keyframes hero-dot-in {
     to { transform: scale(1); }
 }
+
 .hero-spec-pill {
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
+    max-width: 62%;
     white-space: nowrap;
     border-radius: 14px;
-    padding: 0.5rem 0.85rem;
+    padding: 0.5rem 0.9rem;
     background-color: rgb(var(--card-bg) / var(--card-alpha));
     backdrop-filter: blur(18px) saturate(160%);
     border: 1px solid rgb(var(--card-border) / var(--card-border-alpha));
-    box-shadow: var(--card-shadow);
 }
 .hero-spec-pill b {
     font-size: 0.9375rem;
     font-weight: 600;
+    line-height: 1.2;
     color: rgb(var(--sand-50));
 }
 .hero-spec-pill em {
