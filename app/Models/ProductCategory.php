@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 /** Категория каталога (тротуарная плитка, бордюры, МАФ…). Ведётся в ERP. */
 class ProductCategory extends Model
 {
-    protected $fillable = ['name', 'slug', 'tagline', 'description', 'image', 'thumb', 'specs', 'accent', 'order', 'is_active'];
+    protected $fillable = ['name', 'slug', 'tagline', 'description', 'image', 'thumb', 'webp', 'specs', 'accent', 'order', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean', 'specs' => 'array'];
 

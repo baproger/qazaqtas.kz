@@ -87,8 +87,9 @@ const tiles = computed(() => {
 
 <template>
     <div class="concrete relative overflow-hidden bg-ink-700" :class="[ratio, shape]">
+        <picture v-if="image">
+            <source v-if="image.webp" :srcset="image.webp_thumb ? `${image.webp_thumb} 600w, ${image.webp} 1600w` : image.webp" sizes="(max-width: 640px) 100vw, 33vw" type="image/webp" />
         <img
-            v-if="image"
             :src="image.path"
             :srcset="image.thumb ? `${image.thumb} 600w, ${image.path} 1600w` : undefined"
             sizes="(max-width: 640px) 100vw, 33vw"
@@ -97,6 +98,7 @@ const tiles = computed(() => {
             decoding="async"
             class="h-full w-full object-cover transition-transform duration-700 ease-premium group-hover:scale-105"
         />
+        </picture>
         <!-- Фото товаров часто сняты на белом: лёгкая виньетка сажает снимок
              в карточку. Днём она мягче — иначе съедает светлый фон кадра. -->
         <div v-if="image" class="photo-veil pointer-events-none absolute inset-0" />

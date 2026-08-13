@@ -277,14 +277,18 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
             >
                 <div class="hero-glow" aria-hidden="true" />
 
-                <img
-                    :key="current.image.path"
-                    class="hero-img"
-                    :src="current.image.path"
-                    :alt="current.image.alt"
-                    :loading="index === 0 ? 'eager' : 'lazy'"
-                    decoding="async"
-                />
+                <!-- WebP берётся первым, исходный PNG остаётся запасным для
+                     браузеров, которые его не понимают. -->
+                <picture :key="current.image.path">
+                    <source v-if="current.image.webp" :srcset="current.image.webp" type="image/webp" />
+                    <img
+                        class="hero-img"
+                        :src="current.image.path"
+                        :alt="current.image.alt"
+                        :loading="index === 0 ? 'eager' : 'lazy'"
+                        decoding="async"
+                    />
+                </picture>
 
                 <ul class="hero-specs" aria-hidden="true">
                     <li

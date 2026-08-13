@@ -81,8 +81,20 @@ const channels = computed(() => {
 const open = ref(false);
 const root = ref(null);
 
-const toggle = () => (open.value = !open.value);
-const close = () => (open.value = false);
+/**
+ * Волна проходит четыре раза и затихает. Ключ меняется при каждом закрытии
+ * меню — Vue пересоздаёт элемент, и анимация начинается заново.
+ */
+const pulseKey = ref(0);
+
+const toggle = () => {
+    open.value = !open.value;
+    if (!open.value) pulseKey.value++;
+};
+const close = () => {
+    if (open.value) pulseKey.value++;
+    open.value = false;
+};
 
 /** Клик мимо и Escape закрывают меню — иначе оно живёт своей жизнью. */
 const onPointerDown = (event) => {
@@ -150,7 +162,7 @@ onBeforeUnmount(() => {
             @click="toggle"
         >
             <!-- Волна привлекает внимание, но только пока меню закрыто -->
-            <span v-if="!open" class="socialbtn-pulse" aria-hidden="true" />
+            <span v-if="!open" :key="pulseKey" class="socialbtn-pulse" aria-hidden="true" />
 
             <svg v-if="!open" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.2 9.2 0 0 1-2.6-.4L4 21l1.6-4.2A8.3 8.3 0 0 1 4 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 8.4Z" />

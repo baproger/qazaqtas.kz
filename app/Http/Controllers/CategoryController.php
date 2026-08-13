@@ -88,7 +88,11 @@ class CategoryController extends Controller
         $this->dropOwnedImage($category, $media);
         $stored = $media->storeImage($request->file('image'), 'categories/'.$category->id, $category->name);
 
-        $category->update(['image' => $stored['path'], 'thumb' => $stored['thumb']]);
+        $category->update([
+            'image' => $stored['path'],
+            'thumb' => $stored['thumb'],
+            'webp' => $stored['webp'] ?? null,
+        ]);
         CatalogService::flushCache();
 
         return back()->with('success', 'Снимок категории обновлён.');
@@ -99,7 +103,7 @@ class CategoryController extends Controller
         $this->authorize('update', $category);
 
         $this->dropOwnedImage($category, $media);
-        $category->update(['image' => null, 'thumb' => null]);
+        $category->update(['image' => null, 'thumb' => null, 'webp' => null]);
         CatalogService::flushCache();
 
         return back()->with('success', 'Снимок категории удалён.');
@@ -119,6 +123,7 @@ class CategoryController extends Controller
         $media->delete(
             str_starts_with((string) $category->image, $own) ? $category->image : null,
             str_starts_with((string) $category->thumb, $own) ? $category->thumb : null,
+            str_starts_with((string) $category->webp, $own) ? $category->webp : null,
         );
     }
 

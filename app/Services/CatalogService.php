@@ -124,6 +124,15 @@ class CatalogService
      */
     public function heroSlides(): array
     {
+        // Слайды считались на каждой загрузке главной: запрос по категориям
+        // плюс отдельный поиск самой дешёвой позиции в каждой. Кладём в кэш
+        // своим ключом — правка позиции сбрасывает его вместе с остальными.
+        return Cache::remember('catalog.hero_slides', 3600, fn () => $this->buildHeroSlides());
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function buildHeroSlides(): array
+    {
         return ProductCategory::query()
             ->where('is_active', true)
             ->whereNotNull('image')
@@ -149,6 +158,7 @@ class CatalogService
                     'image' => [
                         'path' => $category->image,
                         'thumb' => $category->thumb ?: $category->image,
+                        'webp' => $category->webp,
                         'alt' => $category->name.' — изделия из мраморного композита',
                     ],
                     'specs' => $this->heroSpecs($category, $cheapest),
@@ -294,5 +304,6 @@ class CatalogService
     {
         Cache::forget('catalog.categories');
         Cache::forget('catalog.price_bounds');
+        Cache::forget('catalog.hero_slides');
     }
 }

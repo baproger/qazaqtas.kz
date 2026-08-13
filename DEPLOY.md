@@ -115,3 +115,27 @@ chmod -R 775 storage bootstrap/cache
 ```bash
 npm ci && npm run build
 ```
+
+## Кэш статики (nginx)
+
+Собранные файлы и загруженные снимки не меняются под теми же именами —
+Vite добавляет хэш в имя, MediaService генерирует случайное. Значит их
+можно кэшировать навсегда.
+
+```nginx
+location /build/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+}
+
+location /storage/ {
+    expires 30d;
+    add_header Cache-Control "public";
+    access_log off;
+}
+```
+
+Рядом с каждым снимком лежит копия в WebP — он легче исходника примерно
+вдвое и держит прозрачность. Витрина отдаёт его через `<picture>`,
+исходный PNG или JPEG остаётся запасным для старых браузеров.

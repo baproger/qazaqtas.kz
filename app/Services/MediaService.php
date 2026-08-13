@@ -42,11 +42,24 @@ class MediaService
         Storage::disk('public')->put($webPath, $web);
         Storage::disk('public')->put($thumbPath, $thumb);
 
-        return [
+        // Рядом кладём WebP: он легче и PNG, и JPEG, а прозрачность держит.
+        // Исходный файл остаётся — браузеры без поддержки берут его.
+        $result = [
             'path' => Storage::url($webPath),
             'thumb' => Storage::url($thumbPath),
             'alt' => $alt,
         ];
+
+        if ($webp = $this->toWebp($web)) {
+            Storage::disk('public')->put("{$dir}/{$name}.webp", $webp);
+            $result['webp'] = Storage::url("{$dir}/{$name}.webp");
+        }
+        if ($webpThumb = $this->toWebp($thumb)) {
+            Storage::disk('public')->put("{$dir}/{$name}-thumb.webp", $webpThumb);
+            $result['webp_thumb'] = Storage::url("{$dir}/{$name}-thumb.webp");
+        }
+
+        return $result;
     }
 
     /** Файл как есть (GLB-модель, PDF-документ) — без обработки. */
@@ -170,6 +183,28 @@ class MediaService
         imagedestroy($source);
 
         return [$data, $keepAlpha ? 'png' : 'jpg'];
+    }
+
+    /** Перекодировка в WebP. null — если формат в системе недоступен. */
+    private function toWebp(string $data): ?string
+    {
+        if (! function_exists('imagewebp')) {
+            return null;
+        }
+
+        $image = @imagecreatefromstring($data);
+        if (! $image) {
+            return null;
+        }
+
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+
+        ob_start();
+        $ok = imagewebp($image, null, 82);
+        $result = (string) ob_get_clean();
+
+        return $ok && $result !== '' ? $result : null;
     }
 
     /**
