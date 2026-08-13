@@ -47,13 +47,13 @@ onUnmounted(() => { clearInterval(timer); document.removeEventListener('visibili
             </div>
             <div v-if="!messages.length" class="flex flex-col items-center gap-2 pt-10 text-center">
                 <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
-                <span class="text-sm text-slate-400">Обсуждение по сделке — напишите первым</span>
+                <span class="text-sm text-slate-400">{{ $e('Обсуждение по сделке — напишите первым') }}</span>
             </div>
         </div>
         <div class="mt-3 flex gap-2">
-            <input v-model="form.message" @keyup.enter="send" placeholder="Сообщение по сделке…"
+            <input v-model="form.message" @keyup.enter="send" :placeholder="$e('Сообщение по сделке…')"
                 class="flex-1 rounded-lg border-slate-300 text-sm shadow-sm transition duration-150 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
-            <PrimaryButton :disabled="form.processing || !form.message.trim()" @click="send">Отправить</PrimaryButton>
+            <PrimaryButton :disabled="form.processing || !form.message.trim()" @click="send">{{ $e('Отправить') }}</PrimaryButton>
         </div>
     </div>
 </template>

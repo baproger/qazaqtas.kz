@@ -18,61 +18,61 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
 </script>
 
 <template>
-    <Head title="Настройки" />
+    <Head :title="$e('Настройки')" />
     <AppLayout>
         <template #header>{{ $t('page.settings', 'Настройки системы') }}</template>
 
         <div class="mb-4 flex gap-2 border-b">
-            <Link :href="route('settings.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">Общие</Link>
-            <Link :href="route('stages.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Этапы</Link>
-            <Link :href="route('screens.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Экраны</Link>
-            <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Доп. поля</Link>
-            <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Сайт</Link>
+            <Link :href="route('settings.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">{{ $e('Общие') }}</Link>
+            <Link :href="route('stages.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Этапы') }}</Link>
+            <Link :href="route('screens.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Экраны') }}</Link>
+            <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Доп. поля') }}</Link>
+            <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Сайт') }}</Link>
         </div>
 
         <div class="max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
             <div>
-                <InputLabel value="Название компании" />
+                <InputLabel :value="$e('Название компании')" />
                 <TextInput v-model="form.company_name" class="mt-1 w-full" />
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <InputLabel value="Валюта" />
+                    <InputLabel :value="$e('Валюта')" />
                     <TextInput v-model="form.currency" class="mt-1 w-full" />
                 </div>
                 <div>
-                    <InputLabel value="Язык по умолчанию" />
+                    <InputLabel :value="$e('Язык по умолчанию')" />
                     <select v-model="form.default_locale" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
-                        <option value="ru">Русский</option>
-                        <option value="kk">Қазақша</option>
+                        <option value="kk">{{ $e('Қазақша (KZ)') }}</option>
+                        <option value="ru">{{ $e('Русский (RU)') }}</option>
                     </select>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <InputLabel value="Налог, % с суммы сделок" />
+                    <InputLabel :value="$e('Налог, % с суммы сделок')" />
                     <TextInput v-model="form.tax_percent" type="number" step="0.1" class="mt-1 w-full" />
                 </div>
                 <div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-500 ring-1 ring-slate-200">
-                    <div class="font-semibold text-slate-600">Бонус сотрудника — по марже сделки (фиксировано):</div>
-                    до 10% — нет · 11–15% — 5% · 16–20% — 7% · 21–30% — 10% · 31–40% — 13% · от 41% — 15% от остатка
+                    <div class="font-semibold text-slate-600">{{ $e('Бонус сотрудника — по марже сделки (фиксировано):') }}</div>
+                    {{ $e('до 10% — нет · 11–15% — 5% · 16–20% — 7% · 21–30% — 10% · 31–40% — 13% · от 41% — 15% от остатка') }}
                 </div>
             </div>
             <label class="flex items-center gap-2 text-sm">
                 <input type="checkbox" v-model="form.auto_create_project" class="rounded border-slate-300 text-indigo-600" />
-                Автоматически создавать проект при переходе сделки в «Оплата успешно»
+                {{ $e('Автоматически создавать проект при переходе сделки в «Оплата успешно»') }}
             </label>
 
             <label class="flex items-start gap-2 text-sm text-slate-700">
                 <input type="checkbox" v-model="form.configurator_enabled" class="mt-0.5 rounded border-slate-300 text-indigo-600" />
                 <span>
-                    Показывать 3D-конфигуратор двора на сайте
+                    {{ $e('Показывать 3D-конфигуратор двора на сайте') }}
                     <span class="block text-xs text-slate-400">
-                        Пока выключен, пункт скрыт в меню, а страница отдаёт 404
+                        {{ $e('Пока выключен, пункт скрыт в меню, а страница отдаёт 404') }}
                     </span>
                 </span>
             </label>
-            <div class="pt-2"><PrimaryButton :disabled="form.processing" @click="save">Сохранить</PrimaryButton></div>
+            <div class="pt-2"><PrimaryButton :disabled="form.processing" @click="save">{{ $e('Сохранить') }}</PrimaryButton></div>
         </div>
     </AppLayout>
 </template>

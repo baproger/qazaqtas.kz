@@ -6,6 +6,10 @@ import ProductCard from '@/Components/site/ProductCard.vue';
 import CategoryNav from '@/Components/site/CategoryNav.vue';
 import { favorites, recent, observeReveal } from '@/utils/site';
 import { usePageLinks } from '@/utils/pagination';
+import { useT, useSiteRoute } from '@/composables/useTranslations';
+
+const t = useT();
+const { siteRoute } = useSiteRoute();
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -26,15 +30,17 @@ const filtersOpen = ref(false);
 let stopReveal = () => {};
 let searchTimer = null;
 
-const sorts = [
-    { key: 'popular', label: 'Популярные' },
-    { key: 'price_asc', label: 'Сначала дешевле' },
-    { key: 'price_desc', label: 'Сначала дороже' },
-    { key: 'name', label: 'По названию' },
-];
+// Подписи сортировки считаются заново при смене языка — литеральный массив
+// остался бы на языке первой загрузки.
+const sorts = computed(() => [
+    { key: 'popular', label: t('site.catalog.sort.popular') },
+    { key: 'price_asc', label: t('site.catalog.sort.price_asc') },
+    { key: 'price_desc', label: t('site.catalog.sort.price_desc') },
+    { key: 'name', label: t('site.catalog.sort.name') },
+]);
 
 const apply = (extra = {}) => {
-    router.get(route('site.catalog'), {
+    router.get(siteRoute('site.catalog'), {
         category: props.filters.category || undefined,
         search: search.value || undefined,
         sort: sort.value !== 'popular' ? sort.value : undefined,
@@ -55,7 +61,7 @@ const reset = () => {
     sort.value = 'popular';
     min.value = '';
     max.value = '';
-    router.get(route('site.catalog'), {}, { preserveScroll: true });
+    router.get(siteRoute('site.catalog'), {}, { preserveScroll: true });
 };
 
 const toggleFavorite = (id) => (favIds.value = favorites.toggle(id));
@@ -82,7 +88,7 @@ onMounted(async () => {
     const ids = recent.all();
     if (ids.length) {
         try {
-            const res = await fetch(`${route('site.recent')}?ids=${ids.join(',')}`, { headers: { Accept: 'application/json' } });
+            const res = await fetch(`${siteRoute('site.recent')}?ids=${ids.join(',')}`, { headers: { Accept: 'application/json' } });
             recentProducts.value = res.ok ? await res.json() : [];
         } catch {
             recentProducts.value = [];
@@ -98,20 +104,20 @@ onBeforeUnmount(() => stopReveal());
         <!-- Шапка раздела -->
         <section>
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
-                <nav class="flex items-center gap-2 text-xs text-sand-100/40" aria-label="Хлебные крошки">
-                    <Link :href="route('site.home')" class="transition hover:text-sand-300">Главная</Link>
+                <nav class="flex items-center gap-2 text-xs text-sand-100/40" :aria-label="$t('site.a11y.breadcrumbs')">
+                    <Link :href="$r('site.home')" class="transition hover:text-sand-300">{{ $t('site.nav.home') }}</Link>
                     <span>/</span>
-                    <Link :href="route('site.catalog')" class="transition hover:text-sand-300">Каталог</Link>
+                    <Link :href="$r('site.catalog')" class="transition hover:text-sand-300">{{ $t('site.nav.catalog') }}</Link>
                     <template v-if="currentCategory">
                         <span>/</span><span class="text-sand-100/70">{{ currentCategory.name }}</span>
                     </template>
                 </nav>
 
                 <h1 class="display mt-6 max-w-3xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">
-                    {{ currentCategory?.name ?? 'Каталог изделий' }}
+                    {{ currentCategory?.name ?? $t('site.catalog.title') }}
                 </h1>
                 <p class="mt-5 max-w-2xl text-sm leading-relaxed text-sand-100/55 sm:text-base">
-                    {{ currentCategory?.description ?? 'Тротуарная плитка, бордюры, вазоны, скамьи, урны и облицовка из мраморного композита собственного производства.' }}
+                    {{ currentCategory?.description ?? $t('site.catalog.lead') }}
                 </p>
             </div>
         </section>
@@ -131,22 +137,22 @@ onBeforeUnmount(() => stopReveal());
                         class="btn-ghost w-full lg:hidden"
                         :aria-expanded="filtersOpen"
                         @click="filtersOpen = !filtersOpen"
-                    >{{ filtersOpen ? 'Скрыть фильтры' : 'Фильтры и поиск' }}</button>
+                    >{{ filtersOpen ? $t('site.catalog.filters_hide') : $t('site.catalog.filters_show') }}</button>
 
                     <div :class="['card mt-4 space-y-8 p-6 lg:mt-0 lg:block', filtersOpen ? 'block' : 'hidden']">
                         <div>
-                            <label for="q" class="eyebrow">Поиск</label>
+                            <label for="q" class="eyebrow">{{ $t('site.catalog.search') }}</label>
                             <input
                                 id="q"
                                 v-model="search"
                                 type="search"
-                                placeholder="Плитка, бордюр, вазон…"
+                                :placeholder="$t('site.catalog.search_hint')"
                                 class="mt-3 w-full rounded-xl border-white/12 bg-white/[0.04] px-4 py-3 text-sm text-sand-50 placeholder:text-sand-100/30 focus:border-sand-300 focus:ring-0"
                             />
                         </div>
 
                         <div>
-                            <p class="eyebrow">Цена, ₸</p>
+                            <p class="eyebrow">{{ $t('site.catalog.price') }}</p>
                             <div class="mt-3 flex items-center gap-2">
                                 <input v-model="min" type="number" :placeholder="String(Math.round(bounds.min))" class="w-full rounded-xl border-white/12 bg-white/[0.04] px-3 py-2.5 text-sm text-sand-50 focus:border-sand-300 focus:ring-0" />
                                 <span class="text-sand-100/30">—</span>
@@ -155,7 +161,7 @@ onBeforeUnmount(() => stopReveal());
                         </div>
 
                         <div>
-                            <p class="eyebrow">Сортировка</p>
+                            <p class="eyebrow">{{ $t('site.catalog.sort_label') }}</p>
                             <div class="mt-3 space-y-1.5">
                                 <button
                                     v-for="s in sorts"
@@ -167,13 +173,13 @@ onBeforeUnmount(() => stopReveal());
                             </div>
                         </div>
 
-                        <button class="text-sm text-sand-300 underline-offset-4 hover:underline" @click="reset">Сбросить всё</button>
+                        <button class="text-sm text-sand-300 underline-offset-4 hover:underline" @click="reset">{{ $t('site.catalog.reset_all') }}</button>
                     </div>
                 </aside>
 
                 <!-- Товары -->
                 <div>
-                    <p class="mb-6 text-sm text-sand-100/45">Найдено: {{ products.total }}</p>
+                    <p class="mb-6 text-sm text-sand-100/45">{{ $t('site.catalog.found', null, { count: products.total }) }}</p>
 
                     <div v-if="products.data.length" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                         <div v-for="p in products.data" :key="p.id" class="reveal flex flex-col">
@@ -186,9 +192,9 @@ onBeforeUnmount(() => stopReveal());
                     </div>
 
                     <div v-else class="card px-8 py-20 text-center">
-                        <p class="display text-2xl text-sand-50">Ничего не нашлось</p>
-                        <p class="mt-3 text-sm text-sand-100/50">Попробуйте изменить фильтры или сбросить их.</p>
-                        <button class="btn-ghost mt-8" @click="reset">Сбросить фильтры</button>
+                        <p class="display text-2xl text-sand-50">{{ $t('site.catalog.empty_title') }}</p>
+                        <p class="mt-3 text-sm text-sand-100/50">{{ $t('site.catalog.empty_lead') }}</p>
+                        <button class="btn-ghost mt-8" @click="reset">{{ $t('site.catalog.reset') }}</button>
                     </div>
 
                     <!-- Пагинация -->
@@ -214,7 +220,7 @@ onBeforeUnmount(() => stopReveal());
 
                     <!-- Недавно смотрели -->
                     <section v-if="recentProducts.length" class="mt-20">
-                        <h2 class="display text-2xl text-sand-50">Вы недавно смотрели</h2>
+                        <h2 class="display text-2xl text-sand-50">{{ $t('site.catalog.recent') }}</h2>
                         <div class="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                             <ProductCard v-for="p in recentProducts.slice(0, 3)" :key="p.id" :product="p" compact />
                         </div>

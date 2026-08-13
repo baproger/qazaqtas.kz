@@ -30,7 +30,7 @@ class CartController extends Controller
             'whatsapp' => $this->orders->whatsappLink($contents),
             'recommended' => $this->catalog->featured(4),
             'delivery' => \App\Support\SiteContent::delivery(),
-            'seo' => ['title' => 'Корзина — QAZAQ TAS', 'description' => 'Ваш заказ изделий из мраморного композита.'],
+            'seo' => ['title' => __('site.seo.cart_title'), 'description' => __('site.seo.cart_description')],
         ]);
     }
 
@@ -45,7 +45,7 @@ class CartController extends Controller
 
         $this->cart->add($product, (float) ($data['quantity'] ?? $product->min_order ?: 1), $data['color'] ?? null);
 
-        return back()->with('success', $product->name.' — добавлено в корзину.');
+        return back()->with('success', __('site.flash.added', ['name' => $product->tr('name')]));
     }
 
     /** Добавление сразу нескольких позиций (конфигуратор двора). */
@@ -66,7 +66,8 @@ class CartController extends Controller
             }
         }
 
-        return redirect()->route('site.cart')->with('success', 'Расчёт добавлен в корзину.');
+        return redirect()->route(\App\Support\Locales::routeName('site.cart', app()->getLocale()))
+            ->with('success', __('site.flash.estimate_added'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -86,13 +87,13 @@ class CartController extends Controller
         $data = $request->validate(['key' => ['required', 'string', 'max:50']]);
         $this->cart->remove($data['key']);
 
-        return back()->with('success', 'Позиция удалена из корзины.');
+        return back()->with('success', __('site.flash.removed'));
     }
 
     public function clear(): RedirectResponse
     {
         $this->cart->clear();
 
-        return back()->with('success', 'Корзина очищена.');
+        return back()->with('success', __('site.flash.cleared'));
     }
 }

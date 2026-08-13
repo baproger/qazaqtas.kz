@@ -24,7 +24,8 @@ class QuotationController extends Controller
     {
         $cart = $this->cart->contents();
         if (! $cart['items']) {
-            return redirect()->route('site.cart')->with('error', 'Корзина пуста — нечего выгружать в КП.');
+            return redirect()->route(\App\Support\Locales::routeName('site.cart', app()->getLocale()))
+                ->with('error', __('site.flash.quotation_empty'));
         }
 
         $data = $request->validate([

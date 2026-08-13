@@ -17,7 +17,7 @@ class StageRenameTest extends TestCase
     {
         $this->seed(RolePermissionSeeder::class);
         $this->seed(StageSeeder::class);
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['language' => 'ru']);
         $admin->assignRole('admin');
 
         $stage = DealStage::where('name', 'Договор')->first();
@@ -33,7 +33,7 @@ class StageRenameTest extends TestCase
     {
         $this->seed(RolePermissionSeeder::class);
         $this->seed(StageSeeder::class);
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['language' => 'ru']);
         $admin->assignRole('admin');
 
         $this->actingAs($admin)->post(route('stages.store'), ['kind' => 'deal', 'name' => 'Аванс'])->assertRedirect();

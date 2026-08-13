@@ -3,6 +3,9 @@ import { ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import { confirmDialog } from '@/composables/useConfirm';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const props = defineProps({
     documents: { type: Array, default: () => [] },
@@ -18,14 +21,14 @@ const onFile = (e) => {
     form.file = e.target.files[0];
     if (form.file) form.post(route('documents.store'), { preserveScroll: true, forceFormData: true, onSuccess: () => form.reset('file') });
 };
-const remove = async (d) => { if (await confirmDialog({ title: 'Удалить документ', message: 'Документ будет удалён.', confirmText: 'Удалить', danger: true })) router.delete(route('documents.destroy', d.id), { preserveScroll: true }); };
-const kb = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + ' МБ' : Math.max(1, Math.round(b / 1024)) + ' КБ';
+const remove = async (d) => { if (await confirmDialog({ title: tr('Удалить документ'), message: tr('Документ будет удалён.'), confirmText: tr('Удалить'), danger: true })) router.delete(route('documents.destroy', d.id), { preserveScroll: true }); };
+const kb = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + tr(' МБ') : Math.max(1, Math.round(b / 1024)) + tr(' КБ');
 </script>
 
 <template>
     <div class="space-y-3">
         <input ref="fileInput" type="file" class="hidden" @change="onFile" />
-        <PrimaryButton :disabled="form.processing" @click="pick">{{ form.processing ? 'Загрузка…' : '+ Загрузить документ' }}</PrimaryButton>
+        <PrimaryButton :disabled="form.processing" @click="pick">{{ form.processing ? $e('Загрузка…') : $e('+ Загрузить документ') }}</PrimaryButton>
 
         <div class="space-y-2">
             <div v-for="d in documents" :key="d.id" class="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-sm">
@@ -38,13 +41,13 @@ const kb = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + ' МБ' : Math.max(1,
                         <div class="text-xs text-slate-400">v{{ d.version }} · {{ kb(d.size) }} · {{ d.user?.name }}</div>
                     </div>
                 </div>
-                <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-rose-600" title="Удалить" @click="remove(d)">
+                <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-rose-600" :title="$e('Удалить')" @click="remove(d)">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
                 </button>
             </div>
             <div v-if="!documents.length" class="flex flex-col items-center gap-2 py-6 text-center">
                 <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                <span class="text-sm text-slate-400">Документов нет</span>
+                <span class="text-sm text-slate-400">{{ $e('Документов нет') }}</span>
             </div>
         </div>
     </div>

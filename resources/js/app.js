@@ -3,17 +3,15 @@ import './bootstrap';
 
 import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { createApp, h, reactive } from 'vue';
+import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { syncI18n, t, tc, e, siteRoute, isCurrentRoute } from './i18n';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// Global reactive UI translations. Updated on every Inertia visit so the whole
-// app re-renders in the new language when the locale switches.
-const i18n = reactive({ map: {} });
-router.on('success', (event) => {
-    i18n.map = event.detail.page.props.translations || {};
-});
+// Язык обновляется на каждом переходе Inertia — при смене языка всё
+// приложение перерисовывается без перезагрузки страницы.
+router.on('success', (event) => syncI18n(event.detail.page.props));
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -23,10 +21,21 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
-        i18n.map = props.initialPage.props.translations || {};
+        syncI18n(props.initialPage.props);
         const app = createApp({ render: () => h(App, props) });
-        // Global t() available in every template as $t('key', 'fallback') — no imports needed.
-        app.config.globalProperties.$t = (key, fallback = null) => i18n.map[key] ?? fallback ?? key;
+
+        // Доступно в любом шаблоне без импортов:
+        //   $t('site.nav.catalog')      — текст на текущем языке
+        //   $tc('site.catalog.found', 5) — форма слова при числе
+        //   $e('Сохранить')            — текст интерфейса ERP
+        //   $r('site.catalog')          — ссылка с сохранением языка
+        //   $rIs('site.catalog')        — открыта ли эта страница сейчас
+        app.config.globalProperties.$t = t;
+        app.config.globalProperties.$tc = tc;
+        app.config.globalProperties.$e = e;
+        app.config.globalProperties.$r = siteRoute;
+        app.config.globalProperties.$rIs = isCurrentRoute;
+
         return app
             .use(plugin)
             .use(ZiggyVue)

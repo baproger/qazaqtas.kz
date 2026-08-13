@@ -3,7 +3,13 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { theme, toggleTheme, initTheme } from '@/site/theme';
 import FloatingSocial from '@/Components/site/FloatingSocial.vue';
+import LocaleSwitch from '@/Components/site/LocaleSwitch.vue';
 import { useScrollAmbience } from '@/site/ambience';
+import { useT } from '@/composables/useTranslations';
+
+// Пункты меню собираются в script, поэтому переводчик нужен и здесь,
+// не только глобальным $t в шаблоне.
+const t = useT();
 
 const props = defineProps({
     seo: { type: Object, default: () => ({}) },
@@ -20,11 +26,11 @@ const cartCount = computed(() => site.value.cartCount ?? 0);
 // Конфигуратор включается в ERP → Настройки: пока выключен, пункта нет
 // ни в меню, ни в подвале, а сам маршрут отдаёт 404.
 const nav = computed(() => [
-    { label: 'Каталог', route: 'site.catalog' },
-    ...(site.value.configurator ? [{ label: 'Конфигуратор', route: 'site.configurator' }] : []),
-    { label: 'Завод', route: 'site.about' },
-    { label: 'Проекты', route: 'site.projects' },
-    { label: 'Контакты', route: 'site.contacts' },
+    { label: t('site.nav.catalog'), route: 'site.catalog' },
+    ...(site.value.configurator ? [{ label: t('site.nav.configurator'), route: 'site.configurator' }] : []),
+    { label: t('site.nav.about'), route: 'site.about' },
+    { label: t('site.nav.projects'), route: 'site.projects' },
+    { label: t('site.nav.contacts'), route: 'site.contacts' },
 ]);
 
 
@@ -73,7 +79,7 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
         </div>
 
         <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-sand-300 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink-900">
-            К содержимому
+            {{ $t('site.a11y.skip') }}
         </a>
 
         <!-- Шапка: стекло появляется при скролле, над 3D — прозрачная -->
@@ -86,10 +92,10 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                 <!-- Надпись в логотипе светло-серая: на дневном фоне она
                      теряется, поэтому там он живёт на тёмной плашке. -->
                 <Link
-                    :href="route('site.home')"
+                    :href="$r('site.home')"
                     class="flex items-center transition"
                     :class="theme === 'light' ? 'logo-chip rounded-xl px-3 py-2' : ''"
-                    aria-label="QAZAQ TAS — на главную"
+                    :aria-label="$t('site.a11y.home')"
                 >
                     <img
                         src="/logo-qazaqtas.png"
@@ -100,17 +106,17 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                     />
                 </Link>
 
-                <nav class="ml-auto hidden items-center gap-8 lg:flex" aria-label="Основная навигация">
+                <nav class="ml-auto hidden items-center gap-8 lg:flex" :aria-label="$t('site.a11y.main_nav')">
                     <Link
                         v-for="item in nav"
                         :key="item.route"
-                        :href="route(item.route)"
+                        :href="$r(item.route)"
                         class="relative text-sm text-sand-100/75 transition hover:text-sand-50"
-                        :class="{ 'text-sand-50': route().current(item.route) }"
+                        :class="{ 'text-sand-50': $rIs(item.route) }"
                     >
                         {{ item.label }}
                         <span
-                            v-if="route().current(item.route)"
+                            v-if="$rIs(item.route)"
                             class="absolute -bottom-1.5 left-0 h-px w-full bg-sand-300"
                         />
                     </Link>
@@ -121,10 +127,12 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                         {{ contacts.phone }}
                     </a>
 
+                    <LocaleSwitch class="hidden sm:flex" />
+
                     <button
                         class="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-sand-50 transition hover:border-sand-300/60 hover:bg-white/5"
-                        :aria-label="theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'"
-                        :title="theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'"
+                        :aria-label="theme === 'dark' ? $t('site.a11y.theme_light') : $t('site.a11y.theme_dark')"
+                        :title="theme === 'dark' ? $t('site.theme.light') : $t('site.theme.dark')"
                         @click="toggleTheme($event)"
                     >
                         <!-- Солнце и луна не подменяются, а переворачиваются
@@ -142,9 +150,9 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                     </button>
 
                     <Link
-                        :href="route('site.cart')"
+                        :href="$r('site.cart')"
                         class="relative grid h-10 w-10 place-items-center rounded-full border border-white/10 text-sand-50 transition hover:border-sand-300/60 hover:bg-white/5"
-                        aria-label="Корзина"
+                        :aria-label="$t('site.a11y.cart')"
                     >
                         <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 4h2l2.4 11.2A2 2 0 0 0 9.35 17h8.4a2 2 0 0 0 1.95-1.55L21 8H6" />
@@ -159,7 +167,7 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                     <button
                         class="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-sand-50 transition hover:border-sand-300/60 lg:hidden"
                         :aria-expanded="menuOpen"
-                        aria-label="Меню"
+                        :aria-label="$t('site.a11y.menu')"
                         @click="menuOpen = !menuOpen"
                     >
                         <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
@@ -182,12 +190,15 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                         <Link
                             v-for="item in nav"
                             :key="item.route"
-                            :href="route(item.route)"
+                            :href="$r(item.route)"
                             class="block border-b border-white/5 py-4 text-2xl display text-sand-50"
                         >{{ item.label }}</Link>
                         <div class="mt-6 flex flex-col gap-3">
                             <a :href="telHref" class="btn-ghost">{{ contacts.phone }}</a>
-                            <a :href="whatsappHref" target="_blank" rel="noopener" class="btn-sand">Написать в WhatsApp</a>
+                            <a :href="whatsappHref" target="_blank" rel="noopener" class="btn-sand">{{ $t('site.cta.whatsapp') }}</a>
+                            <!-- На узком экране переключатель живёт в меню: в шапке он
+                                 отнимал бы место у корзины и кнопки меню. -->
+                            <LocaleSwitch class="self-start sm:hidden" />
                         </div>
                     </nav>
                 </div>
@@ -206,10 +217,9 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
                 <div class="grid gap-12 lg:grid-cols-[1.2fr_1fr_1fr]">
                     <div>
-                        <p class="display text-3xl text-sand-50 sm:text-4xl">Мраморный композит<br />для города</p>
+                        <p class="display text-3xl text-sand-50 sm:text-4xl">{{ $t('site.footer.tagline_top') }}<br />{{ $t('site.footer.tagline_bottom') }}</p>
                         <p class="mt-5 max-w-md text-sm leading-relaxed text-sand-100/60">
-                            Тротуарная плитка, бордюры и малые архитектурные формы собственного
-                            производства. Три площадки в Казахстане, отгрузка по всей стране.
+                            {{ $t('site.footer.lead') }}
                         </p>
                         <div class="mt-7 flex flex-wrap gap-3">
                             <a :href="whatsappHref" target="_blank" rel="noopener" class="btn-sand">WhatsApp</a>
@@ -218,16 +228,16 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                     </div>
 
                     <div>
-                        <p class="eyebrow">Навигация</p>
+                        <p class="eyebrow">{{ $t('site.footer.nav') }}</p>
                         <ul class="mt-5 space-y-3 text-sm">
                             <li v-for="item in nav" :key="item.route">
-                                <Link :href="route(item.route)" class="text-sand-100/70 transition hover:text-sand-50">{{ item.label }}</Link>
+                                <Link :href="$r(item.route)" class="text-sand-100/70 transition hover:text-sand-50">{{ item.label }}</Link>
                             </li>
                         </ul>
                     </div>
 
                     <div>
-                        <p class="eyebrow">Производство</p>
+                        <p class="eyebrow">{{ $t('site.footer.production') }}</p>
                         <ul class="mt-5 space-y-4 text-sm">
                             <li v-for="b in branches" :key="b.city">
                                 <p class="font-medium text-sand-50">{{ b.city }}</p>
@@ -238,7 +248,7 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                 </div>
 
                 <div class="divider-top mt-14 flex flex-col gap-4 pt-8 text-xs text-sand-100/40 sm:flex-row sm:items-center sm:justify-between">
-                    <p>© {{ new Date().getFullYear() }} QAZAQ TAS · Производство изделий из мраморного композита</p>
+                    <p>© {{ new Date().getFullYear() }} QAZAQ TAS · {{ $t('site.footer.copyright') }}</p>
                     <p>{{ contacts.hours }} · {{ contacts.email }}</p>
                 </div>
             </div>

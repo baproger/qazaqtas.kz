@@ -12,6 +12,9 @@ import TextInput from '@/Components/TextInput.vue';
 import { formatDate } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import { UNITS } from '@/utils/dealOptions';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const props = defineProps({
     preDeals: Array, items: Array, minMargin: Number, taxPercent: Number,
@@ -50,14 +53,14 @@ const requestGroups = computed(() => {
     const today = props.preDeals.filter((p) => isToday(p.created_at));
     const past = props.preDeals.filter((p) => !isToday(p.created_at));
     return [
-        { key: 'today', label: 'Сегодня', list: today, open: true, toggle: false },
-        { key: 'past', label: 'Прошлые', list: past, open: showPast.value, toggle: true },
+        { key: 'today', label: tr('Сегодня'), list: today, open: true, toggle: false },
+        { key: 'past', label: tr('Прошлые'), list: past, open: showPast.value, toggle: true },
     ];
 });
 
 const showForm = ref(false);
 const editingId = ref(null);
-const form = useForm({ request_number: '', valid_until: '', bin: '', customer: '', object_address: '', client_name: '', client_phone: '', product: '', quantity: '', unit: 'м²', unit_price: '', contract_sum: '', purchase_price: '', partner_pct: '', delivery: '', assembly: '', commission: '' });
+const form = useForm({ request_number: '', valid_until: '', bin: '', customer: '', object_address: '', client_name: '', client_phone: '', product: '', quantity: '', unit: tr('м²'), unit_price: '', contract_sum: '', purchase_price: '', partner_pct: '', delivery: '', assembly: '', commission: '' });
 // Срок действия КП: сегодня/прошёл у незакрытой заявки — подсветка.
 const quoteUrgent = (p) => p.valid_until && p.status === 'new' && new Date(p.valid_until) <= new Date(new Date().toDateString());
 // Сумма КП = объём × цена за единицу (если заданы оба), иначе вводится вручную.
@@ -99,7 +102,7 @@ const openEdit = (p) => {
         request_number: p.request_number ?? '', valid_until: p.valid_until ? p.valid_until.slice(0, 10) : '', bin: p.bin ?? '', customer: p.customer ?? '',
         object_address: p.object_address ?? '',
         client_name: p.client_name ?? '', client_phone: p.client_phone ?? '', product: p.product,
-        quantity: Number(p.quantity), unit: p.unit ?? 'м²', unit_price: Number(p.unit_price),
+        quantity: Number(p.quantity), unit: p.unit ?? tr('м²'), unit_price: Number(p.unit_price),
         contract_sum: Number(p.contract_sum), purchase_price: Number(p.purchase_price),
         partner_pct: Number(p.partner_pct), delivery: Number(p.delivery), assembly: Number(p.assembly), commission: Number(p.commission),
     });
@@ -111,16 +114,16 @@ const submit = () => (editingId.value
 
 // Откат случайного «В работу ✓»: сделка удалится, заявка вернётся «В работе».
 const revertDeal = async (p) => {
-    if (!(await confirmDialog({ title: 'Вернуть в заявки?', message: `Сделка ${p.deal?.number ?? ''} будет удалена, заявка снова станет «В работе». Возможно, только пока по сделке нет счетов, расходов и заказа цеха.`, confirmText: '↩ Вернуть', danger: true }))) return;
+    if (!(await confirmDialog({ title: tr('Вернуть в заявки?'), message: `Сделка ${p.deal?.number ?? ''} будет удалена, заявка снова станет «В работе». Возможно, только пока по сделке нет счетов, расходов и заказа цеха.`, confirmText: tr('↩ Вернуть'), danger: true }))) return;
     router.post(route('preDeals.revert', p.id), {}, { preserveScroll: true });
 };
 
 const confirmDeal = async (p) => {
-    if (!(await confirmDialog({ title: 'Заказ подтверждён — создать сделку?', message: `«${p.product}» на ${money(p.contract_sum)} (маржа ${p.margin}%): заявка станет сделкой и появится на странице «Сделки».`, confirmText: 'В работу ✓' }))) return;
+    if (!(await confirmDialog({ title: tr('Заказ подтверждён — создать сделку?'), message: `«${p.product}» на ${money(p.contract_sum)} (маржа ${p.margin}%): заявка станет сделкой и появится на странице «Сделки».`, confirmText: tr('В работу ✓') }))) return;
     router.post(route('preDeals.confirm', p.id), {}, { preserveScroll: true });
 };
 const del = async (p) => {
-    if (!(await confirmDialog({ title: 'Удалить заявку?', message: `«${p.product}» будет удалена.`, confirmText: 'Удалить', danger: true }))) return;
+    if (!(await confirmDialog({ title: tr('Удалить заявку?'), message: `«${p.product}» будет удалена.`, confirmText: tr('Удалить'), danger: true }))) return;
     router.delete(route('preDeals.destroy', p.id), { preserveScroll: true });
 };
 
@@ -145,7 +148,7 @@ const saveItem = (i) => {
     router.put(route('preDealItems.update', i.id), { label }, { preserveScroll: true });
 };
 const delItem = async (i) => {
-    if (!(await confirmDialog({ title: `Удалить пункт «${i.label}»?`, confirmText: 'Удалить', danger: true }))) return;
+    if (!(await confirmDialog({ title: `Удалить пункт «${i.label}»?`, confirmText: tr('Удалить'), danger: true }))) return;
     router.delete(route('preDealItems.destroy', i.id), { preserveScroll: true });
 };
 
@@ -154,13 +157,13 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
 </script>
 
 <template>
-    <Head title="Заявки" />
+    <Head :title="$e('Заявки')" />
     <AppLayout>
-        <template #header>Заявки / запросы КП</template>
+        <template #header>{{ $e('Заявки / запросы КП') }}</template>
 
         <!-- Рейтинг менеджеров (руководству) -->
         <div v-if="leadership && stats?.length" class="mb-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-900">Рейтинг менеджеров <span class="font-normal text-slate-400">— по заявкам, ставшим сделками</span></div>
+            <div class="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-900">{{ $e('Рейтинг менеджеров') }} <span class="font-normal text-slate-400">{{ $e('— по заявкам, ставшим сделками') }}</span></div>
             <div class="flex gap-3 overflow-x-auto px-5 py-3">
                 <div v-for="(m, i) in stats" :key="m.name" class="flex min-w-56 flex-shrink-0 items-center gap-3 rounded-xl border p-3"
                     :class="i === 0 ? 'border-amber-200 bg-amber-50/60' : 'border-slate-100 bg-slate-50'">
@@ -168,7 +171,7 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                     <Avatar :name="m.name" :src="m.avatar" :size="36" />
                     <div class="min-w-0">
                         <div class="truncate text-sm font-semibold text-slate-900">{{ m.name }}</div>
-                        <div class="text-xs text-slate-500">подтв. <b>{{ m.confirmed }}</b> из {{ m.total }} · <b class="tabular-nums">{{ money(m.sum) }}</b></div>
+                        <div class="text-xs text-slate-500">{{ $e('подтв.') }} <b>{{ m.confirmed }}</b> {{ $e('из') }} {{ m.total }} · <b class="tabular-nums">{{ money(m.sum) }}</b></div>
                     </div>
                 </div>
             </div>
@@ -176,24 +179,24 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
 
         <!-- Панель: фильтры + действия -->
         <div class="mb-4 flex flex-wrap items-center gap-2">
-            <PrimaryButton @click="openCreate">+ Заявка</PrimaryButton>
+            <PrimaryButton @click="openCreate">{{ $e('+ Заявка') }}</PrimaryButton>
             <button v-if="canManageChecklist" @click="openItems"
-                class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50">⚙ Чек-лист</button>
+                class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50">{{ $e('⚙ Чек-лист') }}</button>
             <div class="ml-auto flex flex-wrap items-center gap-2">
                 <select v-if="leadership" v-model="managerF" @change="applyFilters" class="rounded-lg border-slate-200 py-1.5 text-sm text-slate-600 shadow-sm">
-                    <option value="">Все менеджеры</option>
+                    <option value="">{{ $e('Все менеджеры') }}</option>
                     <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name }}</option>
                 </select>
                 <select v-model="statusF" @change="applyFilters" class="rounded-lg border-slate-200 py-1.5 text-sm text-slate-600 shadow-sm">
-                    <option value="">Все статусы</option>
-                    <option value="new">В работе</option>
-                    <option value="confirmed">Подтверждённые</option>
+                    <option value="">{{ $e('Все статусы') }}</option>
+                    <option value="new">{{ $e('В работе') }}</option>
+                    <option value="confirmed">{{ $e('Подтверждённые') }}</option>
                 </select>
-                <label class="flex items-center gap-1 text-xs text-slate-400" title="Показать заявки, внесённые в выбранном месяце — по датам">месяц
+                <label class="flex items-center gap-1 text-xs text-slate-400" :title="$e('Показать заявки, внесённые в выбранном месяце — по датам')">{{ $e('месяц') }}
                     <input v-model="monthF" @change="applyFilters" type="month" class="rounded-lg border-slate-200 py-1.5 text-sm text-slate-600 shadow-sm" />
                 </label>
-                <button v-if="monthF" @click="monthF = ''; applyFilters()" class="text-xs font-medium text-indigo-600 hover:underline">сбросить</button>
-                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-500">порог маржи: <b>{{ minMargin }}%</b></span>
+                <button v-if="monthF" @click="monthF = ''; applyFilters()" class="text-xs font-medium text-indigo-600 hover:underline">{{ $e('сбросить') }}</button>
+                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-500">{{ $e('порог маржи:') }} <b>{{ minMargin }}%</b></span>
             </div>
         </div>
 
@@ -203,21 +206,21 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                 <table class="min-w-full whitespace-nowrap divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-4 py-2.5">№ заявки</th>
-                            <th class="px-4 py-2.5">Заказчик · изделие</th>
-                            <th v-if="leadership" class="px-4 py-2.5">Менеджер</th>
-                            <th class="px-4 py-2.5 text-right">Объём</th>
-                            <th class="px-4 py-2.5 text-right">Сумма КП</th>
-                            <th class="px-4 py-2.5 text-right">Закуп</th>
-                            <th class="px-4 py-2.5 text-right">Партнёр</th>
-                            <th class="px-4 py-2.5 text-right">Доставка</th>
-                            <th class="px-4 py-2.5 text-right">Монтаж</th>
-                            <th class="px-4 py-2.5 text-right">Комиссия</th>
-                            <th class="px-4 py-2.5 text-right">Налог</th>
-                            <th class="px-4 py-2.5 text-right">Остаток</th>
-                            <th class="px-4 py-2.5 text-center">Маржа</th>
-                            <th class="px-4 py-2.5 text-center">Берём</th>
-                            <th class="px-4 py-2.5 text-center">Чек-лист</th>
+                            <th class="px-4 py-2.5">{{ $e('№ заявки') }}</th>
+                            <th class="px-4 py-2.5">{{ $e('Заказчик · изделие') }}</th>
+                            <th v-if="leadership" class="px-4 py-2.5">{{ $e('Менеджер') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Объём') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Сумма КП') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Закуп') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Партнёр') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Доставка') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Монтаж') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Комиссия') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Налог') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Остаток') }}</th>
+                            <th class="px-4 py-2.5 text-center">{{ $e('Маржа') }}</th>
+                            <th class="px-4 py-2.5 text-center">{{ $e('Берём') }}</th>
+                            <th class="px-4 py-2.5 text-center">{{ $e('Чек-лист') }}</th>
                             <th class="px-4 py-2.5"></th>
                         </tr>
                     </thead>
@@ -233,12 +236,12 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                                 </span>
                             </td>
                         </tr>
-                        <tr v-if="g.key === 'today' && !g.list.length"><td :colspan="leadership ? 16 : 15" class="px-6 py-4 text-center text-xs text-slate-300">Сегодня заявок ещё нет</td></tr>
+                        <tr v-if="g.key === 'today' && !g.list.length"><td :colspan="leadership ? 16 : 15" class="px-6 py-4 text-center text-xs text-slate-300">{{ $e('Сегодня заявок ещё нет') }}</td></tr>
                         <template v-if="g.open">
                         <template v-for="p in g.list" :key="p.id">
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3 text-slate-500">{{ p.request_number || '—' }}<span class="block text-[10px] text-slate-300">{{ formatDate(p.created_at) }}</span>
-                                    <span v-if="p.valid_until" class="block text-[10px] font-semibold" :class="quoteUrgent(p) ? 'text-rose-600' : 'text-slate-400'">⏳ КП до {{ formatDate(p.valid_until) }}</span>
+                                    <span v-if="p.valid_until" class="block text-[10px] font-semibold" :class="quoteUrgent(p) ? 'text-rose-600' : 'text-slate-400'">{{ $e('⏳ КП до') }} {{ formatDate(p.valid_until) }}</span>
                                 </td>
                                 <td class="max-w-56 px-4 py-3">
                                     <div class="truncate font-medium text-slate-800" :title="p.customer">{{ p.customer || '—' }}<span v-if="p.bin" class="text-xs text-slate-400"> · {{ p.bin }}</span></div>
@@ -247,7 +250,7 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                                 </td>
                                 <td v-if="leadership" class="px-4 py-3 text-xs text-slate-500">{{ p.user?.name ?? '—' }}</td>
                                 <td class="px-4 py-3 text-right tabular-nums text-slate-600">
-                                    <template v-if="Number(p.quantity) > 0">{{ Number(p.quantity) }} {{ p.unit || '' }}<span v-if="Number(p.unit_price) > 0" class="block text-[10px] text-slate-400">{{ money(p.unit_price) }}/{{ p.unit || 'ед' }}</span></template>
+                                    <template v-if="Number(p.quantity) > 0">{{ Number(p.quantity) }} {{ p.unit || '' }}<span v-if="Number(p.unit_price) > 0" class="block text-[10px] text-slate-400">{{ money(p.unit_price) }}/{{ p.unit || $e('ед') }}</span></template>
                                     <span v-else class="text-slate-300">—</span>
                                 </td>
                                 <td class="px-4 py-3 text-right font-semibold tabular-nums text-slate-900">{{ money(p.contract_sum) }}</td>
@@ -260,7 +263,7 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                                 <td class="px-4 py-3 text-right font-semibold tabular-nums" :class="Number(p.remainder) >= 0 ? 'text-slate-900' : 'text-rose-600'">{{ money(p.remainder) }}</td>
                                 <td class="px-4 py-3 text-center"><span class="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums" :class="marginClass(p.margin)">{{ Number(p.margin) }}%</span></td>
                                 <td class="px-4 py-3 text-center">
-                                    <span class="rounded-md px-2.5 py-1 text-xs font-bold" :class="Number(p.margin) >= minMargin ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'">{{ Number(p.margin) >= minMargin ? 'да' : 'нет' }}</span>
+                                    <span class="rounded-md px-2.5 py-1 text-xs font-bold" :class="Number(p.margin) >= minMargin ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'">{{ Number(p.margin) >= minMargin ? $e('да') : $e('нет') }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-center">
                                     <button @click="expanded = expanded === p.id ? null : p.id"
@@ -270,17 +273,17 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                                 </td>
                                 <td class="px-4 py-3 text-right whitespace-nowrap">
                                     <template v-if="p.status === 'confirmed'">
-                                        <span class="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">→ {{ p.deal?.number ?? 'сделка' }}</span>
-                                        <button class="ml-1 rounded p-1 text-slate-300 transition hover:text-amber-600" title="Вернуть в заявки (нажали «В работу» случайно)" @click="revertDeal(p)">↩</button>
+                                        <span class="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">→ {{ p.deal?.number ?? $e('сделка') }}</span>
+                                        <button class="ml-1 rounded p-1 text-slate-300 transition hover:text-amber-600" :title="$e('Вернуть в заявки (нажали «В работу» случайно)')" @click="revertDeal(p)">↩</button>
                                     </template>
                                     <template v-else>
                                         <button v-if="Number(p.margin) >= minMargin" @click="confirmDeal(p)"
-                                            class="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700">В работу ✓</button>
-                                        <span v-else class="text-[11px] text-rose-400" title="Маржа ниже порога — заявка отклонена">отклонена</span>
-                                        <button class="ml-1 rounded p-1 text-slate-300 transition hover:text-indigo-600" title="Изменить" @click="openEdit(p)">
+                                            class="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700">{{ $e('В работу ✓') }}</button>
+                                        <span v-else class="text-[11px] text-rose-400" :title="$e('Маржа ниже порога — заявка отклонена')">{{ $e('отклонена') }}</span>
+                                        <button class="ml-1 rounded p-1 text-slate-300 transition hover:text-indigo-600" :title="$e('Изменить')" @click="openEdit(p)">
                                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                         </button>
-                                        <button class="rounded p-1 text-slate-300 transition hover:text-rose-600" title="Удалить" @click="del(p)">✕</button>
+                                        <button class="rounded p-1 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить')" @click="del(p)">✕</button>
                                     </template>
                                 </td>
                             </tr>
@@ -294,7 +297,7 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                                             {{ i.label }}
                                         </label>
                                         <span v-if="p.client_name || p.client_phone" class="ml-auto text-sm text-slate-500">
-                                            Клиент: <b class="text-slate-700">{{ p.client_name || '—' }}</b>
+                                            {{ $e('Клиент:') }} <b class="text-slate-700">{{ p.client_name || '—' }}</b>
                                             <a v-if="p.client_phone" :href="'tel:' + p.client_phone" class="ml-2 font-semibold text-indigo-600 hover:underline">{{ p.client_phone }}</a>
                                         </span>
                                     </div>
@@ -303,7 +306,7 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                         </template>
                         </template>
                         </template>
-                        <tr v-if="!preDeals.length"><td :colspan="leadership ? 16 : 15" class="px-6 py-10 text-center text-slate-400">Пока нет заявок — «+ Заявка»</td></tr>
+                        <tr v-if="!preDeals.length"><td :colspan="leadership ? 16 : 15" class="px-6 py-10 text-center text-slate-400">{{ $e('Пока нет заявок — «+ Заявка»') }}</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -312,75 +315,75 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
         <!-- Модалка заявки: живой расчёт -->
         <Modal :show="showForm" max-width="2xl" @close="showForm = false">
             <div class="p-6">
-                <h3 class="mb-4 text-base font-semibold text-slate-900">{{ editingId ? 'Изменить заявку' : 'Новая заявка' }}</h3>
+                <h3 class="mb-4 text-base font-semibold text-slate-900">{{ editingId ? $e('Изменить заявку') : $e('Новая заявка') }}</h3>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <InputLabel value="№ заявки / КП" />
+                        <InputLabel :value="$e('№ заявки / КП')" />
                         <div class="mt-1 flex gap-2">
                             <TextInput v-model="form.request_number" class="w-full" @input="numberCheck = null" @keydown.enter.prevent="checkNumber" />
                             <button type="button" @click="checkNumber" :disabled="!form.request_number || numberChecking"
                                 class="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-100 disabled:opacity-40">
-                                {{ numberChecking ? '…' : 'Проверить' }}
+                                {{ numberChecking ? '…' : $e('Проверить') }}
                             </button>
                         </div>
                         <p v-if="numberCheck?.exists" class="mt-1 text-xs font-semibold text-rose-600">
-                            ✗ Такая заявка уже внесена<template v-if="numberCheck.manager"> — {{ numberCheck.manager }}</template><template v-if="numberCheck.date"> ({{ formatDate(numberCheck.date) }})</template><template v-if="numberCheck.status === 'confirmed'"> · уже в работе</template>
+                            {{ $e('✗ Такая заявка уже внесена') }}<template v-if="numberCheck.manager"> — {{ numberCheck.manager }}</template><template v-if="numberCheck.date"> ({{ formatDate(numberCheck.date) }})</template><template v-if="numberCheck.status === 'confirmed'"> {{ $e('· уже в работе') }}</template>
                         </p>
-                        <p v-else-if="numberCheck" class="mt-1 text-xs font-semibold text-emerald-600">✓ Свободен — можно заполнять</p>
+                        <p v-else-if="numberCheck" class="mt-1 text-xs font-semibold text-emerald-600">{{ $e('✓ Свободен — можно заполнять') }}</p>
                         <InputError :message="form.errors.request_number" class="mt-1" />
                     </div>
                     <div>
-                        <InputLabel value="КП действительно до" />
+                        <InputLabel :value="$e('КП действительно до')" />
                         <TextInput v-model="form.valid_until" type="date" class="mt-1 w-full" />
-                        <p class="mt-1 text-[11px] text-slate-400">В этот день менеджеру придёт напоминание</p>
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('В этот день менеджеру придёт напоминание') }}</p>
                         <InputError :message="form.errors.valid_until" class="mt-1" />
                     </div>
-                    <div><InputLabel value="Заказчик (компания или частное лицо)" /><TextInput v-model="form.customer" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="БИН / ИИН заказчика" /><TextInput v-model="form.bin" class="mt-1 w-full" /></div>
-                    <div class="sm:col-span-2"><InputLabel value="Объект (адрес доставки / монтажа)" /><TextInput v-model="form.object_address" class="mt-1 w-full" placeholder="г. Астана, ЖК …" /></div>
-                    <div><InputLabel value="Изделие *" /><TextInput v-model="form.product" class="mt-1 w-full" placeholder="Тротуарная плитка 300×300, вазон…" /><div v-if="form.errors.product" class="mt-1 text-xs text-rose-600">{{ form.errors.product }}</div></div>
+                    <div><InputLabel :value="$e('Заказчик (компания или частное лицо)')" /><TextInput v-model="form.customer" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('БИН / ИИН заказчика')" /><TextInput v-model="form.bin" class="mt-1 w-full" /></div>
+                    <div class="sm:col-span-2"><InputLabel :value="$e('Объект (адрес доставки / монтажа)')" /><TextInput v-model="form.object_address" class="mt-1 w-full" :placeholder="$e('г. Астана, ЖК …')" /></div>
+                    <div><InputLabel :value="$e('Изделие *')" /><TextInput v-model="form.product" class="mt-1 w-full" :placeholder="$e('Тротуарная плитка 300×300, вазон…')" /><div v-if="form.errors.product" class="mt-1 text-xs text-rose-600">{{ form.errors.product }}</div></div>
                     <div>
-                        <InputLabel value="Объём и единица" />
+                        <InputLabel :value="$e('Объём и единица')" />
                         <div class="mt-1 flex gap-2">
-                            <TextInput v-model="form.quantity" type="number" min="0" step="any" class="w-1/2" placeholder="кол-во" />
+                            <TextInput v-model="form.quantity" type="number" min="0" step="any" class="w-1/2" :placeholder="$e('кол-во')" />
                             <select v-model="form.unit" class="w-1/2 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <option v-for="u in UNITS" :key="u" :value="u">{{ u }}</option>
                             </select>
                         </div>
                         <InputError :message="form.errors.quantity || form.errors.unit" class="mt-1" />
                     </div>
-                    <div><InputLabel value="Цена за единицу" /><TextInput v-model="form.unit_price" type="number" min="0" step="any" class="mt-1 w-full" /><p class="mt-1 text-[11px] text-slate-400">Объём × цена = сумма КП</p></div>
+                    <div><InputLabel :value="$e('Цена за единицу')" /><TextInput v-model="form.unit_price" type="number" min="0" step="any" class="mt-1 w-full" /><p class="mt-1 text-[11px] text-slate-400">{{ $e('Объём × цена = сумма КП') }}</p></div>
                     <div>
-                        <InputLabel value="Сумма КП *" />
+                        <InputLabel :value="$e('Сумма КП *')" />
                         <TextInput v-model="form.contract_sum" type="number" min="1" class="mt-1 w-full" :disabled="autoSum !== null" />
-                        <p v-if="autoSum !== null" class="mt-1 text-[11px] text-emerald-600">Считается автоматически: {{ money(autoSum) }}</p>
+                        <p v-if="autoSum !== null" class="mt-1 text-[11px] text-emerald-600">{{ $e('Считается автоматически:') }} {{ money(autoSum) }}</p>
                         <div v-if="form.errors.contract_sum" class="mt-1 text-xs text-rose-600">{{ form.errors.contract_sum }}</div>
                     </div>
-                    <div><InputLabel value="Имя клиента (контакт)" /><TextInput v-model="form.client_name" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="Телефон клиента" /><TextInput v-model="form.client_phone" class="mt-1 w-full" placeholder="+7 ___ ___ __ __" /></div>
-                    <div><InputLabel value="Себестоимость (сырьё, производство)" /><TextInput v-model="form.purchase_price" type="number" min="0" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="Доля партнёра, %" /><TextInput v-model="form.partner_pct" type="number" min="0" max="100" step="0.1" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="Доставка, разгрузка" /><TextInput v-model="form.delivery" type="number" min="0" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="Монтаж / укладка" /><TextInput v-model="form.assembly" type="number" min="0" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="Комиссия (площадка, агент)" /><TextInput v-model="form.commission" type="number" min="0" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Имя клиента (контакт)')" /><TextInput v-model="form.client_name" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Телефон клиента')" /><TextInput v-model="form.client_phone" class="mt-1 w-full" placeholder="+7 ___ ___ __ __" /></div>
+                    <div><InputLabel :value="$e('Себестоимость (сырьё, производство)')" /><TextInput v-model="form.purchase_price" type="number" min="0" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Доля партнёра, %')" /><TextInput v-model="form.partner_pct" type="number" min="0" max="100" step="0.1" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Доставка, разгрузка')" /><TextInput v-model="form.delivery" type="number" min="0" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Монтаж / укладка')" /><TextInput v-model="form.assembly" type="number" min="0" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Комиссия (площадка, агент)')" /><TextInput v-model="form.commission" type="number" min="0" class="mt-1 w-full" /></div>
                 </div>
 
                 <!-- Живой расчёт -->
                 <div class="mt-4 rounded-xl border p-4" :class="calc.pass ? 'border-emerald-200 bg-emerald-50/60' : 'border-rose-200 bg-rose-50/60'">
                     <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
-                        <span class="text-slate-500">Партнёр: <b class="tabular-nums text-slate-700">{{ money(calc.partner) }}</b></span>
-                        <span class="text-slate-500">Налог {{ taxPercent }}%: <b class="tabular-nums text-slate-700">{{ money(calc.tax) }}</b></span>
-                        <span class="text-slate-500">Остаток: <b class="tabular-nums" :class="calc.remainder >= 0 ? 'text-slate-900' : 'text-rose-600'">{{ money(calc.remainder) }}</b></span>
+                        <span class="text-slate-500">{{ $e('Партнёр:') }} <b class="tabular-nums text-slate-700">{{ money(calc.partner) }}</b></span>
+                        <span class="text-slate-500">{{ $e('Налог') }} {{ taxPercent }}%: <b class="tabular-nums text-slate-700">{{ money(calc.tax) }}</b></span>
+                        <span class="text-slate-500">{{ $e('Остаток:') }} <b class="tabular-nums" :class="calc.remainder >= 0 ? 'text-slate-900' : 'text-rose-600'">{{ money(calc.remainder) }}</b></span>
                         <span class="ml-auto flex items-center gap-2">
-                            <span class="rounded-full px-3 py-1 text-sm font-bold tabular-nums" :class="calc.pass ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'">маржа {{ calc.margin }}%</span>
-                            <span class="text-xs font-semibold" :class="calc.pass ? 'text-emerald-700' : 'text-rose-600'">{{ calc.pass ? 'берём в работу' : 'ниже ' + minMargin + '% — отклоняется' }}</span>
+                            <span class="rounded-full px-3 py-1 text-sm font-bold tabular-nums" :class="calc.pass ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'">{{ $e('маржа') }} {{ calc.margin }}%</span>
+                            <span class="text-xs font-semibold" :class="calc.pass ? 'text-emerald-700' : 'text-rose-600'">{{ calc.pass ? $e('берём в работу') : $e('ниже ') + minMargin + $e('% — отклоняется') }}</span>
                         </span>
                     </div>
                 </div>
 
                 <div class="mt-4 flex justify-end gap-2">
-                    <SecondaryButton @click="showForm = false">Отмена</SecondaryButton>
-                    <PrimaryButton :disabled="form.processing" @click="submit">{{ editingId ? 'Сохранить' : 'Добавить' }}</PrimaryButton>
+                    <SecondaryButton @click="showForm = false">{{ $e('Отмена') }}</SecondaryButton>
+                    <PrimaryButton :disabled="form.processing" @click="submit">{{ editingId ? $e('Сохранить') : $e('Добавить') }}</PrimaryButton>
                 </div>
             </div>
         </Modal>
@@ -388,22 +391,22 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
         <!-- Настройка чек-листа (админ/финансист) -->
         <Modal :show="showItems" max-width="md" @close="showItems = false">
             <div class="p-6">
-                <h3 class="mb-1 text-base font-semibold text-slate-900">Чек-лист заявки</h3>
-                <p class="mb-4 text-xs text-slate-400">Пункты видят все менеджеры. Переименование — Enter или клик мимо, ✕ — удалить.</p>
+                <h3 class="mb-1 text-base font-semibold text-slate-900">{{ $e('Чек-лист заявки') }}</h3>
+                <p class="mb-4 text-xs text-slate-400">{{ $e('Пункты видят все менеджеры. Переименование — Enter или клик мимо, ✕ — удалить.') }}</p>
                 <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
                     <div v-for="i in items" :key="i.id" class="flex items-center gap-2">
                         <input v-model="itemNames[i.id]" @keyup.enter="saveItem(i)" @blur="saveItem(i)" type="text"
                             class="flex-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                        <button @click="delItem(i)" class="rounded p-1.5 text-slate-300 transition hover:text-rose-600" title="Удалить пункт">✕</button>
+                        <button @click="delItem(i)" class="rounded p-1.5 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить пункт')">✕</button>
                     </div>
-                    <div v-if="!items.length" class="py-4 text-center text-sm text-slate-400">Пунктов пока нет</div>
+                    <div v-if="!items.length" class="py-4 text-center text-sm text-slate-400">{{ $e('Пунктов пока нет') }}</div>
                 </div>
                 <div class="mt-4 flex gap-2">
-                    <input v-model="newItem" @keyup.enter="addItem" type="text" placeholder="Новый пункт…"
+                    <input v-model="newItem" @keyup.enter="addItem" type="text" :placeholder="$e('Новый пункт…')"
                         class="flex-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                    <PrimaryButton type="button" @click="addItem">Добавить</PrimaryButton>
+                    <PrimaryButton type="button" @click="addItem">{{ $e('Добавить') }}</PrimaryButton>
                 </div>
-                <div class="mt-4 text-right"><SecondaryButton @click="showItems = false">Закрыть</SecondaryButton></div>
+                <div class="mt-4 text-right"><SecondaryButton @click="showItems = false">{{ $e('Закрыть') }}</SecondaryButton></div>
             </div>
         </Modal>
     </AppLayout>

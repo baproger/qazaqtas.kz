@@ -25,7 +25,8 @@ class CategoryController extends Controller
         $this->authorize('viewAny', ProductCategory::class);
 
         return Inertia::render('Catalog/Categories', [
-            'categories' => ProductCategory::withCount('products')
+            'locales' => \App\Support\Locales::forForm(),
+            'categories' => ProductCategory::withCount('products')->with('translations')
                 ->orderBy('order')->orderBy('name')->get()
                 ->map(fn (ProductCategory $c) => [
                     'id' => $c->id,
@@ -39,6 +40,8 @@ class CategoryController extends Controller
                     'image' => $c->image,
                     'thumb' => $c->thumb,
                     'specs' => $c->specs ?: [],
+                    // Форма правит базовые значения; переводы едут отдельно.
+                    'translations_map' => $c->translationsPayload(),
                     'products_count' => $c->products_count,
                 ]),
         ]);
@@ -47,7 +50,8 @@ class CategoryController extends Controller
     public function storeCategory(Request $request): RedirectResponse
     {
         $this->authorize('create', ProductCategory::class);
-        ProductCategory::create($this->validatedCategory($request));
+        $category = ProductCategory::create($this->validatedCategory($request));
+        $category->saveTranslations($request->input('translations'));
         CatalogService::flushCache();
 
         return back()->with('success', 'Категория добавлена.');
@@ -57,6 +61,7 @@ class CategoryController extends Controller
     {
         $this->authorize('update', $category);
         $category->update($this->validatedCategory($request, $category));
+        $category->saveTranslations($request->input('translations'));
         CatalogService::flushCache();
 
         return back()->with('success', 'Категория обновлена.');
@@ -130,7 +135,20 @@ class CategoryController extends Controller
     /** @return array<string, mixed> */
     private function validatedCategory(Request $request, ?ProductCategory $category = null): array
     {
-        return $request->validate([
+        $rules = ['translations' => ['nullable', 'array']];
+
+        // Перевод не обязателен ни в одном поле: пустое откатывается
+        // к базовому значению категории.
+        foreach (\App\Support\Locales::ALL as $locale) {
+            $rules["translations.$locale.name"] = ['nullable', 'string', 'max:255'];
+            $rules["translations.$locale.tagline"] = ['nullable', 'string', 'max:255'];
+            $rules["translations.$locale.description"] = ['nullable', 'string', 'max:2000'];
+            $rules["translations.$locale.specs"] = ['nullable', 'array', 'max:4'];
+            $rules["translations.$locale.specs.*.label"] = ['nullable', 'string', 'max:40'];
+            $rules["translations.$locale.specs.*.value"] = ['nullable', 'string', 'max:60'];
+        }
+
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('product_categories', 'slug')->ignore($category?->id)],
             'tagline' => ['nullable', 'string', 'max:255'],
@@ -142,6 +160,11 @@ class CategoryController extends Controller
             'specs.*.value' => ['nullable', 'string', 'max:60'],
             'order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
+            ...$rules,
         ]);
+
+        unset($data['translations']);
+
+        return $data;
     }
 }

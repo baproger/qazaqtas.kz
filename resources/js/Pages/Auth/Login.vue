@@ -15,16 +15,16 @@ const submit = () => form.post(route('login'), { onFinish: () => form.reset('pas
 </script>
 
 <template>
-    <Head title="Вход" />
+    <Head :title="$e('Вход')" />
     <AuthSplitLayout>
-        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Добро пожаловать</h2>
-        <p class="mt-2 text-sm text-slate-400">Войдите в свой аккаунт для продолжения</p>
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">{{ $e('Добро пожаловать') }}</h2>
+        <p class="mt-2 text-sm text-slate-400">{{ $e('Войдите в свой аккаунт для продолжения') }}</p>
 
         <div v-if="status" class="mt-4 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">{{ status }}</div>
 
         <form @submit.prevent="submit" class="mt-8 space-y-5">
             <div v-if="companies.length > 1" class="auth-reveal" style="animation-delay: 200ms">
-                <label class="mb-1.5 block text-sm font-semibold text-slate-700">Компания</label>
+                <label class="mb-1.5 block text-sm font-semibold text-slate-700">{{ $e('Компания') }}</label>
                 <div class="grid grid-cols-2 gap-2">
                     <button v-for="c in companies" :key="c.id" type="button" @click="form.company_id = c.id"
                         class="rounded-xl border py-3 text-sm font-semibold transition-all"
@@ -46,7 +46,7 @@ const submit = () => form.post(route('login'), { onFinish: () => form.reset('pas
             </div>
 
             <div class="auth-reveal" style="animation-delay: 330ms">
-                <label for="password" class="mb-1.5 block text-sm font-semibold text-slate-700">Пароль</label>
+                <label for="password" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ $e('Пароль') }}</label>
                 <div class="group relative">
                     <span class="auth-ico pointer-events-none absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-400">
                         <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
@@ -63,21 +63,21 @@ const submit = () => form.post(route('login'), { onFinish: () => form.reset('pas
             <div class="auth-reveal" style="animation-delay: 410ms">
                 <label class="flex cursor-pointer select-none items-center gap-2 text-sm text-slate-600">
                     <input v-model="form.remember" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
-                    Запомнить меня
+                    {{ $e('Запомнить меня') }}
                 </label>
             </div>
 
             <button type="submit" :disabled="form.processing" class="auth-reveal auth-btn w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-60" style="animation-delay: 490ms">
-                <span v-if="!form.processing" class="relative z-10">Войти в систему</span>
+                <span v-if="!form.processing" class="relative z-10">{{ $e('Войти в систему') }}</span>
                 <span v-else class="relative z-10 inline-flex items-center gap-2">
                     <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" class="opacity-90"/></svg>
-                    Вход…
+                    {{ $e('Вход…') }}
                 </span>
             </button>
         </form>
 
         <p class="auth-reveal mt-7 text-center text-xs text-slate-400" style="animation-delay: 560ms">
-            Доступ к системе выдаёт администратор
+            {{ $e('Доступ к системе выдаёт администратор') }}
         </p>
     </AuthSplitLayout>
 </template>

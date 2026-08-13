@@ -3,6 +3,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { router, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import { money, number } from '@/utils/site';
+import { useT, useSiteRoute } from '@/composables/useTranslations';
+
+const t = useT();
+const { siteRoute } = useSiteRoute();
 
 const props = defineProps({
     collections: { type: Array, default: () => [] },
@@ -18,7 +22,7 @@ let scene = null;
 let parseTileSize = null;
 
 const collection = ref(props.collections[0] ?? null);
-const color = ref(collection.value?.colors?.[0] ?? { name: 'Мрамор белый', hex: '#E8E6E1' });
+const color = ref(collection.value?.colors?.[0] ?? { name: t('site.configurator.default_color'), hex: '#E8E6E1' });
 const pattern = ref(props.patterns[0]?.key ?? 'running');
 const width = ref(8);
 const length = ref(10);
@@ -107,17 +111,17 @@ watch(collection, (c) => {
 
 const addToCart = () => {
     if (!items.value.length) return;
-    router.post(route('site.cart.addMany'), { items: items.value }, { preserveScroll: true });
+    router.post(siteRoute('site.cart.addMany'), { items: items.value }, { preserveScroll: true });
 };
 
 const whatsappHref = computed(() => {
     const phone = usePage().props.site?.contacts?.whatsapp ?? '';
     const lines = [
-        'Здравствуйте! Рассчитал двор в конфигураторе QAZAQ TAS:',
-        `Площадь: ${number(area.value)} м² (${width.value} × ${length.value} м)`,
-        `Раскладка: ${activePattern.value?.name ?? '—'}, цвет: ${color.value?.name ?? '—'}`,
+        t('site.configurator.wa_intro'),
+        `${t('site.configurator.wa_area')}: ${number(area.value)} м² (${width.value} × ${length.value} м)`,
+        `${t('site.configurator.wa_pattern')}: ${activePattern.value?.name ?? '—'}, ${t('site.configurator.wa_color')}: ${color.value?.name ?? '—'}`,
         ...items.value.map((i) => `• ${i.name} — ${number(i.quantity)} ${i.unit}`),
-        `Примерная стоимость: ${money(total.value)}`,
+        `${t('site.configurator.wa_total')}: ${money(total.value)}`,
     ];
     return `https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`;
 });
@@ -137,13 +141,12 @@ onBeforeUnmount(() => scene?.dispose());
 <template>
     <SiteLayout :seo="seo">
         <section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
-            <p class="eyebrow">Конфигуратор</p>
+            <p class="eyebrow">{{ $t('site.nav.configurator') }}</p>
             <h1 class="display mt-5 max-w-3xl text-[clamp(2rem,5.5vw,4rem)] text-sand-50">
-                Соберите двор и получите точный расчёт
+                {{ $t('site.configurator.title') }}
             </h1>
             <p class="mt-5 max-w-2xl text-sm leading-relaxed text-sand-100/55 sm:text-base">
-                Выберите коллекцию, цвет и раскладку, задайте размеры участка — сцена
-                пересоберётся, а количество и стоимость посчитаются по данным каталога.
+                {{ $t('site.configurator.lead') }}
             </p>
 
             <div class="mt-10 grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -152,21 +155,21 @@ onBeforeUnmount(() => scene?.dispose());
                     <canvas ref="canvas" class="h-full w-full cursor-grab active:cursor-grabbing" />
 
                     <div v-if="loading" class="absolute inset-0 grid place-items-center">
-                        <p class="text-sm text-sand-100/40">Загружаем сцену…</p>
+                        <p class="text-sm text-sand-100/40">{{ $t('site.configurator.loading') }}</p>
                     </div>
 
                     <div class="pointer-events-none absolute left-5 top-5 rounded-full border border-white/10 bg-ink-900/70 px-4 py-2 text-xs text-sand-100/60 backdrop-blur">
                         {{ number(area) }} м² · {{ activePattern?.name }}
-                        <span v-if="collection?.texture" class="ml-1 text-sand-300">· фото изделия</span>
+                        <span v-if="collection?.texture" class="ml-1 text-sand-300">· {{ $t('site.configurator.photo_texture') }}</span>
                     </div>
 
                     <button
                         class="absolute bottom-5 right-5 rounded-full border border-white/15 bg-ink-900/70 px-4 py-2 text-xs text-sand-100/70 backdrop-blur transition hover:border-sand-300/60"
                         @click="scene?.resetView()"
-                    >Сбросить вид</button>
+                    >{{ $t('site.configurator.reset_view') }}</button>
 
                     <p class="pointer-events-none absolute bottom-5 left-5 text-[11px] text-sand-100/35">
-                        Вращение — перетаскиванием, масштаб — колесом
+                        {{ $t('site.configurator.controls_hint') }}
                     </p>
                 </div>
 
@@ -174,7 +177,7 @@ onBeforeUnmount(() => scene?.dispose());
                 <aside class="space-y-6">
                     <!-- Коллекция -->
                     <div class="card p-5 sm:p-6">
-                        <p class="eyebrow">Коллекция плитки</p>
+                        <p class="eyebrow">{{ $t('site.configurator.collection') }}</p>
                         <div class="mt-4 space-y-2">
                             <button
                                 v-for="c in collections"
@@ -194,7 +197,7 @@ onBeforeUnmount(() => scene?.dispose());
 
                     <!-- Цвет -->
                     <div v-if="collection?.colors?.length" class="card p-5 sm:p-6">
-                        <p class="eyebrow">Цвет · {{ color?.name }}</p>
+                        <p class="eyebrow">{{ $t('site.product.color') }} · {{ color?.name }}</p>
                         <div class="mt-4 flex flex-wrap gap-2.5">
                             <button
                                 v-for="c in collection.colors"
@@ -210,7 +213,7 @@ onBeforeUnmount(() => scene?.dispose());
 
                     <!-- Раскладка -->
                     <div class="card p-5 sm:p-6">
-                        <p class="eyebrow">Раскладка</p>
+                        <p class="eyebrow">{{ $t('site.configurator.pattern') }}</p>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <button
                                 v-for="p in patterns"
@@ -221,21 +224,21 @@ onBeforeUnmount(() => scene?.dispose());
                                 @click="pattern = p.key"
                             >
                                 <span class="block text-sm text-sand-50">{{ p.name }}</span>
-                                <span class="block text-[11px] text-sand-100/40">запас {{ p.waste }} %</span>
+                                <span class="block text-[11px] text-sand-100/40">{{ $t('site.configurator.waste', null, { percent: p.waste }) }}</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Размеры -->
                     <div class="card p-5 sm:p-6">
-                        <p class="eyebrow">Размеры участка, м</p>
+                        <p class="eyebrow">{{ $t('site.configurator.size') }}</p>
                         <div class="mt-4 flex items-center gap-3">
                             <label class="flex-1">
-                                <span class="text-xs text-sand-100/45">Ширина</span>
+                                <span class="text-xs text-sand-100/45">{{ $t('site.configurator.width') }}</span>
                                 <input v-model="width" type="number" min="1" max="60" class="mt-1.5 w-full rounded-xl border-white/12 bg-white/[0.04] px-3 py-2.5 text-sand-50 focus:border-sand-300 focus:ring-0" />
                             </label>
                             <label class="flex-1">
-                                <span class="text-xs text-sand-100/45">Длина</span>
+                                <span class="text-xs text-sand-100/45">{{ $t('site.configurator.length') }}</span>
                                 <input v-model="length" type="number" min="1" max="60" class="mt-1.5 w-full rounded-xl border-white/12 bg-white/[0.04] px-3 py-2.5 text-sand-50 focus:border-sand-300 focus:ring-0" />
                             </label>
                         </div>
@@ -256,7 +259,7 @@ onBeforeUnmount(() => scene?.dispose());
 
                     <!-- Малые формы -->
                     <div v-if="accessories.length" class="card p-5 sm:p-6">
-                        <p class="eyebrow">Добавить малые формы</p>
+                        <p class="eyebrow">{{ $t('site.configurator.extras') }}</p>
                         <div class="mt-4 space-y-3">
                             <div v-for="a in accessories" :key="a.id" class="flex items-center gap-3">
                                 <span class="min-w-0 flex-1">
@@ -280,15 +283,15 @@ onBeforeUnmount(() => scene?.dispose());
             <div class="card mt-6 p-6 sm:p-8">
                 <div class="grid gap-8 lg:grid-cols-[1fr_320px]">
                     <div>
-                        <p class="eyebrow">Расчёт</p>
+                        <p class="eyebrow">{{ $t('site.configurator.estimate') }}</p>
                         <table class="mt-5 w-full text-sm">
                             <tbody class="divide-y divide-white/8">
                                 <tr v-if="paving">
                                     <td class="py-3 text-sand-100/60">
                                         {{ collection?.name }}
                                         <span class="block text-xs text-sand-100/35">
-                                            {{ number(area) }} м² + запас {{ activePattern?.waste }} %
-                                            <template v-if="paving.pieces"> · ≈ {{ number(paving.pieces, 0) }} шт</template>
+                                            {{ number(area) }} м² + {{ $t('site.configurator.waste', null, { percent: activePattern?.waste }) }}
+                                            <template v-if="paving.pieces"> · ≈ {{ number(paving.pieces, 0) }} {{ $t('site.common.pcs') }}</template>
                                         </span>
                                     </td>
                                     <td class="py-3 text-right text-sand-50">{{ number(paving.quantity) }} м²</td>
@@ -297,7 +300,7 @@ onBeforeUnmount(() => scene?.dispose());
                                 <tr v-if="curb">
                                     <td class="py-3 text-sand-100/60">
                                         {{ border?.name }}
-                                        <span class="block text-xs text-sand-100/35">периметр участка</span>
+                                        <span class="block text-xs text-sand-100/35">{{ $t('site.configurator.perimeter') }}</span>
                                     </td>
                                     <td class="py-3 text-right text-sand-50">{{ number(curb.quantity) }} п.м.</td>
                                     <td class="py-3 text-right font-semibold text-sand-50">{{ money(curb.sum) }}</td>
@@ -317,12 +320,12 @@ onBeforeUnmount(() => scene?.dispose());
 
                     <div class="flex flex-col justify-between gap-6">
                         <div>
-                            <p class="text-sand-100/60">Итого материалов</p>
+                            <p class="text-sand-100/60">{{ $t('site.configurator.total') }}</p>
                             <p class="display mt-2 text-4xl text-sand-50">{{ money(total) }}</p>
                         </div>
                         <div class="space-y-3">
-                            <button class="btn-sand w-full" :disabled="!items.length" @click="addToCart">Добавить в корзину</button>
-                            <a :href="whatsappHref" target="_blank" rel="noopener" class="btn-ghost w-full">Отправить в WhatsApp</a>
+                            <button class="btn-sand w-full" :disabled="!items.length" @click="addToCart">{{ $t('site.configurator.add_to_cart') }}</button>
+                            <a :href="whatsappHref" target="_blank" rel="noopener" class="btn-ghost w-full">{{ $t('site.configurator.send_whatsapp') }}</a>
                         </div>
                     </div>
                 </div>

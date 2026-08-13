@@ -1,5 +1,8 @@
 <script setup>
 import { computed } from 'vue';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const props = defineProps({
     status: { type: String, default: '' },
@@ -25,11 +28,11 @@ const map = {
 };
 
 const labels = {
-    draft: 'Черновик', active: 'Активна', closed: 'Закрыта', completed: 'Завершён',
-    cancelled: 'Отменена', new: 'Новая', in_progress: 'В работе', review: 'Проверка',
-    done: 'Готово', legal: 'Юр. лицо', individual: 'Физ. лицо',
+    draft: tr('Черновик'), active: tr('Активна'), closed: tr('Закрыта'), completed: tr('Завершён'),
+    cancelled: tr('Отменена'), new: tr('Новая'), in_progress: tr('В работе'), review: tr('Проверка'),
+    done: tr('Готово'), legal: tr('Юр. лицо'), individual: tr('Физ. лицо'),
     // Статусы счетов: выставлен → частично оплачен → оплачен
-    sent: 'Выставлен', partial: 'Частично оплачен', paid: 'Оплачен',
+    sent: tr('Выставлен'), partial: tr('Частично оплачен'), paid: tr('Оплачен'),
 };
 
 const cls = computed(() => map[props.status] ?? 'bg-slate-100 text-slate-700');

@@ -18,10 +18,10 @@ const openFaq = ref(0);
     <SiteLayout :seo="seo">
         <section>
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
-                <p class="eyebrow">Контакты</p>
-                <h1 class="display mt-6 text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">Поговорим о вашем объекте</h1>
+                <p class="eyebrow">{{ $t('site.contacts.eyebrow') }}</p>
+                <h1 class="display mt-6 text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">{{ $t('site.contacts.title') }}</h1>
                 <div class="mt-10 flex flex-wrap gap-3">
-                    <a :href="`https://wa.me/${contacts.whatsapp}`" target="_blank" rel="noopener" class="btn-sand">Написать в WhatsApp</a>
+                    <a :href="`https://wa.me/${contacts.whatsapp}`" target="_blank" rel="noopener" class="btn-sand">{{ $t('site.cta.whatsapp') }}</a>
                     <a :href="`tel:${String(contacts.phone || '').replace(/[^\d+]/g, '')}`" class="btn-ghost">{{ contacts.phone }}</a>
                 </div>
                 <p class="mt-6 text-sm text-sand-100/50">{{ contacts.hours }} · {{ contacts.email }}</p>
@@ -29,7 +29,7 @@ const openFaq = ref(0);
         </section>
 
         <section class="ambient mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
-            <p class="eyebrow">Производство и склады</p>
+            <p class="eyebrow">{{ $t('site.contacts.branches') }}</p>
             <div class="mt-8 grid gap-4 sm:grid-cols-3">
                 <article v-for="b in branches" :key="b.city" class="card card-hover p-8">
                     <h2 class="display text-2xl text-sand-50">{{ b.city }}</h2>
@@ -40,14 +40,14 @@ const openFaq = ref(0);
                         :href="`https://yandex.ru/maps/?text=${encodeURIComponent(b.city + ' ' + b.address)}`"
                         target="_blank" rel="noopener"
                         class="mt-6 inline-block text-sm text-sand-100/45 underline-offset-4 hover:text-sand-300 hover:underline"
-                    >Показать на карте →</a>
+                    >{{ $t('site.contacts.map') }}</a>
                 </article>
             </div>
         </section>
 
         <section>
             <div class="mx-auto max-w-4xl px-5 py-20 sm:px-8 sm:py-28">
-                <h2 class="display text-[clamp(1.75rem,4vw,3rem)] text-sand-50">Частые вопросы</h2>
+                <h2 class="display text-[clamp(1.75rem,4vw,3rem)] text-sand-50">{{ $t('site.contacts.faq') }}</h2>
                 <div class="card mt-10 divide-y divide-white/10 px-6 sm:px-8">
                     <div v-for="(item, i) in faq" :key="i">
                         <button

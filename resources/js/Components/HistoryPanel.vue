@@ -1,12 +1,15 @@
 <script setup>
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 defineProps({ history: { type: Array, default: () => [] } });
 
-const actionLabel = { created: 'Создал(а)', updated: 'Изменил(а)', deleted: 'Удалил(а)' };
+const actionLabel = { created: tr('Создал(а)'), updated: tr('Изменил(а)'), deleted: tr('Удалил(а)') };
 const actionColor = { created: 'bg-emerald-500', updated: 'bg-amber-500', deleted: 'bg-rose-500' };
 const fieldRu = {
-    name: 'Название', budget: 'Бюджет', status: 'Статус', deal_stage_id: 'Этап',
-    project_stage_id: 'Этап', responsible_user_id: 'Ответственный', deadline: 'Срок',
-    description: 'Описание', client_name: 'Клиент', company_name: 'Компания', closed_at: 'Закрытие',
+    name: tr('Название'), budget: tr('Бюджет'), status: tr('Статус'), deal_stage_id: tr('Этап'),
+    project_stage_id: tr('Этап'), responsible_user_id: tr('Ответственный'), deadline: tr('Срок'),
+    description: tr('Описание'), client_name: tr('Клиент'), company_name: tr('Компания'), closed_at: tr('Закрытие'),
 };
 const fmt = (t) => new Date(t).toLocaleString('ru-RU');
 </script>
@@ -20,7 +23,7 @@ const fmt = (t) => new Date(t).toLocaleString('ru-RU');
             </div>
             <div class="pb-4 text-sm">
                 <div class="text-slate-800">
-                    <span class="font-medium">{{ log.user?.name ?? 'Система' }}</span>
+                    <span class="font-medium">{{ log.user?.name ?? $e('Система') }}</span>
                     <span class="text-slate-500"> {{ (actionLabel[log.action] || log.action).toLowerCase() }}</span>
                     <span v-if="log.field_name" class="text-slate-500"> «{{ fieldRu[log.field_name] || log.field_name }}»</span>
                 </div>
@@ -34,7 +37,7 @@ const fmt = (t) => new Date(t).toLocaleString('ru-RU');
         </div>
         <div v-if="!history.length" class="flex flex-col items-center gap-2 py-8 text-center">
             <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            <span class="text-sm text-slate-400">История пуста</span>
+            <span class="text-sm text-slate-400">{{ $e('История пуста') }}</span>
         </div>
     </div>
 </template>

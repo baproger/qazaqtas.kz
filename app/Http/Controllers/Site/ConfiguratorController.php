@@ -13,13 +13,33 @@ use Inertia\Response;
  */
 class ConfiguratorController extends Controller
 {
-    /** Раскладки: шаг паттерна и коэффициент подрезки. */
-    public const PATTERNS = [
-        ['key' => 'running', 'name' => 'Со смещением', 'waste' => 5, 'hint' => 'Классическая перевязка на пол-элемента'],
-        ['key' => 'stack', 'name' => 'Шов в шов', 'waste' => 3, 'hint' => 'Строгая сетка, ровные линии'],
-        ['key' => 'herringbone', 'name' => 'Ёлочка', 'waste' => 12, 'hint' => 'Диагональная укладка, максимальная стойкость к сдвигу'],
-        ['key' => 'basket', 'name' => 'Плетёнка', 'waste' => 7, 'hint' => 'Парные блоки, рисунок «корзинка»'],
+    /**
+     * Раскладки: коэффициент подрезки на каждую.
+     *
+     * Ключ и процент — данные расчёта и живут в коде; название и подсказку
+     * читает покупатель, поэтому они приходят из словаря. Константой список
+     * быть перестал: в ней нельзя вызвать переводчик.
+     */
+    public const WASTE = [
+        'running' => 5,
+        'stack' => 3,
+        'herringbone' => 12,
+        'basket' => 7,
     ];
+
+    /** @return array<int, array{key: string, name: string, waste: int, hint: string}> */
+    public static function patterns(): array
+    {
+        return collect(self::WASTE)
+            ->map(fn (int $waste, string $key) => [
+                'key' => $key,
+                'name' => __("site.configurator.patterns.$key.name"),
+                'waste' => $waste,
+                'hint' => __("site.configurator.patterns.$key.hint"),
+            ])
+            ->values()
+            ->all();
+    }
 
     public function __construct(private CatalogService $catalog) {}
 
@@ -30,13 +50,15 @@ class ConfiguratorController extends Controller
 
         return Inertia::render('Site/Configurator', [
             'collections' => $this->catalog->pavingCollections(),
-            'patterns' => self::PATTERNS,
+            'patterns' => self::patterns(),
             'borders' => $this->catalog->products(['category' => 'bordyury'], 10)->items(),
+            // featured() отдаёт уже переведённые записи массивами, поэтому
+            // категория читается ключом, а не стрелкой.
             'accessories' => $this->catalog->featured(6)
-                ->filter(fn ($p) => $p->category?->slug !== 'trotuarnaya-plitka')->values(),
+                ->filter(fn (array $p) => ($p['category']['slug'] ?? null) !== 'trotuarnaya-plitka')->values(),
             'seo' => [
-                'title' => '3D-конфигуратор двора — QAZAQ TAS',
-                'description' => 'Подберите плитку, цвет и раскладку, посмотрите результат в 3D и получите расчёт количества и стоимости.',
+                'title' => __('site.seo.configurator_title'),
+                'description' => __('site.seo.configurator_description'),
             ],
         ]);
     }

@@ -48,13 +48,13 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
 </script>
 
 <template>
-    <Head title="Проекты" />
+    <Head :title="$e('Проекты')" />
     <AppLayout>
         <template #header>{{ $t('page.workshop', 'Цех') }}</template>
 
         <div class="mb-4 inline-flex rounded-md bg-white shadow-sm border border-slate-200">
-            <button :class="view === 'kanban' ? 'bg-indigo-600 text-white' : 'text-slate-600'" class="rounded-l-md px-4 py-1.5 text-sm" @click="switchView('kanban')">Канбан</button>
-            <button :class="view === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-600'" class="rounded-r-md px-4 py-1.5 text-sm" @click="switchView('list')">Список</button>
+            <button :class="view === 'kanban' ? 'bg-indigo-600 text-white' : 'text-slate-600'" class="rounded-l-md px-4 py-1.5 text-sm" @click="switchView('kanban')">{{ $e('Канбан') }}</button>
+            <button :class="view === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-600'" class="rounded-r-md px-4 py-1.5 text-sm" @click="switchView('list')">{{ $e('Список') }}</button>
         </div>
 
         <div v-if="view === 'kanban'" class="space-y-6">
@@ -79,15 +79,15 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
                         <div class="text-sm font-bold leading-snug text-slate-900">{{ p.deal?.client_name || p.deal?.company_name || p.name }}</div>
                         <div class="mt-0.5 text-xs font-semibold tracking-wide text-indigo-500">{{ p.deal?.number || p.number }}</div>
                         <div v-if="p.deal?.address" class="mt-1 text-xs leading-snug text-slate-500">📍 {{ p.deal.address }}</div>
-                        <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-indigo-50 px-2.5 py-2" title="Сколько заказ находится в цехе">
-                            <span class="text-[10px] font-semibold uppercase tracking-wide text-indigo-400">⏱ в цехе</span>
+                        <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-indigo-50 px-2.5 py-2" :title="$e('Сколько заказ находится в цехе')">
+                            <span class="text-[10px] font-semibold uppercase tracking-wide text-indigo-400">{{ $e('⏱ в цехе') }}</span>
                             <span class="text-xl font-bold leading-none tabular-nums text-indigo-700">{{ inWorkshop(p) ?? '—' }}</span>
                         </div>
-                        <div v-if="onStage(p)" class="mt-1 text-right text-[10px] tabular-nums text-slate-400">на этапе {{ onStage(p) }}</div>
-                        <button v-if="p.project_stage_id === lastStageOf(g)" @click.prevent.stop="sendToAct(p)" class="mt-2 w-full rounded bg-teal-600 py-1 text-xs font-semibold text-white hover:bg-teal-700">🚚 Готово → Логистика</button>
-                        <button v-else @click.prevent.stop="advance(p)" class="mt-2 w-full rounded bg-slate-100 py-1 text-xs text-slate-600 hover:bg-indigo-100 hover:text-indigo-700">Далее →</button>
+                        <div v-if="onStage(p)" class="mt-1 text-right text-[10px] tabular-nums text-slate-400">{{ $e('на этапе') }} {{ onStage(p) }}</div>
+                        <button v-if="p.project_stage_id === lastStageOf(g)" @click.prevent.stop="sendToAct(p)" class="mt-2 w-full rounded bg-teal-600 py-1 text-xs font-semibold text-white hover:bg-teal-700">{{ $e('🚚 Готово → Логистика') }}</button>
+                        <button v-else @click.prevent.stop="advance(p)" class="mt-2 w-full rounded bg-slate-100 py-1 text-xs text-slate-600 hover:bg-indigo-100 hover:text-indigo-700">{{ $e('Далее →') }}</button>
                     </Link>
-                    <div v-if="!byStage(stage.id).length" class="py-6 text-center text-xs text-slate-400">Пусто</div>
+                    <div v-if="!byStage(stage.id).length" class="py-6 text-center text-xs text-slate-400">{{ $e('Пусто') }}</div>
                 </div>
             </div>
             </div>
@@ -98,8 +98,8 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
             <table class="min-w-full divide-y divide-slate-100 text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
-                        <th class="px-4 py-3">Номер</th><th class="px-4 py-3">Компания</th><th class="px-4 py-3">Клиент</th>
-                        <th class="px-4 py-3">Этап</th><th v-if="canSeeMoney" class="px-4 py-3">Бюджет</th><th class="px-4 py-3">Статус</th>
+                        <th class="px-4 py-3">{{ $e('Номер') }}</th><th class="px-4 py-3">{{ $e('Компания') }}</th><th class="px-4 py-3">{{ $e('Клиент') }}</th>
+                        <th class="px-4 py-3">{{ $e('Этап') }}</th><th v-if="canSeeMoney" class="px-4 py-3">{{ $e('Бюджет') }}</th><th class="px-4 py-3">{{ $e('Статус') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">

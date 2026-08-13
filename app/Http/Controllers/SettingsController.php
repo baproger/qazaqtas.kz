@@ -14,7 +14,7 @@ class SettingsController extends Controller
         'company_name' => 'QAZAQ TAS',
         'currency' => '₸',
         'auto_create_project' => true,
-        'default_locale' => 'ru',
+        'default_locale' => \App\Support\Locales::FALLBACK,
         // bonus_percent удалён: бонус теперь ступенчатый от маржи сделки
         // (PayrollService::bonusRateForMargin), настройкой не регулируется.
         'tax_percent' => 3,
@@ -47,7 +47,7 @@ class SettingsController extends Controller
             'company_name' => ['required', 'string', 'max:255'],
             'currency' => ['required', 'string', 'max:10'],
             'auto_create_project' => ['boolean'],
-            'default_locale' => ['required', 'in:ru,kk'],
+            'default_locale' => ['required', \Illuminate\Validation\Rule::in(\App\Support\Locales::ALL)],
             'tax_percent' => ['required', 'numeric', 'min:0', 'max:100'],
             'configurator_enabled' => ['boolean'],
         ]);

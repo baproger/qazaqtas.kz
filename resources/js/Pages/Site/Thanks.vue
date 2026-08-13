@@ -16,14 +16,13 @@ defineProps({
                 <svg class="h-7 w-7 text-sand-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 7" /></svg>
             </span>
 
-            <h1 class="display mt-8 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Заявка принята</h1>
+            <h1 class="display mt-8 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.thanks.title') }}</h1>
             <p class="mx-auto mt-5 max-w-lg text-sm leading-relaxed text-sand-100/55 sm:text-base">
-                Менеджер свяжется с вами в рабочее время, уточнит объём и сроки.
-                Заявка уже в работе у отдела продаж.
+                {{ $t('site.thanks.lead') }}
             </p>
 
             <div v-if="order" class="card mx-auto mt-10 w-full max-w-md p-6 text-left">
-                <p class="eyebrow">Заказ {{ order.number }}</p>
+                <p class="eyebrow">{{ $t('site.thanks.order', null, { number: order.number }) }}</p>
                 <ul class="mt-4 space-y-2 text-sm">
                     <li v-for="(item, i) in order.items" :key="i" class="flex justify-between gap-4 text-sand-100/60">
                         <span class="min-w-0 flex-1 truncate">{{ item.name }} · {{ item.quantity }} {{ item.unit }}</span>
@@ -31,14 +30,14 @@ defineProps({
                     </li>
                 </ul>
                 <div class="divider-top mt-5 flex justify-between pt-4">
-                    <span class="text-sand-100/60">Итого</span>
+                    <span class="text-sand-100/60">{{ $t('site.common.total') }}</span>
                     <b class="text-xl text-sand-50">{{ money(order.total) }}</b>
                 </div>
             </div>
 
             <div class="mt-10 flex flex-wrap justify-center gap-3">
-                <Link :href="route('site.catalog')" class="btn-sand">Вернуться в каталог</Link>
-                <Link :href="route('site.home')" class="btn-ghost">На главную</Link>
+                <Link :href="$r('site.catalog')" class="btn-sand">{{ $t('site.thanks.to_catalog') }}</Link>
+                <Link :href="$r('site.home')" class="btn-ghost">{{ $t('site.thanks.to_home') }}</Link>
             </div>
         </section>
     </SiteLayout>

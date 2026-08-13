@@ -48,24 +48,24 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
             <div class="mt-4 border-t pt-4">
                 <button v-if="!isLast" @click="advance"
                     class="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow transition-transform hover:scale-[1.02] hover:bg-indigo-700 active:scale-95">
-                    Далее — следующий этап →
+                    {{ $e('Далее — следующий этап →') }}
                 </button>
                 <button v-else-if="project.status !== 'completed'" @click="sendToAct"
                     class="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-semibold text-white shadow transition-transform hover:scale-[1.02] hover:bg-teal-700 active:scale-95">
-                    🚚 Готово — отправить на «Логистику»
+                    {{ $e('🚚 Готово — отправить на «Логистику»') }}
                 </button>
-                <span v-else class="inline-flex items-center gap-2 text-sm font-semibold text-green-600">✓ Отправлено на «Логистику»</span>
+                <span v-else class="inline-flex items-center gap-2 text-sm font-semibold text-green-600">{{ $e('✓ Отправлено на «Логистику»') }}</span>
             </div>
 
             <!-- Тайминг этапов: сколько времени заказ провёл на каждом -->
             <div v-if="stageLogs.length" class="mt-4 border-t pt-4">
-                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">⏱ Тайминг этапов</div>
+                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('⏱ Тайминг этапов') }}</div>
                 <div class="space-y-1.5">
                     <div v-for="(l, i) in stageLogs" :key="i" class="flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm"
                         :class="l.open ? 'bg-indigo-50' : 'bg-slate-50'">
                         <div class="flex items-center gap-2">
                             <span class="font-medium text-slate-800">{{ l.stage }}</span>
-                            <span v-if="l.open" class="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">сейчас</span>
+                            <span v-if="l.open" class="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">{{ $e('сейчас') }}</span>
                         </div>
                         <div class="flex items-center gap-3 tabular-nums">
                             <span class="text-xs text-slate-400">{{ formatDateTime(l.entered_at) }}<template v-if="l.left_at"> → {{ formatDateTime(l.left_at) }}</template></span>
@@ -80,23 +80,23 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
             <div class="lg:col-span-2 space-y-6">
                 <div class="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm">
                     <div class="mb-4 flex flex-wrap gap-4 border-b text-sm">
-                        <button :class="tab==='info' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='info'">Информация</button>
-                        <button :class="tab==='tasks' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='tasks'">Задачи ({{ project.tasks.length }})</button>
-                        <button v-if="canSeeMoney" :class="tab==='finance' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='finance'">Финансы</button>
-                        <button :class="tab==='docs' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='docs'">Документы ({{ project.documents.length }})</button>
-                        <button :class="tab==='comments' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='comments'">Комментарии ({{ project.comments.length }})</button>
-                        <button :class="tab==='history' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='history'">История</button>
+                        <button :class="tab==='info' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='info'">{{ $e('Информация') }}</button>
+                        <button :class="tab==='tasks' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='tasks'">{{ $e('Задачи (') }}{{ project.tasks.length }})</button>
+                        <button v-if="canSeeMoney" :class="tab==='finance' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='finance'">{{ $e('Финансы') }}</button>
+                        <button :class="tab==='docs' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='docs'">{{ $e('Документы (') }}{{ project.documents.length }})</button>
+                        <button :class="tab==='comments' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='comments'">{{ $e('Комментарии (') }}{{ project.comments.length }})</button>
+                        <button :class="tab==='history' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='history'">{{ $e('История') }}</button>
                     </div>
 
                     <div v-if="tab==='info'" class="space-y-3 text-sm">
-                        <div class="flex justify-between border-b py-2"><span class="text-slate-500">Клиент</span><span class="font-medium">{{ project.client?.name ?? '—' }}</span></div>
-                        <div class="flex justify-between border-b py-2"><span class="text-slate-500">Ответственный</span><span class="font-medium">{{ project.responsible?.name ?? '—' }}</span></div>
+                        <div class="flex justify-between border-b py-2"><span class="text-slate-500">{{ $e('Клиент') }}</span><span class="font-medium">{{ project.client?.name ?? '—' }}</span></div>
+                        <div class="flex justify-between border-b py-2"><span class="text-slate-500">{{ $e('Ответственный') }}</span><span class="font-medium">{{ project.responsible?.name ?? '—' }}</span></div>
                         <div v-if="project.deal && canSeeMoney" class="flex justify-between border-b py-2">
-                            <span class="text-slate-500">Из сделки</span>
+                            <span class="text-slate-500">{{ $e('Из сделки') }}</span>
                             <Link :href="route('deals.show', project.deal.id)" class="text-indigo-600 hover:underline">{{ project.deal.number }}</Link>
                         </div>
-                        <div class="flex justify-between border-b py-2"><span class="text-slate-500">Срок</span><span class="font-medium">{{ formatDate(project.deadline) }}</span></div>
-                        <div class="py-2"><div class="mb-1 text-slate-500">Описание</div><p class="whitespace-pre-line text-slate-700">{{ project.description ?? '—' }}</p></div>
+                        <div class="flex justify-between border-b py-2"><span class="text-slate-500">{{ $e('Срок') }}</span><span class="font-medium">{{ formatDate(project.deadline) }}</span></div>
+                        <div class="py-2"><div class="mb-1 text-slate-500">{{ $e('Описание') }}</div><p class="whitespace-pre-line text-slate-700">{{ project.description ?? '—' }}</p></div>
                     </div>
 
                     <TaskPanel v-else-if="tab==='tasks'" :tasks="project.tasks" taskable-type="project" :taskable-id="project.id" :users="users" />
@@ -109,17 +109,17 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
 
             <!-- Budget aside — only for privileged roles -->
             <div v-if="canSeeMoney && finance" class="rounded-2xl bg-white p-6 border border-slate-200 shadow-sm self-start">
-                <div class="text-xs uppercase text-slate-400">Бюджет (сумма)</div>
+                <div class="text-xs uppercase text-slate-400">{{ $e('Бюджет (сумма)') }}</div>
                 <div class="mt-1 text-2xl font-bold text-indigo-600">{{ money(finance.budget) }}</div>
                 <div class="mt-4 space-y-2 text-sm">
-                    <div class="flex justify-between"><span class="text-slate-500">Статус</span><StatusBadge :status="project.status" /></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Расходы</span><span class="font-medium text-red-600">{{ money(finance.expense) }}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Прибыль</span><span class="font-medium" :class="finance.plannedProfit >= 0 ? 'text-green-600' : 'text-red-600'">{{ money(finance.plannedProfit) }}</span></div>
-                    <div class="flex justify-between border-t pt-2"><span class="text-slate-500">Маржа</span><span class="font-bold">{{ finance.plannedMargin }}% · {{ money(finance.plannedProfit) }}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">{{ $e('Статус') }}</span><StatusBadge :status="project.status" /></div>
+                    <div class="flex justify-between"><span class="text-slate-500">{{ $e('Расходы') }}</span><span class="font-medium text-red-600">{{ money(finance.expense) }}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">{{ $e('Прибыль') }}</span><span class="font-medium" :class="finance.plannedProfit >= 0 ? 'text-green-600' : 'text-red-600'">{{ money(finance.plannedProfit) }}</span></div>
+                    <div class="flex justify-between border-t pt-2"><span class="text-slate-500">{{ $e('Маржа') }}</span><span class="font-bold">{{ finance.plannedMargin }}% · {{ money(finance.plannedProfit) }}</span></div>
                 </div>
             </div>
             <div v-else class="rounded-2xl bg-indigo-50 p-6 text-sm text-indigo-700 self-start">
-                Выполните свой этап и нажмите «Далее». Финансовые данные видны только руководству.
+                {{ $e('Выполните свой этап и нажмите «Далее». Финансовые данные видны только руководству.') }}
             </div>
         </div>
     </AppLayout>

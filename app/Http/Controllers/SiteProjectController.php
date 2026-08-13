@@ -22,14 +22,21 @@ class SiteProjectController extends Controller
         $this->guard($request);
 
         return Inertia::render('SiteProjects/Index', [
-            'projects' => SiteProject::orderBy('order')->orderByDesc('id')->get(),
+            'locales' => \App\Support\Locales::forForm(),
+            // Форма правит базовые значения; переводы едут отдельным полем.
+            'projects' => SiteProject::with('translations')
+                ->orderBy('order')->orderByDesc('id')->get()
+                ->map(fn (SiteProject $p) => $p->toArray() + [
+                    'translations_map' => $p->translationsPayload(),
+                ]),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $this->guard($request);
-        SiteProject::create($this->validated($request));
+        SiteProject::create($this->validated($request))
+            ->saveTranslations($request->input('translations'));
 
         return back()->with('success', 'Объект добавлен.');
     }
@@ -38,6 +45,7 @@ class SiteProjectController extends Controller
     {
         $this->guard($request);
         $project->update($this->validated($request));
+        $project->saveTranslations($request->input('translations'));
 
         return back()->with('success', 'Объект обновлён.');
     }
@@ -67,7 +75,18 @@ class SiteProjectController extends Controller
     /** @return array<string, mixed> */
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $rules = ['translations' => ['nullable', 'array']];
+
+        // Ни одно поле перевода не обязательно: пустое откатывается
+        // к базовому значению объекта.
+        foreach (\App\Support\Locales::ALL as $locale) {
+            $rules["translations.$locale.title"] = ['nullable', 'string', 'max:180'];
+            $rules["translations.$locale.city"] = ['nullable', 'string', 'max:80'];
+            $rules["translations.$locale.products"] = ['nullable', 'string', 'max:255'];
+            $rules["translations.$locale.description"] = ['nullable', 'string', 'max:2000'];
+        }
+
+        $data = $request->validate([
             'title' => ['required', 'string', 'max:180'],
             'city' => ['nullable', 'string', 'max:80'],
             'year' => ['nullable', 'string', 'max:10'],
@@ -76,7 +95,12 @@ class SiteProjectController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'order' => ['nullable', 'integer', 'min:0'],
             'is_active' => ['boolean'],
+            ...$rules,
         ]);
+
+        unset($data['translations']);
+
+        return $data;
     }
 
     private function guard(Request $request): void

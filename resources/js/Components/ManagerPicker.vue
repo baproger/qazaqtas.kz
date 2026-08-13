@@ -1,5 +1,8 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 // Выбор сотрудника для фильтров: менеджеры отдела продаж всегда сверху и
 // развёрнуты, остальные — по отделам, свёрнуты (раскрываются кликом).
@@ -17,14 +20,14 @@ const managers = computed(() => props.users.filter((u) => u.is_manager));
 const groups = computed(() => {
     const g = {};
     props.users.filter((u) => !u.is_manager).forEach((u) => {
-        const k = u.department ?? 'Без отдела';
+        const k = u.department ?? tr('Без отдела');
         (g[k] ??= []).push(u);
     });
     return Object.entries(g).map(([name, items]) => ({ name, items }))
         .sort((a, b) => (a.name === 'Без отдела') - (b.name === 'Без отдела') || a.name.localeCompare(b.name, 'ru'));
 });
 const toggleDept = (name) => { const s = new Set(openDepts.value); s.has(name) ? s.delete(name) : s.add(name); openDepts.value = s; };
-const selectedName = computed(() => props.users.find((u) => u.id === Number(props.modelValue))?.name ?? props.placeholder);
+const selectedName = computed(() => props.users.find((u) => u.id === Number(props.modelValue))?.name ?? tr(props.placeholder));
 const pick = (id) => { emit('update:modelValue', id); emit('change'); open.value = false; };
 const onDocClick = (e) => { if (!e.target.closest?.('.mgr-picker')) open.value = false; };
 onMounted(() => document.addEventListener('click', onDocClick));
@@ -40,12 +43,12 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
         </button>
         <div v-if="open" class="absolute z-30 mt-1 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
             <button type="button" @click="pick('')"
-                class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50" :class="!modelValue ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ placeholder }}</button>
-            <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Менеджеры (отдел продаж)</div>
+                class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50" :class="!modelValue ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ $e(placeholder) }}</button>
+            <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ $e('Менеджеры (отдел продаж)') }}</div>
             <button v-for="m in managers" :key="m.id" type="button" @click="pick(m.id)"
                 class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
                 :class="Number(modelValue) === m.id ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ m.name }}</button>
-            <div v-if="!managers.length" class="px-3 py-1.5 text-xs text-slate-400">Нет менеджеров</div>
+            <div v-if="!managers.length" class="px-3 py-1.5 text-xs text-slate-400">{{ $e('Нет менеджеров') }}</div>
             <!-- Остальные отделы: свёрнуты, раскрываются кликом -->
             <template v-for="g in groups" :key="g.name">
                 <button type="button" @click="toggleDept(g.name)"

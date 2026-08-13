@@ -7,6 +7,10 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 import SkeletonScreen from '@/Components/SkeletonScreen.vue';
 import { useT } from '@/composables/useTranslations';
 import { useChatAlerts } from '@/composables/useChatAlerts';
+import { useLocale } from '@/composables/useTranslations';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const t = useT();
 
@@ -44,28 +48,28 @@ const allNav = [
     // Дашборд слит с Аналитикой: financist видит её по роли (как раньше дашборд).
     // Порядок меню — просьба от 22.07.2026: Аналитика → Просроченные → Сделки
     // → Цех → Склад → Сводный отчет → Финансы → ЗП → остальное.
-    { key: 'nav.analytics', name: 'Аналитика', route: 'analytics.index', icon: '◊', leadershipOnly: true },
-    { key: 'nav.overdue', name: 'Просроченные', route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny' },
-    { key: 'nav.predeals', name: 'Заявки', route: 'preDeals.index', icon: '◧', roles: ['admin', 'director', 'financist', 'manager'] },
+    { key: 'nav.analytics', name: tr('Аналитика'), route: 'analytics.index', icon: '◊', leadershipOnly: true },
+    { key: 'nav.overdue', name: tr('Просроченные'), route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny' },
+    { key: 'nav.predeals', name: tr('Заявки'), route: 'preDeals.index', icon: '◧', roles: ['admin', 'director', 'financist', 'manager'] },
     // Заказы, оформленные на сайте: менеджер превращает их в сделки.
-    { key: 'nav.siteOrders', name: 'Заказы с сайта', route: 'siteOrders.index', icon: '🛒', roles: ['admin', 'director', 'financist', 'manager'] },
-    { key: 'nav.deals', name: 'Сделки', route: 'deals.index', icon: '◈', perm: 'deal.viewAny' },
-    { key: 'nav.workshop', name: 'Цех', route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
-    { key: 'nav.warehouse', name: 'Склад', route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
+    { key: 'nav.siteOrders', name: tr('Заказы с сайта'), route: 'siteOrders.index', icon: '🛒', roles: ['admin', 'director', 'financist', 'manager'] },
+    { key: 'nav.deals', name: tr('Сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny' },
+    { key: 'nav.workshop', name: tr('Цех'), route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
+    { key: 'nav.warehouse', name: tr('Склад'), route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
     // Каталог сайта: карточки продукции, которые видит витрина.
-    { key: 'nav.catalog', name: 'Каталог сайта', route: 'catalog.index', icon: '▥', perm: 'product.viewAny' },
+    { key: 'nav.catalog', name: tr('Каталог сайта'), route: 'catalog.index', icon: '▥', perm: 'product.viewAny' },
     // Реализованные объекты: их фото идут крупными кадрами на главной.
-    { key: 'nav.siteProjects', name: 'Объекты сайта', route: 'siteProjects.index', icon: '◱', roles: ['admin', 'director', 'financist'] },
-    { key: 'nav.reports', name: 'Сводный отчет', route: 'reports.deals', icon: '▦', roles: ['admin', 'director'] },
-    { key: 'nav.finance', name: 'Финансы', route: 'finance.index', icon: '₸', perm: 'invoice.viewAny', leadershipOnly: true },
-    { key: 'nav.payroll', name: 'Зарплата', route: 'payroll.index', icon: '💵', perm: 'payroll.view' },
-    { key: 'nav.chat', name: 'Чат', route: 'chat.index', icon: '✉' },
-    { key: 'nav.audit', name: 'Аудит', route: 'audit.index', icon: '❑', roles: ['admin'] },
-    { key: 'nav.departments', name: 'Отделы', route: 'departments.index', icon: '⌂', perm: 'department.viewAny', leadershipOnly: true },
-    { key: 'nav.users', name: 'Сотрудники', route: 'users.index', icon: '☻', perm: 'user.viewAny' },
-    { key: 'nav.profile', name: 'Профиль', route: 'profile.edit', icon: '🪪' },
-    { key: 'nav.settings', name: 'Настройки', route: 'settings.index', icon: '⚙', perm: 'setting.update' },
-    { key: 'nav.translations', name: 'Переводы', route: 'translations.index', icon: '🌐', perm: 'setting.update' },
+    { key: 'nav.siteProjects', name: tr('Объекты сайта'), route: 'siteProjects.index', icon: '◱', roles: ['admin', 'director', 'financist'] },
+    { key: 'nav.reports', name: tr('Сводный отчет'), route: 'reports.deals', icon: '▦', roles: ['admin', 'director'] },
+    { key: 'nav.finance', name: tr('Финансы'), route: 'finance.index', icon: '₸', perm: 'invoice.viewAny', leadershipOnly: true },
+    { key: 'nav.payroll', name: tr('Зарплата'), route: 'payroll.index', icon: '💵', perm: 'payroll.view' },
+    { key: 'nav.chat', name: tr('Чат'), route: 'chat.index', icon: '✉' },
+    { key: 'nav.audit', name: tr('Аудит'), route: 'audit.index', icon: '❑', roles: ['admin'] },
+    { key: 'nav.departments', name: tr('Отделы'), route: 'departments.index', icon: '⌂', perm: 'department.viewAny', leadershipOnly: true },
+    { key: 'nav.users', name: tr('Сотрудники'), route: 'users.index', icon: '☻', perm: 'user.viewAny' },
+    { key: 'nav.profile', name: tr('Профиль'), route: 'profile.edit', icon: '🪪' },
+    { key: 'nav.settings', name: tr('Настройки'), route: 'settings.index', icon: '⚙', perm: 'setting.update' },
+    { key: 'nav.translations', name: tr('Переводы'), route: 'translations.index', icon: '🌐', perm: 'setting.update' },
 ];
 const nav = computed(() => allNav.filter((i) => (!i.perm || perms.value.includes(i.perm)) && (!i.leadershipOnly || isLeadership.value) && (!i.roles || i.roles.some((r) => roles.value.includes(r)))));
 
@@ -111,25 +115,26 @@ const openNotification = (n) => {
 };
 const markAllRead = () => router.patch(route('notifications.readAll'), {}, { preserveScroll: true });
 const setLocale = (l) => router.patch(route('locale.update'), { locale: l }, { preserveScroll: true });
+const i18n = useLocale();
 // Иконка/цвет уведомления по смыслу заголовка (просрочка, назначение, этап).
 const notifMeta = (n) => {
     const s = ((n.data?.title || '') + ' ' + (n.data?.message || '')).toLowerCase();
-    if (s.includes('просроч') || s.includes('overdue')) return { icon: '⏰', cls: 'bg-red-100 text-red-600' };
-    if (s.includes('задач') || s.includes('назнач')) return { icon: '✅', cls: 'bg-emerald-100 text-emerald-600' };
-    if (s.includes('этап') || s.includes('сделк')) return { icon: '📊', cls: 'bg-indigo-100 text-indigo-600' };
-    if (s.includes('оплат') || s.includes('счёт') || s.includes('счет')) return { icon: '💰', cls: 'bg-amber-100 text-amber-600' };
+    if (s.includes(tr('просроч')) || s.includes('overdue')) return { icon: '⏰', cls: 'bg-red-100 text-red-600' };
+    if (s.includes(tr('задач')) || s.includes(tr('назнач'))) return { icon: '✅', cls: 'bg-emerald-100 text-emerald-600' };
+    if (s.includes(tr('этап')) || s.includes(tr('сделк'))) return { icon: '📊', cls: 'bg-indigo-100 text-indigo-600' };
+    if (s.includes(tr('оплат')) || s.includes(tr('счёт')) || s.includes(tr('счет'))) return { icon: '💰', cls: 'bg-amber-100 text-amber-600' };
     return { icon: '🔔', cls: 'bg-slate-100 text-slate-500' };
 };
 const relTime = (t) => {
     const d = (Date.now() - new Date(t).getTime()) / 1000;
-    if (d < 60) return 'только что';
-    if (d < 3600) return Math.floor(d / 60) + ' мин назад';
-    if (d < 86400) return Math.floor(d / 3600) + ' ч назад';
-    if (d < 604800) return Math.floor(d / 86400) + ' дн назад';
+    if (d < 60) return tr('только что');
+    if (d < 3600) return Math.floor(d / 60) + tr(' мин назад');
+    if (d < 86400) return Math.floor(d / 3600) + tr(' ч назад');
+    if (d < 604800) return Math.floor(d / 86400) + tr(' дн назад');
     return new Date(t).toLocaleDateString('ru-RU');
 };
 
-const roleLabels = { admin: 'СЕО (админ)', director: 'Директор', financist: 'Финансист-Бухгалтер', manager: 'Менеджер', employee: 'Сотрудник (цех)', lawyer: 'Юрист', cook: 'Повар', designer: 'Технолог', supplier: 'Снабженец' };
+const roleLabels = { admin: tr('СЕО (админ)'), director: tr('Директор'), financist: tr('Финансист-Бухгалтер'), manager: tr('Менеджер'), employee: tr('Сотрудник (цех)'), lawyer: tr('Юрист'), cook: tr('Повар'), designer: tr('Технолог'), supplier: tr('Снабженец') };
 const roleLabel = computed(() => roleLabels[roles.value[0]] ?? roles.value[0] ?? '');
 
 // Live clock next to the language switcher.
@@ -217,9 +222,9 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                         <button v-for="c in companies" :key="c.id" @click="switchCompany(c.id)"
                             :class="currentCompanyId === c.id ? 'bg-white text-emerald-600 shadow' : 'text-slate-500'"
                             class="rounded px-2.5 py-1 font-semibold transition-all">{{ c.name }}</button>
-                        <button v-if="canAllCompanies" @click="switchCompany(0)" title="Общий отчёт по обеим компаниям"
+                        <button v-if="canAllCompanies" @click="switchCompany(0)" :title="$e('Общий отчёт по обеим компаниям')"
                             :class="currentCompanyId === 0 ? 'bg-white text-emerald-600 shadow' : 'text-slate-500'"
-                            class="rounded px-2.5 py-1 font-semibold transition-all">Все</button>
+                            class="rounded px-2.5 py-1 font-semibold transition-all">{{ $e('Все') }}</button>
                     </div>
                     <span v-else-if="currentCompany" class="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600">{{ currentCompany.name }}</span>
 
@@ -231,10 +236,15 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                         <span class="tabular-nums text-slate-500">{{ clockDate }}</span>
                     </div>
 
+                    <!-- Список языков и подписи приходят с сервера: код языка
+                         `kk`, но в кнопке стоит «KZ» — рядом с «RU» это
+                         читается как страна, а не как опечатка. -->
                     <div class="hidden items-center rounded-lg bg-slate-100 p-0.5 text-xs sm:flex">
-                        <button v-for="l in ['ru','kk']" :key="l" @click="setLocale(l)"
+                        <button v-for="l in i18n.available" :key="l" @click="setLocale(l)"
+                            :title="i18n.names[l]"
+                            :aria-current="locale === l ? 'true' : undefined"
                             :class="locale === l ? 'bg-white text-indigo-600 shadow' : 'text-slate-500'"
-                            class="rounded px-2 py-1 font-medium uppercase transition-all">{{ l }}</button>
+                            class="rounded px-2 py-1 font-medium uppercase transition-all">{{ i18n.short[l] ?? l }}</button>
                     </div>
 
                     <Dropdown align="right" width="80">
@@ -270,7 +280,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                             <div class="mt-0.5 text-xs leading-snug text-slate-500">{{ n.data.message }}</div>
                                             <div class="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
                                                 <span>{{ relTime(n.created_at) }}</span>
-                                                <span v-if="n.data.url" class="font-medium text-indigo-500">→ {{ n.data.deal_number || 'Открыть' }}</span>
+                                                <span v-if="n.data.url" class="font-medium text-indigo-500">→ {{ n.data.deal_number || $e('Открыть') }}</span>
                                             </div>
                                         </div>
                                     </div>

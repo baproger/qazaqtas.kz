@@ -8,6 +8,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { money, formatDate, formatDateTime } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const props = defineProps({ rows: Array, leadership: Boolean, canManage: Boolean, month: String, normHours: Number, deptNorms: { type: [Object, Array], default: () => ({}) }, taxRate: Number, totals: Object });
 const me = props.rows[0] ?? null;
@@ -66,7 +69,7 @@ const toggleDept = (name) => { const s = new Set(collapsed.value); s.has(name) ?
 const monthSel = ref(props.month);
 const setMonth = () => router.get(route('payroll.index'), { month: monthSel.value || undefined }, { preserveState: true, preserveScroll: true, replace: true });
 
-const typeLabels = { absence: 'Отгул', sick: 'Больничный', fine: 'Штраф', advance: 'Аванс', bonus: 'Премия' };
+const typeLabels = { absence: tr('Отгул'), sick: tr('Больничный'), fine: tr('Штраф'), advance: tr('Аванс'), bonus: tr('Премия') };
 // «2026-07» → «июль 2026» для заголовков.
 const monthLabel = new Date(props.month + '-01').toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
 const typeClass = (t) => t === 'bonus' ? 'bg-emerald-100 text-emerald-700' : t === 'fine' ? 'bg-rose-100 text-rose-700' : t === 'advance' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700';
@@ -103,24 +106,24 @@ const adjForm = useForm({ user_id: '', type: 'absence', days: '', amount: '', da
 const openAdj = (uid = '') => { adjForm.reset(); adjForm.user_id = uid; adjForm.date = new Date().toISOString().slice(0, 10); showAdj.value = true; };
 const submitAdj = () => adjForm.post(route('payroll.adjustments.store'), { preserveScroll: true, onSuccess: () => (showAdj.value = false) });
 const delAdj = async (a) => {
-    if (await confirmDialog({ title: 'Удалить корректировку', message: `«${typeLabels[a.type]} ${money(a.amount)}» будет удалена.`, confirmText: 'Удалить', danger: true })) {
+    if (await confirmDialog({ title: tr('Удалить корректировку'), message: `«${typeLabels[a.type]} ${money(a.amount)}» будет удалена.`, confirmText: tr('Удалить'), danger: true })) {
         router.delete(route('payroll.adjustments.destroy', a.id), { preserveScroll: true });
     }
 };
 </script>
 
 <template>
-    <Head title="Зарплата" />
+    <Head :title="$e('Зарплата')" />
     <AppLayout>
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <span>{{ $t('page.payroll', 'Зарплата и бонусы') }}</span>
                 <div class="flex items-center gap-2">
-                    <label class="flex items-center gap-1 text-xs font-normal text-slate-400">месяц
+                    <label class="flex items-center gap-1 text-xs font-normal text-slate-400">{{ $e('месяц') }}
                         <input v-model="monthSel" @change="setMonth" type="month" class="rounded-lg border-slate-200 py-1.5 text-xs font-normal shadow-sm" />
                     </label>
                     <button v-if="canManage" @click="openAdj()"
-                        class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700">+ Корректировка</button>
+                        class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700">{{ $e('+ Корректировка') }}</button>
                 </div>
             </div>
         </template>
@@ -129,28 +132,28 @@ const delAdj = async (a) => {
         <div v-if="!leadership" class="grid max-w-5xl grid-cols-1 items-start gap-4 lg:grid-cols-3">
             <div class="space-y-4" :class="seesBonusScale ? 'lg:col-span-2' : 'lg:col-span-3'">
             <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
-                <div class="text-xs uppercase text-slate-400">К выплате · {{ monthLabel }}</div>
+                <div class="text-xs uppercase text-slate-400">{{ $e('К выплате ·') }} {{ monthLabel }}</div>
                 <div class="mt-1 text-3xl font-bold text-green-600">{{ money(me?.final ?? me?.payout ?? 0) }}</div>
                 <div class="mt-4 space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="text-slate-500">Оклад<template v-if="me?.hours != null"> · {{ me.hours }} ч × {{ money(me.hourly_rate) }}/ч</template></span>
+                        <span class="text-slate-500">{{ $e('Оклад') }}<template v-if="me?.hours != null"> · {{ me.hours }} {{ $e('ч ×') }} {{ money(me.hourly_rate) }}{{ $e('/ч') }}</template></span>
                         <span class="font-medium tabular-nums">{{ money(me?.base ?? me?.salary ?? 0) }}</span>
                     </div>
-                    <div class="flex justify-between"><span class="text-slate-500">Бонус по марже сделок</span><span class="font-medium tabular-nums text-emerald-600">{{ money(me?.bonus ?? 0) }}</span></div>
-                    <div v-if="me?.deductions" class="flex justify-between"><span class="text-slate-500">Удержания (отгул/больничный/штраф/аванс)</span><span class="font-medium tabular-nums text-rose-600">− {{ money(me.deductions) }}</span></div>
-                    <div v-if="me?.additions" class="flex justify-between"><span class="text-slate-500">Премии</span><span class="font-medium tabular-nums text-emerald-600">+ {{ money(me.additions) }}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Успешных сделок</span><span class="font-medium">{{ me?.closed ?? 0 }}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">{{ $e('Бонус по марже сделок') }}</span><span class="font-medium tabular-nums text-emerald-600">{{ money(me?.bonus ?? 0) }}</span></div>
+                    <div v-if="me?.deductions" class="flex justify-between"><span class="text-slate-500">{{ $e('Удержания (отгул/больничный/штраф/аванс)') }}</span><span class="font-medium tabular-nums text-rose-600">− {{ money(me.deductions) }}</span></div>
+                    <div v-if="me?.additions" class="flex justify-between"><span class="text-slate-500">{{ $e('Премии') }}</span><span class="font-medium tabular-nums text-emerald-600">+ {{ money(me.additions) }}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">{{ $e('Успешных сделок') }}</span><span class="font-medium">{{ me?.closed ?? 0 }}</span></div>
                 </div>
             </div>
 
             <!-- Корректировки за месяц -->
             <div v-if="me?.adjustments?.length" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Корректировки · {{ monthLabel }}</div>
+                <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $e('Корректировки ·') }} {{ monthLabel }}</div>
                 <div class="divide-y divide-slate-50 text-sm">
                     <div v-for="a in me.adjustments" :key="a.id" class="flex items-center justify-between gap-2 py-2">
                         <div class="flex items-center gap-2">
                             <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="typeClass(a.type)">{{ typeLabels[a.type] }}</span>
-                            <span class="text-xs text-slate-400">{{ formatDate(a.date) }}<template v-if="a.days"> · {{ a.days }} дн.</template><template v-if="a.note"> · {{ a.note }}</template> · внесено {{ formatDateTime(a.created_at) }}</span>
+                            <span class="text-xs text-slate-400">{{ formatDate(a.date) }}<template v-if="a.days"> · {{ a.days }} {{ $e('дн.') }}</template><template v-if="a.note"> · {{ a.note }}</template> {{ $e('· внесено') }} {{ formatDateTime(a.created_at) }}</span>
                         </div>
                         <span class="font-semibold tabular-nums" :class="a.type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'">{{ a.type === 'bonus' ? '+' : '−' }} {{ money(a.amount) }}</span>
                     </div>
@@ -160,7 +163,7 @@ const delAdj = async (a) => {
             <div v-if="me?.dealsList?.length" class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
                 <table class="min-w-full divide-y divide-slate-100 text-xs">
                     <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-400">
-                        <tr><th class="px-3 py-2">Сделка</th><th class="px-3 py-2">Этап</th><th class="px-3 py-2 text-right">Сумма</th><th class="px-3 py-2 text-right">Оплачено</th><th class="px-3 py-2 text-right text-emerald-600">Бонус</th></tr>
+                        <tr><th class="px-3 py-2">{{ $e('Сделка') }}</th><th class="px-3 py-2">{{ $e('Этап') }}</th><th class="px-3 py-2 text-right">{{ $e('Сумма') }}</th><th class="px-3 py-2 text-right">{{ $e('Оплачено') }}</th><th class="px-3 py-2 text-right text-emerald-600">{{ $e('Бонус') }}</th></tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="d in me.dealsList" :key="d.id" class="hover:bg-slate-50">
@@ -170,7 +173,7 @@ const delAdj = async (a) => {
                             <td class="px-3 py-2 text-right tabular-nums" :class="d.paid >= d.budget ? 'text-emerald-600' : 'text-slate-500'">{{ money(d.paid) }}</td>
                             <td class="px-3 py-2 text-right font-semibold tabular-nums text-emerald-600">
                                 {{ money(d.bonus) }}
-                                <span v-if="d.bonus_manual" class="ml-1 rounded bg-amber-100 px-1 py-px text-[9px] font-bold uppercase text-amber-700" :title="'Ручной % финансиста: ' + d.bonus_rate + '%'">{{ d.bonus_rate }}%</span>
+                                <span v-if="d.bonus_manual" class="ml-1 rounded bg-amber-100 px-1 py-px text-[9px] font-bold uppercase text-amber-700" :title="$e('Ручной % финансиста: ') + d.bonus_rate + '%'">{{ d.bonus_rate }}%</span>
                             </td>
                         </tr>
                     </tbody>
@@ -180,15 +183,15 @@ const delAdj = async (a) => {
 
             <!-- Правая колонка: система бонусов — только отдел продаж/финансист/админ -->
             <div v-if="seesBonusScale" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-4">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Система бонусов — по марже сделки</div>
+                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $e('Система бонусов — по марже сделки') }}</div>
                 <div class="mt-3 space-y-1.5 text-sm">
                     <div v-for="t in BONUS_TIERS" :key="t.m" class="flex items-center justify-between rounded-lg px-3 py-1.5"
                         :class="t.muted ? 'bg-slate-50 text-slate-400' : 'bg-emerald-50/50'">
-                        <span :class="t.muted ? '' : 'text-slate-600'">маржа {{ t.m }}</span>
+                        <span :class="t.muted ? '' : 'text-slate-600'">{{ $e('маржа') }} {{ t.m }}</span>
                         <span class="font-semibold tabular-nums" :class="t.muted ? '' : 'text-emerald-700'">{{ t.b }}</span>
                     </div>
                 </div>
-                <p class="mt-3 text-[11px] text-slate-400">Маржа = (сумма договора − расходы) / сумма договора. Остаток = сумма − налог − расходы.</p>
+                <p class="mt-3 text-[11px] text-slate-400">{{ $e('Маржа = (сумма договора − расходы) / сумма договора. Остаток = сумма − налог − расходы.') }}</p>
             </div>
         </div>
 
@@ -201,26 +204,26 @@ const delAdj = async (a) => {
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                     </span>
                     <div>
-                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Норма часов · {{ monthLabel }}</div>
+                        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ $e('Норма часов ·') }} {{ monthLabel }}</div>
                         <div class="mt-0.5 flex items-baseline gap-2">
                             <template v-if="editingNorm">
                                 <input v-model="normVal" type="number" min="1" max="744" class="w-24 rounded-lg border-indigo-300 py-1 text-lg font-bold tabular-nums text-slate-900 focus:border-indigo-500 focus:ring-indigo-500"
                                     @keydown.enter="saveNorm" @keydown.escape="editingNorm = false" />
                                 <button class="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-indigo-700" @click="saveNorm">✓</button>
-                                <button class="rounded-lg px-2 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-600" @click="editingNorm = false">отмена</button>
+                                <button class="rounded-lg px-2 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-600" @click="editingNorm = false">{{ $e('отмена') }}</button>
                             </template>
-                            <button v-else-if="canManage" class="group flex items-baseline gap-1.5" title="Изменить норму часов месяца" @click="editNorm">
+                            <button v-else-if="canManage" class="group flex items-baseline gap-1.5" :title="$e('Изменить норму часов месяца')" @click="editNorm">
                                 <span class="text-2xl font-bold tabular-nums leading-none text-slate-900">{{ normHours }}</span>
-                                <span class="text-sm text-slate-400">ч / мес</span>
+                                <span class="text-sm text-slate-400">{{ $e('ч / мес') }}</span>
                                 <svg class="h-3.5 w-3.5 self-center text-slate-300 transition-colors group-hover:text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                             </button>
-                            <span v-else class="text-2xl font-bold tabular-nums leading-none text-slate-900">{{ normHours }} <span class="text-sm font-normal text-slate-400">ч / мес</span></span>
+                            <span v-else class="text-2xl font-bold tabular-nums leading-none text-slate-900">{{ normHours }} <span class="text-sm font-normal text-slate-400">{{ $e('ч / мес') }}</span></span>
                         </div>
                     </div>
                 </div>
                 <div class="text-right text-[11px] leading-relaxed text-slate-400">
-                    <div>ставка за час = оклад ÷ <span class="font-semibold text-slate-600">{{ normHours }} ч</span> · начислено = часы × ставка</div>
-                    <div>часы не введены — полный оклад · у отдела своя норма — в заголовке его секции</div>
+                    <div>{{ $e('ставка за час = оклад ÷') }} <span class="font-semibold text-slate-600">{{ normHours }} {{ $e('ч') }}</span> {{ $e('· начислено = часы × ставка') }}</div>
+                    <div>{{ $e('часы не введены — полный оклад · у отдела своя норма — в заголовке его секции') }}</div>
                 </div>
             </div>
 
@@ -228,16 +231,16 @@ const delAdj = async (a) => {
                  отчёте; здесь по сотруднику они видны при раскрытии строки. -->
             <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">Оклады (начислено)</div>
+                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Оклады (начислено)') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-slate-800 xl:text-xl">{{ money(totals.base) }}</div>
-                    <div v-if="totals.base !== totals.salary" class="truncate text-[10px] text-slate-400">по карточкам {{ money(totals.salary) }}</div>
+                    <div v-if="totals.base !== totals.salary" class="truncate text-[10px] text-slate-400">{{ $e('по карточкам') }} {{ money(totals.salary) }}</div>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">Бонусы (по марже)</div>
+                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бонусы (по марже)') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-emerald-600 xl:text-xl">{{ money(totals.bonus) }}</div>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">Удержания / премии</div>
+                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Удержания / премии') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums xl:text-xl" :class="totals.deductions > 0 ? 'text-rose-600' : 'text-slate-300'">
                         <template v-if="totals.deductions > 0">−{{ money(totals.deductions) }}</template>
                         <template v-else>—</template>
@@ -245,7 +248,7 @@ const delAdj = async (a) => {
                     </div>
                 </div>
                 <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-                    <div class="truncate text-[11px] uppercase tracking-wide text-emerald-600/70">К выплате · {{ monthLabel }}</div>
+                    <div class="truncate text-[11px] uppercase tracking-wide text-emerald-600/70">{{ $e('К выплате ·') }} {{ monthLabel }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-emerald-700 xl:text-xl">{{ money(totals.final) }}</div>
                 </div>
             </div>
@@ -254,12 +257,12 @@ const delAdj = async (a) => {
                 <table class="min-w-full divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-4 py-3">Сотрудник</th>
-                            <th class="px-4 py-3 text-right" title="Отработанные часы за месяц. Пусто — полный оклад.">Часы</th>
-                            <th class="px-4 py-3 text-right">Оклад (начислено)</th>
-                            <th class="px-4 py-3 text-right">Бонус</th>
-                            <th class="px-4 py-3 text-right">Удержания / премии</th>
-                            <th class="px-4 py-3 text-right">К выплате</th>
+                            <th class="px-4 py-3">{{ $e('Сотрудник') }}</th>
+                            <th class="px-4 py-3 text-right" :title="$e('Отработанные часы за месяц. Пусто — полный оклад.')">{{ $e('Часы') }}</th>
+                            <th class="px-4 py-3 text-right">{{ $e('Оклад (начислено)') }}</th>
+                            <th class="px-4 py-3 text-right">{{ $e('Бонус') }}</th>
+                            <th class="px-4 py-3 text-right">{{ $e('Удержания / премии') }}</th>
+                            <th class="px-4 py-3 text-right">{{ $e('К выплате') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
@@ -271,7 +274,7 @@ const delAdj = async (a) => {
                                     <span class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-600">
                                         <svg class="h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform" :class="collapsed.has(g.name) ? '' : 'rotate-90'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l5 5-5 5"/></svg>
                                         ⌂ {{ g.name }}
-                                        <span class="font-medium normal-case tracking-normal text-slate-400">{{ g.list.length }} сотр.</span>
+                                        <span class="font-medium normal-case tracking-normal text-slate-400">{{ g.list.length }} {{ $e('сотр.') }}</span>
                                         <!-- Своя норма часов отдела; пусто при правке — сброс на общую -->
                                         <span v-if="g.id != null" class="normal-case tracking-normal" @click.stop>
                                             <span v-if="editingDeptNorm === g.name" class="flex items-center gap-1">
@@ -282,15 +285,15 @@ const delAdj = async (a) => {
                                             </span>
                                             <button v-else-if="canManage" class="group/norm inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums transition-colors"
                                                 :class="g.override ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'bg-slate-200/70 text-slate-500 hover:bg-slate-300/70'"
-                                                :title="g.override ? 'Своя норма отдела (пусто — сброс на общую ' + normHours + ' ч)' : 'Общая норма ' + normHours + ' ч — нажмите, чтобы задать свою для отдела'"
+                                                :title="g.override ? $e('Своя норма отдела (пусто — сброс на общую ') + normHours + $e(' ч)') : $e('Общая норма ') + normHours + $e(' ч — нажмите, чтобы задать свою для отдела')"
                                                 @click="editDeptNorm(g)">
-                                                норма {{ g.norm }} ч
+                                                {{ $e('норма') }} {{ g.norm }} {{ $e('ч') }}
                                                 <svg class="h-2.5 w-2.5 opacity-40 group-hover/norm:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                             </button>
-                                            <span v-else class="rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums" :class="g.override ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200/70 text-slate-500'">норма {{ g.norm }} ч</span>
+                                            <span v-else class="rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums" :class="g.override ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200/70 text-slate-500'">{{ $e('норма') }} {{ g.norm }} {{ $e('ч') }}</span>
                                         </span>
                                     </span>
-                                    <span class="text-xs font-semibold tabular-nums text-emerald-700">к выплате {{ money(g.final) }}</span>
+                                    <span class="text-xs font-semibold tabular-nums text-emerald-700">{{ $e('к выплате') }} {{ money(g.final) }}</span>
                                 </div>
                             </td>
                         </tr>
@@ -303,7 +306,7 @@ const delAdj = async (a) => {
                                         <Avatar :name="r.user" :src="r.avatar" :size="32" />
                                         <div class="min-w-0 leading-tight">
                                             <div class="truncate font-medium text-slate-900">{{ r.user }}</div>
-                                            <div v-if="r.deals > 0" class="text-[11px] text-slate-400">{{ r.deals }} сделок · {{ r.closed }} успешных</div>
+                                            <div v-if="r.deals > 0" class="text-[11px] text-slate-400">{{ r.deals }} {{ $e('сделок ·') }} {{ r.closed }} {{ $e('успешных') }}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -315,11 +318,11 @@ const delAdj = async (a) => {
                                         <button class="rounded bg-emerald-600 px-1.5 py-1 text-[10px] font-bold text-white" @click="saveHours(r)">✓</button>
                                     </div>
                                     <button v-else-if="canManage" class="group inline-flex items-center gap-1 hover:text-indigo-600"
-                                        :title="'Отработанные часы за ' + monthLabel + ' (пусто — полный оклад). Ставка: ' + money(r.hourly_rate ?? 0) + '/ч'" @click="editHours(r)">
-                                        <span :class="r.hours != null ? 'font-medium text-slate-700' : 'text-slate-300'">{{ r.hours != null ? r.hours + ' ч' : '—' }}</span>
+                                        :title="$e('Отработанные часы за ') + monthLabel + $e(' (пусто — полный оклад). Ставка: ') + money(r.hourly_rate ?? 0) + $e('/ч')" @click="editHours(r)">
+                                        <span :class="r.hours != null ? 'font-medium text-slate-700' : 'text-slate-300'">{{ r.hours != null ? r.hours + $e(' ч') : '—' }}</span>
                                         <svg class="h-3 w-3 text-slate-300 group-hover:text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                     </button>
-                                    <span v-else :class="r.hours != null ? 'font-medium text-slate-700' : 'text-slate-300'">{{ r.hours != null ? r.hours + ' ч' : '—' }}</span>
+                                    <span v-else :class="r.hours != null ? 'font-medium text-slate-700' : 'text-slate-300'">{{ r.hours != null ? r.hours + $e(' ч') : '—' }}</span>
                                 </td>
                                 <!-- Оклад: крупно — начислено; подписью — оклад по карточке и формула часов -->
                                 <td class="px-4 py-3 text-right tabular-nums" @click.stop>
@@ -329,12 +332,12 @@ const delAdj = async (a) => {
                                         <button class="rounded bg-emerald-600 px-1.5 py-1 text-[10px] font-bold text-white" @click="saveSalary(r)">✓</button>
                                     </div>
                                     <template v-else>
-                                        <button v-if="canManage" class="group inline-flex items-center gap-1 hover:text-indigo-600" title="Изменить оклад" @click="editSalary(r)">
+                                        <button v-if="canManage" class="group inline-flex items-center gap-1 hover:text-indigo-600" :title="$e('Изменить оклад')" @click="editSalary(r)">
                                             <span :class="r.base > 0 ? 'font-medium text-slate-800' : 'text-slate-300'">{{ r.base > 0 ? money(r.base) : '—' }}</span>
                                             <svg class="h-3 w-3 text-slate-300 group-hover:text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                         </button>
                                         <span v-else :class="r.base > 0 ? 'font-medium text-slate-800' : 'text-slate-300'">{{ r.base > 0 ? money(r.base) : '—' }}</span>
-                                        <div v-if="r.hours != null" class="text-[10px] text-slate-400">оклад {{ money(r.salary) }} · {{ r.hours }} ч × {{ money(r.hourly_rate ?? 0) }}</div>
+                                        <div v-if="r.hours != null" class="text-[10px] text-slate-400">{{ $e('оклад') }} {{ money(r.salary) }} · {{ r.hours }} {{ $e('ч ×') }} {{ money(r.hourly_rate ?? 0) }}</div>
                                     </template>
                                 </td>
                                 <td class="px-4 py-3 text-right tabular-nums" :class="r.bonus > 0 ? 'font-medium text-emerald-600' : 'text-slate-300'">{{ r.bonus > 0 ? money(r.bonus) : '—' }}</td>
@@ -349,43 +352,43 @@ const delAdj = async (a) => {
                                 <td colspan="6" class="px-4 py-3">
                                     <!-- Финансы сделок сотрудника (из колонок убраны — здесь по требованию) -->
                                     <div v-if="r.budget > 0" class="mb-3 flex flex-wrap gap-2 text-[11px]">
-                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">Сумма договоров <span class="font-semibold tabular-nums text-slate-700">{{ money(r.budget) }}</span></span>
-                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">Налог {{ taxRate }}% <span class="font-semibold tabular-nums text-rose-600">− {{ money(r.tax) }}</span></span>
-                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">Расходы <span class="font-semibold tabular-nums text-rose-600">− {{ money(r.expense) }}</span></span>
-                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">Остаток <span class="font-semibold tabular-nums text-slate-700">{{ money(r.remainder) }}</span></span>
-                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">Чистая прибыль <span class="font-semibold tabular-nums" :class="r.company >= 0 ? 'text-slate-900' : 'text-rose-600'">{{ money(r.company) }}</span></span>
+                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">{{ $e('Сумма договоров') }} <span class="font-semibold tabular-nums text-slate-700">{{ money(r.budget) }}</span></span>
+                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">{{ $e('Налог') }} {{ taxRate }}% <span class="font-semibold tabular-nums text-rose-600">− {{ money(r.tax) }}</span></span>
+                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">{{ $e('Расходы') }} <span class="font-semibold tabular-nums text-rose-600">− {{ money(r.expense) }}</span></span>
+                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">{{ $e('Остаток') }} <span class="font-semibold tabular-nums text-slate-700">{{ money(r.remainder) }}</span></span>
+                                        <span class="rounded-full bg-white px-2.5 py-1 text-slate-500 ring-1 ring-slate-200">{{ $e('Чистая прибыль') }} <span class="font-semibold tabular-nums" :class="r.company >= 0 ? 'text-slate-900' : 'text-rose-600'">{{ money(r.company) }}</span></span>
                                     </div>
                                     <!-- Корректировки сотрудника за месяц -->
                                     <div class="mb-3 rounded-lg border border-slate-200 bg-white p-3">
                                         <div class="mb-1 flex items-center justify-between">
-                                            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Корректировки · {{ monthLabel }}</span>
-                                            <button v-if="canManage" class="text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="openAdj(r.uid)">+ добавить</button>
+                                            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ $e('Корректировки ·') }} {{ monthLabel }}</span>
+                                            <button v-if="canManage" class="text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="openAdj(r.uid)">{{ $e('+ добавить') }}</button>
                                         </div>
                                         <div v-if="r.adjustments?.length" class="divide-y divide-slate-50 text-xs">
                                             <div v-for="a in r.adjustments" :key="a.id" class="flex items-center justify-between gap-2 py-1.5">
                                                 <div class="flex items-center gap-2">
                                                     <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold" :class="typeClass(a.type)">{{ typeLabels[a.type] }}</span>
-                                                    <span class="text-slate-400">{{ formatDate(a.date) }}<template v-if="a.days"> · {{ a.days }} дн.</template><template v-if="a.note"> · {{ a.note }}</template><template v-if="a.creator"> · {{ a.creator }}</template> · внесено {{ formatDateTime(a.created_at) }}</span>
+                                                    <span class="text-slate-400">{{ formatDate(a.date) }}<template v-if="a.days"> · {{ a.days }} {{ $e('дн.') }}</template><template v-if="a.note"> · {{ a.note }}</template><template v-if="a.creator"> · {{ a.creator }}</template> {{ $e('· внесено') }} {{ formatDateTime(a.created_at) }}</span>
                                                 </div>
                                                 <div class="flex items-center gap-2">
                                                     <span class="font-semibold tabular-nums" :class="a.type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'">{{ a.type === 'bonus' ? '+' : '−' }} {{ money(a.amount) }}</span>
-                                                    <button v-if="canManage" class="text-slate-300 hover:text-rose-600" title="Удалить" @click="delAdj(a)">✕</button>
+                                                    <button v-if="canManage" class="text-slate-300 hover:text-rose-600" :title="$e('Удалить')" @click="delAdj(a)">✕</button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div v-else class="py-1 text-xs text-slate-300">Нет корректировок</div>
+                                        <div v-else class="py-1 text-xs text-slate-300">{{ $e('Нет корректировок') }}</div>
                                     </div>
                                     <div v-if="r.dealsList && r.dealsList.length" class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
                                         <table class="min-w-full divide-y divide-slate-100 text-xs">
                                             <thead class="text-left uppercase tracking-wide text-slate-400">
                                                 <tr>
-                                                    <th class="px-3 py-2">Сделка</th>
-                                                    <th class="px-3 py-2">Этап</th>
-                                                    <th class="px-3 py-2 text-right">Сумма</th>
-                                                    <th class="px-3 py-2 text-right">Оплачено</th>
-                                                    <th class="px-3 py-2 text-right text-rose-600">Расходы</th>
-                                                    <th class="px-3 py-2 text-right text-rose-600">Налог</th>
-                                                    <th class="px-3 py-2 text-right text-emerald-600">Бонус (ЗП)</th>
+                                                    <th class="px-3 py-2">{{ $e('Сделка') }}</th>
+                                                    <th class="px-3 py-2">{{ $e('Этап') }}</th>
+                                                    <th class="px-3 py-2 text-right">{{ $e('Сумма') }}</th>
+                                                    <th class="px-3 py-2 text-right">{{ $e('Оплачено') }}</th>
+                                                    <th class="px-3 py-2 text-right text-rose-600">{{ $e('Расходы') }}</th>
+                                                    <th class="px-3 py-2 text-right text-rose-600">{{ $e('Налог') }}</th>
+                                                    <th class="px-3 py-2 text-right text-emerald-600">{{ $e('Бонус (ЗП)') }}</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="divide-y divide-slate-50">
@@ -403,36 +406,36 @@ const delAdj = async (a) => {
                                                     <td class="px-3 py-2 text-right tabular-nums text-rose-600">{{ money(d.tax) }}</td>
                                                     <td class="px-3 py-2 text-right font-semibold tabular-nums text-emerald-600">
                                                         {{ money(d.bonus) }}
-                                                        <span v-if="d.bonus_manual" class="ml-1 rounded bg-amber-100 px-1 py-px text-[9px] font-bold uppercase text-amber-700" :title="'Ручной % финансиста: ' + d.bonus_rate + '%'">{{ d.bonus_rate }}%</span>
+                                                        <span v-if="d.bonus_manual" class="ml-1 rounded bg-amber-100 px-1 py-px text-[9px] font-bold uppercase text-amber-700" :title="$e('Ручной % финансиста: ') + d.bonus_rate + '%'">{{ d.bonus_rate }}%</span>
                                                     </td>
                                                 </tr>
                                             </tbody>
                                         </table>
-                                        <p class="px-3 py-2 text-[11px] text-slate-400">🟢 «Оплата успешно» — в ЗП; 🟡 «Акт утверждение» — ожидает оплаты, ещё не в ЗП.</p>
+                                        <p class="px-3 py-2 text-[11px] text-slate-400">{{ $e('🟢 «Оплата успешно» — в ЗП; 🟡 «Акт утверждение» — ожидает оплаты, ещё не в ЗП.') }}</p>
                                     </div>
-                                    <div v-else class="py-2 text-center text-xs text-slate-400">Нет сделок на «Оплата успешно» / «Акт утверждение»</div>
+                                    <div v-else class="py-2 text-center text-xs text-slate-400">{{ $e('Нет сделок на «Оплата успешно» / «Акт утверждение»') }}</div>
                                 </td>
                             </tr>
                         </template>
                         </template>
                         </template>
-                        <tr v-if="!rows.length"><td colspan="6" class="px-4 py-8 text-center text-slate-400">Нет данных</td></tr>
+                        <tr v-if="!rows.length"><td colspan="6" class="px-4 py-8 text-center text-slate-400">{{ $e('Нет данных') }}</td></tr>
                     </tbody>
                 </table>
             </div>
             <!-- Шкала бонусов — только отдел продаж/финансист/админ -->
-            <p v-if="seesBonusScale" class="mt-3 text-xs text-slate-400">К выплате = оклад + бонус − удержания (отгул/больничный/штраф/аванс) + премии за выбранный месяц. Почасовой оклад: если сотруднику введены отработанные часы за месяц, оклад начисляется как часы × ставка за час (ставка = оклад ÷ норма часов месяца, норма — в шапке страницы); часы не введены — полный оклад. Отгул/больничный днями: удержание = оклад / 22 × дни. Остаток = сумма договора − налог {{ taxRate }}% − расходы. Бонус по марже сделки (остаток/сумма), выплачивается пропорционально оплаченной доле (оплачено/сумма): до 10% — нет; 11–15% — 5%; 16–20% — 7%; 21–30% — 10%; 31–40% — 13%; от 41% — 15% от остатка. Чистая прибыль компании = остаток − бонус.</p>
+            <p v-if="seesBonusScale" class="mt-3 text-xs text-slate-400">{{ $e('К выплате = оклад + бонус − удержания (отгул/больничный/штраф/аванс) + премии за выбранный месяц. Почасовой оклад: если сотруднику введены отработанные часы за месяц, оклад начисляется как часы × ставка за час (ставка = оклад ÷ норма часов месяца, норма — в шапке страницы); часы не введены — полный оклад. Отгул/больничный днями: удержание = оклад / 22 × дни. Остаток = сумма договора − налог') }} {{ taxRate }}{{ $e('% − расходы. Бонус по марже сделки (остаток/сумма), выплачивается пропорционально оплаченной доле (оплачено/сумма): до 10% — нет; 11–15% — 5%; 16–20% — 7%; 21–30% — 10%; 31–40% — 13%; от 41% — 15% от остатка. Чистая прибыль компании = остаток − бонус.') }}</p>
         </template>
 
         <!-- Модалка корректировки -->
         <Modal :show="showAdj" @close="showAdj = false" max-width="lg">
             <div class="p-6">
-                <h2 class="mb-4 text-lg font-semibold text-slate-900">Корректировка ЗП</h2>
+                <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ $e('Корректировка ЗП') }}</h2>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">Сотрудник *</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Сотрудник *') }}</label>
                         <select v-model="adjForm.user_id" class="w-full rounded-md border-slate-300 text-sm shadow-sm">
-                            <option value="">— выберите —</option>
+                            <option value="">{{ $e('— выберите —') }}</option>
                             <optgroup v-for="g in groups" :key="g.name" :label="g.name">
                                 <option v-for="r in g.list" :key="r.uid" :value="r.uid">{{ r.user }}</option>
                             </optgroup>
@@ -445,41 +448,41 @@ const delAdj = async (a) => {
                             :class="adjForm.type === t ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'">{{ label }}</button>
                     </div>
                     <div v-if="adjForm.type === 'absence' || adjForm.type === 'sick'">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">Дней (сумма = оклад / 22 × дни)</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Дней (сумма = оклад / 22 × дни)') }}</label>
                         <input v-model="adjForm.days" type="number" min="0.5" step="0.5" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
                         <div v-if="adjForm.errors.days" class="mt-1 text-xs text-red-600">{{ adjForm.errors.days }}</div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">Сумма, ₸ {{ adjForm.type === 'absence' || adjForm.type === 'sick' ? '(или авто по дням)' : '*' }}</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Сумма, ₸') }} {{ adjForm.type === 'absence' || adjForm.type === 'sick' ? $e('(или авто по дням)') : '*' }}</label>
                         <input v-model="adjForm.amount" type="number" min="0" step="0.01" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
                         <div v-if="adjForm.errors.amount" class="mt-1 text-xs text-red-600">{{ adjForm.errors.amount }}</div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">Дата *</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Дата *') }}</label>
                         <input v-model="adjForm.date" type="date" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
                         <div v-if="adjForm.errors.date" class="mt-1 text-xs text-red-600">{{ adjForm.errors.date }}</div>
                     </div>
                     <!-- Аванс — реальные деньги: откуда выданы (уйдёт в Расходы на Финансах) -->
                     <div v-if="adjForm.type === 'advance'">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">Откуда выданы деньги *</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Откуда выданы деньги *') }}</label>
                         <div class="flex gap-2">
                             <button type="button" @click="adjForm.payment_method = 'cash'"
                                 :class="adjForm.payment_method === 'cash' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'"
-                                class="rounded-lg border px-3 py-1.5 text-sm font-medium">💵 Наличные</button>
+                                class="rounded-lg border px-3 py-1.5 text-sm font-medium">{{ $e('💵 Наличные') }}</button>
                             <button type="button" @click="adjForm.payment_method = 'bank'"
                                 :class="adjForm.payment_method === 'bank' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'"
-                                class="rounded-lg border px-3 py-1.5 text-sm font-medium">🏦 Банк</button>
+                                class="rounded-lg border px-3 py-1.5 text-sm font-medium">{{ $e('🏦 Банк') }}</button>
                         </div>
-                        <p class="mt-1 text-[11px] text-slate-400">Аванс автоматически попадёт в Расходы на Финансах (категория «Расходы по сотрудникам»)</p>
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Аванс автоматически попадёт в Расходы на Финансах (категория «Расходы по сотрудникам»)') }}</p>
                     </div>
                     <div :class="adjForm.type === 'absence' || adjForm.type === 'sick' || adjForm.type === 'advance' ? '' : 'sm:col-span-2'">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">Комментарий</label>
-                        <input v-model="adjForm.note" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm" placeholder="Причина…" />
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Комментарий') }}</label>
+                        <input v-model="adjForm.note" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm" :placeholder="$e('Причина…')" />
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-2">
-                    <SecondaryButton @click="showAdj = false">Отмена</SecondaryButton>
-                    <PrimaryButton :disabled="adjForm.processing || !adjForm.user_id" @click="submitAdj">Сохранить</PrimaryButton>
+                    <SecondaryButton @click="showAdj = false">{{ $e('Отмена') }}</SecondaryButton>
+                    <PrimaryButton :disabled="adjForm.processing || !adjForm.user_id" @click="submitAdj">{{ $e('Сохранить') }}</PrimaryButton>
                 </div>
             </div>
         </Modal>

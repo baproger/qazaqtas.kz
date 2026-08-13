@@ -7,6 +7,17 @@
         <link rel="icon" type="image/png" href="/logo-mark.png">
         <link rel="apple-touch-icon" href="/logo-mark.png">
 
+        {{-- Языковые версии страницы: только для витрины (в ERP язык берётся
+             из карточки сотрудника, а не из адреса, и alternates пуст). --}}
+        @php($alternates = \App\Support\Locales::alternates(request()))
+        @if ($alternates)
+            <link rel="canonical" href="{{ $alternates[app()->getLocale()] }}">
+            @foreach ($alternates as $altLocale => $altUrl)
+                <link rel="alternate" hreflang="{{ $altLocale }}" href="{{ $altUrl }}">
+            @endforeach
+            <link rel="alternate" hreflang="x-default" href="{{ $alternates[\App\Support\Locales::default()] }}">
+        @endif
+
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->

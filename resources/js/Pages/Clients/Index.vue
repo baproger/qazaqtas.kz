@@ -11,6 +11,9 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Pagination from '@/Components/Pagination.vue';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const props = defineProps({ clients: Object, filters: Object, users: Array, can: Object });
 
@@ -38,30 +41,30 @@ const submit = () => {
     if (editing.value) form.put(route('clients.update', editing.value.id), opts);
     else form.post(route('clients.store'), opts);
 };
-const destroy = async (c) => { if (await confirmDialog({ title: 'Удалить контрагента', message: `Контрагент «${c.name}» будет удалён.`, confirmText: 'Удалить', danger: true })) router.delete(route('clients.destroy', c.id), { preserveScroll: true }); };
+const destroy = async (c) => { if (await confirmDialog({ title: tr('Удалить контрагента'), message: `Контрагент «${c.name}» будет удалён.`, confirmText: tr('Удалить'), danger: true })) router.delete(route('clients.destroy', c.id), { preserveScroll: true }); };
 const doSearch = () => router.get(route('clients.index'), { search: search.value }, { preserveState: true, replace: true });
 </script>
 
 <template>
-    <Head title="Контрагенты" />
+    <Head :title="$e('Контрагенты')" />
     <AppLayout>
         <template #header>{{ $t('page.clients', 'Контрагенты') }}</template>
 
         <div class="mb-4 flex items-center justify-between gap-3">
-            <TextInput v-model="search" placeholder="Поиск по имени/ИНН/телефону..." class="w-80" @keyup.enter="doSearch" />
-            <PrimaryButton v-if="can.create" @click="openCreate">+ Добавить контрагента</PrimaryButton>
+            <TextInput v-model="search" :placeholder="$e('Поиск по имени/ИНН/телефону...')" class="w-80" @keyup.enter="doSearch" />
+            <PrimaryButton v-if="can.create" @click="openCreate">{{ $e('+ Добавить контрагента') }}</PrimaryButton>
         </div>
 
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-slate-100 text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr>
-                        <th class="px-4 py-3">Название</th>
-                        <th class="px-4 py-3">Тип</th>
-                        <th class="px-4 py-3">ИНН</th>
-                        <th class="px-4 py-3">Контакты</th>
-                        <th class="px-4 py-3">Ответственный</th>
-                        <th class="px-4 py-3 text-right">Действия</th>
+                        <th class="px-4 py-3">{{ $e('Название') }}</th>
+                        <th class="px-4 py-3">{{ $e('Тип') }}</th>
+                        <th class="px-4 py-3">{{ $e('ИНН') }}</th>
+                        <th class="px-4 py-3">{{ $e('Контакты') }}</th>
+                        <th class="px-4 py-3">{{ $e('Ответственный') }}</th>
+                        <th class="px-4 py-3 text-right">{{ $e('Действия') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -75,11 +78,11 @@ const doSearch = () => router.get(route('clients.index'), { search: search.value
                         </td>
                         <td class="px-4 py-3 text-slate-500">{{ c.responsible?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-right space-x-2">
-                            <button v-if="can.update" class="text-indigo-600 hover:underline" @click="openEdit(c)">Изменить</button>
-                            <button v-if="can.delete" class="text-red-600 hover:underline" @click="destroy(c)">Удалить</button>
+                            <button v-if="can.update" class="text-indigo-600 hover:underline" @click="openEdit(c)">{{ $e('Изменить') }}</button>
+                            <button v-if="can.delete" class="text-red-600 hover:underline" @click="destroy(c)">{{ $e('Удалить') }}</button>
                         </td>
                     </tr>
-                    <tr v-if="!clients.data.length"><td colspan="6" class="px-4 py-8 text-center text-slate-400">Нет данных</td></tr>
+                    <tr v-if="!clients.data.length"><td colspan="6" class="px-4 py-8 text-center text-slate-400">{{ $e('Нет данных') }}</td></tr>
                 </tbody>
             </table>
         </div>
@@ -87,45 +90,45 @@ const doSearch = () => router.get(route('clients.index'), { search: search.value
 
         <Modal :show="showModal" @close="showModal = false" max-width="2xl">
             <div class="p-6">
-                <h2 class="mb-4 text-lg font-semibold">{{ editing ? 'Изменить контрагента' : 'Новый контрагент' }}</h2>
+                <h2 class="mb-4 text-lg font-semibold">{{ editing ? $e('Изменить контрагента') : $e('Новый контрагент') }}</h2>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2">
-                        <InputLabel value="Название" />
+                        <InputLabel :value="$e('Название')" />
                         <TextInput v-model="form.name" class="mt-1 w-full" />
                         <InputError :message="form.errors.name" class="mt-1" />
                     </div>
                     <div>
-                        <InputLabel value="Тип" />
+                        <InputLabel :value="$e('Тип')" />
                         <select v-model="form.type" class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="legal">Юридическое лицо</option>
-                            <option value="individual">Физическое лицо</option>
+                            <option value="legal">{{ $e('Юридическое лицо') }}</option>
+                            <option value="individual">{{ $e('Физическое лицо') }}</option>
                         </select>
                     </div>
                     <div>
-                        <InputLabel value="Ответственный" />
+                        <InputLabel :value="$e('Ответственный')" />
                         <select v-model="form.responsible_user_id" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
                             <option value="">—</option>
                             <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
                         </select>
                     </div>
-                    <div><InputLabel value="ИНН/БИН" /><TextInput v-model="form.inn" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="КПП" /><TextInput v-model="form.kpp" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="Телефон" /><TextInput v-model="form.phone" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('ИНН/БИН')" /><TextInput v-model="form.inn" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('КПП')" /><TextInput v-model="form.kpp" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Телефон')" /><TextInput v-model="form.phone" class="mt-1 w-full" /></div>
                     <div>
                         <InputLabel value="Email" />
                         <TextInput v-model="form.email" type="email" class="mt-1 w-full" />
                         <InputError :message="form.errors.email" class="mt-1" />
                     </div>
-                    <div><InputLabel value="Адрес" /><TextInput v-model="form.address" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="Сайт" /><TextInput v-model="form.website" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Адрес')" /><TextInput v-model="form.address" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Сайт')" /><TextInput v-model="form.website" class="mt-1 w-full" /></div>
                     <div class="col-span-2">
-                        <InputLabel value="Заметка" />
+                        <InputLabel :value="$e('Заметка')" />
                         <textarea v-model="form.note" rows="2" class="mt-1 w-full rounded-md border-slate-300 shadow-sm"></textarea>
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-2">
-                    <SecondaryButton @click="showModal = false">Отмена</SecondaryButton>
-                    <PrimaryButton :disabled="form.processing" @click="submit">Сохранить</PrimaryButton>
+                    <SecondaryButton @click="showModal = false">{{ $e('Отмена') }}</SecondaryButton>
+                    <PrimaryButton :disabled="form.processing" @click="submit">{{ $e('Сохранить') }}</PrimaryButton>
                 </div>
             </div>
         </Modal>

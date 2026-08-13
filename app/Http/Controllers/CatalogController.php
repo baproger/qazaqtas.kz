@@ -23,7 +23,7 @@ class CatalogController extends Controller
     {
         $this->authorize('viewAny', Product::class);
 
-        $products = Product::with('category:id,name,slug')
+        $products = Product::with(['translations', 'category:id,name,slug'])
             ->when($request->string('search')->toString(), fn ($q, $s) => $q
                 ->where(fn ($w) => $w->where('name', 'like', "%{$s}%")->orWhere('code', 'like', "%{$s}%")))
             ->when($request->integer('category'), fn ($q, $c) => $q->where('category_id', $c))
@@ -31,9 +31,14 @@ class CatalogController extends Controller
             ->paginate(30)->withQueryString();
 
         return Inertia::render('Catalog/Index', [
-            'products' => $products,
+            // Форма правит базовые значения, поэтому карточка отдаётся как
+            // есть, без подстановки перевода, а переводы едут отдельным полем.
+            'products' => $products->through(fn (Product $p) => $p->toArray() + [
+                'translations_map' => $p->translationsPayload(),
+            ]),
             'categories' => ProductCategory::orderBy('order')->orderBy('name')
                 ->withCount('products')->get(),
+            'locales' => \App\Support\Locales::forForm(),
             'filters' => $request->only('search', 'category'),
             'units' => \App\Models\Deal::UNITS,
         ]);
@@ -42,7 +47,8 @@ class CatalogController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', Product::class);
-        Product::create($this->validated($request));
+        $product = Product::create($this->validated($request));
+        $product->saveTranslations($request->input('translations'));
         CatalogService::flushCache();
 
         return back()->with('success', 'Позиция добавлена в каталог.');
@@ -52,6 +58,7 @@ class CatalogController extends Controller
     {
         $this->authorize('update', $product);
         $product->update($this->validated($request, $product));
+        $product->saveTranslations($request->input('translations'));
         CatalogService::flushCache();
 
         return back()->with('success', 'Позиция обновлена.');
@@ -67,6 +74,29 @@ class CatalogController extends Controller
     }
 
     // ---- Категории ----
+
+    /**
+     * Правила для переводов: те же поля, но ни одно не обязательно —
+     * незаполненный язык откатывается к базовому значению карточки.
+     *
+     * @return array<string, mixed>
+     */
+    private function translationRules(): array
+    {
+        $rules = ['translations' => ['nullable', 'array']];
+
+        foreach (\App\Support\Locales::ALL as $locale) {
+            $rules["translations.$locale.name"] = ['nullable', 'string', 'max:255'];
+            $rules["translations.$locale.short_description"] = ['nullable', 'string', 'max:255'];
+            $rules["translations.$locale.description"] = ['nullable', 'string', 'max:5000'];
+            $rules["translations.$locale.specs"] = ['nullable', 'array'];
+            $rules["translations.$locale.colors"] = ['nullable', 'array'];
+            $rules["translations.$locale.colors.*.name"] = ['nullable', 'string', 'max:60'];
+            $rules["translations.$locale.colors.*.hex"] = ['nullable', 'string', 'max:9'];
+        }
+
+        return $rules;
+    }
 
     /** @return array<string, mixed> */
     private function validated(Request $request, ?Product $product = null): array
@@ -92,7 +122,11 @@ class CatalogController extends Controller
             'is_featured' => ['boolean'],
             'in_stock' => ['boolean'],
             'order' => ['nullable', 'integer', 'min:0'],
+            ...$this->translationRules(),
         ]);
+
+        // Переводы уходят в свою таблицу, а не в колонки товара.
+        unset($data['translations']);
 
         $data['order'] ??= 0;
         $data['min_order'] ??= 0;

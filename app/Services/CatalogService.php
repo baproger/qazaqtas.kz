@@ -21,11 +21,15 @@ class CatalogService
      */
     public function categories(): Collection
     {
-        $rows = Cache::remember('catalog.categories', 3600, fn () => ProductCategory::active()
+        // Ключ с языком: в кэше лежит уже переведённый текст, и один общий
+        // ключ отдавал бы казахские названия на русской версии и наоборот.
+        $rows = Cache::remember('catalog.categories.'.app()->getLocale(), 3600, fn () => ProductCategory::active()
+            ->with('translations')
             ->withCount(['products' => fn ($q) => $q->active()])
             ->orderBy('order')->orderBy('name')
             ->get(['id', 'name', 'slug', 'tagline', 'description', 'image', 'accent'])
-            ->toArray());
+            ->map->localized()
+            ->all());
 
         return collect($rows);
     }
@@ -37,17 +41,22 @@ class CatalogService
      */
     public function products(array $filters = [], int $perPage = 12): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
-        $query = Product::active()->with('category:id,name,slug,accent');
+        $query = Product::active()->with(['translations', 'category:id,name,slug,accent', 'category.translations']);
 
         if ($slug = $filters['category'] ?? null) {
             $query->whereHas('category', fn ($q) => $q->where('slug', $slug));
         }
 
         if ($search = trim((string) ($filters['search'] ?? ''))) {
+            // Ищем и по переводам: покупатель на казахской витрине вводит
+            // казахское название, а в базовой колонке лежит русское.
             $query->where(fn ($q) => $q
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('code', 'like', "%{$search}%")
-                ->orWhere('short_description', 'like', "%{$search}%"));
+                ->orWhere('short_description', 'like', "%{$search}%")
+                ->orWhereHas('translations', fn ($t) => $t
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('short_description', 'like', "%{$search}%")));
         }
 
         if (($min = $filters['min'] ?? null) !== null && $min !== '') {
@@ -64,15 +73,18 @@ class CatalogService
             default => $query->orderByDesc('is_featured')->orderBy('order')->orderBy('id'),
         };
 
-        return $query->paginate($perPage)->withQueryString();
+        // through() переводит уже отобранную страницу — фильтрация и
+        // сортировка при этом остаются на стороне базы.
+        return $query->paginate($perPage)->withQueryString()->through(fn (Product $p) => $p->localized());
     }
 
     /** Витрина главной: по одному-двум хитам из каждой категории. */
     public function featured(int $limit = 8): Collection
     {
         return Product::active()->where('is_featured', true)
-            ->with('category:id,name,slug,accent')
-            ->orderBy('order')->limit($limit)->get();
+            ->with(['translations', 'category:id,name,slug,accent', 'category.translations'])
+            ->orderBy('order')->limit($limit)->get()
+            ->map->localized();
     }
 
     /** Похожие: та же категория, кроме самого товара; добираем по цене. */
@@ -81,9 +93,10 @@ class CatalogService
         return Product::active()
             ->where('id', '!=', $product->id)
             ->when($product->category_id, fn ($q, $id) => $q->where('category_id', $id))
-            ->with('category:id,name,slug,accent')
+            ->with(['translations', 'category:id,name,slug,accent', 'category.translations'])
             ->orderByDesc('is_featured')->orderBy('order')
-            ->limit($limit)->get();
+            ->limit($limit)->get()
+            ->map->localized();
     }
 
     /** Товары по id — для «недавно просмотренных» и сравнения (localStorage). */
@@ -95,8 +108,9 @@ class CatalogService
         }
 
         return Product::active()->whereIn('id', $ids)
-            ->with('category:id,name,slug,accent')->get()
-            ->sortBy(fn ($p) => array_search($p->id, $ids, true))->values();
+            ->with(['translations', 'category:id,name,slug,accent', 'category.translations'])->get()
+            ->sortBy(fn ($p) => array_search($p->id, $ids, true))
+            ->map->localized()->values();
     }
 
     /** Минимум/максимум цены — границы ползунка фильтра. */
@@ -127,7 +141,7 @@ class CatalogService
         // Слайды считались на каждой загрузке главной: запрос по категориям
         // плюс отдельный поиск самой дешёвой позиции в каждой. Кладём в кэш
         // своим ключом — правка позиции сбрасывает его вместе с остальными.
-        return Cache::remember('catalog.hero_slides', 3600, fn () => $this->buildHeroSlides());
+        return Cache::remember('catalog.hero_slides.'.app()->getLocale(), 3600, fn () => $this->buildHeroSlides());
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -136,6 +150,7 @@ class CatalogService
         return ProductCategory::query()
             ->where('is_active', true)
             ->whereNotNull('image')
+            ->with('translations')
             ->withCount(['products' => fn ($q) => $q->where('is_active', true)])
             ->orderBy('order')->orderBy('name')
             ->get()
@@ -145,21 +160,23 @@ class CatalogService
                     ->orderBy('price')
                     ->first();
 
+                $name = (string) $category->tr('name');
+
                 return [
                     'id' => $category->slug,
-                    'name' => $category->name,
-                    'category' => mb_strtoupper($category->name),
-                    'title' => $category->tagline ?: $category->name,
+                    'name' => $name,
+                    'category' => mb_strtoupper($name),
+                    'title' => $category->tr('tagline') ?: $name,
                     'price' => $cheapest ? (float) $cheapest->price : null,
                     'unit' => $cheapest?->unit,
-                    'lead' => (string) ($category->description ?: $category->tagline),
+                    'lead' => (string) ($category->tr('description') ?: $category->tr('tagline')),
                     'href' => route('site.catalog', ['category' => $category->slug]),
                     'count' => $category->products_count,
                     'image' => [
                         'path' => $category->image,
                         'thumb' => $category->thumb ?: $category->image,
                         'webp' => $category->webp,
-                        'alt' => $category->name.' — изделия из мраморного композита',
+                        'alt' => $name.' — '.__('site.hero.image_alt'),
                     ],
                     'specs' => $this->heroSpecs($category, $cheapest),
                 ];
@@ -182,7 +199,7 @@ class CatalogService
     {
         $positions = ['top-right', 'left', 'right', 'bottom'];
 
-        $own = collect($category->specs ?: [])
+        $own = collect($category->tr('specs') ?: [])
             ->filter(fn ($row) => is_array($row) && filled($row['label'] ?? null) && filled($row['value'] ?? null))
             ->values();
 
@@ -200,12 +217,13 @@ class CatalogService
             return [];
         }
 
-        $specs = $fallback->specs ?: [];
+        $specs = $fallback->tr('specs') ?: [];
+        $colors = $fallback->tr('colors') ?: [];
         $candidates = [
-            ['label' => 'Размер', 'value' => $specs['size'] ?? null],
-            ['label' => 'Морозостойкость', 'value' => $specs['frost'] ?? null],
-            ['label' => 'Прочность', 'value' => $specs['strength'] ?? null],
-            ['label' => 'Цвет', 'value' => count($fallback->colors ?: []) ? 'сквозной, '.count($fallback->colors).' оттенков' : null],
+            ['label' => __('site.specs.size'), 'value' => $specs['size'] ?? null],
+            ['label' => __('site.specs.frost'), 'value' => $specs['frost'] ?? null],
+            ['label' => __('site.specs.strength'), 'value' => $specs['strength'] ?? null],
+            ['label' => __('site.product.color'), 'value' => count($colors) ? __('site.hero.color_value', ['count' => count($colors)]) : null],
         ];
 
         return collect($candidates)
@@ -224,16 +242,17 @@ class CatalogService
     {
         return Product::active()
             ->whereHas('category', fn ($q) => $q->where('slug', 'trotuarnaya-plitka'))
+            ->with('translations')
             ->orderBy('order')->get()
             ->map(fn (Product $p) => [
                 'id' => $p->id,
-                'name' => $p->name,
+                'name' => $p->tr('name'),
                 'slug' => $p->slug,
                 'unit' => $p->unit,
                 'price' => (float) $p->price,
-                'size' => $p->specs['size'] ?? null,
+                'size' => $p->tr('specs')['size'] ?? null,
                 'pieces_per_m2' => $p->piecesPerM2(),
-                'colors' => $p->colors ?: [],
+                'colors' => $p->tr('colors') ?: [],
                 'texture' => $p->texture(),
                 'image' => $p->images[0]['thumb'] ?? $p->images[0]['path'] ?? null,
                 // Все снимки коллекции: из них собирается слой глубины на
@@ -302,8 +321,13 @@ class CatalogService
 
     public static function flushCache(): void
     {
-        Cache::forget('catalog.categories');
         Cache::forget('catalog.price_bounds');
-        Cache::forget('catalog.hero_slides');
+
+        // Названия и описания кэшируются на каждый язык отдельно — правка
+        // карточки должна сбросить их все, а не только текущий.
+        foreach (\App\Support\Locales::ALL as $locale) {
+            Cache::forget("catalog.categories.$locale");
+            Cache::forget("catalog.hero_slides.$locale");
+        }
     }
 }

@@ -8,6 +8,9 @@ import HeroShowcase from '@/Components/site/HeroShowcase.vue';
 import { observeReveal } from '@/utils/site';
 import { useSmoothScroll, loadScrollTrigger } from '@/site/useSmoothScroll';
 import { theme } from '@/site/theme';
+import { useT } from '@/composables/useTranslations';
+
+const t = useT();
 
 const props = defineProps({
     categories: { type: Array, default: () => [] },
@@ -37,17 +40,15 @@ let scene = null;
 let stopReveal = () => {};
 
 /** Подписи сюжета — меняются вместе с прогрессом сборки двора. */
-const steps = [
-    { at: 0, title: 'Один элемент', text: 'Мраморная крошка, белый цемент и пигмент. Вибролитьё даёт плотную структуру и сквозной цвет.' },
-    { at: 0.28, title: 'Рисунок покрытия', text: 'Плитка ложится в перевязку: рисунок держит нагрузку и не расходится со временем.' },
-    { at: 0.55, title: 'Чистый край', text: 'Бордюр фиксирует покрытие по периметру — линия остаётся ровной год за годом.' },
-    { at: 0.75, title: 'Городская мебель', text: 'Скамьи, вазоны и урны из того же композита: двор выглядит цельно.' },
-    { at: 0.92, title: 'Готовый двор', text: 'От сырья до благоустроенной территории — на трёх площадках: Шымкент, Алматы, Тараз.' },
-];
+const steps = computed(() => [0, 0.28, 0.55, 0.75, 0.92].map((at, i) => ({
+    at,
+    title: t(`site.home.step_${i + 1}_title`),
+    text: t(`site.home.step_${i + 1}_text`),
+})));
 
 const activeStep = computed(() => {
-    let current = steps[0];
-    for (const step of steps) if (progress.value >= step.at) current = step;
+    let current = steps.value[0];
+    for (const step of steps.value) if (progress.value >= step.at) current = step;
     return current;
 });
 
@@ -173,21 +174,19 @@ onBeforeUnmount(() => {
                     :style="{ opacity: Math.max(0, 1 - progress * 5), transform: `translateY(${progress * -60}px)` }"
                 >
                     <div class="mx-auto w-full max-w-7xl">
-                        <p class="eyebrow">Производство мраморного композита · с 2013 года</p>
+                        <p class="eyebrow">{{ $t('site.home.eyebrow') }}</p>
                         <h1 class="display mt-6 max-w-4xl text-[clamp(2.75rem,8vw,6.5rem)] text-sand-50">
-                            Двор,<br />который переживёт<br />200 зим
+                            {{ $t('site.home.title') }}
                         </h1>
                         <p class="mt-8 max-w-xl text-base leading-relaxed text-sand-100/60 sm:text-lg">
-                            Мраморный композит вместо бетона: цвет сквозной, не выгорает и не
-                            стирается. Гарантия 5 лет, собственные площадки в Шымкенте,
-                            Алматы и Таразе.
+                            {{ $t('site.home.lead') }}
                         </p>
                         <div class="mt-10 flex flex-wrap gap-3">
-                            <Link :href="route('site.catalog')" class="btn-sand">Смотреть каталог</Link>
+                            <Link :href="$r('site.catalog')" class="btn-sand">{{ $t('site.cta.catalog') }}</Link>
                             <Link
-                                :href="configuratorEnabled ? route('site.configurator') : route('site.contacts')"
+                                :href="configuratorEnabled ? $r('site.configurator') : $r('site.contacts')"
                                 class="btn-ghost"
-                            >{{ configuratorEnabled ? 'Собрать двор в 3D' : 'Рассчитать стоимость' }}</Link>
+                            >{{ configuratorEnabled ? $t('site.cta.build_yard_3d') : $t('site.cta.estimate') }}</Link>
                         </div>
                     </div>
                 </div>
@@ -220,7 +219,7 @@ onBeforeUnmount(() => {
                                 <div class="h-px bg-sand-300 transition-[width] duration-150" :style="{ width: `${progress * 100}%` }" />
                             </div>
                             <p class="mt-3 text-right text-[11px] uppercase tracking-[0.28em] text-sand-100/40">
-                                Сборка двора
+                                {{ $t('site.home.assembly') }}
                             </p>
                         </div>
                     </div>
@@ -231,7 +230,7 @@ onBeforeUnmount(() => {
                     class="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 text-[11px] uppercase tracking-[0.3em] text-sand-100/40"
                     :style="{ opacity: Math.max(0, 1 - progress * 12) }"
                 >
-                    Прокрутите
+                    {{ $t('site.home.scroll') }}
                 </div>
             </div>
         </section>
@@ -251,19 +250,19 @@ onBeforeUnmount(() => {
           <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
-                    <p class="eyebrow">Каталог</p>
+                    <p class="eyebrow">{{ $t('site.nav.catalog') }}</p>
                     <h2 class="display mt-4 max-w-2xl text-[clamp(2rem,5vw,3.5rem)] text-sand-50">
-                        Всё для благоустройства — из одного материала
+                        {{ $t('site.home.catalog_title') }}
                     </h2>
                 </div>
-                <Link :href="route('site.catalog')" class="btn-ghost">Весь каталог</Link>
+                <Link :href="$r('site.catalog')" class="btn-ghost">{{ $t('site.home.all_catalog') }}</Link>
             </div>
 
             <div class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Link
                     v-for="c in categories"
                     :key="c.id"
-                    :href="route('site.catalog', { category: c.slug })"
+                    :href="$r('site.catalog', { category: c.slug })"
                     class="card card-hover reveal group relative overflow-hidden p-7 sm:p-8"
                 >
                     <span
@@ -287,10 +286,10 @@ onBeforeUnmount(() => {
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <div class="reveal flex flex-wrap items-end justify-between gap-6">
                     <div>
-                        <p class="eyebrow">Выбирают чаще всего</p>
-                        <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Готовы к отгрузке</h2>
+                        <p class="eyebrow">{{ $t('site.home.featured_eyebrow') }}</p>
+                        <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.home.featured_title') }}</h2>
                     </div>
-                    <Link v-if="configuratorEnabled" :href="route('site.configurator')" class="btn-ghost">Рассчитать двор</Link>
+                    <Link v-if="configuratorEnabled" :href="$r('site.configurator')" class="btn-ghost">{{ $t('site.cta.estimate_yard') }}</Link>
                 </div>
 
                 <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -302,7 +301,7 @@ onBeforeUnmount(() => {
         <!-- ======================= Преимущества ======================= -->
         <section>
           <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-            <p class="eyebrow reveal">Почему композит</p>
+            <p class="eyebrow reveal">{{ $t('site.home.why') }}</p>
             <div class="duo-grid mt-12 grid sm:grid-cols-2">
                 <div v-for="a in advantages" :key="a.title" class="reveal p-8 sm:p-12">
                     <h3 class="display text-2xl text-sand-50 sm:text-3xl">{{ a.title }}</h3>
@@ -316,8 +315,8 @@ onBeforeUnmount(() => {
         <section>
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <div class="reveal max-w-2xl">
-                    <p class="eyebrow">Производство</p>
-                    <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Пять шагов от сырья до паллеты</h2>
+                    <p class="eyebrow">{{ $t('site.footer.production') }}</p>
+                    <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.home.production_title') }}</h2>
                 </div>
 
                 <ol class="mt-14 space-y-3">
@@ -332,7 +331,7 @@ onBeforeUnmount(() => {
                     </li>
                 </ol>
 
-                <Link :href="route('site.about')" class="btn-ghost mt-12">О заводе подробнее</Link>
+                <Link :href="$r('site.about')" class="btn-ghost mt-12">{{ $t('site.home.about_more') }}</Link>
             </div>
         </section>
 
@@ -341,10 +340,10 @@ onBeforeUnmount(() => {
           <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <div class="reveal flex flex-wrap items-end justify-between gap-6">
                 <div>
-                    <p class="eyebrow">Реализовано</p>
-                    <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Объекты по Казахстану</h2>
+                    <p class="eyebrow">{{ $t('site.projects.eyebrow') }}</p>
+                    <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.home.projects_title') }}</h2>
                 </div>
-                <Link :href="route('site.projects')" class="btn-ghost">Все проекты</Link>
+                <Link :href="$r('site.projects')" class="btn-ghost">{{ $t('site.home.all_projects') }}</Link>
             </div>
 
             <div class="mt-14 grid gap-4 sm:grid-cols-2">
@@ -367,7 +366,7 @@ onBeforeUnmount(() => {
                             class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105"
                         />
                         <div v-else class="paving-pattern flex h-full w-full items-center justify-center">
-                            <span class="text-[11px] uppercase tracking-[0.28em] text-sand-100/25">фото объекта</span>
+                            <span class="text-[11px] uppercase tracking-[0.28em] text-sand-100/25">{{ $t('site.projects.photo_placeholder') }}</span>
                         </div>
 
                         <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/20 to-transparent" />
@@ -395,22 +394,20 @@ onBeforeUnmount(() => {
                    мера строки. -->
               <div class="card px-8 py-16 text-center sm:px-16 sm:py-20">
                 <h2 class="display mx-auto max-w-lg text-balance text-[clamp(1.75rem,4vw,2.75rem)] text-sand-50">
-                    Посчитаем ваш двор за пару минут
+                    {{ $t('site.home.cta_title') }}
                 </h2>
                 <p class="mx-auto mt-5 max-w-md text-pretty text-sm leading-relaxed text-sand-100/55">
                     <template v-if="configuratorEnabled">
-                        Укажите площадь и выберите раскладку — конфигуратор покажет результат в 3D,
-                        рассчитает количество плитки и бордюра и соберёт заказ.
+                        {{ $t('site.home.cta_lead_3d') }}
                     </template>
                     <template v-else>
-                        Пришлите площадь участка — сделаем замер, подберём раскладку и посчитаем
-                        смету. Расчёт и выезд замерщика бесплатны.
+                        {{ $t('site.home.cta_lead') }}
                     </template>
                 </p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
-                    <Link v-if="configuratorEnabled" :href="route('site.configurator')" class="btn-sand">Открыть конфигуратор</Link>
-                    <Link :href="route('site.contacts')" :class="configuratorEnabled ? 'btn-ghost' : 'btn-sand'">
-                        Связаться с отделом продаж
+                    <Link v-if="configuratorEnabled" :href="$r('site.configurator')" class="btn-sand">{{ $t('site.home.open_configurator') }}</Link>
+                    <Link :href="$r('site.contacts')" :class="configuratorEnabled ? 'btn-ghost' : 'btn-sand'">
+                        {{ $t('site.home.contact_sales') }}
                     </Link>
                 </div>
               </div>

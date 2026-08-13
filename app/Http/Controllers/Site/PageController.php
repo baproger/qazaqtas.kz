@@ -31,8 +31,8 @@ class PageController extends Controller
             'production' => SiteContent::production(),
             'projects' => $this->projectList(),
             'seo' => [
-                'title' => 'QAZAQ TAS — тротуарная плитка и малые архитектурные формы из мраморного композита',
-                'description' => 'Производство тротуарной плитки, бордюров, вазонов, скамей и урн из мраморного композита. Три площадки: Шымкент, Алматы, Тараз. Расчёт, доставка и монтаж по Казахстану.',
+                'title' => __('site.seo.home_title'),
+                'description' => __('site.seo.home_description'),
             ],
         ]);
     }
@@ -48,7 +48,9 @@ class PageController extends Controller
             return collect(SiteContent::projects());
         }
 
-        return SiteProject::active()->orderBy('order')->orderByDesc('id')->get();
+        return SiteProject::active()->with('translations')
+            ->orderBy('order')->orderByDesc('id')->get()
+            ->map->localized();
     }
 
     public function about(): Response
@@ -58,8 +60,8 @@ class PageController extends Controller
             'production' => SiteContent::production(),
             'advantages' => SiteContent::advantages(),
             'seo' => [
-                'title' => 'О заводе QAZAQ TAS — производство мраморного композита',
-                'description' => 'Как устроено производство QAZAQ TAS: сырьё, вибролитьё, выдержка, шлифовка и контроль качества на трёх площадках.',
+                'title' => __('site.seo.about_title'),
+                'description' => __('site.seo.about_description'),
             ],
         ]);
     }
@@ -69,8 +71,8 @@ class PageController extends Controller
         return Inertia::render('Site/Projects', [
             'projects' => $this->projectList(),
             'seo' => [
-                'title' => 'Реализованные проекты QAZAQ TAS',
-                'description' => 'Дворы, парки, набережные и школьные территории, благоустроенные изделиями QAZAQ TAS.',
+                'title' => __('site.seo.projects_title'),
+                'description' => __('site.seo.projects_description'),
             ],
         ]);
     }
@@ -80,8 +82,8 @@ class PageController extends Controller
         return Inertia::render('Site/Contacts', [
             'faq' => SiteContent::faq(),
             'seo' => [
-                'title' => 'Контакты QAZAQ TAS — Шымкент, Алматы, Тараз',
-                'description' => 'Адреса производств, телефоны отдела продаж и ответы на частые вопросы о доставке, сроках и гарантии.',
+                'title' => __('site.seo.contacts_title'),
+                'description' => __('site.seo.contacts_description'),
             ],
         ]);
     }

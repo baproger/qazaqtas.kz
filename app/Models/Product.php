@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTranslations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -14,7 +16,13 @@ use Illuminate\Support\Str;
  */
 class Product extends Model
 {
-    use SoftDeletes;
+    use HasTranslations, SoftDeletes;
+
+    /** Что видит покупатель — то и переводится; коды, цены и файлы общие. */
+    protected static function translatable(): array
+    {
+        return ['name', 'short_description', 'description', 'specs', 'colors'];
+    }
 
     protected $fillable = [
         'category_id', 'name', 'slug', 'code', 'unit', 'price', 'old_price', 'min_order',
@@ -40,6 +48,11 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
+    }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(ProductTranslation::class);
     }
 
     public function scopeActive(Builder $query): Builder

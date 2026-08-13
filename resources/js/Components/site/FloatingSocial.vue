@@ -1,6 +1,9 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
+import { useT } from '@/composables/useTranslations';
+
+const t = useT();
 
 /**
  * Плавающая кнопка связи.
@@ -46,7 +49,7 @@ const channels = computed(() => {
     if (whatsapp) {
         list.push({
             key: 'whatsapp',
-            label: 'Написать в WhatsApp',
+            label: t('site.cta.whatsapp'),
             href: `https://wa.me/${whatsapp}`,
             external: true,
             tone: 'whatsapp',
@@ -57,7 +60,7 @@ const channels = computed(() => {
     if (instagram) {
         list.push({
             key: 'instagram',
-            label: 'Мы в Instagram',
+            label: t('site.cta.instagram'),
             href: instagram,
             external: true,
             tone: 'instagram',
@@ -158,7 +161,7 @@ onBeforeUnmount(() => {
             :class="open ? 'is-open' : ''"
             :aria-expanded="open"
             aria-controls="socialbtn-channels"
-            :aria-label="open ? 'Закрыть способы связи' : 'Связаться с нами'"
+            :aria-label="open ? $t('site.a11y.contact_close') : $t('site.a11y.contact_open')"
             @click="toggle"
         >
             <!-- Волна привлекает внимание, но только пока меню закрыто -->

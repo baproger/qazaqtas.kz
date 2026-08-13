@@ -42,34 +42,32 @@ const closeModal = () => {
     <section class="space-y-6">
         <header>
             <h2 class="text-lg font-medium text-slate-900">
-                Удаление аккаунта
+                {{ $e('Удаление аккаунта') }}
             </h2>
 
             <p class="mt-1 text-sm text-slate-600">
-                После удаления аккаунта все связанные данные будут удалены безвозвратно.
-                Перед удалением сохраните нужную информацию.
+                {{ $e('После удаления аккаунта все связанные данные будут удалены безвозвратно. Перед удалением сохраните нужную информацию.') }}
             </p>
         </header>
 
-        <DangerButton @click="confirmUserDeletion">Удалить аккаунт</DangerButton>
+        <DangerButton @click="confirmUserDeletion">{{ $e('Удалить аккаунт') }}</DangerButton>
 
         <Modal :show="confirmingUserDeletion" @close="closeModal">
             <div class="p-6">
                 <h2
                     class="text-lg font-medium text-slate-900"
                 >
-                    Вы уверены, что хотите удалить аккаунт?
+                    {{ $e('Вы уверены, что хотите удалить аккаунт?') }}
                 </h2>
 
                 <p class="mt-1 text-sm text-slate-600">
-                    После удаления аккаунта все данные будут удалены безвозвратно.
-                    Введите пароль, чтобы подтвердить удаление.
+                    {{ $e('После удаления аккаунта все данные будут удалены безвозвратно. Введите пароль, чтобы подтвердить удаление.') }}
                 </p>
 
                 <div class="mt-6">
                     <InputLabel
                         for="password"
-                        value="Пароль"
+                        :value="$e('Пароль')"
                         class="sr-only"
                     />
 
@@ -88,7 +86,7 @@ const closeModal = () => {
 
                 <div class="mt-6 flex justify-end">
                     <SecondaryButton @click="closeModal">
-                        Отмена
+                        {{ $e('Отмена') }}
                     </SecondaryButton>
 
                     <DangerButton
@@ -97,7 +95,7 @@ const closeModal = () => {
                         :disabled="form.processing"
                         @click="deleteUser"
                     >
-                        Удалить аккаунт
+                        {{ $e('Удалить аккаунт') }}
                     </DangerButton>
                 </div>
             </div>

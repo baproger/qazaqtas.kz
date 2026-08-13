@@ -1,87 +1,154 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { confirmDialog } from '@/composables/useConfirm';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import InputLabel from '@/Components/InputLabel.vue';
 
-const props = defineProps({ items: Array });
-
-// Editable copy of all rows.
-const rows = ref(props.items.map((i) => ({ ...i })));
-const saveForm = useForm({ items: [] });
-const save = () => {
-    saveForm.items = rows.value.map((r) => ({ id: r.id, ru: r.ru, kk: r.kk }));
-    saveForm.put(route('translations.update'), { preserveScroll: true });
-};
-
-// Grouped view.
-const groups = computed(() => {
-    const map = {};
-    for (const r of rows.value) (map[r.group] ??= []).push(r);
-    return map;
+/**
+ * Настройки → Переводы.
+ *
+ * Показывает весь словарь, а не только строки из базы: слева текст из
+ * поставки, справа — правка владельца. Пустое поле правки означает «как в
+ * поставке», поэтому поставочный текст стоит подсказкой прямо в поле: видно,
+ * что покажет система, и незачем копировать текст сам в себя.
+ */
+const props = defineProps({
+    groups: { type: Array, default: () => [] },
+    locales: { type: Array, default: () => [] },
+    items: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({}) },
+    total: { type: Number, default: 0 },
+    limit: { type: Number, default: 150 },
 });
 
-// Add new key.
-const addForm = useForm({ key: '', group: 'common', ru: '', kk: '' });
-const showAdd = ref(false);
-const add = () => addForm.post(route('translations.store'), { preserveScroll: true, onSuccess: () => { showAdd.value = false; addForm.reset(); router.reload({ only: ['items'] }); } });
+const group = ref(props.filters.group ?? 'site');
+const search = ref(props.filters.search ?? '');
 
-const destroy = async (r) => {
-    if (await confirmDialog({ title: 'Удалить ключ', message: `Ключ «${r.key}» будет удалён.`, confirmText: 'Удалить', danger: true })) {
-        router.delete(route('translations.destroy', r.id), { preserveScroll: true, onSuccess: () => router.reload({ only: ['items'] }) });
-    }
+let timer = null;
+
+const reload = () => router.get(route('translations.index'), {
+    group: group.value,
+    search: search.value || undefined,
+}, { preserveState: true, preserveScroll: true, replace: true });
+
+watch(group, reload);
+watch(search, () => {
+    clearTimeout(timer);
+    timer = setTimeout(reload, 350);
+});
+
+// Правки держим отдельной копией: строка из props перерисовывается при
+// каждой перезагрузке списка и затирала бы недописанное.
+const edits = ref({});
+
+watch(() => props.items, (rows) => {
+    edits.value = Object.fromEntries(rows.map((r) => [r.key, { ...r.override }]));
+}, { immediate: true });
+
+const saveForm = useForm({ items: [] });
+
+const save = () => {
+    saveForm.items = props.items.map((row) => ({
+        key: row.key,
+        group: row.group,
+        ...edits.value[row.key],
+    }));
+    saveForm.put(route('translations.update'), { preserveScroll: true, preserveState: true });
 };
+
+/** Правка снята — строка вернётся к тексту из поставки. */
+const reset = (row) => {
+    for (const locale of props.locales) edits.value[row.key][locale.code] = '';
+};
+
+const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[l.code] ?? '') !== '');
 </script>
 
 <template>
-    <Head title="Переводы" />
+    <Head :title="$e('Переводы')" />
     <AppLayout>
-        <template #header>{{ $t('page.translations', 'Переводы интерфейса') }}</template>
+        <template #header>{{ $e('Переводы интерфейса') }}</template>
 
-        <div class="mx-auto max-w-5xl space-y-6">
-            <div class="flex items-center justify-between">
-                <p class="text-sm text-slate-500">Редактируйте тексты интерфейса для русского и казахского языков. Изменения применяются сразу после сохранения.</p>
-                <button @click="showAdd = !showAdd" class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">+ Ключ</button>
+        <div class="mx-auto max-w-6xl space-y-5">
+            <p class="text-sm text-slate-500">
+                {{ $e('Слева — текст из поставки, справа — ваша правка. Пустое поле правки означает «оставить как есть».') }}
+            </p>
+
+            <!-- Разделы словаря -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button
+                    v-for="g in groups"
+                    :key="g.code"
+                    class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
+                    :class="group === g.code
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'"
+                    @click="group = g.code"
+                >
+                    {{ g.label }}
+                    <span class="ml-1 text-xs opacity-70">{{ g.count }}</span>
+                </button>
+
+                <input
+                    v-model="search"
+                    type="search"
+                    :placeholder="$e('Поиск по ключу или тексту…')"
+                    class="ml-auto w-72 rounded-lg border-slate-200 py-2 text-sm shadow-sm"
+                />
             </div>
 
-            <!-- Add key -->
-            <div v-if="showAdd" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                    <div><InputLabel value="Ключ" /><TextInput v-model="addForm.key" class="mt-1 w-full" placeholder="напр. deals.title" /><div v-if="addForm.errors.key" class="mt-1 text-xs text-red-600">{{ addForm.errors.key }}</div></div>
-                    <div><InputLabel value="Группа" /><TextInput v-model="addForm.group" class="mt-1 w-full" placeholder="common" /></div>
-                    <div><InputLabel value="RU" /><TextInput v-model="addForm.ru" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="KK" /><TextInput v-model="addForm.kk" class="mt-1 w-full" /></div>
-                </div>
-                <div class="mt-3 flex justify-end"><PrimaryButton :disabled="addForm.processing" @click="add">Добавить</PrimaryButton></div>
-            </div>
+            <p v-if="total > limit" class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                {{ $e('Показаны первые') }} {{ limit }} {{ $e('из') }} {{ total }} — {{ $e('уточните поиск, чтобы увидеть остальные.') }}
+            </p>
 
-            <!-- Groups -->
-            <div v-for="(list, group) in groups" :key="group" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 bg-slate-50 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ group }}</div>
+            <!-- Строки словаря -->
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <table class="min-w-full text-sm">
-                    <thead class="text-left text-xs uppercase tracking-wide text-slate-400">
-                        <tr><th class="px-5 py-2 w-1/4">Ключ</th><th class="px-5 py-2">Русский</th><th class="px-5 py-2">Қазақша</th><th class="px-5 py-2 w-10"></th></tr>
+                    <thead class="border-b border-slate-100 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                        <tr>
+                            <th class="px-4 py-2.5 w-1/3">{{ $e('Строка') }}</th>
+                            <th v-for="l in locales" :key="l.code" class="px-4 py-2.5">{{ l.name }}</th>
+                            <th class="px-4 py-2.5 w-10"></th>
+                        </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <tr v-for="r in list" :key="r.id" class="hover:bg-slate-50/60">
-                            <td class="px-5 py-2 font-mono text-xs text-slate-400">{{ r.key }}</td>
-                            <td class="px-5 py-2"><input v-model="r.ru" class="w-full rounded-md border-slate-200 py-1.5 text-sm focus:border-indigo-400 focus:ring-indigo-400" /></td>
-                            <td class="px-5 py-2"><input v-model="r.kk" class="w-full rounded-md border-slate-200 py-1.5 text-sm focus:border-indigo-400 focus:ring-indigo-400" /></td>
-                            <td class="px-5 py-2 text-right"><button @click="destroy(r)" class="text-slate-300 transition-colors hover:text-red-500" title="Удалить">✕</button></td>
+                        <tr v-for="row in items" :key="row.key" class="align-top hover:bg-slate-50/60">
+                            <td class="px-4 py-2.5">
+                                <p class="break-words text-xs text-slate-600">{{ row.shipped[locales[0].code] || row.name }}</p>
+                                <p class="mt-0.5 break-all font-mono text-[10px] text-slate-300">{{ row.name }}</p>
+                            </td>
+
+                            <td v-for="l in locales" :key="l.code" class="px-4 py-2.5">
+                                <textarea
+                                    v-model="edits[row.key][l.code]"
+                                    rows="1"
+                                    :placeholder="row.shipped[l.code]"
+                                    class="w-full rounded-md border-slate-200 py-1.5 text-sm focus:border-indigo-400 focus:ring-indigo-400"
+                                />
+                            </td>
+
+                            <td class="px-4 py-2.5 text-right">
+                                <button
+                                    v-if="isOverridden(row)"
+                                    class="text-slate-300 transition-colors hover:text-rose-500"
+                                    :title="$e('Снять правку — вернуть текст из поставки')"
+                                    @click="reset(row)"
+                                >✕</button>
+                            </td>
+                        </tr>
+
+                        <tr v-if="!items.length">
+                            <td :colspan="locales.length + 2" class="px-6 py-12 text-center text-slate-400">
+                                {{ $e('Ничего не найдено') }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Sticky save -->
             <div class="sticky bottom-4 flex items-center justify-end gap-3">
-                <transition enter-active-class="transition duration-300" enter-from-class="opacity-0" leave-active-class="transition" leave-to-class="opacity-0">
-                    <span v-if="saveForm.recentlySuccessful" class="text-sm font-medium text-emerald-600">✓ Сохранено</span>
-                </transition>
-                <PrimaryButton :disabled="saveForm.processing" @click="save">Сохранить переводы</PrimaryButton>
+                <span v-if="saveForm.recentlySuccessful" class="text-sm text-emerald-600">{{ $e('✓ Сохранено') }}</span>
+                <PrimaryButton :disabled="saveForm.processing" @click="save">{{ $e('Сохранить переводы') }}</PrimaryButton>
             </div>
         </div>
     </AppLayout>

@@ -3,6 +3,9 @@ import { computed, onBeforeUnmount, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import ProductVisual from './ProductVisual.vue';
 import { money } from '@/utils/site';
+import { useSiteRoute } from '@/composables/useTranslations';
+
+const { siteRoute } = useSiteRoute();
 
 const props = defineProps({
     product: { type: Object, required: true },
@@ -27,7 +30,7 @@ let resetTimer = null;
 const addToCart = () => {
     if (state.value === 'adding') return;
     state.value = 'adding';
-    router.post(route('site.cart.add', props.product.slug), {
+    router.post(siteRoute('site.cart.add', props.product.slug), {
         quantity: Number(props.product.min_order) || 1,
     }, {
         preserveScroll: true,
@@ -50,14 +53,14 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
         <!-- Зона снимка: своя подложка с внутренней тенью, чтобы изделие
              стояло в нише, а не лежало на плоскости. -->
         <div class="media-well relative">
-            <Link :href="route('site.product', product.slug)" class="block overflow-hidden" :aria-label="product.name">
+            <Link :href="$r('site.product', product.slug)" class="block overflow-hidden" :aria-label="product.name">
                 <ProductVisual :product="product" :ratio="compact ? 'aspect-[16/10]' : 'aspect-[4/3]'" shape="rounded-none" />
             </Link>
 
             <button
                 class="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-ink-900/70 backdrop-blur transition hover:border-sand-300/60"
                 :aria-pressed="favorite"
-                :aria-label="favorite ? 'Убрать из избранного' : 'В избранное'"
+                :aria-label="favorite ? $t('site.product.fav_remove') : $t('site.product.fav_add')"
                 @click.prevent="favorite = !favorite; emit('favorite', product.id)"
             >
                 <svg class="h-4 w-4" viewBox="0 0 24 24" :fill="favorite ? '#C8B79A' : 'none'" stroke="#C8B79A" stroke-width="1.6">
@@ -68,7 +71,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             <!-- Наличие: важно для решения, поэтому видно сразу на снимке -->
             <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-ink-900/75 px-2.5 py-1 text-[11px] font-medium text-sand-50 backdrop-blur">
                 <span class="h-1.5 w-1.5 rounded-full" :class="product.in_stock ? 'bg-emerald-400' : 'bg-amber-400'" />
-                {{ product.in_stock ? 'На складе' : 'Под заказ' }}
+                {{ product.in_stock ? $t('site.product.in_stock') : $t('site.product.on_order') }}
             </span>
         </div>
 
@@ -76,7 +79,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             <p v-if="product.category" class="eyebrow">{{ product.category.name }}</p>
 
             <h3 class="mt-2.5 text-[17px] font-medium leading-snug text-sand-50">
-                <Link :href="route('site.product', product.slug)" class="transition hover:text-sand-300">{{ product.name }}</Link>
+                <Link :href="$r('site.product', product.slug)" class="transition hover:text-sand-300">{{ product.name }}</Link>
             </h3>
 
             <!-- Размер чипом: сравнивать позиции удобнее, чем в строке текста -->
@@ -96,7 +99,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                 </div>
 
                 <p v-if="product.min_order > 0" class="mt-1 text-[11px] text-sand-100/35">
-                    минимум {{ Number(product.min_order) }} {{ product.unit }}
+                    {{ $t('site.product.min', null, { count: Number(product.min_order), unit: product.unit }) }}
                 </p>
 
                 <!-- Действие видно всегда: скрывать его до наведения — значит
@@ -115,12 +118,12 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                         <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M4 12.5 9.5 18 20 6.5" />
                         </svg>
-                        <span>{{ state === 'added' ? 'В корзине' : 'В корзину' }}</span>
+                        <span>{{ state === 'added' ? $t('site.product.in_cart') : $t('site.product.to_cart') }}</span>
                     </button>
                     <Link
-                        :href="route('site.product', product.slug)"
+                        :href="$r('site.product', product.slug)"
                         class="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[14px] border border-white/12 text-sand-100/70 transition hover:border-sand-300/60 hover:text-sand-50"
-                        aria-label="Подробнее о товаре"
+                        :aria-label="$t('site.product.more')"
                     >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                     </Link>

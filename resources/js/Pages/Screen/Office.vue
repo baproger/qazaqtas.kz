@@ -2,6 +2,9 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import Avatar from '@/Components/Avatar.vue';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const props = defineProps({ screen: Object, plan: Number, month: String, monthLabel: String, managers: Array, leader: Object, lots: { type: Array, default: () => [] }, funnel: { type: Array, default: () => [] } });
 
@@ -21,7 +24,7 @@ onMounted(() => {
 });
 onUnmounted(() => { clearInterval(clockTimer); clearInterval(refreshTimer); });
 
-const title = computed(() => ['Офис', props.screen?.company].filter(Boolean).join(' · '));
+const title = computed(() => [tr('Офис'), props.screen?.company].filter(Boolean).join(' · '));
 const leave = () => router.post(route('screen.leave'));
 
 // Фильтр месяца: кто был лучшим сотрудником в выбранном месяце.
@@ -40,16 +43,16 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
         <div class="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
             <div>
                 <h1 class="text-2xl font-bold leading-tight text-slate-900 lg:text-3xl">{{ title }}</h1>
-                <div class="text-sm text-slate-400">рейтинг эффективности — {{ monthLabel }}<span v-if="!isCurrent" class="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">архив</span></div>
+                <div class="text-sm text-slate-400">{{ $e('рейтинг эффективности —') }} {{ monthLabel }}<span v-if="!isCurrent" class="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ $e('архив') }}</span></div>
             </div>
             <div class="flex items-center gap-3">
                 <input v-model="monthF" @change="applyMonth" type="month"
-                    class="rounded-lg border-slate-300 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" title="Какой месяц показать" />
+                    class="rounded-lg border-slate-300 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" :title="$e('Какой месяц показать')" />
                 <div class="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-emerald-700">
                     <span class="relative flex h-2.5 w-2.5"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span></span>
                     <span class="text-xl font-bold tabular-nums lg:text-2xl">{{ clock }}</span>
                 </div>
-                <button @click="leave" class="rounded-lg px-3 py-2 text-xs text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" title="Сменить код">выйти</button>
+                <button @click="leave" class="rounded-lg px-3 py-2 text-xs text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" :title="$e('Сменить код')">{{ $e('выйти') }}</button>
             </div>
         </div>
 
@@ -57,8 +60,8 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
              без воронки-плиток, без карточки лидера, без автопрокрутки. -->
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
-                    <span class="text-base font-bold text-slate-900">Отдел продаж — заявки за месяц</span>
-                    <span class="text-xs text-slate-400">добавил заявок · в работе · конверсия %</span>
+                    <span class="text-base font-bold text-slate-900">{{ $e('Отдел продаж — заявки за месяц') }}</span>
+                    <span class="text-xs text-slate-400">{{ $e('добавил заявок · в работе · конверсия %') }}</span>
                 </div>
                 <div class="divide-y divide-slate-50">
                     <div v-for="(m, i) in managers" :key="m.name" class="flex items-center gap-4 px-5 py-3.5">
@@ -67,13 +70,13 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="truncate text-base font-semibold text-slate-900">{{ m.name }}</span>
-                                <span class="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums" :class="convClass(m.conversion)">конверсия {{ m.conversion }}%</span>
+                                <span class="rounded-full px-2 py-0.5 text-xs font-bold tabular-nums" :class="convClass(m.conversion)">{{ $e('конверсия') }} {{ m.conversion }}%</span>
                             </div>
                             <div class="mt-1 flex items-center gap-2">
                                 <div class="h-2 w-full max-w-xs overflow-hidden rounded-full bg-slate-100">
                                     <div class="h-2 rounded-full transition-all duration-700" :class="barClass(m.conversion)" :style="{ width: Math.max(2, m.conversion) + '%' }"></div>
                                 </div>
-                                <span class="flex-shrink-0 text-xs text-slate-400">план заявок: {{ m.total }}/{{ plan }}</span>
+                                <span class="flex-shrink-0 text-xs text-slate-400">{{ $e('план заявок:') }} {{ m.total }}/{{ plan }}</span>
                             </div>
                         </div>
                         <!-- Справа — данные менеджера: воронка + подтверждённые -->
@@ -92,30 +95,30 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                                 <span class="ml-1 text-4xl font-black leading-none tabular-nums" :class="m.won > 0 ? 'text-emerald-600' : 'text-slate-300'">{{ m.won }}</span>
                             </div>
                             <div class="mt-1 flex items-center justify-end gap-1.5 text-xs text-slate-400">
-                                <span>в работе · заявок {{ m.total }} · сделок {{ m.deals }}</span>
+                                <span>{{ $e('в работе · заявок') }} {{ m.total }} {{ $e('· сделок') }} {{ m.deals }}</span>
                                 <!-- Чек-лист: закрыто галочек из возможных по его заявкам -->
                                 <span class="rounded-full px-1.5 py-0.5 font-bold tabular-nums"
                                     :class="m.checks_total > 0 ? checksClass(checksPct(m)) : 'bg-slate-100 text-slate-400'"
-                                    title="Чек-лист по заявкам: сделано / всего">☑ {{ m.checks_done }}/{{ m.checks_total }}</span>
+                                    :title="$e('Чек-лист по заявкам: сделано / всего')">☑ {{ m.checks_done }}/{{ m.checks_total }}</span>
                             </div>
                         </div>
                     </div>
-                    <div v-if="!managers.length" class="px-5 py-10 text-center text-sm text-slate-400">В отделе продаж пока нет менеджеров</div>
+                    <div v-if="!managers.length" class="px-5 py-10 text-center text-sm text-slate-400">{{ $e('В отделе продаж пока нет менеджеров') }}</div>
                 </div>
         </div>
 
         <!-- Заявки месяца с чек-листами: видно, кто реально работает по заявкам -->
         <div class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
-                <span class="text-base font-bold text-slate-900">Заявки месяца — чек-листы</span>
-                <span class="text-xs text-slate-400">☑ галочки заявки («Позвонил», «Замер», «КП», «Образец»…) — работа менеджера по заявке</span>
+                <span class="text-base font-bold text-slate-900">{{ $e('Заявки месяца — чек-листы') }}</span>
+                <span class="text-xs text-slate-400">{{ $e('☑ галочки заявки («Позвонил», «Замер», «КП», «Образец»…) — работа менеджера по заявке') }}</span>
             </div>
             <div class="divide-y divide-slate-50">
                 <div v-for="(l, i) in lots" :key="i" class="flex items-center gap-4 px-5 py-2.5">
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
                             <span class="truncate text-sm font-semibold text-slate-900">{{ l.product || '—' }}</span>
-                            <span v-if="l.won" class="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">ВЫИГРАЛ ✓</span>
+                            <span v-if="l.won" class="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{{ $e('ВЫИГРАЛ ✓') }}</span>
                         </div>
                         <div class="truncate text-xs text-slate-400">{{ l.customer || '—' }} · {{ l.manager }}</div>
                     </div>
@@ -128,7 +131,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                         <span class="flex-shrink-0 text-xs font-bold tabular-nums" :class="l.checks_done === l.checks_total && l.checks_total > 0 ? 'text-emerald-600' : 'text-slate-500'">☑ {{ l.checks_done }}/{{ l.checks_total }}</span>
                     </div>
                 </div>
-                <div v-if="!lots.length" class="px-5 py-8 text-center text-sm text-slate-400">В {{ monthLabel }} заявок ещё нет</div>
+                <div v-if="!lots.length" class="px-5 py-8 text-center text-sm text-slate-400">{{ $e('В') }} {{ monthLabel }} {{ $e('заявок ещё нет') }}</div>
             </div>
         </div>
     </div>

@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { t } from '@/i18n';
 
 /**
  * Разбор ссылок пагинатора Laravel.
@@ -25,8 +26,8 @@ export function usePageLinks(source) {
                 arrow: previous ? 'prev' : next ? 'next' : null,
                 label: link.label,
                 aria: previous
-                    ? 'Предыдущая страница'
-                    : next ? 'Следующая страница' : `Страница ${link.label}`,
+                    ? t('app.pagination.prev')
+                    : next ? t('app.pagination.next') : t('app.pagination.page', null, { page: link.label }),
             };
         });
     });

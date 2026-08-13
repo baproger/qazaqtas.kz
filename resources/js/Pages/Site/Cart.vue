@@ -4,6 +4,11 @@ import { Link, router } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import { money, number } from '@/utils/site';
+import { useSiteRoute } from '@/composables/useTranslations';
+
+// Запросы уходят на маршрут текущего языка — иначе переход с /ru/ сбрасывал
+// бы посетителя на казахскую версию корзины.
+const { siteRoute } = useSiteRoute();
 
 const props = defineProps({
     cart: { type: Object, required: true },
@@ -27,24 +32,24 @@ const deliveryCost = computed(() => {
 const grandTotal = computed(() => props.cart.total + (deliveryCost.value ?? 0));
 
 const setQuantity = (key, value) => {
-    router.patch(route('site.cart.update'), { key, quantity: Number(value) }, { preserveScroll: true });
+    router.patch(siteRoute('site.cart.update'), { key, quantity: Number(value) }, { preserveScroll: true });
 };
 
-const removeItem = (key) => router.delete(route('site.cart.remove'), { data: { key }, preserveScroll: true });
-const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll: true });
+const removeItem = (key) => router.delete(siteRoute('site.cart.remove'), { data: { key }, preserveScroll: true });
+const clearCart = () => router.delete(siteRoute('site.cart.clear'), { preserveScroll: true });
 </script>
 
 <template>
     <SiteLayout :seo="seo">
         <section class="ambient mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
-            <h1 class="display text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Корзина</h1>
+            <h1 class="display text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.cart.title') }}</h1>
 
             <div v-if="!cart.items.length" class="card mt-12 px-8 py-20 text-center">
-                <p class="display text-2xl text-sand-50">Пока пусто</p>
-                <p class="mt-3 text-sm text-sand-100/50">Загляните в каталог — подберём материал и посчитаем смету.</p>
+                <p class="display text-2xl text-sand-50">{{ $t('site.cart.empty_title') }}</p>
+                <p class="mt-3 text-sm text-sand-100/50">{{ $t('site.cart.empty_lead') }}</p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
-                    <Link :href="route('site.catalog')" class="btn-sand">В каталог</Link>
-                    <Link v-if="$page.props.site?.configurator" :href="route('site.configurator')" class="btn-ghost">Конфигуратор</Link>
+                    <Link :href="$r('site.catalog')" class="btn-sand">{{ $t('site.cart.to_catalog') }}</Link>
+                    <Link v-if="$page.props.site?.configurator" :href="$r('site.configurator')" class="btn-ghost">{{ $t('site.nav.configurator') }}</Link>
                 </div>
             </div>
 
@@ -58,7 +63,7 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
                     >
                         <div class="min-w-0 flex-1">
                             <p class="text-xs text-sand-100/40">{{ item.category }}</p>
-                            <Link :href="route('site.product', item.slug)" class="mt-1 block truncate text-base font-medium text-sand-50 transition hover:text-sand-300">
+                            <Link :href="$r('site.product', item.slug)" class="mt-1 block truncate text-base font-medium text-sand-50 transition hover:text-sand-300">
                                 {{ item.name }}
                             </Link>
                             <p class="mt-1 text-xs text-sand-100/45">
@@ -68,7 +73,7 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
                         </div>
 
                         <div class="flex items-center rounded-full border border-white/12">
-                            <button class="h-10 w-10 text-sand-100/70 transition hover:text-sand-50" aria-label="Меньше" @click="setQuantity(item.key, Math.max(0, item.quantity - 1))">−</button>
+                            <button class="h-10 w-10 text-sand-100/70 transition hover:text-sand-50" :aria-label="$t('site.cart.less')" @click="setQuantity(item.key, Math.max(0, item.quantity - 1))">−</button>
                             <input
                                 :value="item.quantity"
                                 type="number"
@@ -77,64 +82,64 @@ const clearCart = () => router.delete(route('site.cart.clear'), { preserveScroll
                                 class="h-10 w-20 border-0 bg-transparent text-center text-sm text-sand-50 focus:ring-0"
                                 @change="setQuantity(item.key, $event.target.value)"
                             />
-                            <button class="h-10 w-10 text-sand-100/70 transition hover:text-sand-50" aria-label="Больше" @click="setQuantity(item.key, item.quantity + 1)">+</button>
+                            <button class="h-10 w-10 text-sand-100/70 transition hover:text-sand-50" :aria-label="$t('site.cart.more')" @click="setQuantity(item.key, item.quantity + 1)">+</button>
                         </div>
 
                         <p class="w-32 text-right text-base font-semibold text-sand-50">{{ money(item.sum) }}</p>
 
-                        <button class="text-sand-100/30 transition hover:text-rose-400" aria-label="Удалить" @click="removeItem(item.key)">✕</button>
+                        <button class="text-sand-100/30 transition hover:text-rose-400" :aria-label="$t('site.common.remove')" @click="removeItem(item.key)">✕</button>
                     </article>
 
                     <div class="flex justify-between pt-2">
-                        <Link :href="route('site.catalog')" class="text-sm text-sand-300 underline-offset-4 hover:underline">← Продолжить покупки</Link>
-                        <button class="text-sm text-sand-100/40 transition hover:text-rose-400" @click="clearCart">Очистить корзину</button>
+                        <Link :href="$r('site.catalog')" class="text-sm text-sand-300 underline-offset-4 hover:underline">{{ $t('site.cart.continue') }}</Link>
+                        <button class="text-sm text-sand-100/40 transition hover:text-rose-400" @click="clearCart">{{ $t('site.cart.clear') }}</button>
                     </div>
                 </div>
 
                 <!-- Итоги -->
                 <aside class="lg:sticky lg:top-28 lg:self-start">
                     <div class="card p-6 sm:p-7">
-                        <p class="eyebrow">Итого</p>
+                        <p class="eyebrow">{{ $t('site.common.total') }}</p>
 
                         <div class="mt-5 space-y-3 text-sm">
                             <div class="flex justify-between text-sand-100/60">
-                                <span>Материалы</span><b class="text-sand-50">{{ money(cart.total) }}</b>
+                                <span>{{ $t('site.cart.materials') }}</span><b class="text-sand-50">{{ money(cart.total) }}</b>
                             </div>
 
                             <div class="divider-top pt-4">
-                                <label class="text-xs text-sand-100/45">Доставка в город</label>
+                                <label class="text-xs text-sand-100/45">{{ $t('site.cart.delivery_city') }}</label>
                                 <select v-model="city" class="mt-1.5 w-full rounded-xl border-white/12 bg-white/[0.04] px-3 py-2.5 text-sm text-sand-50 focus:border-sand-300 focus:ring-0">
                                     <option v-for="d in delivery" :key="d.city" :value="d.city" class="bg-ink-800">{{ d.city }}</option>
                                 </select>
 
-                                <label class="mt-3 block text-xs text-sand-100/45">Расстояние за городом, км</label>
+                                <label class="mt-3 block text-xs text-sand-100/45">{{ $t('site.cart.distance') }}</label>
                                 <input v-model="distance" type="number" min="0" class="mt-1.5 w-full rounded-xl border-white/12 bg-white/[0.04] px-3 py-2.5 text-sm text-sand-50 focus:border-sand-300 focus:ring-0" />
 
                                 <div class="mt-3 flex justify-between text-sand-100/60">
-                                    <span>Доставка</span>
-                                    <b class="text-sand-50">{{ deliveryCost === 0 ? 'бесплатно' : money(deliveryCost ?? 0) }}</b>
+                                    <span>{{ $t('site.cart.delivery') }}</span>
+                                    <b class="text-sand-50">{{ deliveryCost === 0 ? $t('site.cart.free') : money(deliveryCost ?? 0) }}</b>
                                 </div>
                             </div>
 
                             <div class="divider-top flex items-baseline justify-between pt-4">
-                                <span class="text-sand-100/60">К оплате</span>
+                                <span class="text-sand-100/60">{{ $t('site.cart.to_pay') }}</span>
                                 <b class="display text-3xl text-sand-50">{{ money(grandTotal) }}</b>
                             </div>
                         </div>
 
-                        <Link :href="route('site.checkout')" class="btn-sand mt-6 w-full">Оформить заказ</Link>
-                        <a :href="whatsapp" target="_blank" rel="noopener" class="btn-ghost mt-3 w-full">Заказать в WhatsApp</a>
-                        <a :href="route('site.quotation')" class="btn-ghost mt-3 w-full">Скачать КП в PDF</a>
+                        <Link :href="$r('site.checkout')" class="btn-sand mt-6 w-full">{{ $t('site.cart.checkout') }}</Link>
+                        <a :href="whatsapp" target="_blank" rel="noopener" class="btn-ghost mt-3 w-full">{{ $t('site.cart.whatsapp_order') }}</a>
+                        <a :href="$r('site.quotation')" class="btn-ghost mt-3 w-full">{{ $t('site.cart.quotation') }}</a>
 
                         <p class="mt-4 text-[11px] leading-relaxed text-sand-100/35">
-                            Стоимость доставки предварительная — менеджер подтвердит её после расчёта объёма и адреса.
+                            {{ $t('site.cart.delivery_note') }}
                         </p>
                     </div>
                 </aside>
             </div>
 
             <section v-if="recommended.length" class="mt-24">
-                <h2 class="display text-2xl text-sand-50 sm:text-3xl">Добавить к заказу</h2>
+                <h2 class="display text-2xl text-sand-50 sm:text-3xl">{{ $t('site.cart.recommended') }}</h2>
                 <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                     <ProductCard v-for="p in recommended" :key="p.id" :product="p" compact />
                 </div>

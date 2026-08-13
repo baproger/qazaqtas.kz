@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -9,6 +10,13 @@ use Illuminate\Support\Str;
 /** Категория каталога (тротуарная плитка, бордюры, МАФ…). Ведётся в ERP. */
 class ProductCategory extends Model
 {
+    use HasTranslations;
+
+    protected static function translatable(): array
+    {
+        return ['name', 'tagline', 'description', 'specs'];
+    }
+
     protected $fillable = ['name', 'slug', 'tagline', 'description', 'image', 'thumb', 'webp', 'specs', 'accent', 'order', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean', 'specs' => 'array'];
@@ -16,6 +24,11 @@ class ProductCategory extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'category_id');
+    }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(ProductCategoryTranslation::class);
     }
 
     public function scopeActive($query)

@@ -11,8 +11,23 @@ import InputError from '@/Components/InputError.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import MediaManager from '@/Components/catalog/MediaManager.vue';
 import Pagination from '@/Components/Pagination.vue';
+import TranslationTabs from '@/Components/TranslationTabs.vue';
+import { parseMap, formatMap, parseColors, formatColors } from '@/utils/catalog';
+import { useE } from '@/composables/useTranslations';
 
-const props = defineProps({ products: Object, categories: Array, filters: Object, units: Array });
+const tr = useE();
+
+const props = defineProps({ products: Object, categories: Array, filters: Object, units: Array, locales: Array });
+
+// Что на карточке переводится. Порядок повторяет основную форму, чтобы
+// вкладка языка читалась как её копия.
+const PRODUCT_FIELDS = [
+    { key: 'name', label: 'Название', type: 'text' },
+    { key: 'short_description', label: 'Короткое описание', type: 'text' },
+    { key: 'description', label: 'Описание', type: 'textarea', rows: 3 },
+    { key: 'specs', label: 'Характеристики', type: 'map', hint: 'Ключи те же, что в карточке — переводятся только значения', rows: 4 },
+    { key: 'colors', label: 'Палитра', type: 'colors', hint: 'Название #HEX — цвет тот же, меняется только название', rows: 3 },
+];
 
 const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v ?? 0)) + ' ₸';
 const search = ref(props.filters?.search ?? '');
@@ -42,7 +57,17 @@ const form = useForm({
     min_order: 1, short_description: '', description: '',
     specs: {}, colors: [], images: [], documents: [],
     is_active: true, is_featured: false, in_stock: true, order: 0,
+    translations: {},
 });
+
+/** Базовые значения — подсказка на вкладках: их покажет витрина без перевода. */
+const translationBase = computed(() => ({
+    name: form.name,
+    short_description: form.short_description,
+    description: form.description,
+    specs: parseMap(specsText.value),
+    colors: parseColors(colorsText.value),
+}));
 
 const openCreate = () => {
     editingId.value = null;
@@ -50,8 +75,9 @@ const openCreate = () => {
     form.reset();
     form.clearErrors();
     form.category_id = props.categories[0]?.id ?? '';
-    specsText.value = 'size: 300 × 300 × 60 мм\npieces_per_m2: 11.1\nfrost: F200';
-    colorsText.value = 'Мрамор белый #E8E6E1\nСерый графит #8A8D91';
+    form.translations = {};
+    specsText.value = tr('size: 300 × 300 × 60 мм\npieces_per_m2: 11.1\nfrost: F200');
+    colorsText.value = tr('Мрамор белый #E8E6E1\nСерый графит #8A8D91');
     showForm.value = true;
 };
 
@@ -65,33 +91,22 @@ const openEdit = (p) => {
         min_order: Number(p.min_order), short_description: p.short_description ?? '',
         description: p.description ?? '', images: p.images ?? [], documents: p.documents ?? [],
         is_active: !!p.is_active, is_featured: !!p.is_featured, in_stock: !!p.in_stock, order: p.order ?? 0,
+        translations: p.translations_map ?? {},
     });
-    specsText.value = Object.entries(p.specs ?? {}).map(([k, v]) => `${k}: ${v}`).join('\n');
-    colorsText.value = (p.colors ?? []).map((c) => `${c.name} ${c.hex}`).join('\n');
+    specsText.value = formatMap(p.specs);
+    colorsText.value = formatColors(p.colors);
     showForm.value = true;
 };
 
-/** «ключ: значение» построчно → объект характеристик. */
-const parseSpecs = () => Object.fromEntries(
-    specsText.value.split('\n').map((l) => l.split(':')).filter((p) => p.length >= 2)
-        .map(([k, ...rest]) => [k.trim(), rest.join(':').trim()]),
-);
-
-/** «Название #HEX» построчно → палитра. */
-const parseColors = () => colorsText.value.split('\n').map((line) => {
-    const m = line.trim().match(/^(.+?)\s+(#[0-9a-fA-F]{3,8})$/);
-    return m ? { name: m[1].trim(), hex: m[2] } : null;
-}).filter(Boolean);
-
 const submit = () => {
-    form.specs = parseSpecs();
-    form.colors = parseColors();
+    form.specs = parseMap(specsText.value);
+    form.colors = parseColors(colorsText.value);
     const opts = { preserveScroll: true, onSuccess: () => (showForm.value = false) };
     editingId.value ? form.put(route('catalog.update', editingId.value), opts) : form.post(route('catalog.store'), opts);
 };
 
 const remove = async (p) => {
-    if (!(await confirmDialog({ title: `Удалить «${p.name}»?`, message: 'Позиция исчезнет из каталога на сайте.', confirmText: 'Удалить', danger: true }))) return;
+    if (!(await confirmDialog({ title: `Удалить «${p.name}»?`, message: tr('Позиция исчезнет из каталога на сайте.'), confirmText: tr('Удалить'), danger: true }))) return;
     router.delete(route('catalog.destroy', p.id), { preserveScroll: true });
 };
 
@@ -113,7 +128,7 @@ const editCat = (c) => {
 };
 
 const removeCat = async (c) => {
-    if (!(await confirmDialog({ title: `Удалить категорию «${c.name}»?`, confirmText: 'Удалить', danger: true }))) return;
+    if (!(await confirmDialog({ title: `Удалить категорию «${c.name}»?`, confirmText: tr('Удалить'), danger: true }))) return;
     router.delete(route('catalogCategories.destroy', c.id), { preserveScroll: true });
 };
 
@@ -122,26 +137,26 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
 
 <template>
     <AppLayout>
-        <template #header>Каталог сайта</template>
+        <template #header>{{ $e('Каталог сайта') }}</template>
 
         <div class="mb-4 flex gap-2 border-b">
-            <Link :href="route('catalog.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">Позиции</Link>
-            <Link :href="route('catalogCategories.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">Категории</Link>
+            <Link :href="route('catalog.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">{{ $e('Позиции') }}</Link>
+            <Link :href="route('catalogCategories.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Категории') }}</Link>
         </div>
 
         <div class="mb-4 flex flex-wrap items-center gap-2">
-            <PrimaryButton @click="openCreate">+ Позиция</PrimaryButton>
+            <PrimaryButton @click="openCreate">{{ $e('+ Позиция') }}</PrimaryButton>
             <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50" @click="showCats = true">
-                ⚙ Категории
+                {{ $e('⚙ Категории') }}
             </button>
             <a :href="route('site.catalog')" target="_blank" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-indigo-600 shadow-sm transition hover:bg-slate-50">
-                Открыть витрину ↗
+                {{ $e('Открыть витрину ↗') }}
             </a>
 
             <div class="ml-auto flex flex-wrap items-center gap-2">
-                <input v-model="search" type="search" placeholder="Название или артикул…" class="w-56 rounded-lg border-slate-200 py-2 text-sm shadow-sm" />
+                <input v-model="search" type="search" :placeholder="$e('Название или артикул…')" class="w-56 rounded-lg border-slate-200 py-2 text-sm shadow-sm" />
                 <select v-model="category" class="rounded-lg border-slate-200 py-2 text-sm text-slate-600 shadow-sm">
-                    <option value="">Все категории</option>
+                    <option value="">{{ $e('Все категории') }}</option>
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }} ({{ c.products_count }})</option>
                 </select>
             </div>
@@ -152,12 +167,12 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                 <table class="min-w-full divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-4 py-2.5 w-16">Фото</th>
-                            <th class="px-4 py-2.5">Позиция</th>
-                            <th class="px-4 py-2.5">Категория</th>
-                            <th class="px-4 py-2.5">Артикул</th>
-                            <th class="px-4 py-2.5 text-right">Цена</th>
-                            <th class="px-4 py-2.5 text-center">На сайте</th>
+                            <th class="px-4 py-2.5 w-16">{{ $e('Фото') }}</th>
+                            <th class="px-4 py-2.5">{{ $e('Позиция') }}</th>
+                            <th class="px-4 py-2.5">{{ $e('Категория') }}</th>
+                            <th class="px-4 py-2.5">{{ $e('Артикул') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('Цена') }}</th>
+                            <th class="px-4 py-2.5 text-center">{{ $e('На сайте') }}</th>
                             <th class="px-4 py-2.5"></th>
                         </tr>
                     </thead>
@@ -166,7 +181,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                             <td class="px-4 py-2">
                                 <img v-if="p.images?.length" :src="p.images[0].thumb ?? p.images[0].path" :alt="p.name" loading="lazy"
                                     class="h-11 w-14 rounded-lg object-cover ring-1 ring-slate-200" />
-                                <span v-else class="grid h-11 w-14 place-items-center rounded-lg bg-slate-100 text-[10px] text-slate-400">нет</span>
+                                <span v-else class="grid h-11 w-14 place-items-center rounded-lg bg-slate-100 text-[10px] text-slate-400">{{ $e('нет') }}</span>
                             </td>
                             <td class="px-4 py-3">
                                 <span class="font-medium text-slate-800">{{ p.name }}</span>
@@ -177,18 +192,18 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                             <td class="px-4 py-3 text-right font-semibold tabular-nums text-slate-900">{{ money(p.price) }} <span class="text-xs font-normal text-slate-400">/ {{ p.unit }}</span></td>
                             <td class="px-4 py-3 text-center">
                                 <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
-                                    {{ p.is_active ? 'опубликована' : 'скрыта' }}
+                                    {{ p.is_active ? $e('опубликована') : $e('скрыта') }}
                                 </span>
-                                <span v-if="p.is_featured" class="ml-1 text-amber-500" title="Показывается на главной">★</span>
+                                <span v-if="p.is_featured" class="ml-1 text-amber-500" :title="$e('Показывается на главной')">★</span>
                             </td>
                             <td class="whitespace-nowrap px-4 py-3 text-right">
-                                <button class="rounded p-1 text-slate-300 transition hover:text-indigo-600" title="Изменить" @click="openEdit(p)">
+                                <button class="rounded p-1 text-slate-300 transition hover:text-indigo-600" :title="$e('Изменить')" @click="openEdit(p)">
                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                 </button>
-                                <button class="rounded p-1 text-slate-300 transition hover:text-rose-600" title="Удалить" @click="remove(p)">✕</button>
+                                <button class="rounded p-1 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить')" @click="remove(p)">✕</button>
                             </td>
                         </tr>
-                        <tr v-if="!products.data.length"><td colspan="7" class="px-6 py-12 text-center text-slate-400">Каталог пуст — «+ Позиция»</td></tr>
+                        <tr v-if="!products.data.length"><td colspan="7" class="px-6 py-12 text-center text-slate-400">{{ $e('Каталог пуст — «+ Позиция»') }}</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -201,11 +216,11 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
         <!-- Форма позиции -->
         <Modal :show="showForm" max-width="2xl" @close="showForm = false">
             <div class="p-6">
-                <h3 class="text-base font-semibold text-slate-900">{{ editingId ? 'Изменить позицию' : 'Новая позиция каталога' }}</h3>
+                <h3 class="text-base font-semibold text-slate-900">{{ editingId ? $e('Изменить позицию') : $e('Новая позиция каталога') }}</h3>
 
                 <!-- Медиа доступны только у сохранённой позиции: файлам нужен id. -->
                 <div v-if="editingId" class="mb-4 mt-3 flex gap-4 border-b border-slate-100">
-                    <button v-for="t2 in [['fields', 'Данные'], ['media', 'Фото, 3D и документы']]" :key="t2[0]"
+                    <button v-for="t2 in [['fields', $e('Данные')], ['lang', $e('Языки')], ['media', $e('Фото, 3D и документы')]]" :key="t2[0]"
                         class="-mb-px border-b-2 pb-2 text-sm transition"
                         :class="tab === t2[0] ? 'border-indigo-500 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'"
                         @click="tab = t2[0]">{{ t2[1] }}</button>
@@ -214,54 +229,65 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
 
                 <MediaManager v-if="tab === 'media' && editingProduct" :product="editingProduct" />
 
+                <!-- :key пересоздаёт вкладки при переходе на другую карточку:
+                     построчные поля держат свой текст и сами не обновятся. -->
+                <TranslationTabs
+                    v-show="tab === 'lang'"
+                    :key="`tr-${editingId ?? 'new'}`"
+                    v-model="form.translations"
+                    :locales="locales"
+                    :base="translationBase"
+                    :fields="PRODUCT_FIELDS"
+                />
+
                 <div v-show="tab === 'fields'" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <InputLabel value="Категория" />
+                        <InputLabel :value="$e('Категория')" />
                         <select v-model="form.category_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm">
                             <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
                     </div>
-                    <div><InputLabel value="Артикул" /><TextInput v-model="form.code" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Артикул')" /><TextInput v-model="form.code" class="mt-1 w-full" /></div>
                     <div class="sm:col-span-2">
-                        <InputLabel value="Название *" /><TextInput v-model="form.name" class="mt-1 w-full" />
+                        <InputLabel :value="$e('Название *')" /><TextInput v-model="form.name" class="mt-1 w-full" />
                         <InputError :message="form.errors.name" class="mt-1" />
                     </div>
                     <div>
-                        <InputLabel value="Единица измерения" />
+                        <InputLabel :value="$e('Единица измерения')" />
                         <select v-model="form.unit" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm">
                             <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
                         </select>
                     </div>
-                    <div><InputLabel value="Цена, ₸ *" /><TextInput v-model="form.price" type="number" min="0" class="mt-1 w-full" /><InputError :message="form.errors.price" class="mt-1" /></div>
-                    <div><InputLabel value="Старая цена" /><TextInput v-model="form.old_price" type="number" min="0" class="mt-1 w-full" /></div>
-                    <div><InputLabel value="Минимальный заказ" /><TextInput v-model="form.min_order" type="number" min="0" step="any" class="mt-1 w-full" /></div>
-                    <div class="sm:col-span-2"><InputLabel value="Короткое описание" /><TextInput v-model="form.short_description" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Цена, ₸ *')" /><TextInput v-model="form.price" type="number" min="0" class="mt-1 w-full" /><InputError :message="form.errors.price" class="mt-1" /></div>
+                    <div><InputLabel :value="$e('Старая цена')" /><TextInput v-model="form.old_price" type="number" min="0" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Минимальный заказ')" /><TextInput v-model="form.min_order" type="number" min="0" step="any" class="mt-1 w-full" /></div>
+                    <div class="sm:col-span-2"><InputLabel :value="$e('Короткое описание')" /><TextInput v-model="form.short_description" class="mt-1 w-full" /></div>
                     <div class="sm:col-span-2">
-                        <InputLabel value="Описание" />
+                        <InputLabel :value="$e('Описание')" />
                         <textarea v-model="form.description" rows="3" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm"></textarea>
                     </div>
                     <div>
-                        <InputLabel value="Характеристики (ключ: значение)" />
-                        <textarea v-model="specsText" rows="5" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm" placeholder="size: 300 × 300 × 60 мм&#10;pieces_per_m2: 11.1"></textarea>
-                        <p class="mt-1 text-[11px] text-slate-400">pieces_per_m2 нужен калькулятору площади и конфигуратору.</p>
+                        <InputLabel :value="$e('Характеристики (ключ: значение)')" />
+                        <textarea v-model="specsText" rows="5" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm" :placeholder="$e('size: 300 × 300 × 60 мм') + '\n' + 'pieces_per_m2: 11.1'"></textarea>
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('pieces_per_m2 нужен калькулятору площади и конфигуратору.') }}</p>
                     </div>
                     <div>
-                        <InputLabel value="Цвета (Название #HEX)" />
-                        <textarea v-model="colorsText" rows="5" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm" placeholder="Мрамор белый #E8E6E1"></textarea>
-                        <p class="mt-1 text-[11px] text-slate-400">Первый цвет — основной, им рисуется превью.</p>
+                        <InputLabel :value="$e('Цвета (Название #HEX)')" />
+                        <textarea v-model="colorsText" rows="5" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm" :placeholder="$e('Мрамор белый #E8E6E1')"></textarea>
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Первый цвет — основной, им рисуется превью.') }}</p>
                     </div>
                 </div>
 
                 <div v-show="tab === 'fields'" class="mt-4 flex flex-wrap gap-5 text-sm text-slate-600">
-                    <label class="flex items-center gap-2"><input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> Опубликована</label>
-                    <label class="flex items-center gap-2"><input v-model="form.is_featured" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> На главной</label>
-                    <label class="flex items-center gap-2"><input v-model="form.in_stock" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> В наличии</label>
-                    <label class="flex items-center gap-2">Порядок <TextInput v-model="form.order" type="number" class="w-20" /></label>
+                    <label class="flex items-center gap-2"><input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> {{ $e('Опубликована') }}</label>
+                    <label class="flex items-center gap-2"><input v-model="form.is_featured" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> {{ $e('На главной') }}</label>
+                    <label class="flex items-center gap-2"><input v-model="form.in_stock" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> {{ $e('В наличии') }}</label>
+                    <label class="flex items-center gap-2">{{ $e('Порядок') }} <TextInput v-model="form.order" type="number" class="w-20" /></label>
                 </div>
 
                 <div class="mt-5 flex justify-end gap-2">
-                    <SecondaryButton @click="showForm = false">{{ tab === 'media' ? 'Закрыть' : 'Отмена' }}</SecondaryButton>
-                    <PrimaryButton v-show="tab === 'fields'" :disabled="form.processing" @click="submit">{{ editingId ? 'Сохранить' : 'Добавить' }}</PrimaryButton>
+                    <SecondaryButton @click="showForm = false">{{ tab === 'media' ? $e('Закрыть') : $e('Отмена') }}</SecondaryButton>
+                    <PrimaryButton v-show="tab !== 'media'" :disabled="form.processing" @click="submit">{{ editingId ? $e('Сохранить') : $e('Добавить') }}</PrimaryButton>
                 </div>
             </div>
         </Modal>
@@ -269,8 +295,8 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
         <!-- Категории -->
         <Modal :show="showCats" max-width="lg" @close="showCats = false">
             <div class="p-6">
-                <h3 class="mb-1 text-base font-semibold text-slate-900">Категории каталога</h3>
-                <p class="mb-4 text-xs text-slate-400">Порядок и названия видны на витрине сразу после сохранения.</p>
+                <h3 class="mb-1 text-base font-semibold text-slate-900">{{ $e('Категории каталога') }}</h3>
+                <p class="mb-4 text-xs text-slate-400">{{ $e('Порядок и названия видны на витрине сразу после сохранения.') }}</p>
 
                 <div class="max-h-64 space-y-2 overflow-y-auto pr-1">
                     <div v-for="c in categories" :key="c.id" class="flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2">
@@ -283,17 +309,17 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
 
                 <div class="mt-4 space-y-2 border-t border-slate-100 pt-4">
                     <div class="grid grid-cols-2 gap-2">
-                        <TextInput v-model="catForm.name" placeholder="Название" class="w-full" />
+                        <TextInput v-model="catForm.name" :placeholder="$e('Название')" class="w-full" />
                         <TextInput v-model="catForm.accent" placeholder="#C8B79A" class="w-full" />
                     </div>
-                    <TextInput v-model="catForm.tagline" placeholder="Подзаголовок для витрины" class="w-full" />
+                    <TextInput v-model="catForm.tagline" :placeholder="$e('Подзаголовок для витрины')" class="w-full" />
                     <div class="flex justify-end gap-2">
-                        <SecondaryButton v-if="editingCat" @click="editingCat = null; catForm.reset()">Отменить правку</SecondaryButton>
-                        <PrimaryButton :disabled="catForm.processing" @click="saveCat">{{ editingCat ? 'Сохранить' : 'Добавить' }}</PrimaryButton>
+                        <SecondaryButton v-if="editingCat" @click="editingCat = null; catForm.reset()">{{ $e('Отменить правку') }}</SecondaryButton>
+                        <PrimaryButton :disabled="catForm.processing" @click="saveCat">{{ editingCat ? $e('Сохранить') : $e('Добавить') }}</PrimaryButton>
                     </div>
                 </div>
 
-                <div class="mt-4 text-right"><SecondaryButton @click="showCats = false">Закрыть</SecondaryButton></div>
+                <div class="mt-4 text-right"><SecondaryButton @click="showCats = false">{{ $e('Закрыть') }}</SecondaryButton></div>
             </div>
         </Modal>
     </AppLayout>

@@ -75,8 +75,12 @@ class CartService
             return ['items' => [], 'total' => 0.0, 'count' => 0];
         }
 
+        // Названия берём из карточки при каждом показе, а не из сессии:
+        // корзина, собранная по-казахски, должна читаться по-русски сразу
+        // после переключения языка.
         $products = Product::active()->whereIn('id', array_column($raw, 'product_id'))
-            ->with('category:id,name,slug,accent')->get()->keyBy('id');
+            ->with(['translations', 'category:id,name,slug,accent', 'category.translations'])
+            ->get()->keyBy('id');
 
         $items = [];
         $total = 0.0;
@@ -94,7 +98,7 @@ class CartService
             $items[] = [
                 'key' => $key,
                 'product_id' => $product->id,
-                'name' => $product->name,
+                'name' => $product->tr('name'),
                 'slug' => $product->slug,
                 'code' => $product->code,
                 'unit' => $product->unit,
@@ -102,7 +106,7 @@ class CartService
                 'quantity' => $quantity,
                 'sum' => $sum,
                 'color' => $row['color'],
-                'category' => $product->category?->name,
+                'category' => $product->category?->tr('name'),
                 'accent' => $product->category?->accent,
                 'min_order' => (float) $product->min_order,
             ];

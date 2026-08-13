@@ -45,18 +45,18 @@ const particles = [
             <!-- Center content -->
             <div class="relative max-w-lg">
                 <h1 class="auth-reveal text-5xl font-extrabold leading-tight tracking-tight text-white xl:text-6xl" style="animation-delay: 100ms">
-                    Управление<br />
-                    <span class="shine-text bg-gradient-to-r from-emerald-200 via-white to-emerald-300 bg-clip-text text-transparent">вашим бизнесом</span>
+                    {{ $e('Управление') }}<br />
+                    <span class="shine-text bg-gradient-to-r from-emerald-200 via-white to-emerald-300 bg-clip-text text-transparent">{{ $e('вашим бизнесом') }}</span>
                 </h1>
                 <p class="auth-reveal mt-6 max-w-md text-base leading-relaxed text-emerald-50/80" style="animation-delay: 200ms">
-                    Сделки, финансы, цех и аналитика холдинга — в одной системе. Планы и факты в реальном времени.
+                    {{ $e('Сделки, финансы, цех и аналитика холдинга — в одной системе. Планы и факты в реальном времени.') }}
                 </p>
 
                 <div class="auth-reveal mt-10 grid grid-cols-3 gap-4" style="animation-delay: 300ms">
                     <div v-for="s in [
-                            { v: '8', l: 'Модулей', live: false },
-                            { v: 'Live', l: 'Аналитика', live: true },
-                            { v: '24/7', l: 'Доступ', live: false },
+                            { v: '8', l: $e('Модулей'), live: false },
+                            { v: 'Live', l: $e('Аналитика'), live: true },
+                            { v: '24/7', l: $e('Доступ'), live: false },
                         ]" :key="s.l"
                         class="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:bg-white/15">
                         <div class="flex items-center gap-1.5 text-2xl font-bold text-white">
@@ -69,7 +69,7 @@ const particles = [
 
             <!-- Footer -->
             <div class="auth-reveal relative flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-emerald-100/70" style="animation-delay: 500ms">
-                <span>© 2026 <span class="font-semibold text-white">QAZAQ TAS</span> · Разработано</span>
+                <span>© 2026 <span class="font-semibold text-white">QAZAQ TAS</span> {{ $e('· Разработано') }}</span>
                 <a href="https://instagram.com/baproger.kz" target="_blank" rel="noopener noreferrer"
                     class="group inline-flex items-center gap-1.5 font-semibold text-white transition-colors hover:text-emerald-200">
                     <svg viewBox="0 0 24 24" class="h-4 w-4 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>

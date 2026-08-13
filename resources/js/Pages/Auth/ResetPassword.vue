@@ -33,7 +33,7 @@ const submit = () => {
 
 <template>
     <GuestLayout>
-        <Head title="Сброс пароля" />
+        <Head :title="$e('Сброс пароля')" />
 
         <form @submit.prevent="submit">
             <div>
@@ -53,7 +53,7 @@ const submit = () => {
             </div>
 
             <div class="mt-4">
-                <InputLabel for="password" value="Пароль" />
+                <InputLabel for="password" :value="$e('Пароль')" />
 
                 <TextInput
                     id="password"
@@ -70,7 +70,7 @@ const submit = () => {
             <div class="mt-4">
                 <InputLabel
                     for="password_confirmation"
-                    value="Подтвердите пароль"
+                    :value="$e('Подтвердите пароль')"
                 />
 
                 <TextInput
@@ -93,7 +93,7 @@ const submit = () => {
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
-                    Сбросить пароль
+                    {{ $e('Сбросить пароль') }}
                 </PrimaryButton>
             </div>
         </form>

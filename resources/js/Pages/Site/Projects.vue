@@ -18,11 +18,10 @@ onBeforeUnmount(() => stop());
     <SiteLayout :seo="seo">
         <section>
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
-                <p class="eyebrow">Реализовано</p>
-                <h1 class="display mt-6 max-w-3xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">Объекты, где уложен наш камень</h1>
+                <p class="eyebrow">{{ $t('site.projects.eyebrow') }}</p>
+                <h1 class="display mt-6 max-w-3xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">{{ $t('site.projects.title') }}</h1>
                 <p class="mt-5 max-w-2xl text-sm leading-relaxed text-sand-100/55 sm:text-base">
-                    Дворы жилых комплексов, парки, набережные и школьные территории.
-                    По каждому объекту делали расчёт раскладки, изготовление и отгрузку.
+                    {{ $t('site.projects.lead') }}
                 </p>
             </div>
         </section>
@@ -46,7 +45,7 @@ onBeforeUnmount(() => stop());
                             class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105"
                         />
                         <div v-else class="paving-pattern flex h-full w-full items-center justify-center">
-                            <span class="text-[11px] uppercase tracking-[0.28em] text-sand-100/25">фото объекта</span>
+                            <span class="text-[11px] uppercase tracking-[0.28em] text-sand-100/25">{{ $t('site.projects.photo_placeholder') }}</span>
                         </div>
                         <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/20 to-transparent" />
                         <p v-if="p.area" class="absolute bottom-5 left-6 display text-3xl text-sand-50 sm:text-4xl">{{ p.area }}</p>
@@ -64,13 +63,13 @@ onBeforeUnmount(() => stop());
             </div>
 
             <div class="card mt-16 p-10 text-center sm:p-16">
-                <h2 class="display text-[clamp(1.75rem,4vw,3rem)] text-sand-50">Посчитаем ваш объект</h2>
+                <h2 class="display text-[clamp(1.75rem,4vw,3rem)] text-sand-50">{{ $t('site.projects.cta_title') }}</h2>
                 <p class="mx-auto mt-4 max-w-lg text-sm text-sand-100/55">
-                    Пришлите площадь и пожелания — подготовим раскладку, смету и сроки.
+                    {{ $t('site.projects.cta_lead') }}
                 </p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
-                    <Link :href="route('site.configurator')" class="btn-sand">Собрать в 3D</Link>
-                    <Link :href="route('site.contacts')" class="btn-ghost">Написать нам</Link>
+                    <Link :href="$r('site.configurator')" class="btn-sand">{{ $t('site.cta.build_3d') }}</Link>
+                    <Link :href="$r('site.contacts')" class="btn-ghost">{{ $t('site.cta.write') }}</Link>
                 </div>
             </div>
         </section>

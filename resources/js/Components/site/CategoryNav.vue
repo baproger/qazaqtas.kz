@@ -1,6 +1,10 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { useT, useSiteRoute } from '@/composables/useTranslations';
+
+const t = useT();
+const { siteRoute } = useSiteRoute();
 
 /**
  * Сегмент-контрол категорий.
@@ -28,7 +32,7 @@ const items = ref([]);
 
 /** «Все» — такой же сегмент, просто без slug. */
 const segments = computed(() => [
-    { id: 'all', slug: '', name: 'Все' },
+    { id: 'all', slug: '', name: t('site.catalog.all_categories') },
     ...props.categories,
 ]);
 
@@ -115,7 +119,7 @@ onBeforeUnmount(() => observer?.disconnect());
             v-for="(s, i) in segments"
             :key="s.id"
             :ref="(el) => (items[i] = el?.$el ?? el)"
-            :href="s.slug ? route('site.catalog', { category: s.slug }) : route('site.catalog')"
+            :href="s.slug ? siteRoute('site.catalog', { category: s.slug }) : siteRoute('site.catalog')"
             preserve-scroll
             preserve-state
             class="segmented-item"

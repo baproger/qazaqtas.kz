@@ -29,10 +29,9 @@ class CatalogController extends Controller
             'currentCategory' => $current,
             'seo' => [
                 'title' => $current
-                    ? $current['name'].' — каталог QAZAQ TAS'
-                    : 'Каталог изделий из мраморного композита — QAZAQ TAS',
-                'description' => $current['description']
-                    ?? 'Тротуарная плитка, бордюры, вазоны, скамьи, урны и облицовка из мраморного композита с ценами и характеристиками.',
+                    ? __('site.seo.category_title', ['name' => $current['name']])
+                    : __('site.seo.catalog_title'),
+                'description' => $current['description'] ?? __('site.seo.catalog_description'),
             ],
         ]);
     }
@@ -40,15 +39,17 @@ class CatalogController extends Controller
     public function show(Product $product): Response
     {
         abort_unless($product->is_active, 404);
-        $product->load('category:id,name,slug,accent');
+        $product->load(['translations', 'category:id,name,slug,accent', 'category.translations']);
+
+        $name = (string) $product->tr('name');
 
         return Inertia::render('Site/Product', [
-            'product' => $product,
+            'product' => $product->localized(),
             'related' => $this->catalog->related($product),
             'seo' => [
-                'title' => $product->name.' — купить в QAZAQ TAS',
-                'description' => $product->short_description
-                    ?: 'Характеристики, цена и расчёт количества для изделия '.$product->name.' из мраморного композита.',
+                'title' => __('site.seo.product_title', ['name' => $name]),
+                'description' => $product->tr('short_description')
+                    ?: __('site.seo.product_description', ['name' => $name]),
             ],
         ]);
     }

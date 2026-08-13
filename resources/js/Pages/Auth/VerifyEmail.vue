@@ -23,19 +23,17 @@ const verificationLinkSent = computed(
 
 <template>
     <GuestLayout>
-        <Head title="Подтверждение email" />
+        <Head :title="$e('Подтверждение email')" />
 
         <div class="mb-4 text-sm text-slate-600">
-            Спасибо за регистрацию! Прежде чем начать, подтвердите email,
-            перейдя по ссылке, которую мы вам отправили. Если письмо не пришло,
-            мы отправим его повторно.
+            {{ $e('Спасибо за регистрацию! Прежде чем начать, подтвердите email, перейдя по ссылке, которую мы вам отправили. Если письмо не пришло, мы отправим его повторно.') }}
         </div>
 
         <div
             class="mb-4 text-sm font-medium text-green-600"
             v-if="verificationLinkSent"
         >
-            Новая ссылка для подтверждения отправлена на email, указанный при регистрации.
+            {{ $e('Новая ссылка для подтверждения отправлена на email, указанный при регистрации.') }}
         </div>
 
         <form @submit.prevent="submit">
@@ -44,7 +42,7 @@ const verificationLinkSent = computed(
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
-                    Отправить письмо повторно
+                    {{ $e('Отправить письмо повторно') }}
                 </PrimaryButton>
 
                 <Link
@@ -52,7 +50,7 @@ const verificationLinkSent = computed(
                     method="post"
                     as="button"
                     class="rounded-md text-sm text-slate-600 underline hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >Выйти</Link
+                    >{{ $e('Выйти') }}</Link
                 >
             </div>
         </form>

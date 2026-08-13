@@ -2,6 +2,9 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import { formatDate, formatDuration } from '@/utils/format';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const props = defineProps({ screen: Object, stages: Array, projects: Array });
 
@@ -20,7 +23,7 @@ onMounted(() => {
 });
 onUnmounted(() => { clearInterval(clockTimer); clearInterval(refreshTimer); });
 
-const title = computed(() => [props.screen?.company, props.screen?.workshop].filter(Boolean).join(' · ') || 'Цех');
+const title = computed(() => [props.screen?.company, props.screen?.workshop].filter(Boolean).join(' · ') || tr('Цех'));
 const leave = () => router.post(route('screen.leave'));
 
 // «Далее» прямо с экрана: работник цеха двигает заказ на следующий этап.
@@ -56,7 +59,7 @@ const complete = (p) => {
             <div class="flex items-center gap-3">
                 <div>
                     <h1 class="text-2xl font-bold leading-tight text-slate-900 lg:text-3xl">{{ title }}</h1>
-                    <div class="text-sm text-slate-400">заказов в работе: <b class="tabular-nums text-slate-600">{{ projects.length }}</b></div>
+                    <div class="text-sm text-slate-400">{{ $e('заказов в работе:') }} <b class="tabular-nums text-slate-600">{{ projects.length }}</b></div>
                 </div>
             </div>
             <div class="flex items-center gap-3">
@@ -64,7 +67,7 @@ const complete = (p) => {
                     <span class="relative flex h-2.5 w-2.5"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span></span>
                     <span class="text-xl font-bold tabular-nums lg:text-2xl">{{ clock }}</span>
                 </div>
-                <button @click="leave" class="rounded-lg px-3 py-2 text-xs text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" title="Сменить код">выйти</button>
+                <button @click="leave" class="rounded-lg px-3 py-2 text-xs text-slate-400 transition hover:bg-slate-100 hover:text-slate-600" :title="$e('Сменить код')">{{ $e('выйти') }}</button>
             </div>
         </div>
 
@@ -75,7 +78,7 @@ const complete = (p) => {
                     <div class="flex items-center gap-2.5">
                         <span class="h-3 w-3 rounded-full" :style="{ backgroundColor: stage.color }"></span>
                         <span class="text-lg font-bold text-slate-800">{{ stage.name }}</span>
-                        <span v-if="stage.is_completed" title="Завершающий">🏁</span>
+                        <span v-if="stage.is_completed" :title="$e('Завершающий')">🏁</span>
                     </div>
                     <span class="rounded-full bg-white px-2.5 py-0.5 text-sm font-bold tabular-nums text-slate-500 shadow-sm">{{ byStage(stage.id).length }}</span>
                 </div>
@@ -84,24 +87,24 @@ const complete = (p) => {
                         <div class="text-lg font-bold leading-snug text-slate-900">{{ p.name }}</div>
                         <div class="flex items-center justify-between">
                             <span class="text-xs text-slate-300">{{ p.number }}</span>
-                            <span v-if="onStage(p)" class="rounded-full bg-indigo-50 px-2 py-0.5 text-sm font-bold tabular-nums text-indigo-600" title="Время на этапе">⏱ {{ onStage(p) }}</span>
+                            <span v-if="onStage(p)" class="rounded-full bg-indigo-50 px-2 py-0.5 text-sm font-bold tabular-nums text-indigo-600" :title="$e('Время на этапе')">⏱ {{ onStage(p) }}</span>
                         </div>
                         <div v-if="p.address" class="mt-1.5 text-sm text-slate-500">📍 {{ p.address }}</div>
-                        <div v-if="p.deadline" class="mt-1 text-sm font-semibold" :class="p.overdue ? 'text-rose-600' : 'text-slate-600'">⏰ {{ formatDate(p.deadline) }}<span v-if="p.overdue"> · просрочен!</span></div>
+                        <div v-if="p.deadline" class="mt-1 text-sm font-semibold" :class="p.overdue ? 'text-rose-600' : 'text-slate-600'">⏰ {{ formatDate(p.deadline) }}<span v-if="p.overdue"> {{ $e('· просрочен!') }}</span></div>
                         <div v-if="p.description" class="mt-1.5 whitespace-pre-line text-sm leading-snug text-slate-500">{{ p.description }}</div>
                         <div v-if="p.note" class="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-sm leading-snug text-amber-800">📌 {{ p.note }}</div>
                         <!-- Крупные кнопки, чтобы удобно жать с ТВ/планшета цеха:
                              «Далее» — следующий этап; на «Отправке» — «Готово» (в Логистику) -->
                         <button v-if="p.stage_id !== lastStageId" @click="advance(p)" :disabled="advancing === p.id"
                             class="mt-2.5 w-full rounded-xl bg-emerald-600 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95 disabled:opacity-50">
-                            {{ advancing === p.id ? '…' : 'Далее →' }}
+                            {{ advancing === p.id ? '…' : $e('Далее →') }}
                         </button>
                         <button v-else @click="complete(p)" :disabled="advancing === p.id"
                             class="mt-2.5 w-full rounded-xl bg-indigo-600 py-2.5 text-base font-bold text-white shadow-sm transition hover:bg-indigo-700 active:scale-95 disabled:opacity-50">
-                            {{ advancing === p.id ? '…' : 'Готово ✓ — в Логистику' }}
+                            {{ advancing === p.id ? '…' : $e('Готово ✓ — в Логистику') }}
                         </button>
                     </div>
-                    <div v-if="!byStage(stage.id).length" class="py-8 text-center text-sm text-slate-400">Пусто</div>
+                    <div v-if="!byStage(stage.id).length" class="py-8 text-center text-sm text-slate-400">{{ $e('Пусто') }}</div>
                 </div>
             </div>
         </div>

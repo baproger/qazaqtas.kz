@@ -229,7 +229,7 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
         :class="reduced ? 'is-reduced' : ''"
         :style="{ '--dir': direction }"
         aria-roledescription="carousel"
-        aria-label="Витрина изделий"
+        :aria-label="$t('site.hero.showcase')"
         tabindex="-1"
         @mouseenter="hold"
         @mouseleave="release"
@@ -247,7 +247,7 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
                 </h1>
 
                 <p v-if="current.price" class="hero-anim mt-6 flex items-baseline gap-2" style="--d: 110ms">
-                    <span class="text-base text-sand-100/50">от</span>
+                    <span class="text-base text-sand-100/50">{{ $t('site.common.from') }}</span>
                     <span class="display text-4xl text-sand-50 sm:text-5xl">{{ money(shownPrice) }} ₸</span>
                     <span class="text-base text-sand-100/50">/ {{ current.unit }}</span>
                 </p>
@@ -258,13 +258,13 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
 
                 <div class="hero-anim mt-9 flex flex-wrap items-center gap-3" style="--d: 210ms">
                     <Link :href="current.href" class="btn-sand">
-                        Смотреть {{ current.count }} {{ current.count === 1 ? 'позицию' : 'позиций' }}
+                        {{ $tc('site.hero.view_count', current.count) }}
                     </Link>
-                    <Link :href="route('site.contacts')" class="btn-ghost">Рассчитать стоимость</Link>
+                    <Link :href="$r('site.contacts')" class="btn-ghost">{{ $t('site.cta.estimate') }}</Link>
                 </div>
 
                 <p class="hero-anim mt-5 text-xs text-sand-100/40" style="--d: 260ms">
-                    Расчёт и выезд замерщика бесплатны · отгрузка со склада в Шымкенте
+                    {{ $t('site.hero.note') }}
                 </p>
             </div>
 
@@ -312,14 +312,14 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
         <!-- Лента переключателей -->
         <div class="mx-auto max-w-7xl px-5 pb-14 sm:px-8">
             <div class="mb-3 flex items-center justify-between gap-4">
-                <p class="eyebrow">Витрина изделий</p>
+                <p class="eyebrow">{{ $t('site.hero.showcase') }}</p>
                 <div class="flex gap-2">
-                    <button type="button" class="hero-arrow" aria-label="Предыдущий товар" @click="prev">←</button>
-                    <button type="button" class="hero-arrow" aria-label="Следующий товар" @click="next">→</button>
+                    <button type="button" class="hero-arrow" :aria-label="$t('site.hero.prev')" @click="prev">←</button>
+                    <button type="button" class="hero-arrow" :aria-label="$t('site.hero.next')" @click="next">→</button>
                 </div>
             </div>
 
-            <div ref="rail" class="hero-rail" role="tablist" aria-label="Товары">
+            <div ref="rail" class="hero-rail" role="tablist" :aria-label="$t('site.hero.products')">
                 <button
                     v-for="(slide, i) in slides"
                     :key="slide.id"
@@ -333,7 +333,7 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
                     <img class="hero-thumb-img" :src="slide.image.thumb" :alt="slide.name" loading="lazy" decoding="async" />
                     <span class="hero-thumb-text">
                         <b>{{ slide.name }}</b>
-                        <em>{{ slide.count }} {{ slide.count === 1 ? 'позиция' : 'позиций' }}</em>
+                        <em>{{ $tc('site.hero.count', slide.count) }}</em>
                     </span>
                     <span class="hero-thumb-mark" aria-hidden="true" />
                 </button>

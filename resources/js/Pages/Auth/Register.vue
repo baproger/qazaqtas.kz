@@ -9,19 +9,19 @@ const submit = () => form.post(route('register'), { onFinish: () => form.reset('
 </script>
 
 <template>
-    <Head title="Регистрация" />
+    <Head :title="$e('Регистрация')" />
     <AuthSplitLayout>
-        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Создать аккаунт</h2>
-        <p class="mt-2 text-sm text-slate-400">Заполните данные для регистрации</p>
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">{{ $e('Создать аккаунт') }}</h2>
+        <p class="mt-2 text-sm text-slate-400">{{ $e('Заполните данные для регистрации') }}</p>
 
         <form @submit.prevent="submit" class="mt-8 space-y-5">
             <div class="auth-reveal" style="animation-delay: 250ms">
-                <label for="name" class="mb-1.5 block text-sm font-semibold text-slate-700">Имя</label>
+                <label for="name" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ $e('Имя') }}</label>
                 <div class="group relative">
                     <span class="auth-ico pointer-events-none absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-400">
                         <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
                     </span>
-                    <input id="name" v-model="form.name" type="text" required autofocus autocomplete="name" placeholder="Ваше имя" class="auth-input py-3 pl-11 pr-4" />
+                    <input id="name" v-model="form.name" type="text" required autofocus autocomplete="name" :placeholder="$e('Ваше имя')" class="auth-input py-3 pl-11 pr-4" />
                 </div>
                 <div v-if="form.errors.name" class="mt-1.5 text-xs font-medium text-rose-600">{{ form.errors.name }}</div>
             </div>
@@ -38,7 +38,7 @@ const submit = () => form.post(route('register'), { onFinish: () => form.reset('
             </div>
 
             <div class="auth-reveal" style="animation-delay: 390ms">
-                <label for="password" class="mb-1.5 block text-sm font-semibold text-slate-700">Пароль</label>
+                <label for="password" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ $e('Пароль') }}</label>
                 <div class="group relative">
                     <span class="auth-ico pointer-events-none absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-400">
                         <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
@@ -53,7 +53,7 @@ const submit = () => form.post(route('register'), { onFinish: () => form.reset('
             </div>
 
             <div class="auth-reveal" style="animation-delay: 460ms">
-                <label for="password_confirmation" class="mb-1.5 block text-sm font-semibold text-slate-700">Подтвердите пароль</label>
+                <label for="password_confirmation" class="mb-1.5 block text-sm font-semibold text-slate-700">{{ $e('Подтвердите пароль') }}</label>
                 <div class="group relative">
                     <span class="auth-ico pointer-events-none absolute inset-y-0 left-0 flex w-11 items-center justify-center text-slate-400">
                         <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg>
@@ -64,23 +64,23 @@ const submit = () => form.post(route('register'), { onFinish: () => form.reset('
             </div>
 
             <button type="submit" :disabled="form.processing" class="auth-reveal auth-btn w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-60" style="animation-delay: 540ms">
-                <span v-if="!form.processing" class="relative z-10">Зарегистрироваться</span>
+                <span v-if="!form.processing" class="relative z-10">{{ $e('Зарегистрироваться') }}</span>
                 <span v-else class="relative z-10 inline-flex items-center gap-2">
                     <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" class="opacity-90"/></svg>
-                    Создание…
+                    {{ $e('Создание…') }}
                 </span>
             </button>
         </form>
 
         <div class="auth-reveal my-7 flex items-center gap-4" style="animation-delay: 600ms">
             <span class="h-px flex-1 bg-slate-200"></span>
-            <span class="text-xs font-medium uppercase tracking-wide text-slate-400">или</span>
+            <span class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ $e('или') }}</span>
             <span class="h-px flex-1 bg-slate-200"></span>
         </div>
 
         <p class="auth-reveal text-center text-sm text-slate-500" style="animation-delay: 660ms">
-            Уже есть аккаунт?
-            <Link :href="route('login')" class="font-semibold text-emerald-600 hover:text-emerald-700">Войти →</Link>
+            {{ $e('Уже есть аккаунт?') }}
+            <Link :href="route('login')" class="font-semibold text-emerald-600 hover:text-emerald-700">{{ $e('Войти →') }}</Link>
         </p>
     </AuthSplitLayout>
 </template>

@@ -19,15 +19,15 @@ const submit = () => {
 
 <template>
     <GuestLayout>
-        <Head title="Подтверждение пароля" />
+        <Head :title="$e('Подтверждение пароля')" />
 
         <div class="mb-4 text-sm text-slate-600">
-            Это защищённый раздел приложения. Подтвердите пароль, прежде чем продолжить.
+            {{ $e('Это защищённый раздел приложения. Подтвердите пароль, прежде чем продолжить.') }}
         </div>
 
         <form @submit.prevent="submit">
             <div>
-                <InputLabel for="password" value="Пароль" />
+                <InputLabel for="password" :value="$e('Пароль')" />
                 <TextInput
                     id="password"
                     type="password"
@@ -46,7 +46,7 @@ const submit = () => {
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
                 >
-                    Подтвердить
+                    {{ $e('Подтвердить') }}
                 </PrimaryButton>
             </div>
         </form>

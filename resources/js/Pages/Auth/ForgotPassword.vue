@@ -9,10 +9,10 @@ const submit = () => form.post(route('password.email'));
 </script>
 
 <template>
-    <Head title="Восстановление пароля" />
+    <Head :title="$e('Восстановление пароля')" />
     <AuthSplitLayout>
-        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Забыли пароль?</h2>
-        <p class="mt-2 text-sm text-slate-400">Укажите email — отправим ссылку для сброса пароля, чтобы вы могли задать новый.</p>
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">{{ $e('Забыли пароль?') }}</h2>
+        <p class="mt-2 text-sm text-slate-400">{{ $e('Укажите email — отправим ссылку для сброса пароля, чтобы вы могли задать новый.') }}</p>
 
         <div v-if="status" class="mt-4 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">{{ status }}</div>
 
@@ -29,16 +29,16 @@ const submit = () => form.post(route('password.email'));
             </div>
 
             <button type="submit" :disabled="form.processing" class="auth-reveal auth-btn w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:brightness-105 active:scale-[0.99] disabled:opacity-60" style="animation-delay: 330ms">
-                <span v-if="!form.processing" class="relative z-10">Отправить ссылку для сброса</span>
+                <span v-if="!form.processing" class="relative z-10">{{ $e('Отправить ссылку для сброса') }}</span>
                 <span v-else class="relative z-10 inline-flex items-center gap-2">
                     <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" class="opacity-90"/></svg>
-                    Отправка…
+                    {{ $e('Отправка…') }}
                 </span>
             </button>
         </form>
 
         <p class="auth-reveal mt-7 text-center text-sm text-slate-500" style="animation-delay: 400ms">
-            <Link :href="route('login')" class="font-semibold text-emerald-600 hover:text-emerald-700">← Вернуться ко входу</Link>
+            <Link :href="route('login')" class="font-semibold text-emerald-600 hover:text-emerald-700">{{ $e('← Вернуться ко входу') }}</Link>
         </p>
     </AuthSplitLayout>
 </template>

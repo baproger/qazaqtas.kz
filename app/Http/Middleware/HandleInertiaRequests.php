@@ -53,6 +53,17 @@ class HandleInertiaRequests extends Middleware
             ],
             'locale' => app()->getLocale(),
             'translations' => fn () => \App\Models\UiTranslation::map(app()->getLocale()),
+            // Язык страницы и её адреса на других языках: из этого фронт
+            // собирает переключатель, hreflang и имена маршрутов витрины
+            // (у неосновного языка они с префиксом — `ru.site.catalog`).
+            'i18n' => [
+                'locale' => app()->getLocale(),
+                'default' => \App\Support\Locales::default(),
+                'available' => \App\Support\Locales::ALL,
+                'names' => \App\Support\Locales::NAMES,
+                'short' => \App\Support\Locales::SHORT,
+                'alternates' => \App\Support\Locales::alternates($request),
+            ],
             // Публичный VAPID-ключ Web Push: фронт подписывает браузер на пуши чата.
             'vapidPublicKey' => (string) config('services.webpush.public_key', ''),
             // Контакты и корзина витрины: нужны шапке/подвалу сайта на каждой

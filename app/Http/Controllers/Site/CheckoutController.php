@@ -28,7 +28,7 @@ class CheckoutController extends Controller
             'cart' => $contents,
             'cities' => array_column(SiteContent::branches(), 'city'),
             'delivery' => SiteContent::delivery(),
-            'seo' => ['title' => 'Оформление заказа — QAZAQ TAS', 'description' => 'Заявка на изготовление и доставку изделий из мраморного композита.'],
+            'seo' => ['title' => __('site.seo.checkout_title'), 'description' => __('site.seo.checkout_description')],
         ]);
     }
 
@@ -36,7 +36,8 @@ class CheckoutController extends Controller
     {
         $contents = $this->cart->contents();
         if (! $contents['items']) {
-            return redirect()->route('site.cart')->with('error', 'Корзина пуста.');
+            return redirect()->route(\App\Support\Locales::routeName('site.cart', app()->getLocale()))
+                ->with('error', __('site.flash.cart_empty'));
         }
 
         $data = $request->validate([
@@ -67,7 +68,7 @@ class CheckoutController extends Controller
                     'name' => $i->name, 'quantity' => (float) $i->quantity, 'unit' => $i->unit, 'sum' => (float) $i->sum,
                 ]),
             ] : null,
-            'seo' => ['title' => 'Заявка принята — QAZAQ TAS', 'description' => 'Мы получили заявку и свяжемся с вами в рабочее время.'],
+            'seo' => ['title' => __('site.seo.thanks_title'), 'description' => __('site.seo.thanks_description')],
         ]);
     }
 }

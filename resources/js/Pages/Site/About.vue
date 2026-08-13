@@ -23,14 +23,12 @@ onBeforeUnmount(() => stop());
     <SiteLayout :seo="seo">
         <section>
             <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
-                <p class="eyebrow">О заводе</p>
+                <p class="eyebrow">{{ $t('site.about.eyebrow') }}</p>
                 <h1 class="display mt-6 max-w-4xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">
-                    Делаем камень, который переживёт нас
+                    {{ $t('site.about.title') }}
                 </h1>
                 <p class="mt-6 max-w-2xl text-sm leading-relaxed text-sand-100/55 sm:text-lg">
-                    QAZAQ TAS — производство изделий из мраморного композита. Мраморная крошка,
-                    белый цемент, фиброволокно и пигмент вместо привычной пескобетонной смеси:
-                    поверхность плотнее, цвет глубже, срок службы — десятилетия.
+                    {{ $t('site.about.lead') }}
                 </p>
             </div>
         </section>
@@ -46,8 +44,8 @@ onBeforeUnmount(() => stop());
 
         <section class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <div class="reveal max-w-2xl">
-                <p class="eyebrow">Технология</p>
-                <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">Как рождается изделие</h2>
+                <p class="eyebrow">{{ $t('site.about.tech_eyebrow') }}</p>
+                <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.about.tech_title') }}</h2>
             </div>
 
             <ol class="mt-14 space-y-3">
@@ -65,7 +63,7 @@ onBeforeUnmount(() => stop());
 
         <section>
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-                <p class="eyebrow reveal">Преимущества</p>
+                <p class="eyebrow reveal">{{ $t('site.about.advantages') }}</p>
                 <div class="duo-grid mt-12 grid sm:grid-cols-2">
                     <div v-for="a in advantages" :key="a.title" class="reveal p-8 sm:p-12">
                         <h3 class="display text-2xl text-sand-50 sm:text-3xl">{{ a.title }}</h3>
@@ -76,7 +74,7 @@ onBeforeUnmount(() => stop());
         </section>
 
         <section class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-            <p class="eyebrow reveal">Производственные площадки</p>
+            <p class="eyebrow reveal">{{ $t('site.about.sites') }}</p>
             <div class="mt-10 grid gap-4 sm:grid-cols-3">
                 <article v-for="b in branches" :key="b.city" class="card card-hover reveal p-8">
                     <h3 class="display text-2xl text-sand-50">{{ b.city }}</h3>
@@ -87,8 +85,8 @@ onBeforeUnmount(() => stop());
             </div>
 
             <div class="mt-16 flex flex-wrap gap-3">
-                <Link :href="route('site.catalog')" class="btn-sand">Смотреть каталог</Link>
-                <Link :href="route('site.contacts')" class="btn-ghost">Связаться</Link>
+                <Link :href="$r('site.catalog')" class="btn-sand">{{ $t('site.cta.catalog') }}</Link>
+                <Link :href="$r('site.contacts')" class="btn-ghost">{{ $t('site.cta.contact') }}</Link>
             </div>
         </section>
     </SiteLayout>
