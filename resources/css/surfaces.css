@@ -223,9 +223,10 @@
     /* Главная кнопка: объём даёт вертикальный градиент и блик по верхней
        кромке, при наведении вокруг появляется тёплое свечение. */
     .btn-sand {
-        /* Скругление 14px вместо капсулы: у карточек радиус 20px, и кнопка
-           внутри не должна выглядеть таблеткой из другого набора. */
-        @apply inline-flex items-center justify-center gap-2 rounded-[14px] px-6 py-3
+        /* Радиус 12px: у карточек он 20–24px, и кнопка внутри не должна
+           выглядеть таблеткой из другого набора. Иерархию держит заливка —
+           главная кнопка литая, второстепенная и «в корзину» прозрачные. */
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3
                text-sm font-semibold text-ink-900 focus:outline-none
                focus-visible:ring-2 focus-visible:ring-sand-300/60;
         /* Тон глубже прежнего: бледный беж на тёмном читался как выцветший,
@@ -250,15 +251,107 @@
         transform: scale(0.95);
         transition-duration: 0.12s;
     }
-    /* Подтверждение прямо на кнопке: галочка вместо тележки. */
+    /* Кнопка «В корзину» — капсула с тонким контуром.
+       Она стоит в карточке рядом с ценой и не должна спорить с главной
+       кнопкой страницы: вместо литой латуни — прозрачная подложка и рамка
+       того же тона, что и текст. Тон берём от sand-300: это единственный
+       токен палитры, который остаётся тёплым и днём, и ночью (sand-200 днём
+       уходит в серо-синий и «пастельным» уже не читается). */
+    .btn-cart {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3
+               text-sm font-medium focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-sand-300/50;
+        color: rgb(var(--sand-300));
+        border: 1px solid rgb(var(--sand-300) / 0.4);
+        background-color: rgb(var(--sand-300) / 0.07);
+        box-shadow: none;
+        background-image: none;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-cart:hover {
+        transform: translateY(-1px);
+        border-color: rgb(var(--sand-300) / 0.75);
+        background-color: rgb(var(--sand-300) / 0.14);
+        filter: none;
+        box-shadow: none;
+    }
+    .btn-cart:active {
+        transform: scale(0.97);
+        transition-duration: 0.12s;
+    }
+    /* Выключенная кнопка не должна отзываться на наведение: в конфигураторе
+       она гаснет, пока в расчёте нет ни одной позиции. */
+    .btn-cart:disabled {
+        @apply cursor-not-allowed opacity-50;
+        transform: none;
+    }
+    .btn-cart:disabled:hover {
+        border-color: rgb(var(--sand-300) / 0.4);
+        background-color: rgb(var(--sand-300) / 0.07);
+    }
+    /* Стрелка подаётся вперёд при наведении — жест «идём дальше».
+       Класс общий: его носят все кнопки-действия, а не только корзина. */
+    .btn-cart-arrow {
+        @apply h-4 w-4 shrink-0;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-sand:hover .btn-cart-arrow,
+    .btn-ghost:hover .btn-cart-arrow,
+    .btn-cart:hover .btn-cart-arrow,
+    .btn-whatsapp:hover .btn-cart-arrow {
+        transform: translateX(3px);
+    }
+
+    /* Подтверждение прямо на кнопке: галочка вместо стрелки. Заливка
+       появляется, но остаётся мягкой — резкий зелёный блок выбивался бы
+       из капсулы с тонким контуром. */
     .btn-cart.is-added {
-        background-image: linear-gradient(180deg, rgb(134 196 160), rgb(84 158 122) 60%, rgb(62 132 99));
-        color: rgb(252 255 253);
-        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 0 22px -6px rgb(84 158 122 / 0.55);
+        color: rgb(74 145 110);
+        border-color: rgb(84 158 122 / 0.6);
+        background-color: rgb(84 158 122 / 0.14);
+        background-image: none;
+        box-shadow: none;
+    }
+    .site[data-theme='dark'] .btn-cart.is-added {
+        color: rgb(150 208 176);
+    }
+
+    /* WhatsApp — фирменный зелёный. Кнопка ведёт в мессенджер, и цвет здесь
+       работает как указатель: посетитель узнаёт канал раньше, чем читает
+       подпись. Объём набран тем же приёмом, что у главной кнопки. */
+    .btn-whatsapp {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3
+               text-sm font-semibold text-white focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-emerald-400/60;
+        background-image: linear-gradient(180deg, rgb(72 213 130) 0%, rgb(37 211 102) 52%, rgb(18 168 84) 100%);
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28),
+                    inset 0 -1px 0 rgb(0 0 0 / 0.1),
+                    0 10px 24px -14px rgb(18 168 84 / 0.65);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                    filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-whatsapp:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.32),
+                    0 0 25px rgb(37 211 102 / 0.32),
+                    0 14px 30px -16px rgb(18 168 84 / 0.7);
+    }
+    .btn-whatsapp:active {
+        transform: scale(0.95);
+        transition-duration: 0.12s;
+    }
+    .btn-whatsapp svg {
+        @apply h-[18px] w-[18px] shrink-0;
+        fill: currentColor;
     }
     /* Иконка появляется с задержкой: сначала глаз замечает смену заливки,
        потом — символ. Одновременно они читаются как рябь. */
-    .btn-cart svg {
+    .btn-cart.is-added svg {
         animation: cart-icon-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
     }
     @keyframes cart-icon-in {
@@ -266,9 +359,86 @@
         to { opacity: 1; transform: none; }
     }
 
+    /*
+     * Спокойный набор кнопок в духе Modern Clean SaaS.
+     *
+     * Отличие от латунных кнопок витрины: плоская заливка вместо градиента,
+     * ровный радиус 10px, никакого блеска — вес держит только цвет. Такие
+     * кнопки стоят там, где решение уже принято и подталкивать не нужно:
+     * в корзине и оформлении заказа.
+     */
+    .btn-clean {
+        @apply inline-flex items-center justify-center gap-2 rounded-[10px] px-5 py-3
+               text-sm font-semibold focus:outline-none focus-visible:ring-2
+               focus-visible:ring-offset-2;
+        transition: background-color 0.2s ease, border-color 0.2s ease,
+                    color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn-clean:active {
+        transform: translateY(1px);
+    }
+    .btn-clean:disabled {
+        @apply cursor-not-allowed opacity-50;
+        transform: none;
+    }
+
+    /*
+     * Главное действие: контур в цвете бренда.
+     *
+     * Форма та же, что у «Очистить корзину», — разводит их только цвет:
+     * латунь против красного. Заливка появляется при наведении, в покое
+     * кнопка плоская, и вес ей даёт не пятно, а фирменный тон.
+     */
+    .btn-clean-brand {
+        border: 1px solid rgb(var(--sand-300) / 0.45);
+        background-color: transparent;
+        color: rgb(var(--sand-300));
+        --tw-ring-color: rgb(var(--sand-300) / 0.4);
+    }
+    .btn-clean-brand:hover {
+        border-color: rgb(var(--sand-300) / 0.8);
+        background-color: rgb(var(--sand-300) / 0.12);
+    }
+
+    /* Нейтральное действие: контур и белое поле — «шаг назад», не отвлекает. */
+    .btn-clean-muted {
+        border: 1px solid rgb(var(--card-border) / 0.14);
+        background-color: rgb(255 255 255 / 0.05);
+        color: rgb(var(--sand-100));
+        --tw-ring-color: rgb(var(--sand-300) / 0.35);
+    }
+    .btn-clean-muted:hover {
+        border-color: rgb(var(--sand-300) / 0.5);
+        background-color: rgb(255 255 255 / 0.09);
+        color: rgb(var(--sand-50));
+    }
+
+    /*
+     * Опасное действие: красный, но приглушённый. Заливку даём только при
+     * наведении — кнопка «Очистить корзину» стоит рядом с обычными, и алый
+     * блок в покое читался бы как предупреждение об ошибке.
+     */
+    .btn-clean-danger {
+        border: 1px solid rgb(225 110 110 / 0.35);
+        background-color: transparent;
+        color: rgb(216 96 96);
+        --tw-ring-color: rgb(225 110 110 / 0.4);
+    }
+    .btn-clean-danger:hover {
+        border-color: rgb(225 110 110 / 0.65);
+        background-color: rgb(225 110 110 / 0.1);
+        color: rgb(228 108 108);
+    }
+    .site[data-theme='dark'] .btn-clean-danger {
+        color: rgb(240 148 148);
+    }
+    .site[data-theme='dark'] .btn-clean-danger:hover {
+        color: rgb(248 176 176);
+    }
+
     /* Второстепенная — из того же матового стекла, что и карточки. */
     .btn-ghost {
-        @apply inline-flex items-center justify-center gap-2 rounded-[14px] px-6 py-3
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3
                text-sm font-medium text-sand-50 focus:outline-none
                focus-visible:ring-2 focus-visible:ring-sand-300/40;
         background-color: rgb(255 255 255 / 0.05);

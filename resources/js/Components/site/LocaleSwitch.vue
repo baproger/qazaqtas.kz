@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useLocale } from '@/composables/useTranslations';
+import { rememberScroll } from '@/site/localeScroll';
 
 /**
  * Переключатель языка витрины.
@@ -9,6 +10,10 @@ import { useLocale } from '@/composables/useTranslations';
  * языке — сервер их и присылает в `i18n.alternates`. Переход намеренно
  * полный, а не через Inertia: атрибут `<html lang>` и теги hreflang ставит
  * blade-шаблон, и при частичном обновлении они остались бы от прошлого языка.
+ *
+ * Плата за полный переход — сброс прокрутки: браузер считает адрес другого
+ * языка новой страницей. Поэтому позицию запоминаем здесь, а возвращает её
+ * SiteLayout после загрузки.
  */
 const i18n = useLocale();
 
@@ -41,6 +46,7 @@ const options = computed(() =>
             :title="option.name"
             :aria-current="option.current ? 'true' : undefined"
             class="rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide transition"
+            @click="rememberScroll"
             :class="option.current
                 ? 'bg-sand-300 text-ink-900'
                 : 'text-sand-100/60 hover:text-sand-50'"

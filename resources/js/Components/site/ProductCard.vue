@@ -106,23 +106,24 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                      терять покупателей на телефоне и на первом взгляде. -->
                 <div class="mt-4 flex gap-2">
                     <button
-                        class="btn-sand btn-cart flex-1 !px-4 !py-2.5 text-[13px]"
+                        class="btn-cart flex-1 !px-4 !py-2.5 text-[13px]"
                         :class="state === 'added' ? 'is-added' : ''"
                         :disabled="state === 'adding'"
                         @click="addToCart"
                     >
-                        <svg v-if="state !== 'added'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 4h2l2.4 11.2A2 2 0 0 0 9.35 17h8.4a2 2 0 0 0 1.95-1.55L21 8H6" />
-                            <circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" />
+                        <span>{{ state === 'added' ? $t('site.product.in_cart') : $t('site.product.to_cart') }}</span>
+                        <!-- Стрелка ведёт взгляд вперёд; когда товар уже в
+                             корзине, вести некуда — на её месте галочка. -->
+                        <svg v-if="state !== 'added'" class="btn-cart-arrow h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M13 6l6 6-6 6" />
                         </svg>
                         <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M4 12.5 9.5 18 20 6.5" />
                         </svg>
-                        <span>{{ state === 'added' ? $t('site.product.in_cart') : $t('site.product.to_cart') }}</span>
                     </button>
                     <Link
                         :href="$r('site.product', product.slug)"
-                        class="grid h-11 w-11 flex-shrink-0 place-items-center rounded-[14px] border border-white/12 text-sand-100/70 transition hover:border-sand-300/60 hover:text-sand-50"
+                        class="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl border border-white/12 text-sand-100/70 transition hover:border-sand-300/60 hover:text-sand-50"
                         :aria-label="$t('site.product.more')"
                     >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>

@@ -194,8 +194,11 @@ onMounted(() => {
                             <button class="h-12 w-12 text-lg text-sand-100/70 transition hover:text-sand-50" :aria-label="$t('site.cart.more')" @click="quantity = Number(quantity) + 1">+</button>
                         </div>
                         <span class="text-sm text-sand-100/45">{{ product.unit }}</span>
-                        <button class="btn-sand flex-1 !py-3.5 sm:flex-none" @click="addToCart">
+                        <button class="btn-cart flex-1 !py-3.5 sm:flex-none" @click="addToCart">
                             {{ $t('site.product.to_cart') }} · {{ money(total) }}
+                            <svg class="btn-cart-arrow h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M13 6l6 6-6 6" />
+                            </svg>
                         </button>
                         <button
                             class="grid h-12 w-12 place-items-center rounded-full border border-white/12 transition hover:border-sand-300/60"

@@ -208,7 +208,8 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/stages', [StageController::class, 'index'])->name('stages.index');
     Route::post('settings/stages', [StageController::class, 'store'])->name('stages.store');
     Route::put('settings/stages/{kind}/{id}', [StageController::class, 'update'])->name('stages.update');
-    Route::patch('settings/stages/{kind}/{id}/move', [StageController::class, 'move'])->name('stages.move');
+    // Порядок воронки задаётся целиком: одно действие и для стрелок, и для перетаскивания.
+    Route::patch('settings/stages/{kind}/reorder', [StageController::class, 'reorder'])->name('stages.reorder');
     Route::delete('settings/stages/{kind}/{id}', [StageController::class, 'destroy'])->name('stages.destroy');
 
     // Custom fields

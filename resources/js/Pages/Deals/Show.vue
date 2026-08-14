@@ -24,7 +24,7 @@ import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 
-const props = defineProps({ deal: Object, stages: Array, users: Array, finance: Object, profit: Object, customFields: Array, history: Array, chatId: Number, can: Object, stageTask: Object, materials: { type: Array, default: () => [] }, balances: { type: Object, default: null }, workshops: { type: Array, default: () => [] }, stageLogs: { type: Array, default: () => [] } });
+const props = defineProps({ deal: Object, stages: Array, branches: { type: Array, default: () => [] }, users: Array, finance: Object, profit: Object, customFields: Array, history: Array, chatId: Number, can: Object, stageTask: Object, materials: { type: Array, default: () => [] }, balances: { type: Object, default: null }, workshops: { type: Array, default: () => [] }, stageLogs: { type: Array, default: () => [] } });
 
 const tab = ref('finance');
 const visibleFields = computed(() => (props.customFields ?? []).filter((f) => f.is_visible && f.value));
@@ -110,6 +110,7 @@ const dateOnly = (v) => (v ?? '').slice(0, 10);
 const editFields = () => ({
     company_name: props.deal.company_name ?? '', bin: props.deal.bin ?? '', client_name: props.deal.client_name ?? '',
     address: props.deal.address ?? '',
+    branch: props.deal.branch ?? '',
     contract_date: dateOnly(props.deal.contract_date), source: props.deal.source ?? '',
     lot_number: props.deal.lot_number ?? '', unit: props.deal.unit ?? '', budget: props.deal.budget, partner_pct: props.deal.partner_pct ?? '', deadline: dateOnly(props.deal.deadline),
     description: props.deal.description ?? '', note: props.deal.note ?? '',
@@ -136,6 +137,11 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 <!-- Длинные названия (НАО, ГУ…) обрезаются с многоточием, полное — в title -->
                 <span class="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl" :title="deal.company_name || deal.name">{{ deal.company_name || deal.name }}</span>
                 <span class="flex-shrink-0 whitespace-nowrap rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">{{ deal.number }}</span>
+                <span
+                    v-if="deal.branch"
+                    class="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700"
+                    :title="$e('Филиал')"
+                >🏭 {{ deal.branch }}</span>
                 <span v-if="overdue" class="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg>
                     {{ $t('deal.overdue_badge', 'Просрочено') }}
@@ -385,6 +391,14 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                     <div><InputLabel :value="$e('Название компании *')" /><TextInput v-model="editForm.company_name" class="mt-1 w-full" /><InputError :message="editForm.errors.company_name" class="mt-1" /></div>
                     <div><InputLabel :value="$e('Номер договора')" /><TextInput v-model="editForm.bin" class="mt-1 w-full" /><InputError :message="editForm.errors.bin" class="mt-1" /></div>
                     <div class="sm:col-span-2"><InputLabel :value="$e('Адрес *')" /><TextInput v-model="editForm.address" class="mt-1 w-full" :placeholder="$e('Город, улица, дом')" /><InputError :message="editForm.errors.address" class="mt-1" /></div>
+                    <div>
+                        <InputLabel :value="$e('Филиал')" />
+                        <select v-model="editForm.branch" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
+                            <option value="">{{ $e('— не назначен —') }}</option>
+                            <option v-for="b in branches" :key="b" :value="b">{{ b }}</option>
+                        </select>
+                        <InputError :message="editForm.errors.branch" class="mt-1" />
+                    </div>
                     <div><InputLabel :value="$e('Дата договора')" /><TextInput v-model="editForm.contract_date" type="date" class="mt-1 w-full" /><InputError :message="editForm.errors.contract_date" class="mt-1" /></div>
                     <div>
                         <InputLabel :value="$e('Источник (портал)')" />

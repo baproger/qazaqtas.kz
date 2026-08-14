@@ -30,6 +30,25 @@ class StageController extends Controller
         return $kind === 'project' ? ProjectStage::class : DealStage::class;
     }
 
+    /**
+     * Этапы одной воронки: свои фирме плюс общие (company_id = null).
+     *
+     * Ровно этот набор страница и показывает, поэтому им же считается порядок.
+     * Раньше нумерация и стрелки работали строго по company_id — общие этапы
+     * оставались со своей нумерацией, в списке появлялись два этапа с order=1,
+     * а стрелка искала соседа только среди «своих» и упиралась в «этап уже
+     * первый», хотя выше него на экране были другие.
+     */
+    private function funnelStages(string $model, ?int $companyId, ?string $workshop = null)
+    {
+        return $model::query()
+            ->where(fn ($w) => $w->where('company_id', $companyId)->orWhereNull('company_id'))
+            // Цех: у каждого города своя воронка и своя нумерация.
+            ->when($model === ProjectStage::class, fn ($q) => $q->where('workshop', $workshop))
+            ->orderBy('order')->orderBy('id')
+            ->get();
+    }
+
     /** Воронка выбирается на странице: company=<id> (сделки) — не зависит от шапки. */
     private function funnelCompanyId(Request $request): ?int
     {
@@ -74,14 +93,18 @@ class StageController extends Controller
         ]);
     }
 
-    /** Перенумеровать воронку компании 1..N (лечит задвоенный/дырявый order). */
+    /** Перенумеровать воронку 1..N (лечит задвоенный и дырявый order). */
     private function reindexFunnel(string $model, ?int $companyId): void
     {
-        $stages = $model::where('company_id', $companyId)->orderBy('order')->orderBy('id')->get();
-        // У цеха нумерация ВНУТРИ каждого цеха — 1..N на цех.
+        $stages = $model::query()
+            ->where(fn ($w) => $w->where('company_id', $companyId)->orWhereNull('company_id'))
+            ->orderBy('order')->orderBy('id')->get();
+
+        // У цеха нумерация ВНУТРИ каждого города — 1..N на цех.
         $groups = $model === ProjectStage::class
             ? $stages->groupBy(fn ($s) => $s->workshop ?? '')
             : collect(['' => $stages]);
+
         foreach ($groups as $group) {
             foreach ($group->values() as $i => $s) {
                 if ((int) $s->order !== $i + 1) {
@@ -100,10 +123,9 @@ class StageController extends Controller
         // Новый этап попадает в воронку (сделок или цеха), выбранную на странице.
         $companyId = $this->funnelCompanyId($request);
 
-        $max = $model::query()
-            ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
-            ->when($data['kind'] === 'project', fn ($q) => $q->where('workshop', $data['workshop'] ?? null))
-            ->max('order') ?? 0;
+        // Конец воронки считаем по тому же набору, что показан на странице,
+        // иначе новый этап получал номер, уже занятый общим этапом.
+        $max = (int) $this->funnelStages($model, $companyId, $data['workshop'] ?? null)->max('order');
         $stage = $model::create([
             'name' => $data['name'],
             'color' => $data['color'] ?? '#6B7280',
@@ -185,33 +207,44 @@ class StageController extends Controller
     }
 
     /**
-     * Переместить этап вверх/вниз — обмен order с соседним этапом.
+     * Новый порядок воронки: с клиента приходит список id сверху вниз.
+     *
+     * Раньше стрелка меняла order местами с соседом. Это ломалось всякий раз,
+     * когда номера задваивались (обмен ничего не менял) и когда сосед по
+     * экрану лежал в другой области видимости. Здесь порядок задаётся целиком
+     * и всегда получается 1..N без дыр — то же действие обслуживает и стрелки,
+     * и перетаскивание мышью.
      */
-    public function move(Request $request, string $kind, int $id): RedirectResponse
+    public function reorder(Request $request, string $kind): RedirectResponse
     {
         $this->guard($request);
-        $dir = $request->validate(['direction' => ['required', 'in:up,down']])['direction'];
 
         $model = $this->model($kind);
-        $stage = $model::findOrFail($id);
-        $neighbor = $model::query()
-            // Обмен местами только внутри воронки своей компании (сделки и цех).
-            ->where('company_id', $stage->company_id)
-            // Цех: стрелки двигают этап только внутри СВОЕГО цеха.
-            ->when($kind === 'project', fn ($q) => $q->where('workshop', $stage->workshop))
-            ->when($dir === 'up', fn ($q) => $q->where('order', '<', $stage->order)->orderByDesc('order'))
-            ->when($dir === 'down', fn ($q) => $q->where('order', '>', $stage->order)->orderBy('order'))
-            ->first();
+        $ids = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['required', 'integer'],
+        ])['ids'];
 
-        if (! $neighbor) {
-            return back()->with('error', 'Этап уже '.($dir === 'up' ? 'первый' : 'последний').'.');
+        $companyId = $this->funnelCompanyId($request);
+        $workshop = $request->input('workshop') ?: null;
+
+        // Двигать можно только этапы показанной воронки: посторонний id из
+        // запроса не должен переставлять чужие этапы.
+        $allowed = $this->funnelStages($model, $companyId, $workshop)->keyBy('id');
+        $ordered = collect($ids)->filter(fn (int $id) => $allowed->has($id))->values();
+
+        if ($ordered->count() !== $allowed->count()) {
+            return back()->with('error', 'Список этапов изменился — обновите страницу.');
         }
 
-        [$stageOrder, $neighborOrder] = [$stage->order, $neighbor->order];
-        $stage->update(['order' => $neighborOrder]);
-        $neighbor->update(['order' => $stageOrder]);
+        foreach ($ordered as $i => $id) {
+            $stage = $allowed[$id];
+            if ((int) $stage->order !== $i + 1) {
+                $stage->update(['order' => $i + 1]);
+            }
+        }
 
-        return back()->with('success', 'Этап перемещён.');
+        return back()->with('success', 'Порядок этапов сохранён.');
     }
 
     /**

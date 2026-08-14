@@ -18,6 +18,9 @@ use Inertia\Response;
 
 class DealController extends Controller
 {
+    /** Вкладка «Без филиала»: значение фильтра, которого нет среди площадок. */
+    public const NO_BRANCH = '__none';
+
     /**
      * Видимость сделок в списках по роли: руководство — все; технолог —
      * только сделки на этапе «Дизайн и расчет», снабженец — на «Закупе»
@@ -50,7 +53,7 @@ class DealController extends Controller
 
         $view = $request->string('view', 'kanban')->toString();
 
-        $base = Deal::query()
+        $base = $this->filteredDeals($request->all(), $request->user())
             ->select('deals.*')
             // ⏱ на канбане: когда сделка вошла на текущий этап (открытый лог).
             ->addSelect(['stage_entered_at' => \App\Models\DealStageLog::select('entered_at')
@@ -58,22 +61,7 @@ class DealController extends Controller
                 ->latest('entered_at')->limit(1)])
             ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order'])
             ->withCount('tasks')
-            ->withCount(['tasks as overdue_count' => fn ($q) => $q->where('status', '!=', 'done')->whereNotNull('due_date')->where('due_date', '<', now())])
-            ->where('status', '!=', 'closed')
-            ->when(\App\Support\CurrentCompany::id(), fn ($q, $c) => $q->where('company_id', $c))
-            ->tap(fn ($q) => $this->scopeForViewer($q, $request->user()))
-            ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(fn ($w) => $w
-                ->where('name', 'like', "%{$s}%")
-                ->orWhere('number', 'like', "%{$s}%")
-                ->orWhere('lot_number', 'like', "%{$s}%")
-                ->orWhere('bin', 'like', "%{$s}%")
-                ->orWhere('company_name', 'like', "%{$s}%")))
-            ->when($request->string('responsible')->toString(), fn ($q, $r) => $q->where('responsible_user_id', $r))
-            ->when($request->integer('stage'), fn ($q, $s) => $q->where('deal_stage_id', $s))
-            ->when($request->date('date_from'), fn ($q, $d) => $q->whereDate('deadline', '>=', $d))
-            ->when($request->date('date_to'), fn ($q, $d) => $q->whereDate('deadline', '<=', $d))
-            ->when($request->date('contract_from'), fn ($q, $d) => $q->whereDate('contract_date', '>=', $d))
-            ->when($request->date('contract_to'), fn ($q, $d) => $q->whereDate('contract_date', '<=', $d));
+            ->withCount(['tasks as overdue_count' => fn ($q) => $q->where('status', '!=', 'done')->whereNotNull('due_date')->where('due_date', '<', now())]);
 
         // Воронка текущей компании; в режиме «Все компании» (id=0) — обе воронки,
         // колонки подписываются кодом фирмы.
@@ -96,7 +84,11 @@ class DealController extends Controller
             'deals' => $deals,
             'stages' => $stages,
             'view' => $view,
-            'filters' => $request->only('search', 'responsible', 'stage', 'date_from', 'date_to', 'contract_from', 'contract_to'),
+            'filters' => $request->only('search', 'responsible', 'stage', 'branch', 'date_from', 'date_to', 'contract_from', 'contract_to'),
+            // Сколько сделок в каждом филиале — с учётом остальных фильтров,
+            // кроме самого филиала: счётчики на вкладках не должны обнуляться
+            // от того, что одна вкладка уже выбрана.
+            'branchCounts' => $this->branchCounts($request),
             'isLeadership' => $request->user()->hasAnyRole(['admin', 'director', 'financist']),
             // Роль/отдел — для фильтра: менеджеры сверху, остальные по отделам.
             'users' => User::where('is_active', true)->with(['roles:id,name', 'department:id,name'])
@@ -124,6 +116,72 @@ class DealController extends Controller
             'workshopsByCompany' => \App\Models\Company::where('is_active', true)->pluck('id')
                 ->mapWithKeys(fn ($id) => [$id => \App\Models\ProjectStage::workshopsFor((int) $id)]),
         ]);
+    }
+
+    /**
+     * Отбор сделок для списка.
+     *
+     * Вынесен из index(), потому что тем же отбором считаются счётчики на
+     * вкладках филиалов: разойдись эти два места, цифра на вкладке перестала
+     * бы сходиться с тем, что в ней открывается.
+     */
+    private function filteredDeals(array $filters, \App\Models\User $viewer): \Illuminate\Database\Eloquent\Builder
+    {
+        $value = fn (string $key) => trim((string) ($filters[$key] ?? ''));
+
+        return Deal::query()
+            ->where('status', '!=', 'closed')
+            ->when(\App\Support\CurrentCompany::id(), fn ($q, $c) => $q->where('company_id', $c))
+            ->tap(fn ($q) => $this->scopeForViewer($q, $viewer))
+            ->when($value('search'), fn ($q, $s) => $q->where(fn ($w) => $w
+                ->where('name', 'like', "%{$s}%")
+                ->orWhere('number', 'like', "%{$s}%")
+                ->orWhere('lot_number', 'like', "%{$s}%")
+                ->orWhere('bin', 'like', "%{$s}%")
+                ->orWhere('company_name', 'like', "%{$s}%")))
+            ->when($value('responsible'), fn ($q, $r) => $q->where('responsible_user_id', $r))
+            // Филиал: «Без филиала» отбирает сделки, которым площадку ещё не
+            // назначили, — иначе они пропадали бы из всех вкладок разом.
+            ->when($value('branch'), fn ($q, $b) => $b === self::NO_BRANCH
+                ? $q->where(fn ($w) => $w->whereNull('branch')->orWhere('branch', ''))
+                : $q->where('branch', $b))
+            ->when((int) ($filters['stage'] ?? 0), fn ($q, $s) => $q->where('deal_stage_id', $s))
+            ->when($value('date_from'), fn ($q, $d) => $q->whereDate('deadline', '>=', $d))
+            ->when($value('date_to'), fn ($q, $d) => $q->whereDate('deadline', '<=', $d))
+            ->when($value('contract_from'), fn ($q, $d) => $q->whereDate('contract_date', '>=', $d))
+            ->when($value('contract_to'), fn ($q, $d) => $q->whereDate('contract_date', '<=', $d));
+    }
+
+    /**
+     * Сколько сделок в каждом филиале.
+     *
+     * Считаем по тем же фильтрам, что и список, но БЕЗ самого филиала:
+     * иначе выбранная вкладка обнуляла бы счётчики всех остальных, и по ним
+     * нельзя было бы понять, куда переключаться.
+     *
+     * @return array<string, int>
+     */
+    private function branchCounts(Request $request): array
+    {
+        $counts = $this->filteredDeals($request->except('branch'), $request->user())
+            ->selectRaw('branch, count(*) as total')
+            ->groupBy('branch')
+            ->pluck('total', 'branch');
+
+        $result = [self::NO_BRANCH => 0];
+
+        foreach (\Database\Seeders\StageSeeder::WORKSHOPS as $branch) {
+            $result[$branch] = (int) ($counts[$branch] ?? 0);
+        }
+
+        // Пустая строка и NULL — это одно и то же «филиал не назначен».
+        foreach ($counts as $branch => $total) {
+            if ($branch === null || $branch === '') {
+                $result[self::NO_BRANCH] += (int) $total;
+            }
+        }
+
+        return $result;
     }
 
     public function store(DealRequest $request, DealNumberService $numbers): RedirectResponse
@@ -210,6 +268,9 @@ class DealController extends Controller
 
         return Inertia::render('Deals/Show', [
             'deal' => $deal,
+            // Филиал сделки правится прямо в карточке: раньше его можно было
+            // задать только при создании, и ошибку выбора нечем было исправить.
+            'branches' => \Database\Seeders\StageSeeder::WORKSHOPS,
             'stageTask' => $stageTask,
             // История этапов: сколько сделка провела на каждом и кто перевёл
             // (открытый лог — тикает, как тайминг у заказа цеха).

@@ -95,6 +95,8 @@ class CartService
             $sum = round((float) $product->price * $quantity, 2);
             $total += $sum;
 
+            $colors = $product->tr('colors') ?: [];
+
             $items[] = [
                 'key' => $key,
                 'product_id' => $product->id,
@@ -106,7 +108,17 @@ class CartService
                 'quantity' => $quantity,
                 'sum' => $sum,
                 'color' => $row['color'],
+                // Снимок и палитра — чтобы корзина показывала товар так же,
+                // как каталог: есть фото — фото, нет — векторная схема по типу
+                // изделия и цвету. Позиция без картинки читается как ошибка.
+                'image' => $product->images[0] ?? null,
+                'colors' => $colors,
+                // Оттенок выбранного цвета: в корзине хранится его НАЗВАНИЕ,
+                // а схеме нужен код. Не нашли — превью возьмёт первый цвет
+                // изделия, как и в каталоге.
+                'color_hex' => collect($colors)->firstWhere('name', $row['color'])['hex'] ?? null,
                 'category' => $product->category?->tr('name'),
+                'category_slug' => $product->category?->slug,
                 'accent' => $product->category?->accent,
                 'min_order' => (float) $product->min_order,
             ];

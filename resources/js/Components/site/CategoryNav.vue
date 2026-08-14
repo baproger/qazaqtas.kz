@@ -51,13 +51,12 @@ const instant = ref(true);
 
 const place = (el) => {
     if (!el) return;
-    const height = el.offsetHeight || 36;
     pill.value = {
         x: el.offsetLeft,
         scale: (el.offsetWidth || BASE_WIDTH) / BASE_WIDTH,
-        // 13px вместо половины высоты: плашка перестаёт быть капсулой и
-        // ложится в общий язык форм витрины.
-        radius: 13,
+        // 12px — та же форма, что у кнопок витрины: капсула здесь смотрелась
+        // бы плашкой из другого набора.
+        radius: 12,
         ready: true,
     };
 };

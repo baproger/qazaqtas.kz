@@ -20,7 +20,7 @@ import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 
-const props = defineProps({ deals: [Array, Object], stages: Array, view: String, filters: Object, users: Array, can: Object, isLeadership: Boolean, companies: { type: Array, default: () => [] }, currentCompanyId: Number, workshopsByCompany: { type: Object, default: () => ({}) }, branches: { type: Array, default: () => [] }, catalog: { type: Array, default: () => [] } });
+const props = defineProps({ deals: [Array, Object], stages: Array, view: String, filters: Object, users: Array, can: Object, isLeadership: Boolean, companies: { type: Array, default: () => [] }, currentCompanyId: Number, workshopsByCompany: { type: Object, default: () => ({}) }, branches: { type: Array, default: () => [] }, branchCounts: { type: Object, default: () => ({}) }, catalog: { type: Array, default: () => [] } });
 
 const list = computed(() => Array.isArray(props.deals) ? props.deals : props.deals.data);
 const byStage = (id) => list.value.filter((d) => d.deal_stage_id === id);
@@ -86,11 +86,38 @@ const fFrom = ref(props.filters?.date_from ?? '');
 const fTo = ref(props.filters?.date_to ?? '');
 const fContractFrom = ref(props.filters?.contract_from ?? '');
 const fContractTo = ref(props.filters?.contract_to ?? '');
+
+/*
+ * Филиалы — вкладками над списком: у каждой площадки свои сделки.
+ *
+ * Значение уходит тем же фильтром, что и остальные, поэтому работает и в
+ * канбане, и в списке, и вместе с поиском. «Без филиала» — не пустая
+ * вкладка, а отдельный отбор: сделки, которым площадку ещё не назначили,
+ * иначе они не попадали бы никуда и терялись.
+ */
+const NO_BRANCH = '__none';
+const fBranch = ref(props.filters?.branch ?? '');
+const branchTabs = computed(() => {
+    const counts = props.branchCounts ?? {};
+    const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+    const tabs = [
+        { key: '', label: tr('Все филиалы'), count: total },
+        ...props.branches.map((b) => ({ key: b, label: b, count: counts[b] ?? 0 })),
+    ];
+
+    // Вкладку «Без филиала» показываем, только когда такие сделки есть:
+    // на заполненной базе она была бы вечным пустым хвостом.
+    if (counts[NO_BRANCH]) tabs.push({ key: NO_BRANCH, label: tr('Без филиала'), count: counts[NO_BRANCH] });
+
+    return tabs;
+});
+const pickBranch = (key) => { fBranch.value = key; applyFilters(); };
 const applyFilters = () => router.get(route('deals.index'), {
     view: props.view,
     search: search.value || undefined,
     responsible: fResponsible.value || undefined,
     stage: fStage.value || undefined,
+    branch: fBranch.value || undefined,
     date_from: fFrom.value || undefined,
     date_to: fTo.value || undefined,
     contract_from: fContractFrom.value || undefined,
@@ -98,11 +125,11 @@ const applyFilters = () => router.get(route('deals.index'), {
 }, { preserveState: true, preserveScroll: true, replace: true });
 let searchTimer = null;
 const onSearch = () => { clearTimeout(searchTimer); searchTimer = setTimeout(applyFilters, 350); };
-const hasFilters = computed(() => search.value || fResponsible.value || fStage.value || fFrom.value || fTo.value || fContractFrom.value || fContractTo.value);
+const hasFilters = computed(() => search.value || fResponsible.value || fStage.value || fBranch.value || fFrom.value || fTo.value || fContractFrom.value || fContractTo.value);
 // При фильтре по этапу канбан показывает ТОЛЬКО выбранную колонку —
 // остальные этапы скрываются (а не пустеют).
 const visibleStages = computed(() => fStage.value ? props.stages.filter((s) => String(s.id) === String(fStage.value)) : props.stages);
-const resetFilters = () => { search.value = ''; fResponsible.value = ''; fStage.value = ''; fFrom.value = ''; fTo.value = ''; fContractFrom.value = ''; fContractTo.value = ''; applyFilters(); };
+const resetFilters = () => { search.value = ''; fResponsible.value = ''; fStage.value = ''; fBranch.value = ''; fFrom.value = ''; fTo.value = ''; fContractFrom.value = ''; fContractTo.value = ''; applyFilters(); };
 
 // Массовое удаление (вид «Список», только admin): чекбоксы + подтверждение.
 const selected = ref(new Set());
@@ -168,6 +195,27 @@ const applyBinMatch = () => {
                 <button :class="view === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-600'" class="rounded-r-lg px-4 py-1.5 text-sm transition-colors" @click="switchView('list')">{{ $e('Список') }}</button>
             </div>
             <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow transition-transform hover:scale-[1.02] hover:bg-indigo-700 active:scale-95" @click="openCreate">{{ $e('+ Новая сделка') }}</button>
+        </div>
+
+        <!-- Филиалы: у каждой площадки свои сделки -->
+        <div v-if="branches.length" class="mb-4 flex flex-wrap items-center gap-1.5">
+            <button
+                v-for="tab in branchTabs"
+                :key="tab.key || 'all'"
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors"
+                :class="String(fBranch) === String(tab.key)
+                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'"
+                @click="pickBranch(tab.key)"
+            >
+                <span v-if="tab.key && tab.key !== '__none'">🏭</span>
+                {{ tab.label }}
+                <span
+                    class="rounded px-1.5 text-xs font-semibold"
+                    :class="String(fBranch) === String(tab.key) ? 'bg-white/20' : 'bg-slate-100 text-slate-500'"
+                >{{ tab.count }}</span>
+            </button>
         </div>
 
         <!-- Единый фильтр-бар: поиск, менеджер (руководству), этап, срок с—по -->

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { confirmDialog } from '@/composables/useConfirm';
@@ -56,7 +56,71 @@ const add = () => newForm
     .transform((d) => ({ ...d, kind: kind.value }))
     .post(route('stages.store', { company: funnel.value }), { preserveScroll: true, onSuccess: () => (adding.value = false) });
 
-const move = (stage, direction) => router.patch(route('stages.move', [kind.value, stage.id]), { direction }, { preserveScroll: true });
+/*
+ * Порядок этапов.
+ *
+ * Список показывается из локальной копии: перетащили — строки встают на
+ * место сразу, не дожидаясь ответа сервера. Наверх уходит весь порядок
+ * целиком, поэтому и стрелки, и мышь делают ровно одно и то же действие, а
+ * номера всегда получаются 1..N без дыр.
+ */
+const localOrder = ref(null);
+const orderedStages = computed(() => {
+    if (!localOrder.value) return stages.value;
+    const byId = new Map(stages.value.map((s) => [s.id, s]));
+
+    return localOrder.value.map((id) => byId.get(id)).filter(Boolean);
+});
+
+// Сервер прислал новый список — своя раскладка больше не нужна.
+watch(() => [stages.value, activeWs.value, funnel.value], () => (localOrder.value = null));
+
+const saveOrder = (ids) => {
+    localOrder.value = ids;
+    router.patch(route('stages.reorder', kind.value), {
+        ids,
+        company: funnel.value,
+        workshop: isWorkshop.value ? activeWs.value : null,
+    }, {
+        preserveScroll: true,
+        preserveState: true,
+        // Сервер отказал (список успели поменять) — снимаем свою раскладку,
+        // чтобы на экране не осталось порядка, которого нет в базе.
+        onError: () => (localOrder.value = null),
+    });
+};
+
+const moveBy = (index, delta) => {
+    const ids = orderedStages.value.map((s) => s.id);
+    const to = index + delta;
+    if (to < 0 || to >= ids.length) return;
+
+    ids.splice(to, 0, ids.splice(index, 1)[0]);
+    saveOrder(ids);
+};
+
+/** Перетаскивание: свой индекс держим в состоянии — данные drag-события в
+ *  Safari читаются только при drop, и подсветка строки без него не работает. */
+const dragFrom = ref(null);
+const dragOver = ref(null);
+
+const onDragStart = (index, event) => {
+    dragFrom.value = index;
+    event.dataTransfer.effectAllowed = 'move';
+    // Firefox не начинает перетаскивание с пустым dataTransfer.
+    event.dataTransfer.setData('text/plain', String(index));
+};
+
+const onDrop = (index) => {
+    const from = dragFrom.value;
+    dragFrom.value = null;
+    dragOver.value = null;
+    if (from === null || from === index) return;
+
+    const ids = orderedStages.value.map((s) => s.id);
+    ids.splice(index, 0, ids.splice(from, 1)[0]);
+    saveOrder(ids);
+};
 
 // Редактор этапа: имя + цвет + (для сделок) тип и гейт / (для цеха) завершающий.
 const editing = ref(null);
@@ -172,7 +236,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
             <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div>
                     <h3 class="font-semibold text-slate-900">{{ isWorkshop ? $e('Этапы — ') + (activeWs || $e('единый цех')) : $e('Воронка сделок') }}</h3>
-                    <p class="text-xs text-slate-400">{{ companyName }} {{ $e('· перетаскивать порядок стрелками ↑↓ слева') }}</p>
+                    <p class="text-xs text-slate-400">{{ companyName }} {{ $e('· порядок — перетаскиванием за ⠿ или стрелками') }}</p>
                 </div>
                 <PrimaryButton @click="startAdd">{{ $e('+ Добавить этап') }}</PrimaryButton>
             </div>
@@ -205,12 +269,32 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
 
             <!-- Список этапов -->
             <div class="divide-y divide-slate-50">
-                <div v-for="(stage, idx) in stages" :key="stage.id" class="group">
-                    <div class="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50/70">
-                        <!-- Реордер -->
-                        <div class="flex flex-col text-slate-300">
-                            <button class="leading-none transition-colors hover:text-indigo-600 disabled:opacity-25" :disabled="idx === 0" @click="move(stage, 'up')" :title="$e('Выше')">▲</button>
-                            <button class="leading-none transition-colors hover:text-indigo-600 disabled:opacity-25" :disabled="idx === stages.length - 1" @click="move(stage, 'down')" :title="$e('Ниже')">▼</button>
+                <div
+                    v-for="(stage, idx) in orderedStages"
+                    :key="stage.id"
+                    class="group"
+                    :class="dragOver === idx && dragFrom !== idx ? 'border-t-2 border-indigo-400' : ''"
+                    @dragover.prevent="dragOver = idx"
+                    @dragleave="dragOver === idx && (dragOver = null)"
+                    @drop.prevent="onDrop(idx)"
+                >
+                    <div
+                        class="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50/70"
+                        :class="dragFrom === idx ? 'opacity-40' : ''"
+                    >
+                        <!-- Порядок: тянуть за ручку или двигать стрелками -->
+                        <div class="flex items-center gap-1.5">
+                            <span
+                                class="cursor-grab select-none text-slate-300 transition-colors hover:text-indigo-500 active:cursor-grabbing"
+                                draggable="true"
+                                :title="$e('Перетащите, чтобы изменить порядок')"
+                                @dragstart="onDragStart(idx, $event)"
+                                @dragend="dragFrom = null; dragOver = null"
+                            >⠿</span>
+                            <div class="flex flex-col text-[10px] leading-none text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
+                                <button class="transition-colors hover:text-indigo-600 disabled:opacity-25" :disabled="idx === 0" @click="moveBy(idx, -1)" :title="$e('Выше')">▲</button>
+                                <button class="transition-colors hover:text-indigo-600 disabled:opacity-25" :disabled="idx === orderedStages.length - 1" @click="moveBy(idx, 1)" :title="$e('Ниже')">▼</button>
+                            </div>
                         </div>
                         <!-- Номер -->
                         <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">{{ idx + 1 }}</span>
