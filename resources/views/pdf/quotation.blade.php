@@ -1,7 +1,7 @@
 {{-- Коммерческое предложение. Печатный документ: светлый фон, DejaVu Sans —
      единственный встроенный в dompdf шрифт с кириллицей. --}}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <style>
@@ -29,7 +29,7 @@
         <tr>
             <td>
                 <div class="brand">QAZAQ TAS</div>
-                <div class="muted">Изделия из мраморного композита</div>
+                <div class="muted">{{ __('site.quotation.tagline') }}</div>
             </td>
             <td class="right muted">
                 {{ $contacts['phone'] }}<br>
@@ -39,10 +39,10 @@
         </tr>
     </table>
 
-    <h1>Коммерческое предложение {{ $number }}</h1>
+    <h1>{{ __('site.quotation.title') }} {{ $number }}</h1>
     <div class="muted">
-        от {{ $date->format('d.m.Y') }} · действительно до {{ $validUntil->format('d.m.Y') }}
-        @if(!empty($customer['name'])) · для: {{ $customer['name'] }}@endif
+        {{ __('site.quotation.from') }} {{ $date->format('d.m.Y') }} · {{ __('site.quotation.valid_until') }} {{ $validUntil->format('d.m.Y') }}
+        @if(!empty($customer['name'])) · {{ __('site.quotation.for') }} {{ $customer['name'] }}@endif
         @if(!empty($customer['phone'])) · {{ $customer['phone'] }}@endif
     </div>
 
@@ -50,10 +50,10 @@
         <thead>
             <tr>
                 <th style="width: 26px">№</th>
-                <th>Наименование</th>
-                <th class="num">Кол-во</th>
-                <th class="num">Цена</th>
-                <th class="num">Сумма</th>
+                <th>{{ __('site.quotation.col_name') }}</th>
+                <th class="num">{{ __('site.quotation.col_qty') }}</th>
+                <th class="num">{{ __('site.quotation.col_price') }}</th>
+                <th class="num">{{ __('site.quotation.col_sum') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -62,7 +62,7 @@
                     <td class="muted">{{ $i + 1 }}</td>
                     <td>
                         {{ $item['name'] }}
-                        @if($item['color'])<br><span class="muted">цвет: {{ $item['color'] }}</span>@endif
+                        @if($item['color'])<br><span class="muted">{{ __('site.quotation.color') }} {{ $item['color'] }}</span>@endif
                     </td>
                     <td class="num">{{ rtrim(rtrim(number_format($item['quantity'], 2, '.', ' '), '0'), '.') }} {{ $item['unit'] }}</td>
                     <td class="num">{{ number_format($item['price'], 0, '.', ' ') }} ₸</td>
@@ -74,24 +74,21 @@
 
     <table class="totals">
         <tr>
-            <td class="muted">Материалы</td>
+            <td class="muted">{{ __('site.quotation.materials') }}</td>
             <td class="num">{{ number_format($cart['total'], 0, '.', ' ') }} ₸</td>
         </tr>
         <tr class="grand">
-            <td>Итого</td>
+            <td>{{ __('site.quotation.total') }}</td>
             <td class="num">{{ number_format($cart['total'], 0, '.', ' ') }} ₸</td>
         </tr>
     </table>
 
     <div class="note">
-        В стоимость не входят доставка и монтаж — считаем отдельно по адресу объекта.
-        Цены указаны с учётом налога {{ $taxPercent }} %. Складские позиции отгружаем
-        за 1–3 дня, изготовление под заказ — от 7 дней. Гарантия на изделия — 5 лет
-        при соблюдении технологии укладки.
+        {{ __('site.quotation.note', ['tax' => $taxPercent]) }}
     </div>
 
     <div class="foot">
-        <b>Производство:</b>
+        <b>{{ __('site.quotation.production') }}</b>
         @foreach($branches as $b){{ $b['city'] }}, {{ $b['address'] }}@if(!$loop->last) · @endif @endforeach
     </div>
 </body>

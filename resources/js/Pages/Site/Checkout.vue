@@ -120,7 +120,7 @@ const receiveOptions = computed(() => [
                             <b class="display text-2xl text-sand-50">{{ money(cart.total) }}</b>
                         </div>
 
-                        <button type="submit" class="btn-sand mt-6 w-full" :disabled="form.processing">
+                        <button type="submit" class="btn-clean btn-clean-brand mt-6 w-full" :disabled="form.processing">
                             {{ form.processing ? $t('site.checkout.sending') : $t('site.checkout.submit') }}
                         </button>
 

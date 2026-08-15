@@ -135,6 +135,36 @@ class SiteContentTranslationTest extends TestCase
         $this->assertSame('Пн–Сб, 09:00–18:00', SiteContent::contacts()['hours']);
     }
 
+    /**
+     * КП уходит клиенту в руки: документ собирается целиком на языке
+     * страницы, с которой его скачали, — включая префикс номера в имени файла.
+     */
+    public function test_quotation_pdf_follows_the_page_language(): void
+    {
+        $product = \App\Models\Product::create([
+            'name' => 'Плитка Квадрат', 'slug' => 'plitka-kvadrat',
+            'unit' => 'м²', 'price' => 8900, 'is_active' => true, 'in_stock' => true,
+        ]);
+
+        $this->post('/korzina/'.$product->slug, ['quantity' => 10])->assertRedirect();
+
+        $kk = $this->get('/kp');
+        $kk->assertOk();
+        // Кириллическое имя уходит RFC-5987-хвостом: filename*=utf-8''%D0%9A...
+        $this->assertStringContainsString(rawurlencode('КҰ'), $kk->headers->get('content-disposition'));
+
+        $ru = $this->get('/ru/kp');
+        $ru->assertOk();
+        $this->assertStringContainsString(rawurlencode('КП'), $ru->headers->get('content-disposition'));
+    }
+
+    /** Пустая корзина возвращает на корзину ТОГО ЖЕ языка, не основного. */
+    public function test_empty_cart_quotation_redirects_to_the_same_language(): void
+    {
+        $this->get('/kp')->assertRedirect('/korzina');
+        $this->get('/ru/kp')->assertRedirect('/ru/korzina');
+    }
+
     public function test_defaults_ship_with_both_languages(): void
     {
         app()->setLocale('kk');

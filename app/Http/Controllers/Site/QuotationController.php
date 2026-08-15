@@ -34,7 +34,9 @@ class QuotationController extends Controller
         ]);
 
         $taxPercent = (float) Setting::get('tax_percent', 3);
-        $number = 'КП-'.now()->format('Ymd-His');
+        // Номер генерится на лету и нигде не сохраняется, поэтому префикс
+        // можно локализовать: документ уходит клиенту целиком на его языке.
+        $number = __('site.quotation.number_prefix').'-'.now()->format('Ymd-His');
 
         $pdf = Pdf::loadView('pdf.quotation', [
             'number' => $number,
