@@ -62,6 +62,43 @@ class MediaService
         return $result;
     }
 
+    /**
+     * Приватный документ-фотография: чек расхода.
+     *
+     * Чеки снимают телефоном, и снимок весит 3–8 МБ. На рабочем месте
+     * бухгалтера картинки открыты сразу, десятками — без сжатия это была бы
+     * самая тяжёлая страница системы. Ужимаем тем же путём, что фото
+     * каталога (до 1600 px), но кладём на ПРИВАТНЫЙ диск: чек отдаётся
+     * только guard-маршрутом, прямой ссылки в public/ у него нет.
+     *
+     * PDF и форматы, которые GD не читает (HEIC с айфона), сохраняются как
+     * есть: испортить документ хуже, чем сэкономить мегабайт.
+     *
+     * @return string путь на диске — его и хранит expenses.file_path
+     */
+    public function storeReceipt(UploadedFile $file, string $folder, string $disk = 'local'): string
+    {
+        $folder = trim($folder, '/');
+
+        if (@getimagesize($file->getRealPath()) === false) {
+            return $file->store($folder, $disk);
+        }
+
+        $raw = (string) file_get_contents($file->getRealPath());
+        [$data, $ext] = $this->resize($file, self::WEB_WIDTH);
+
+        // resize() возвращает исходник, когда GD не осилил формат, — в этом
+        // случае и расширение от него доверять нельзя.
+        if ($data === $raw) {
+            return $file->store($folder, $disk);
+        }
+
+        $path = $folder.'/'.Str::random(40).'.'.$ext;
+        Storage::disk($disk)->put($path, $data);
+
+        return $path;
+    }
+
     /** Файл как есть (GLB-модель, PDF-документ) — без обработки. */
     public function storeFile(UploadedFile $file, string $folder): string
     {

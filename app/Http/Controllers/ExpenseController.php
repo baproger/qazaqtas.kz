@@ -65,6 +65,15 @@ class ExpenseController extends Controller
         );
     }
 
+    /**
+     * Сохранить чек: приватный диск + сжатие фотографии (PDF — как есть).
+     * Единая точка для создания, правки и подтверждения расхода.
+     */
+    private function storeReceipt(\Illuminate\Http\UploadedFile $file): string
+    {
+        return app(\App\Services\MediaService::class)->storeReceipt($file, 'receipts');
+    }
+
     private function resolve(?string $type, ?int $id): ?Model
     {
         if (! $id) {
@@ -107,8 +116,9 @@ class ExpenseController extends Controller
 
         $data = $request->validated();
         unset($data['file']);
-        // Чек хранится вне public-корня (storage/app/private), как и документы.
-        $data['file_path'] = $request->hasFile('file') ? $request->file('file')->store('receipts', 'local') : null;
+        // Чек хранится вне public-корня (storage/app/private), как и документы;
+        // фото с телефона по дороге ужимается до веб-размера.
+        $data['file_path'] = $request->hasFile('file') ? $this->storeReceipt($request->file('file')) : null;
         // Автор проставляется автоматически — заполнить расход за другого нельзя.
         $data['responsible_user_id'] = $request->user()->id;
         $data['type'] ??= 'direct';
@@ -282,7 +292,7 @@ class ExpenseController extends Controller
             if ($expense->file_path) {
                 Storage::disk('local')->delete($expense->file_path);
             }
-            $expense->file_path = $request->file('file')->store('receipts', 'local');
+            $expense->file_path = $this->storeReceipt($request->file('file'));
         }
         if (! $expense->file_path) {
             throw \Illuminate\Validation\ValidationException::withMessages([
@@ -364,7 +374,7 @@ class ExpenseController extends Controller
             if ($expense->file_path) {
                 Storage::disk('local')->delete($expense->file_path);
             }
-            $data['file_path'] = $request->file('file')->store('receipts', 'local');
+            $data['file_path'] = $this->storeReceipt($request->file('file'));
         }
         // responsible_user_id намеренно не трогаем — автор расхода неизменен.
         $expense->update($data);
