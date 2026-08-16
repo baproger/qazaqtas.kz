@@ -74,6 +74,9 @@ class DealController extends Controller
                 'id' => $s->id,
                 'name' => $s->translatedName().(! $companyId && $s->company_id ? ' · '.$companyCodes[$s->company_id] : ''),
                 'color' => $s->color, 'order' => $s->order, 'is_won' => $s->is_won,
+                // Спец-логика этапов держится на системном типе из админки, а
+                // НЕ на названии: этап можно переименовать и переставить.
+                'stage_type' => $s->stage_type,
             ]);
 
         $deals = $view === 'list'
@@ -317,7 +320,8 @@ class DealController extends Controller
             'stages' => DealStage::with('translations')->where('is_active', true)
                 ->when($deal->company_id, fn ($q, $c) => $q->where(fn ($w) => $w->where('company_id', $c)->orWhereNull('company_id')))
                 ->orderBy('order')->get()
-                ->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName(), 'color' => $s->color, 'order' => $s->order, 'is_won' => $s->is_won, 'checklist' => $s->checklist]),
+                ->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName(), 'color' => $s->color, 'order' => $s->order,
+                    'is_won' => $s->is_won, 'stage_type' => $s->stage_type, 'checklist' => $s->checklist]),
             'finance' => $finance->summaryFor($deal),
             'history' => \App\Support\AuditFormatter::humanize(\App\Models\AuditLog::where('table_name', 'deals')->where('record_id', $deal->id)->with('user:id,name')->latest()->limit(100)->get(), ['deal_stage_id' => DealStage::pluck('name', 'id'), 'responsible_user_id' => User::pluck('name', 'id')]),
             'customFields' => app(\App\Services\CustomFieldService::class)->forEntity('deal', $deal->id),
@@ -482,6 +486,11 @@ class DealController extends Controller
         if ($deal->project && $deal->project->status !== 'completed') {
             return back()->with('error', 'Заказ уже в цехе.');
         }
+
+        // Где показывается кнопка «В цех», решает системный тип этапа
+        // (Настройки → Этапы). Запрет на отправку с других этапов здесь
+        // намеренно НЕ ставим: сделку в цех отправляют и вручную, минуя
+        // канбан, — так работали все существующие сценарии.
         // Если цехов несколько — при отправке нужно выбрать конкретный.
         $available = \App\Models\ProjectStage::workshopsFor($deal->company_id ? (int) $deal->company_id : null);
         $workshop = $request->string('workshop')->toString() ?: null;

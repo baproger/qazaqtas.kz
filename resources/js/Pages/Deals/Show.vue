@@ -30,12 +30,16 @@ const tab = ref('finance');
 const visibleFields = computed(() => (props.customFields ?? []).filter((f) => f.is_visible && f.value));
 const lastStage = computed(() => props.stages[props.stages.length - 1]);
 const isLastStage = computed(() => props.deal.deal_stage_id === lastStage.value?.id);
-// Спец-этапы ищем по названию/флагу — этапы можно перемещать в настройках.
-// "Отправить в цех" — на этапе «Закуп сырья».
-const workshopStage = computed(() => props.stages.find((s) => s.name?.toLowerCase().includes('закуп')) ?? props.stages[props.stages.length - 3]);
-const isWorkshopStage = computed(() => props.deal.deal_stage_id === workshopStage.value?.id);
-const actStage = computed(() => props.stages.find((s) => s.name?.toLowerCase().includes('акт')));
-const esfStage = computed(() => props.stages.find((s) => s.name?.toLowerCase().includes('эсф')));
+// Спец-этапы определяет СИСТЕМНЫЙ ТИП из админки (Настройки → Этапы), а не
+// название: раньше «Отправить в цех» искалась по слову «закуп» и без такого
+// этапа вставала на «третий с конца» — на произвольный этап воронки.
+// Название осталось запасным вариантом, пока тип не проставлен.
+const stageBy = (type, needle) => props.stages.find((s) => s.stage_type === type)
+    ?? props.stages.find((s) => s.name?.toLowerCase().includes(needle));
+const workshopStage = computed(() => stageBy('shop_gate', 'закуп'));
+const isWorkshopStage = computed(() => !! workshopStage.value && props.deal.deal_stage_id === workshopStage.value.id);
+const actStage = computed(() => stageBy('act', 'акт'));
+const esfStage = computed(() => stageBy('esf', 'эсф'));
 const wonStage = computed(() => props.stages.find((s) => s.is_won) ?? lastStage.value);
 const preWonStage = computed(() => esfStage.value ?? actStage.value);
 // Этапы АКТ/ЭСФ/Оплата двигает ТОЛЬКО бухгалтер (financist) или админ;

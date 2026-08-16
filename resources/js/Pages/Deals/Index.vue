@@ -27,12 +27,18 @@ const byStage = (id) => list.value.filter((d) => d.deal_stage_id === id);
 const stageTotal = (id) => byStage(id).reduce((s, d) => s + Number(d.budget), 0);
 const lastStageId = computed(() => props.stages[props.stages.length - 1]?.id);
 const firstStageId = computed(() => props.stages[0]?.id); // «Заключение договора»
-// Спец-этапы ищем по названию/флагу; в режиме «Все компании» воронок две,
-// поэтому работаем с МАССИВАМИ id, а не с одиночными значениями.
+// Спец-этапы определяет СИСТЕМНЫЙ ТИП, назначенный в админке (Настройки →
+// Этапы), а не название: этап переименовывают и переставляют, и кнопка
+// уезжала следом. Раньше «В цех» искалась по слову «закуп», а если такого
+// этапа не было — вставала на «третий с конца», то есть на случайный этап.
+// Название осталось запасным вариантом для воронок, где тип ещё не проставлен.
+// В режиме «Все компании» воронок две, поэтому работаем с МАССИВАМИ id.
 const matchIds = (needle) => props.stages.filter((s) => s.name?.toLowerCase().includes(needle)).map((s) => s.id);
-const workshopIds = computed(() => { const ids = matchIds(tr('закуп')); return ids.length ? ids : [props.stages[props.stages.length - 3]?.id].filter(Boolean); });
-const actIds = computed(() => matchIds(tr('акт')));
-const esfIds = computed(() => matchIds(tr('эсф')));
+const typeIds = (type) => props.stages.filter((s) => s.stage_type === type).map((s) => s.id);
+const idsFor = (type, needle) => { const typed = typeIds(type); return typed.length ? typed : matchIds(needle); };
+const workshopIds = computed(() => idsFor('shop_gate', tr('закуп')));
+const actIds = computed(() => idsFor('act', tr('акт')));
+const esfIds = computed(() => idsFor('esf', tr('эсф')));
 const wonIds = computed(() => { const ids = props.stages.filter((s) => s.is_won).map((s) => s.id); return ids.length ? ids : [lastStageId.value].filter(Boolean); });
 const preWonIds = computed(() => (esfIds.value.length ? esfIds.value : actIds.value));
 // Этапы АКТ/ЭСФ/Оплата двигает только бухгалтер (financist) или админ.
