@@ -9,6 +9,8 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { formatDate, formatDateTime } from '@/utils/format';
 import { confirmDialog } from '@/composables/useConfirm';
 import DdsPanel from '@/Components/DdsPanel.vue';
+import CompanyExpenseModal from '@/Components/CompanyExpenseModal.vue';
+import ExpenseCategoriesModal from '@/Components/ExpenseCategoriesModal.vue';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
@@ -96,25 +98,10 @@ const applyXpFilters = () => router.get(route('finance.index'), {
 const resetXpFilters = () => { xpSearch.value = ''; xpFrom.value = ''; xpTo.value = ''; applyXpFilters(); };
 const expTodaySum = computed(() => (props.expensesToday ?? []).reduce((sum, e) => sum + Number(e.amount || 0), 0));
 
-// Категории «Расход компании»: добавление/переименование/удаление списка.
+// Категории и расход компании живут в общих компонентах: та же форма
+// открывается и на рабочем месте бухгалтера.
 const showCats = ref(false);
-const newCat = ref('');
-const catNames = ref({});
-const syncCats = () => (catNames.value = Object.fromEntries((props.categories ?? []).map((c) => [c.id, c.name])));
-const openCats = () => { syncCats(); showCats.value = true; };
-const addCat = () => {
-    if (!newCat.value.trim()) return;
-    router.post(route('expenseCategories.store'), { name: newCat.value.trim() }, { preserveScroll: true, onSuccess: () => { newCat.value = ''; syncCats(); } });
-};
-const saveCat = (c) => {
-    const n = (catNames.value[c.id] ?? '').trim();
-    if (!n || n === c.name) return;
-    router.put(route('expenseCategories.update', c.id), { name: n }, { preserveScroll: true, onSuccess: syncCats });
-};
-const delCat = async (c) => {
-    if (!(await confirmDialog({ title: `Удалить категорию «${c.name}»?`, message: tr('Если по ней уже есть расходы — она скроется из списка, суммы в отчётах сохранятся.'), confirmText: tr('Удалить'), danger: true }))) return;
-    router.delete(route('expenseCategories.destroy', c.id), { preserveScroll: true, onSuccess: syncCats });
-};
+const showCompanyExpense = ref(false);
 
 // Фильтр сводки «Доход − Расходы» по месяцу: пусто = за всё время.
 const finMonth = ref(props.filters?.fin_month ?? '');
@@ -126,20 +113,6 @@ const monthActive = computed(() => !!props.filters?.fin_month);
 const monthLabel = computed(() => monthActive.value
     ? new Date(props.filters.fin_month + '-01T00:00:00').toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
     : '');
-
-// Расход КОМПАНИИ (без сделки): аренда, комуслуги, интернет, бензин и т.п.
-// Вводит бухгалтер/админ; категория обязательна, статус сразу confirmed.
-const showCompanyExpense = ref(false);
-const cForm = useForm({ expenseable_type: '', expenseable_id: '', category_id: '', amount: '', date: new Date().toISOString().slice(0, 10), payment_method: 'bank', description: '', status: 'confirmed', file: null });
-const openCompanyExpense = () => { cForm.reset(); cForm.date = new Date().toISOString().slice(0, 10); showCompanyExpense.value = true; };
-const onCReceipt = (e) => { cForm.file = e.target.files[0] ?? null; };
-const submitCompanyExpense = () => cForm.post(route('expenses.store'), {
-    preserveScroll: true, forceFormData: true,
-    onSuccess: () => (showCompanyExpense.value = false),
-});
-// Расход компании списывается с поступлений: показываем остаток выбранного
-// способа (касса/счёт) и предупреждаем о превышении (не блокируем).
-const cOverBalance = () => Number(cForm.amount || 0) > Number(cForm.payment_method === 'cash' ? props.summary.cash : props.summary.bank);
 
 // Задолженности: дебиторка (нам должны) / кредиторка (мы должны). Аккордеоны.
 const debtOpen = ref({ receivable: false, payable: false });
@@ -435,9 +408,9 @@ const delExpense = async (e) => {
                 <div class="flex items-center gap-3">
                     <h3 class="text-sm font-semibold text-slate-900">{{ $e('Расходы') }}</h3>
                     <span class="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-700">{{ $e('сегодня') }} <b class="tabular-nums">{{ money(expTodaySum) }}</b></span>
-                    <button v-if="canManage" @click="openCompanyExpense"
+                    <button v-if="canManage" @click="showCompanyExpense = true"
                         class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700">{{ $e('+ Расход компании') }}</button>
-                    <button v-if="canManage" @click="openCats"
+                    <button v-if="canManage" @click="showCats = true"
                         class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" :title="$e('Категории расходов компании')">{{ $e('⚙ Категории') }}</button>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -798,92 +771,8 @@ const delExpense = async (e) => {
             </div>
         </Modal>
 
-        <!-- Модалка: расход компании (аренда, комуслуги, интернет, бензин…) -->
-        <Modal :show="showCompanyExpense" @close="showCompanyExpense = false" max-width="lg">
-            <div class="p-6">
-                <h2 class="mb-1 text-lg font-semibold text-slate-900">{{ $e('Расход компании') }}</h2>
-                <p class="mb-4 text-xs text-slate-400">{{ $e('Не по сделке: аренда, комуслуги, интернет, бензин, канцтовары… Подтверждается сразу.') }}</p>
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Категория *') }}</label>
-                        <select v-model="cForm.category_id" class="w-full rounded-md border-slate-300 text-sm shadow-sm">
-                            <option value="">{{ $e('— выберите —') }}</option>
-                            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                        </select>
-                        <div v-if="cForm.errors.category_id" class="mt-1 text-xs text-red-600">{{ cForm.errors.category_id }}</div>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Сумма, ₸ *') }}</label>
-                        <input v-model="cForm.amount" type="number" min="0.01" step="0.01" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
-                        <div v-if="cForm.errors.amount" class="mt-1 text-xs text-red-600">{{ cForm.errors.amount }}</div>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Дата *') }}</label>
-                        <input v-model="cForm.date" type="date" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <div class="flex gap-2">
-                            <button type="button" @click="cForm.payment_method = 'cash'"
-                                class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all"
-                                :class="cForm.payment_method === 'cash' ? 'border-emerald-500 bg-emerald-100 text-emerald-700 ring-1 ring-emerald-500' : 'border-slate-200 bg-white text-slate-500'">{{ $e('Наличные') }}</button>
-                            <button type="button" @click="cForm.payment_method = 'bank'"
-                                class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all"
-                                :class="cForm.payment_method === 'bank' ? 'border-sky-500 bg-sky-100 text-sky-700 ring-1 ring-sky-500' : 'border-slate-200 bg-white text-slate-500'">{{ $e('Банк (счёт)') }}</button>
-                        </div>
-                        <!-- Списывается с поступлений: остатки кассы/счёта -->
-                        <div class="mt-1.5 text-[11px]" :class="cOverBalance() ? 'font-semibold text-rose-600' : 'text-slate-400'">
-                            {{ $e('Доступно: касса') }} {{ money(summary.cash) }} {{ $e('· счёт') }} {{ money(summary.bank) }}
-                            <template v-if="cOverBalance()"> {{ $e('— расход превышает остаток') }} {{ cForm.payment_method === 'cash' ? $e('кассы') : $e('счёта') }}!</template>
-                        </div>
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Описание') }}</label>
-                        <input v-model="cForm.description" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm" :placeholder="$e('За что…')" />
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Чек / квитанция (фото или PDF, необязательно)') }}</label>
-                        <input type="file" accept="image/*,.pdf" @change="onCReceipt"
-                            class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100" />
-                        <div v-if="cForm.errors.file" class="mt-1 text-xs text-red-600">{{ cForm.errors.file }}</div>
-                    </div>
-                </div>
-                <div class="mt-6 flex justify-end gap-2">
-                    <SecondaryButton @click="showCompanyExpense = false">{{ $e('Отмена') }}</SecondaryButton>
-                    <PrimaryButton :disabled="cForm.processing || !cForm.category_id || !(Number(cForm.amount) > 0)" @click="submitCompanyExpense">{{ $e('Сохранить расход') }}</PrimaryButton>
-                </div>
-            </div>
-        </Modal>
-        <!-- Категории «Расход компании»: управление списком -->
-        <Modal :show="showCats" max-width="md" @close="showCats = false">
-            <div class="p-6">
-                <h3 class="mb-1 text-base font-semibold text-slate-900">{{ $e('Категории расходов компании') }}</h3>
-                <p class="mb-4 text-xs text-slate-400">{{ $e('Переименуйте прямо в поле (сохранение — Enter или клик мимо), ✕ — удалить.') }}</p>
-                <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
-                    <!-- Служебные категории (code) заблокированы: на них
-                         держатся расчёты — итог ЗП без двойного счёта и
-                         оплата закупа. Сервер их всё равно не отдаст, здесь
-                         просто не показываем кнопки, чтобы не звать в тупик. -->
-                    <div v-for="c in categories" :key="c.id" class="flex items-center gap-2">
-                        <input v-if="!c.code" v-model="catNames[c.id]" @keyup.enter="saveCat(c)" @blur="saveCat(c)" type="text"
-                            class="flex-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                        <span v-else class="flex flex-1 items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                            {{ c.name }}
-                            <span class="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
-                                :title="$e('На этой категории держатся расчёты — менять её нельзя')">{{ $e('служебная') }}</span>
-                        </span>
-                        <button v-if="!c.code" @click="delCat(c)" class="rounded p-1.5 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить категорию')">✕</button>
-                    </div>
-                    <div v-if="!categories.length" class="py-4 text-center text-sm text-slate-400">{{ $e('Категорий пока нет') }}</div>
-                </div>
-                <div class="mt-4 flex gap-2">
-                    <input v-model="newCat" @keyup.enter="addCat" type="text" :placeholder="$e('Новая категория…')"
-                        class="flex-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                    <PrimaryButton type="button" @click="addCat">{{ $e('Добавить') }}</PrimaryButton>
-                </div>
-                <div class="mt-4 text-right">
-                    <SecondaryButton @click="showCats = false">{{ $e('Закрыть') }}</SecondaryButton>
-                </div>
-            </div>
-        </Modal>
+        <CompanyExpenseModal :show="showCompanyExpense" :categories="categories"
+            :cash="Number(summary.cash)" :bank="Number(summary.bank)" @close="showCompanyExpense = false" />
+        <ExpenseCategoriesModal :show="showCats" :categories="categories" @close="showCats = false" />
     </AppLayout>
 </template>

@@ -64,6 +64,12 @@ class ExpensesBoardController extends Controller
             'month' => $month,
             // Директор — наблюдатель: деньгами распоряжается бухгалтерия.
             'canConfirm' => $user->hasAnyRole(['admin', 'financist']),
+            // Форма «Расход компании» и список категорий — прямо здесь:
+            // бухгалтер работает с расходами на этой странице, и уходить за
+            // ними на Финансы незачем.
+            'categories' => \App\Models\ExpenseCategory::where('is_active', true)
+                ->orderBy('name')->get(['id', 'code', 'name']),
+            'balances' => app(FinanceService::class)->companyBalances($companyId),
         ]);
     }
 
@@ -93,6 +99,8 @@ class ExpensesBoardController extends Controller
                 'type' => $expense->expenseable_type,
                 'id' => $expense->expenseable_id,
                 'number' => $entity->number ?? null,
+                // Имя заказчика: по номеру сделку помнят не все.
+                'title' => $entity->company_name ?? $entity->name ?? null,
             ] : null,
             'receipt' => $expense->file_path === null ? null : [
                 // PDF показываем ссылкой, картинку — сразу в карточке.

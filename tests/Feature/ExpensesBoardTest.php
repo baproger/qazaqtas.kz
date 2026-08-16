@@ -159,6 +159,43 @@ class ExpensesBoardTest extends TestCase
                 ->where('pending.0.source.number', 'QT-1'));
     }
 
+    /** Бухгалтер заводит расход и правит категории прямо на этой странице. */
+    public function test_board_gives_the_accountant_the_expense_form(): void
+    {
+        $this->actingAs($this->staff('financist'))->get(route('expensesBoard.index'))
+            ->assertInertia(fn ($page) => $page
+                ->where('canConfirm', true)
+                ->has('categories')
+                ->has('balances.cash')
+                ->has('balances.bank'));
+    }
+
+    /** У расхода по сделке видно, по какой именно: номер и заказчик. */
+    public function test_paid_expense_shows_its_deal(): void
+    {
+        $manager = $this->staff('manager');
+        $deal = Deal::create([
+            'company_id' => Company::where('code', 'QT')->value('id'),
+            'number' => 'QT-7', 'name' => 'Сделка', 'company_name' => 'Асхат',
+            'budget' => 100000, 'status' => 'active',
+            'deal_stage_id' => DealStage::orderBy('order')->value('id'),
+            'responsible_user_id' => $manager->id,
+        ]);
+        $accountant = $this->staff('financist');
+
+        $this->request($manager, [
+            'company_id' => null,
+            'expenseable_type' => 'deal', 'expenseable_id' => $deal->id,
+            'status' => 'confirmed', 'payment_method' => 'cash',
+            'confirmed_by' => $accountant->id, 'confirmed_at' => now(),
+        ]);
+
+        $this->actingAs($accountant)->get(route('expensesBoard.index'))
+            ->assertInertia(fn ($page) => $page
+                ->where('paid.data.0.source.number', 'QT-7')
+                ->where('paid.data.0.source.title', 'Асхат'));
+    }
+
     /** Тип чека виден заранее: картинку карточка открывает, PDF даёт ссылкой. */
     public function test_receipt_kind_is_reported(): void
     {

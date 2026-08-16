@@ -4,6 +4,8 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
+import CompanyExpenseModal from '@/Components/CompanyExpenseModal.vue';
+import ExpenseCategoriesModal from '@/Components/ExpenseCategoriesModal.vue';
 import { formatDate, money } from '@/utils/format';
 import { useE } from '@/composables/useTranslations';
 
@@ -17,7 +19,14 @@ const props = defineProps({
     paidTotal: { type: Number, default: 0 },
     month: { type: String, default: '' },
     canConfirm: { type: Boolean, default: false },
+    categories: { type: Array, default: () => [] },
+    balances: { type: Object, default: () => ({ cash: 0, bank: 0 }) },
 });
+
+// Расход компании и категории заводятся прямо здесь: бухгалтер работает с
+// расходами на этой странице, и уходить за ними на Финансы незачем.
+const showCompanyExpense = ref(false);
+const showCats = ref(false);
 
 const month = ref(props.month);
 const applyMonth = () => router.get(route('expensesBoard.index'), { month: month.value || undefined },
@@ -57,6 +66,12 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                         {{ pending.length }} · <b class="tabular-nums">{{ money(pendingTotal) }}</b>
                     </span>
                 </div>
+                <div v-if="canConfirm" class="flex items-center gap-2">
+                    <button @click="showCats = true"
+                        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors duration-150 hover:bg-slate-50">{{ $e('⚙ Категории') }}</button>
+                    <button @click="showCompanyExpense = true"
+                        class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('+ Расход компании') }}</button>
+                </div>
             </div>
 
             <div v-if="!pending.length" class="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-400 shadow-sm">
@@ -72,7 +87,7 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                                 <span>{{ formatDate(e.date) }}</span>
                                 <span v-if="e.category" class="rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-500">{{ e.category }}</span>
                                 <Link v-if="e.source" :href="sourceUrl(e.source)" class="font-medium text-indigo-600 hover:underline">
-                                    {{ e.source.number || $e('без номера') }}
+                                    {{ e.source.number || $e('без номера') }}<template v-if="e.source.title"> · {{ e.source.title }}</template>
                                 </Link>
                                 <span v-else class="rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700">{{ $e('Расход компании') }}</span>
                             </div>
@@ -128,6 +143,7 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                                 <th class="px-4 py-2.5 text-right">{{ $e('Сумма') }}</th>
                                 <th class="px-4 py-2.5">{{ $e('Категория') }}</th>
                                 <th class="px-4 py-2.5">{{ $e('За что') }}</th>
+                                <th class="px-4 py-2.5">{{ $e('Сделка / заказ') }}</th>
                                 <th class="px-4 py-2.5">{{ $e('Кто подал') }}</th>
                                 <th class="px-4 py-2.5">{{ $e('Оплачен') }}</th>
                             </tr>
@@ -142,6 +158,15 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                                         :class="e.payout === 'debt' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-700'">{{ payoutLabel(e.payout) }}</span>
                                 </td>
                                 <td class="px-4 py-2.5 text-slate-500">{{ e.description || '—' }}</td>
+                                <!-- Откуда расход: по номеру сделки его находят
+                                     в карточке, где видны и остальные траты. -->
+                                <td class="px-4 py-2.5">
+                                    <Link v-if="e.source" :href="sourceUrl(e.source)" class="font-medium text-indigo-600 hover:underline">
+                                        {{ e.source.number || $e('без номера') }}
+                                        <span v-if="e.source.title" class="text-slate-400">· {{ e.source.title }}</span>
+                                    </Link>
+                                    <span v-else class="text-xs text-slate-400">{{ $e('Расход компании') }}</span>
+                                </td>
                                 <td class="px-4 py-2.5 text-slate-500">{{ e.author?.name || '—' }}</td>
                                 <td class="px-4 py-2.5">
                                     <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">{{ methodLabel(e.payment_method) }}</span>
@@ -190,6 +215,9 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                 </div>
             </div>
         </Modal>
+        <CompanyExpenseModal :show="showCompanyExpense" :categories="categories"
+            :cash="Number(balances.cash)" :bank="Number(balances.bank)" @close="showCompanyExpense = false" />
+        <ExpenseCategoriesModal :show="showCats" :categories="categories" @close="showCats = false" />
     </AppLayout>
 </template>
 
