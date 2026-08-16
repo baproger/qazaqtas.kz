@@ -45,7 +45,12 @@ class CashReceiptTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($p) => $p
                 ->where('summary.cash', 500000)
-                ->where('summary.incomeManual', 500000)
+                ->where('summary.incomeManual', 500000));
+
+        // Сами поступления живут на своей странице.
+        $this->actingAs($fin)->get(route('finance.receipts'))
+            ->assertOk()
+            ->assertInertia(fn ($p) => $p
                 ->has('receiptsToday', 1)
                 ->has('receiptsPast', 0));
     }

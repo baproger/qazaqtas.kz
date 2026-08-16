@@ -7,6 +7,9 @@ import Pagination from '@/Components/Pagination.vue';
 import CompanyExpenseModal from '@/Components/CompanyExpenseModal.vue';
 import ExpenseCategoriesModal from '@/Components/ExpenseCategoriesModal.vue';
 import { formatDate, money } from '@/utils/format';
+import { confirmDialog } from '@/composables/useConfirm';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
@@ -21,7 +24,45 @@ const props = defineProps({
     canConfirm: { type: Boolean, default: false },
     categories: { type: Array, default: () => [] },
     balances: { type: Object, default: () => ({ cash: 0, bank: 0 }) },
+    filters: { type: Object, default: () => ({}) },
 });
+
+// Фильтры оплаченных: вид (материалы/прочие) и способ (нал/банк) — переехали
+// со страницы Финансов вместе с таблицей.
+const kind = ref(props.filters?.kind ?? '');
+const method = ref(props.filters?.method ?? '');
+const applyFilters = () => router.get(route('expensesBoard.index'), {
+    month: month.value || undefined,
+    kind: kind.value || undefined,
+    method: method.value || undefined,
+}, { preserveState: true, preserveScroll: true, replace: true });
+const setKind = (k) => { kind.value = kind.value === k ? '' : k; applyFilters(); };
+const setMethod = (m) => { method.value = method.value === m ? '' : m; applyFilters(); };
+
+// Правка и удаление расхода (бухгалтер/админ). Способ оплаты через update не
+// меняется — это правило сервера; сумма материального списания производная.
+const editing = ref(null);
+const eForm = useForm({ amount: '', date: '', description: '', category_id: '' });
+const openEdit = (e) => {
+    editing.value = e;
+    eForm.amount = Number(e.amount);
+    eForm.date = (e.date ?? '').slice(0, 10);
+    eForm.description = e.description ?? '';
+    eForm.category_id = e.category_id ?? '';
+    eForm.clearErrors();
+};
+const submitEdit = () => eForm.put(route('expenses.update', editing.value.id), {
+    preserveScroll: true, onSuccess: () => (editing.value = null),
+});
+const removeExpense = async (e) => {
+    if (!(await confirmDialog({
+        title: tr('Удалить расход'),
+        message: `${money(e.amount)}${e.material ? tr(' — остаток вернётся на склад') : ''}.`,
+        confirmText: tr('Удалить'),
+        danger: true,
+    }))) return;
+    router.delete(route('expenses.destroy', e.id), { preserveScroll: true });
+};
 
 // Расход компании и категории заводятся прямо здесь: бухгалтер работает с
 // расходами на этой странице, и уходить за ними на Финансы незачем.
@@ -29,8 +70,7 @@ const showCompanyExpense = ref(false);
 const showCats = ref(false);
 
 const month = ref(props.month);
-const applyMonth = () => router.get(route('expensesBoard.index'), { month: month.value || undefined },
-    { preserveState: true, preserveScroll: true, replace: true });
+const applyMonth = () => applyFilters();
 
 const receiptUrl = (id) => route('expenses.receipt', id);
 const methodLabel = (m) => (m === 'cash' ? tr('наличные') : m === 'bank' ? tr('банк') : '—');
@@ -125,7 +165,11 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Оплаченные за месяц') }}</h3>
                         <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 tabular-nums">{{ money(paidTotal) }}</span>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button v-for="f in [{ k: 'kind', v: 'material', l: $e('материалы') }, { k: 'kind', v: 'other', l: $e('прочие') }, { k: 'method', v: 'cash', l: $e('наличные') }, { k: 'method', v: 'bank', l: $e('банк') }]"
+                            :key="f.k + f.v" type="button" @click="f.k === 'kind' ? setKind(f.v) : setMethod(f.v)"
+                            class="rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150"
+                            :class="(f.k === 'kind' ? kind : method) === f.v ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'">{{ f.l }}</button>
                         <span class="text-xs text-slate-400">{{ $e('Месяц:') }}</span>
                         <input v-model="month" @change="applyMonth" type="month"
                             class="rounded-lg border-slate-300 py-1.5 text-sm shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
@@ -146,6 +190,7 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                                 <th class="px-4 py-2.5">{{ $e('Сделка / заказ') }}</th>
                                 <th class="px-4 py-2.5">{{ $e('Кто подал') }}</th>
                                 <th class="px-4 py-2.5">{{ $e('Оплачен') }}</th>
+                                <th v-if="canConfirm" class="px-4 py-2.5 text-right">{{ $e('Действия') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50">
@@ -172,6 +217,14 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                                     <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">{{ methodLabel(e.payment_method) }}</span>
                                     <a v-if="e.receipt" :href="receiptUrl(e.id)" target="_blank"
                                         class="ml-2 text-xs font-medium text-indigo-600 opacity-0 transition-opacity hover:underline group-hover:opacity-100">{{ $e('чек') }}</a>
+                                </td>
+                                <td v-if="canConfirm" class="whitespace-nowrap px-4 py-2.5 text-right">
+                                    <button class="rounded p-1 text-slate-300 transition-colors hover:text-indigo-600" :title="$e('Редактировать расход')" @click="openEdit(e)">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                    </button>
+                                    <button class="rounded p-1 text-slate-300 transition-colors hover:text-rose-600" :title="$e('Удалить расход')" @click="removeExpense(e)">
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -215,6 +268,42 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                 </div>
             </div>
         </Modal>
+        <!-- Правка расхода: сумма, дата, категория, «за что». Способ оплаты и
+             материал через update не меняются — правило сервера. -->
+        <Modal :show="!!editing" @close="editing = null" max-width="lg">
+            <div v-if="editing" class="p-6">
+                <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ $e('Редактировать расход') }}</h2>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Сумма, ₸') }}</label>
+                        <input v-model="eForm.amount" type="number" min="0" step="0.01" :disabled="!!editing.material"
+                            class="w-full rounded-md border-slate-300 text-sm shadow-sm disabled:bg-slate-100" />
+                        <p v-if="editing.material" class="mt-1 text-[11px] text-slate-400">{{ $e('Сумма списания считается автоматически (кол-во × цена).') }}</p>
+                        <div v-if="eForm.errors.amount" class="mt-1 text-xs text-red-600">{{ eForm.errors.amount }}</div>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Дата') }}</label>
+                        <input v-model="eForm.date" type="date" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Категория') }}</label>
+                        <select v-model="eForm.category_id" class="w-full rounded-md border-slate-300 text-sm shadow-sm">
+                            <option value="">{{ $e('— без категории —') }}</option>
+                            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('За что') }}</label>
+                        <input v-model="eForm.description" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-2">
+                    <SecondaryButton @click="editing = null">{{ $e('Отмена') }}</SecondaryButton>
+                    <PrimaryButton :disabled="eForm.processing" @click="submitEdit">{{ $e('Сохранить') }}</PrimaryButton>
+                </div>
+            </div>
+        </Modal>
+
         <CompanyExpenseModal :show="showCompanyExpense" :categories="categories"
             :cash="Number(balances.cash)" :bank="Number(balances.bank)" @close="showCompanyExpense = false" />
         <ExpenseCategoriesModal :show="showCats" :categories="categories" @close="showCats = false" />

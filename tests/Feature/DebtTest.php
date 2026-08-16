@@ -48,8 +48,14 @@ class DebtTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($p) => $p
                 ->where('summary.payables', 250000)
-                ->has('debts.payables', 1)
                 ->has('summary.dealsIncome'));
+
+        // Сами записи задолженностей — на своей странице.
+        $this->actingAs($fin)->get(route('finance.debts'))
+            ->assertOk()
+            ->assertInertia(fn ($p) => $p
+                ->has('debts.payables', 1)
+                ->where('totals.payables', 250000));
     }
 
     public function test_manager_cannot_manage_debts(): void

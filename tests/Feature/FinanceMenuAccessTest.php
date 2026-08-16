@@ -60,6 +60,18 @@ class FinanceMenuAccessTest extends TestCase
         $this->actingAs($manager)->get(route('finance.index'))->assertForbidden();
     }
 
+    /** Разделы Финансов — отдельные страницы, и все закрыты от сотрудника. */
+    public function test_finance_sections_are_separate_pages(): void
+    {
+        $accountant = $this->staff('financist');
+        $worker = $this->staff('employee');
+
+        foreach (['finance.invoices', 'finance.receipts', 'finance.debts'] as $name) {
+            $this->actingAs($accountant)->get(route($name))->assertOk();
+            $this->actingAs($worker)->get(route($name))->assertForbidden();
+        }
+    }
+
     /** Бухгалтеру доступна вся группа целиком. */
     public function test_accountant_sees_the_whole_group(): void
     {

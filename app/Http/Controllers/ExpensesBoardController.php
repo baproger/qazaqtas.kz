@@ -47,9 +47,15 @@ class ExpensesBoardController extends Controller
             ->map(fn (Expense $e) => $this->row($e));
 
         // Оплаченных за месяц бывают сотни — здесь пагинация обязательна.
+        // Фильтры вида и способа переехали сюда со страницы Финансов вместе с
+        // самой таблицей: расходы должны жить в одном месте.
+        $kind = $request->string('kind')->toString();
+        $method = $request->string('method')->toString();
         $paid = $scoped()->where('status', 'confirmed')
-            ->with('confirmedBy:id,name')
+            ->with(['confirmedBy:id,name', 'material:id,name,unit'])
             ->whereDate('date', '>=', $monthStart)->whereDate('date', '<=', $monthEnd)
+            ->when($kind, fn ($q, $k) => $k === 'material' ? $q->whereNotNull('material_id') : $q->whereNull('material_id'))
+            ->when($method, fn ($q, $m) => $q->where('payment_method', $m))
             ->orderByDesc('date')->orderByDesc('id')
             ->paginate(30)->withQueryString()
             ->through(fn (Expense $e) => $this->row($e));
@@ -60,7 +66,10 @@ class ExpensesBoardController extends Controller
             'paid' => $paid,
             'paidTotal' => round((float) $scoped()->where('status', 'confirmed')
                 ->whereDate('date', '>=', $monthStart)->whereDate('date', '<=', $monthEnd)
+                ->when($kind, fn ($q, $k) => $k === 'material' ? $q->whereNotNull('material_id') : $q->whereNull('material_id'))
+                ->when($method, fn ($q, $m) => $q->where('payment_method', $m))
                 ->sum('amount'), 2),
+            'filters' => ['kind' => $kind, 'method' => $method],
             'month' => $month,
             // Директор — наблюдатель: деньгами распоряжается бухгалтерия.
             'canConfirm' => $user->hasAnyRole(['admin', 'financist']),
@@ -89,6 +98,9 @@ class ExpensesBoardController extends Controller
             'date' => $expense->date?->toDateString(),
             'description' => $expense->description,
             'category' => $expense->category?->name,
+            'category_id' => $expense->category_id,
+            // Материальное списание правится иначе: сумма у него производная.
+            'material' => $expense->material?->name,
             'payment_method' => $expense->payment_method,
             'payout' => $expense->employee_payout,
             'author' => $expense->responsible?->only('id', 'name'),

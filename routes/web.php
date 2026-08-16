@@ -113,6 +113,11 @@ Route::middleware('auth')->group(function () {
 
     // Finance
     Route::get('finance', [InvoiceController::class, 'index'])->name('finance.index');
+    // Разделы Финансов — отдельными страницами: одна страница со всем сразу
+    // прокручивалась на четыре экрана, и найти на ней нужное было нельзя.
+    Route::get('finance/invoices', [InvoiceController::class, 'invoices'])->name('finance.invoices');
+    Route::get('finance/receipts', [InvoiceController::class, 'receipts'])->name('finance.receipts');
+    Route::get('finance/debts', [InvoiceController::class, 'debts'])->name('finance.debts');
     // Корректировка кассы: финансист задаёт фактический остаток наличных.
     Route::post('finance/cash-correction', [InvoiceController::class, 'cashCorrection'])->name('finance.cashCorrection');
     // ДДС — ручная сводка финансиста (без связей с расчётами).

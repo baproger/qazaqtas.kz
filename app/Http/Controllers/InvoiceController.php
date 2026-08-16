@@ -39,25 +39,27 @@ class InvoiceController extends Controller
         return $type === 'project' ? Project::find($id) : Deal::find($id);
     }
 
-    public function index(Request $request): Response
+    /** Финансы — только руководство: менеджеры ведут деньги в карточке сделки. */
+    private function guardFinance(Request $request): void
     {
         $this->authorize('viewAny', Invoice::class);
-
-        // Finance page is leadership-only; managers/workshop staff handle money inside deal cards.
         abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist']), 403);
+    }
 
-        // Финансы разделены по фирмам: счёт принадлежит компании своей сделки
-        // (счета цеховых заказов идут через сделку заказа).
-        $invBase = Invoice::query()
-            ->when(\App\Support\CurrentCompany::id(), fn ($q, $c) => $q->where(fn ($w) => $w
-                ->where(fn ($d) => $d->where('invoiceable_type', 'deal')
-                    ->whereIn('invoiceable_id', \App\Models\Deal::where('company_id', $c)->select('id')))
-                ->orWhere(fn ($p) => $p->where('invoiceable_type', 'project')
-                    ->whereIn('invoiceable_id', \App\Models\Project::whereHas('deal', fn ($d) => $d->where('company_id', $c))->select('id')))));
+    /** Счета своей фирмы (у заказов цеха — через сделку заказа). */
+    private function invoiceScope(): \Illuminate\Database\Eloquent\Builder
+    {
+        return app(\App\Services\FinanceService::class)
+            ->scopeCompanyInvoices(Invoice::query(), \App\Support\CurrentCompany::id() ?: null);
+    }
 
-        // Ссылка на сделку/заказ счёта — «откуда деньги» есть ВСЕГДА:
-        // даже у удалённой сделки показываем номер и заказчика (серым).
-        $mapInvoice = function ($i) {
+    /**
+     * Ссылка на сделку/заказ счёта — «откуда деньги» есть ВСЕГДА: даже у
+     * удалённой сделки показываем номер и заказчика (серым).
+     */
+    private function mapInvoice(): \Closure
+    {
+        return function ($i) {
             $target = $i->invoiceable;
             $link = null;
             if ($target instanceof \App\Models\Deal) {
@@ -83,46 +85,35 @@ class InvoiceController extends Controller
                 'link' => $link,
             ];
         };
+    }
 
-        // Счета: на странице — только сегодняшние; прошлые — аккордеоном
-        // снизу с поиском по номеру (как Поступления/Расходы).
-        $todayD = now()->toDateString();
-        $isToday = fn ($q) => $q->where(fn ($w) => $w
-            ->whereDate('issue_date', $todayD)
-            ->orWhere(fn ($n) => $n->whereNull('issue_date')->whereDate('created_at', $todayD)));
-        $invoicesToday = $isToday((clone $invBase))
-            ->with(['client:id,name', 'invoiceable'])
-            ->withSum('payments as payments_sum_amount', 'amount')
-            ->latest()->get()->map($mapInvoice)->values();
-        $invPastBase = fn () => (clone $invBase)->whereNot(fn ($w) => $w
-            ->whereDate('issue_date', $todayD)
-            ->orWhere(fn ($n) => $n->whereNull('issue_date')->whereDate('created_at', $todayD)));
-        $invoicesPast = $invPastBase()
-            ->with(['client:id,name', 'invoiceable'])
-            ->withSum('payments as payments_sum_amount', 'amount')
-            ->when($request->string('search')->toString(), fn ($q, $s) => $q->where('number', 'like', "%{$s}%"))
-            ->when($request->string('status')->toString(), fn ($q, $st) => $q->where('status', $st))
-            ->latest()->limit(100)->get()->map($mapInvoice)->values();
-        $invoicesPastStats = [
-            'count' => $invPastBase()->count(),
-            'sum' => (float) $invPastBase()->sum('amount'),
-        ];
+    /** Дебиторка: выставлено − оплачено по НЕотменённым счетам. */
+    private function invoiceTotals(): array
+    {
+        $live = fn () => $this->invoiceScope()->where('status', '!=', 'cancelled');
+        $invoiced = (float) $live()->sum('amount');
+        $paid = (float) \App\Models\Payment::whereIn('invoice_id', $live()->select('id'))->sum('amount');
 
-        // Дебиторка для финансиста: выставлено / оплачено / остаток к оплате.
-        // Отменённый счёт долгом не является: его аннулировали, клиент по нему
-        // ничего не должен. Раньше он оставался в «нам должны» навсегда.
-        $liveInvoices = fn () => (clone $invBase)->where('status', '!=', 'cancelled');
-        $invoiced = (float) $liveInvoices()->sum('amount');
-        $invoicePaid = (float) \App\Models\Payment::whereIn('invoice_id', $liveInvoices()->select('id'))->sum('amount');
-        $invoiceTotals = [
-            'invoiced' => $invoiced,
-            'paid' => $invoicePaid,
-            'debt' => max(0, $invoiced - $invoicePaid),
-        ];
+        return ['invoiced' => $invoiced, 'paid' => $paid, 'debt' => max(0, $invoiced - $paid)];
+    }
 
-        // Фильтр сводки «Доход − Расходы = Чистая прибыль» по месяцу (YYYY-MM):
-        // админ/финансист смотрит финансы за прошлый (любой) месяц. Остатки
-        // касса/банк и задолженности — всегда «на сейчас» (накопительные).
+    /**
+     * Обзор Финансов: плитки, сводка «Доход − Расходы = Прибыль», ДДС.
+     *
+     * Разделы (счета, поступления, задолженности, расходы) живут отдельными
+     * страницами: одна страница со всем сразу прокручивалась на четыре экрана,
+     * и найти на ней нужное было нельзя. Здесь остаётся картина целиком, а
+     * работа идёт в разделах.
+     */
+    public function index(Request $request): Response
+    {
+        $this->guardFinance($request);
+
+        $companyId = \App\Support\CurrentCompany::id();
+        $invoiceTotals = $this->invoiceTotals();
+
+        // Фильтр сводки по месяцу (YYYY-MM): остатки касса/банк и
+        // задолженности — всегда «на сейчас» (накопительные).
         $finMonth = preg_match('/^\d{4}-\d{2}$/', $request->string('fin_month')->toString())
             ? $request->string('fin_month')->toString() : '';
         $mStart = $finMonth ? $finMonth.'-01' : null;
@@ -130,66 +121,13 @@ class InvoiceController extends Controller
         $monthly = fn ($q, $col = 'date') => $finMonth
             ? $q->whereDate($col, '>=', $mStart)->whereDate($col, '<=', $mEnd) : $q;
 
-        // ---- Раздел «Расходы»: материальные/прочие, нал/банк, статус ----
-        $companyId = \App\Support\CurrentCompany::id();
-        // Скоуп расходов текущей фирмы: по сделке/заказу + расходы КОМПАНИИ
-        // (аренда/интернет/бензин… — без сделки, по company_id).
         $expScope = fn ($q) => app(\App\Services\FinanceService::class)->scopeCompanyExpenses($q, $companyId ?: null);
 
-        // Без периода — для таблиц «сегодня / прошлые» ниже.
-        $expScopeBase = \App\Models\Expense::query()->tap($expScope);
-        $expBase = (clone $expScopeBase)
-            // Период применяется к сводке-плиткам — «сколько нал/банк
-            // за месяц» видно сразу, без ручного суммирования.
-            ->when($request->string('exp_from')->toString(), fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->string('exp_to')->toString(), fn ($q, $d) => $q->whereDate('date', '<=', $d));
-
-        $confirmed = fn () => (clone $expBase)->where('status', 'confirmed');
-        $expenseTotals = [
-            'all' => (float) $confirmed()->sum('amount'),
-            'all_count' => $confirmed()->count(),
-            'material' => (float) $confirmed()->whereNotNull('material_id')->sum('amount'),
-            'other' => (float) $confirmed()->whereNull('material_id')->sum('amount'),
-            // Нал/банк — разбивка ПРОЧИХ расходов (материальные исключены явно:
-            // с недавних пор у них тоже есть способ оплаты).
-            'cash' => (float) $confirmed()->whereNull('material_id')->where('payment_method', 'cash')->sum('amount'),
-            'bank' => (float) $confirmed()->whereNull('material_id')->where('payment_method', 'bank')->sum('amount'),
-            'pending_sum' => (float) (clone $expBase)->where('status', 'pending')->sum('amount'),
-            'pending_count' => (clone $expBase)->where('status', 'pending')->count(),
-        ];
-
-        // Плитки-фильтры (вид/оплата/статус) действуют на обе таблицы расходов.
-        $expToday = now()->toDateString();
-        $expFiltered = fn () => (clone $expScopeBase)
-            ->with(['expenseable', 'category:id,name', 'material:id,name,unit', 'responsible:id,name', 'confirmedBy:id,name'])
-            ->when($request->string('exp_status')->toString(), fn ($q, $s) => $q->where('status', $s))
-            ->when($request->string('exp_method')->toString(), fn ($q, $m) => $q->where('payment_method', $m))
-            ->when($request->string('exp_kind')->toString(), fn ($q, $k) => $k === 'material' ? $q->whereNotNull('material_id') : $q->whereNull('material_id'));
-
-        // В таблице — только сегодняшние; прошлые — аккордеон с поиском
-        // (описание/категория) и периодом.
-        $expensesToday = $expFiltered()->whereDate('date', $expToday)->latest()->get();
-        $xpSearch = $request->string('xp_search')->toString();
-        $expensesPast = $expFiltered()
-            ->whereDate('date', '<', $expToday)
-            ->when($xpSearch, fn ($q, $s) => $q->where(fn ($w) => $w->where('description', 'like', "%{$s}%")
-                ->orWhereHas('category', fn ($c) => $c->where('name', 'like', "%{$s}%"))))
-            ->when($request->string('xp_from')->toString(), fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->string('xp_to')->toString(), fn ($q, $d) => $q->whereDate('date', '<=', $d))
-            ->latest()->limit(100)->get();
-        $expensesPastStats = [
-            'count' => (clone $expScopeBase)->whereDate('date', '<', $expToday)->count(),
-            'sum' => (float) (clone $expScopeBase)->whereDate('date', '<', $expToday)->sum('amount'),
-        ];
-
-        // Canonical company finance — identical to Dashboard & Analytics (via PayrollService).
         $payroll = app(PayrollService::class);
         $fin = $payroll->companyTotals();
         $payrollRows = $payroll->perUser();
 
-        // ---- Сводка компании (эскиз бухгалтерии): Доход − ВСЕ расходы = Чистая прибыль ----
-        // Доход = все фактические поступления по счетам компании. Сводка — за всё
-        // время (без exp_from/exp_to, они только для таблицы/плиток раздела).
+        // ---- Сводка: Доход − ВСЕ расходы = Чистая прибыль ----
         $confirmedNoPeriod = fn () => \App\Models\Expense::query()->tap($expScope)->where('status', 'confirmed');
         $byCategory = $monthly($confirmedNoPeriod())->whereNotNull('category_id')
             ->groupBy('category_id')->selectRaw('category_id, sum(amount) s')->pluck('s', 'category_id');
@@ -198,120 +136,70 @@ class InvoiceController extends Controller
         // отдельной строкой payrollTotal, и сложить обе значило бы посчитать
         // ЗП дважды. Кассу/банк эти расходы уменьшают честно — там они деньги.
         $employeeCategoryId = \App\Models\ExpenseCategory::findByCode(\App\Models\ExpenseCategory::EMPLOYEE)?->id;
-        // Для селекта формы — только активные; разбивка же строится по ФАКТУ
-        // расходов (иначе деактивация категории «теряла» бы её суммы из итога).
         $categories = \App\Models\ExpenseCategory::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
         $catNames = \App\Models\ExpenseCategory::whereIn('id', $byCategory->keys())->pluck('name', 'id');
         $categoryRows = $byCategory
             ->map(fn ($sum, $id) => [
                 'name' => $catNames[$id] ?? '—',
                 'sum' => (float) $sum,
-                // Строка видна в разбивке, но помечена и не суммируется.
                 'in_payroll' => $employeeCategoryId !== null && (int) $id === (int) $employeeCategoryId,
             ])
             ->sortByDesc('sum')->values();
-        // Расходы по сделкам/цеху (закуп + прочие без категории).
-        // Списание материала в сделку — НЕ трата денег: деньги ушли при закупе
-        // (расход категории «Закуп материалов»). Считать и то, и другое значит
-        // посчитать одни деньги дважды, поэтому в ИТОГ списания не входят, а
-        // показываются отдельной строкой — себестоимость сделок видна.
+        // Списание материала в сделку — НЕ трата денег: деньги ушли при закупе.
         $dealExpenses = (float) $monthly($confirmedNoPeriod())->whereNull('category_id')
             ->whereNull('material_id')->sum('amount');
         $materialWriteoffs = (float) $monthly($confirmedNoPeriod())->whereNull('category_id')
             ->whereNotNull('material_id')->sum('amount');
-        $payrollTotal = round((float) $payrollRows->sum('payout'), 2); // оклады + бонусы
-        // ЗП и налог считаются по сделкам (без даты) — в месячном режиме их
-        // не размазать по месяцам, показываем только «за всё время».
+        $payrollTotal = round((float) $payrollRows->sum('payout'), 2);
         $taxRow = (float) $fin['tax'];
         if ($finMonth) {
+            // ЗП и налог считаются по сделкам (без даты) — по месяцам не размазать.
             $payrollTotal = 0.0;
             $taxRow = 0.0;
         }
         $expensesTotal = round($categoryRows->reject(fn ($r) => $r['in_payroll'])->sum('sum')
             + $dealExpenses + $payrollTotal + $taxRow, 2);
 
-        // Остатки касса/банк считает FinanceService::companyBalances (ниже):
-        // касса — общая на холдинг, банк — по своей фирме.
+        $debtBase = \App\Models\Debt::query()->when($companyId, fn ($q, $c) => $q->where('company_id', $c));
+        $receivableManual = (float) (clone $debtBase)->where('type', 'receivable')->sum('amount');
+        $payableManual = (float) (clone $debtBase)->where('type', 'payable')->sum('amount');
 
-        // Задолженности: дебиторка вручную (плюс автоматическая по счетам) и кредиторка.
-        $debtBase = \App\Models\Debt::query()
-            ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
-            ->with('creator:id,name')->latest('date')->latest('id');
-        $receivableDebts = (clone $debtBase)->where('type', 'receivable')->get();
-        $payableDebts = (clone $debtBase)->where('type', 'payable')->get();
-
-        // «Доход» — итог Сводного отчёта (остаток − бонус по каждой сделке).
-        $dealsIncome = app(\App\Services\FinanceService::class)->dealsIncome($companyId ?: null, $mStart, $mEnd);
-        // Остатки касса/банк — из единого FinanceService (касса общая на холдинг).
-        $balances = app(\App\Services\FinanceService::class)->companyBalances($companyId ?: null);
-
-        // Поступления денег (вводит финансист): нал/банк, откуда, дата, комментарий.
         $receiptBase = \App\Models\CashReceipt::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c));
-        $receiptCash = (float) (clone $receiptBase)->where('method', 'cash')->sum('amount');
-        $receiptBank = (float) (clone $receiptBase)->where('method', 'bank')->sum('amount');
-        // На странице — только сегодняшние поступления; прошлые — аккордеоном
-        // снизу, с поиском (источник/комментарий) и периодом.
-        $today = now()->toDateString();
-        $receiptsToday = (clone $receiptBase)->with('creator:id,name')
-            ->whereDate('date', $today)->latest('id')->get();
-        $rcSearch = $request->string('rc_search')->toString();
-        $receiptsPast = (clone $receiptBase)->with('creator:id,name')
-            ->whereDate('date', '<', $today)
-            ->when($rcSearch, fn ($q, $s) => $q->where(fn ($w) => $w->where('source', 'like', "%{$s}%")->orWhere('note', 'like', "%{$s}%")))
-            ->when($request->string('rc_from')->toString(), fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->string('rc_to')->toString(), fn ($q, $d) => $q->whereDate('date', '<=', $d))
-            ->latest('date')->latest('id')->limit(100)->get();
-        $receiptsPastStats = [
-            'count' => (clone $receiptBase)->whereDate('date', '<', $today)->count(),
-            'sum' => (float) (clone $receiptBase)->whereDate('date', '<', $today)->sum('amount'),
-        ];
         $invoicePaidP = $finMonth
-            ? (float) \App\Models\Payment::whereIn('invoice_id', (clone $invBase)->select('id'))
+            ? (float) \App\Models\Payment::whereIn('invoice_id', $this->invoiceScope()->select('id'))
                 ->whereDate('payment_date', '>=', $mStart)->whereDate('payment_date', '<=', $mEnd)->sum('amount')
-            : $invoicePaid;
+            : $invoiceTotals['paid'];
         $receiptManualP = $finMonth
             ? (float) $monthly((clone $receiptBase))->sum('amount')
-            : round($receiptCash + $receiptBank, 2);
+            : round((float) (clone $receiptBase)->sum('amount'), 2);
         $incomeTotal = round($invoicePaidP + $receiptManualP, 2);
 
+        $balances = app(\App\Services\FinanceService::class)->companyBalances($companyId ?: null);
+        $dealsIncome = app(\App\Services\FinanceService::class)->dealsIncome($companyId ?: null, $mStart, $mEnd);
+
         return Inertia::render('Finance/Index', [
-            'invoicesToday' => $invoicesToday,
-            'invoicesPast' => $invoicesPast,
-            'invoicesPastStats' => $invoicesPastStats,
             'invoiceTotals' => $invoiceTotals,
-            'expensesToday' => $expensesToday,
-            'expensesPast' => $expensesPast,
-            'expensesPastStats' => $expensesPastStats,
-            'expenseTotals' => $expenseTotals,
-            'filters' => $request->only('search', 'status', 'exp_status', 'exp_method', 'exp_kind', 'exp_from', 'exp_to', 'xp_search', 'xp_from', 'xp_to', 'rc_search', 'rc_from', 'rc_to', 'fin_month'),
+            'filters' => $request->only('fin_month'),
             'categories' => $categories,
             'canManage' => $request->user()->hasAnyRole(['admin', 'financist']),
             // Корректировка кассы (✎ на плитке) — только админ.
             'isAdmin' => $request->user()->hasRole('admin'),
             // ДДС — ручная сводка (Excel-стиль): счета компаний и долги.
-            // Никаких расчётов из системы — только то, что ввёл финансист.
             'dds' => [
                 'accounts' => \App\Models\DdsEntry::where('kind', 'account')->orderBy('sort')->orderBy('id')->get(),
                 'debts' => \App\Models\DdsEntry::where('kind', 'debt')->orderBy('sort')->orderBy('id')->get(),
                 'date' => (string) \App\Models\Setting::get('dds_date', ''),
             ],
-            'receiptsToday' => $receiptsToday,
-            'receiptsPast' => $receiptsPast,
-            'receiptsPastStats' => $receiptsPastStats,
-            'debts' => ['receivables' => $receivableDebts, 'payables' => $payableDebts],
             'summary' => [
                 'contracts' => (float) \App\Models\Deal::forCurrentCompany()->where('status', '!=', 'cancelled')->sum('budget'),
                 'receivables' => $invoiceTotals['debt'],
-                'receivablesManual' => (float) $receivableDebts->sum('amount'),
-                'receivablesTotal' => round($invoiceTotals['debt'] + $receivableDebts->sum('amount'), 2),
-                'payables' => (float) $payableDebts->sum('amount'),
+                'receivablesManual' => $receivableManual,
+                'receivablesTotal' => round($invoiceTotals['debt'] + $receivableManual, 2),
+                'payables' => $payableManual,
                 'dealsIncome' => $dealsIncome,
-                // Единый источник (FinanceService::companyBalances): касса —
-                // ОБЩАЯ на холдинг (нал в одной кассе), банк — по своей фирме.
                 'cash' => $balances['cash'],
                 'bank' => $balances['bank'],
-                // Ненулевая корректировка кассы — покажем пометку на плитке.
                 'cashCorrection' => (float) \App\Models\Setting::get('cash_correction', 0),
                 'income' => $incomeTotal,
                 'incomeInvoices' => $invoicePaidP,
@@ -324,6 +212,99 @@ class InvoiceController extends Controller
                 'expensesTotal' => $expensesTotal,
                 'net' => round($incomeTotal - $expensesTotal, 2),
             ],
+        ]);
+    }
+
+    /** Счета: сегодняшние + прошлые с поиском по номеру и статусу. */
+    public function invoices(Request $request): Response
+    {
+        $this->guardFinance($request);
+
+        $map = $this->mapInvoice();
+        $today = now()->toDateString();
+        $isToday = fn ($q) => $q->where(fn ($w) => $w
+            ->whereDate('issue_date', $today)
+            ->orWhere(fn ($n) => $n->whereNull('issue_date')->whereDate('created_at', $today)));
+
+        $todayRows = $isToday($this->invoiceScope())
+            ->with(['client:id,name', 'invoiceable'])
+            ->withSum('payments as payments_sum_amount', 'amount')
+            ->latest()->get()->map($map)->values();
+
+        $pastBase = fn () => $this->invoiceScope()->whereNot(fn ($w) => $w
+            ->whereDate('issue_date', $today)
+            ->orWhere(fn ($n) => $n->whereNull('issue_date')->whereDate('created_at', $today)));
+        $past = $pastBase()
+            ->with(['client:id,name', 'invoiceable'])
+            ->withSum('payments as payments_sum_amount', 'amount')
+            ->when($request->string('search')->toString(), fn ($q, $s) => $q->where('number', 'like', "%{$s}%"))
+            ->when($request->string('status')->toString(), fn ($q, $st) => $q->where('status', $st))
+            ->latest()->limit(100)->get()->map($map)->values();
+
+        return Inertia::render('Finance/Invoices', [
+            'invoicesToday' => $todayRows,
+            'invoicesPast' => $past,
+            'invoicesPastStats' => ['count' => $pastBase()->count(), 'sum' => (float) $pastBase()->sum('amount')],
+            'invoiceTotals' => $this->invoiceTotals(),
+            'filters' => $request->only('search', 'status'),
+            'canManage' => $request->user()->hasAnyRole(['admin', 'financist']),
+        ]);
+    }
+
+    /** Поступления денег (нал/банк): сегодня + прошлые с поиском и периодом. */
+    public function receipts(Request $request): Response
+    {
+        $this->guardFinance($request);
+
+        $companyId = \App\Support\CurrentCompany::id();
+        $base = fn () => \App\Models\CashReceipt::query()
+            ->when($companyId, fn ($q, $c) => $q->where('company_id', $c));
+
+        $today = now()->toDateString();
+        $past = fn () => $base()->whereDate('date', '<', $today);
+
+        return Inertia::render('Finance/Receipts', [
+            'receiptsToday' => $base()->with('creator:id,name')->whereDate('date', $today)->latest('id')->get(),
+            'receiptsPast' => $past()->with('creator:id,name')
+                ->when($request->string('rc_search')->toString(), fn ($q, $s) => $q->where(fn ($w) => $w
+                    ->where('source', 'like', "%{$s}%")->orWhere('note', 'like', "%{$s}%")))
+                ->when($request->string('rc_from')->toString(), fn ($q, $d) => $q->whereDate('date', '>=', $d))
+                ->when($request->string('rc_to')->toString(), fn ($q, $d) => $q->whereDate('date', '<=', $d))
+                ->latest('date')->latest('id')->limit(100)->get(),
+            'receiptsPastStats' => ['count' => $past()->count(), 'sum' => (float) $past()->sum('amount')],
+            'totals' => [
+                'cash' => (float) $base()->where('method', 'cash')->sum('amount'),
+                'bank' => (float) $base()->where('method', 'bank')->sum('amount'),
+            ],
+            'filters' => $request->only('rc_search', 'rc_from', 'rc_to'),
+            'canManage' => $request->user()->hasAnyRole(['admin', 'financist']),
+        ]);
+    }
+
+    /** Задолженности: дебиторка (нам должны) и кредиторка (мы должны). */
+    public function debts(Request $request): Response
+    {
+        $this->guardFinance($request);
+
+        $companyId = \App\Support\CurrentCompany::id();
+        $base = \App\Models\Debt::query()
+            ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
+            ->with('creator:id,name')->latest('date')->latest('id');
+
+        $receivables = (clone $base)->where('type', 'receivable')->get();
+        $payables = (clone $base)->where('type', 'payable')->get();
+        $invoiceTotals = $this->invoiceTotals();
+
+        return Inertia::render('Finance/Debts', [
+            'debts' => ['receivables' => $receivables, 'payables' => $payables],
+            'totals' => [
+                // Долг по счетам считается системой, ручные строки — сверху него.
+                'invoices' => $invoiceTotals['debt'],
+                'receivablesManual' => (float) $receivables->sum('amount'),
+                'receivablesTotal' => round($invoiceTotals['debt'] + $receivables->sum('amount'), 2),
+                'payables' => (float) $payables->sum('amount'),
+            ],
+            'canManage' => $request->user()->hasAnyRole(['admin', 'financist']),
         ]);
     }
 

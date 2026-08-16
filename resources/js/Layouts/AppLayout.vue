@@ -67,8 +67,11 @@ const allNav = [
     {
         key: 'nav.finance', name: tr('Финансы'), icon: '₸', children: [
             { key: 'nav.finance.overview', name: tr('Обзор'), route: 'finance.index', icon: '◔', perm: 'invoice.viewAny', leadershipOnly: true },
+            { key: 'nav.finance.invoices', name: tr('Счета'), route: 'finance.invoices', icon: '▤', perm: 'invoice.viewAny', leadershipOnly: true },
+            { key: 'nav.finance.receipts', name: tr('Поступления'), route: 'finance.receipts', icon: '◕', perm: 'invoice.viewAny', leadershipOnly: true },
             { key: 'nav.finance.expenses', name: tr('Расходы'), route: 'expensesBoard.index', icon: '◫', roles: ['admin', 'director', 'financist'] },
             { key: 'nav.finance.cashBook', name: tr('Касса'), route: 'cashBook.index', icon: '◰', roles: ['admin', 'director', 'financist'] },
+            { key: 'nav.finance.debts', name: tr('Задолженности'), route: 'finance.debts', icon: '◵', perm: 'invoice.viewAny', leadershipOnly: true },
             { key: 'nav.finance.myExpenses', name: tr('Мои расходы'), route: 'myExpenses.index', icon: '◨', perm: 'expense.create' },
             { key: 'nav.finance.payroll', name: tr('Зарплата'), route: 'payroll.index', icon: '💵', perm: 'payroll.view' },
         ],
