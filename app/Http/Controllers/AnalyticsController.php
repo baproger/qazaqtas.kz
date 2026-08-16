@@ -234,7 +234,11 @@ class AnalyticsController extends Controller
         $catNames = \App\Models\ExpenseCategory::whereIn('id', $byCat->keys())->pluck('name', 'id');
         $categoryRows = $byCat->map(fn ($s, $id) => ['name' => $catNames[$id] ?? '—', 'sum' => (float) $s])
             ->sortByDesc('sum')->values();
-        $dealExpensesSum = (float) (clone $expFull)->whereNull('category_id')->sum('amount');
+        // Списания со склада в итог не входят: деньги ушли при закупе, а это
+        // себестоимость проданного (та же сумма второй раз). В разбивке видов
+        // ниже они остаются — видно, сколько материала ушло в сделки.
+        $dealExpensesSum = (float) (clone $expFull)->whereNull('category_id')
+            ->whereNull('material_id')->sum('amount');
         // Разбивка расходов по сделкам/цеху по видам: склад / доставка / закуп / прочие.
         $dealSplitRow = (clone $expFull)->whereNull('category_id')
             ->selectRaw("

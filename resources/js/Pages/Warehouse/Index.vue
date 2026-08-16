@@ -30,9 +30,11 @@ const money = (v) => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }
 // Приход: существующий материал или новая позиция.
 const showModal = ref(false);
 const mode = ref('existing'); // existing | new
-const form = useForm({ material_id: '', name: '', unit: tr('штук'), quantity: '', price: '', date: '', note: '' });
+// payment — откуда заплатили поставщику: нал / банк / «не списывать».
+// Оплата закупа и есть момент ухода денег, поэтому она в форме прихода.
+const form = useForm({ material_id: '', name: '', unit: tr('штук'), quantity: '', price: '', date: '', note: '', payment: 'none' });
 const openReceipt = () => {
-    form.reset(); form.unit = tr('штук');
+    form.reset(); form.unit = tr('штук'); form.payment = 'none';
     mode.value = props.materials.length ? 'existing' : 'new';
     showModal.value = true;
 };
@@ -356,6 +358,25 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                     <div>
                         <InputLabel :value="$e('Заметка')" />
                         <TextInput v-model="form.note" class="mt-1 w-full" :placeholder="$e('Поставщик, накладная…')" />
+                    </div>
+                    <!-- Оплата закупа: деньги уходят здесь, а не при списании
+                         материала в сделку. -->
+                    <div class="col-span-2">
+                        <InputLabel :value="$e('Оплата закупа')" />
+                        <div class="mt-1 flex flex-wrap gap-2">
+                            <button v-for="p in [{ k: 'cash', l: $e('💵 Наличные') }, { k: 'bank', l: $e('🏦 Банк') }, { k: 'none', l: $e('Не списывать') }]"
+                                :key="p.k" type="button" @click="form.payment = p.k"
+                                class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-150"
+                                :class="form.payment === p.k ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'">{{ p.l }}</button>
+                        </div>
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            {{ form.payment === 'none'
+                                ? $e('Только остаток на складе — деньги не двигаются.')
+                                : $e('Спишется сразу: количество × цена уйдёт из кассы или банка расходом «Закуп материалов».') }}
+                        </p>
+                        <p v-if="form.payment !== 'none' && form.quantity && form.price" class="mt-0.5 text-xs font-semibold text-slate-600">
+                            {{ $e('К списанию:') }} <span class="tabular-nums">{{ money(Number(form.quantity) * Number(form.price)) }}</span>
+                        </p>
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-2">

@@ -198,7 +198,14 @@ class InvoiceController extends Controller
             ->map(fn ($sum, $id) => ['name' => $catNames[$id] ?? '—', 'sum' => (float) $sum])
             ->sortByDesc('sum')->values();
         // Расходы по сделкам/цеху (закуп + прочие без категории).
-        $dealExpenses = (float) $monthly($confirmedNoPeriod())->whereNull('category_id')->sum('amount');
+        // Списание материала в сделку — НЕ трата денег: деньги ушли при закупе
+        // (расход категории «Закуп материалов»). Считать и то, и другое значит
+        // посчитать одни деньги дважды, поэтому в ИТОГ списания не входят, а
+        // показываются отдельной строкой — себестоимость сделок видна.
+        $dealExpenses = (float) $monthly($confirmedNoPeriod())->whereNull('category_id')
+            ->whereNull('material_id')->sum('amount');
+        $materialWriteoffs = (float) $monthly($confirmedNoPeriod())->whereNull('category_id')
+            ->whereNotNull('material_id')->sum('amount');
         $payrollTotal = round((float) $payrollRows->sum('payout'), 2); // оклады + бонусы
         // ЗП и налог считаются по сделкам (без даты) — в месячном режиме их
         // не размазать по месяцам, показываем только «за всё время».
@@ -297,6 +304,7 @@ class InvoiceController extends Controller
                 'incomeManual' => $receiptManualP,
                 'categories' => $categoryRows,
                 'dealExpenses' => $dealExpenses,
+                'materialWriteoffs' => $materialWriteoffs,
                 'payroll' => $payrollTotal,
                 'tax' => $taxRow,
                 'expensesTotal' => $expensesTotal,

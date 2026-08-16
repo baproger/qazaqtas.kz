@@ -110,6 +110,9 @@ class WarehouseController extends Controller
             'price' => ['nullable', 'numeric', 'min:0'],
             'date' => ['nullable', 'date'],
             'note' => ['nullable', 'string', 'max:255'],
+            // Откуда заплатили поставщику: нал / банк / «не списывать»
+            // (товар пришёл, деньги ушли раньше или ещё не ушли).
+            'payment' => ['nullable', Rule::in(['cash', 'bank', 'none'])],
         ]);
 
         $companyId = CurrentCompany::id() ?: null;
@@ -128,7 +131,7 @@ class WarehouseController extends Controller
             // Изоляция фирм: приход только на склад своей компании.
             abort_unless($request->user()->worksInCompany($material->company_id ? (int) $material->company_id : null), 403);
 
-            $material->receipts()->create([
+            $receipt = $material->receipts()->create([
                 'user_id' => $request->user()->id,
                 'quantity' => $data['quantity'],
                 'price' => $data['price'] ?? null,
@@ -136,6 +139,13 @@ class WarehouseController extends Controller
                 'note' => $data['note'] ?? null,
             ]);
             $material->increment('quantity', $data['quantity']);
+
+            // Оплата закупа — момент, когда деньги реально уходят. Расход
+            // подтверждённый: бухгалтер сам его и оформляет приходом.
+            if (($data['payment'] ?? 'none') !== 'none') {
+                $expense = $this->purchaseExpense($receipt, $material, $request->user()->id, $data['payment']);
+                $receipt->update(['expense_id' => $expense->id]);
+            }
             // На материале храним последнюю закупочную цену — по ней считается
             // расход по материалам в сделке (количество × цена).
             if (isset($data['price'])) {
@@ -144,6 +154,32 @@ class WarehouseController extends Controller
         });
 
         return back()->with('success', 'Приход оформлен — остаток обновлён.');
+    }
+
+    /**
+     * Расход-оплата закупа: сумма = количество × закупочная цена, дата — дата
+     * прихода. Категория служебная (`materials_purchase`) и ищется по коду:
+     * имя владелец правит из админки.
+     */
+    private function purchaseExpense(MaterialReceipt $receipt, Material $material, int $userId, string $method): \App\Models\Expense
+    {
+        return \App\Models\Expense::create([
+            'company_id' => $material->company_id,
+            'category_id' => \App\Models\ExpenseCategory::firstOrCreate(
+                ['code' => \App\Models\ExpenseCategory::MATERIALS_PURCHASE],
+                ['name' => 'Закуп материалов', 'is_active' => true]
+            )->id,
+            'type' => 'purchase',
+            'amount' => round((float) $receipt->quantity * (float) ($receipt->price ?? 0), 2),
+            'date' => $receipt->date,
+            'description' => 'Закуп: '.$material->name.' × '
+                .rtrim(rtrim(number_format((float) $receipt->quantity, 2, '.', ''), '0'), '.').' '.$material->unit,
+            'responsible_user_id' => $userId,
+            'status' => 'confirmed',
+            'payment_method' => $method,
+            'confirmed_by' => $userId,
+            'confirmed_at' => now(),
+        ]);
     }
 
     /**
@@ -184,6 +220,12 @@ class WarehouseController extends Controller
             } elseif ($delta < 0) {
                 $material->decrement('quantity', abs($delta));
             }
+            // Оплаченный закуп поправился — сумма расхода едет следом, иначе
+            // касса перестанет сходиться с накладной.
+            $receipt->expense?->update([
+                'amount' => round((float) $receipt->quantity * (float) ($receipt->price ?? 0), 2),
+                'date' => $receipt->date,
+            ]);
             $this->syncLastPurchasePrice($material);
         });
 
@@ -208,6 +250,8 @@ class WarehouseController extends Controller
                     throw new \RuntimeException('negative');
                 }
                 $material->decrement('quantity', $receipt->quantity);
+                // Приход отменён — оплата закупа вместе с ним: деньги вернулись.
+                $receipt->expense?->delete();
                 $receipt->delete();
                 $this->syncLastPurchasePrice($material);
             });

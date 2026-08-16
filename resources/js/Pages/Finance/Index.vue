@@ -267,6 +267,12 @@ const delExpense = async (e) => {
                     <div v-if="!monthActive" class="flex justify-between"><span class="text-slate-500">{{ $e('Налог') }}</span><span class="tabular-nums text-slate-700">{{ money(summary.tax) }}</span></div>
                     <div v-if="monthActive" class="text-[11px] text-slate-400">{{ $e('ЗП и налог считаются по сделкам — видны в режиме «за всё время»') }}</div>
                     <div class="flex justify-between"><span class="text-slate-500">{{ $e('По сделкам и цеху') }}</span><span class="tabular-nums text-slate-700">{{ money(summary.dealExpenses) }}</span></div>
+                    <!-- Списания со склада показаны, но в итог не входят: эти
+                         деньги уже посчитаны закупом. -->
+                    <div v-if="summary.materialWriteoffs" class="flex justify-between text-slate-400">
+                        <span>{{ $e('Списано со склада') }} <span class="text-[11px]">{{ $e('· учтено в закупе') }}</span></span>
+                        <span class="tabular-nums">{{ money(summary.materialWriteoffs) }}</span>
+                    </div>
                     <div v-for="c in summary.categories" :key="c.name" class="flex justify-between">
                         <span class="text-slate-500">{{ c.name }}</span><span class="tabular-nums text-slate-700">{{ money(c.sum) }}</span>
                     </div>

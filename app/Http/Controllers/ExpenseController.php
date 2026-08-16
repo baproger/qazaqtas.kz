@@ -184,6 +184,12 @@ class ExpenseController extends Controller
 
             // Внутреннее списание — подтверждение бухгалтера не требуется.
             $data['status'] = 'confirmed';
+            // Кассы списание НЕ касается: деньги ушли поставщику при закупе
+            // (оплата оформляется приходом на склад). Здесь двигается запас,
+            // а не деньги — FinanceService считает по payment_method, и null
+            // выпадает из остатков сам. В маржу сделки расход по-прежнему
+            // входит: себестоимость изделия от этого не меняется.
+            $data['payment_method'] = null;
             $data['description'] = trim(($data['description'] ?? '')) !== ''
                 ? $data['description']
                 : 'Материал: '.$material->name.' × '.rtrim(rtrim(number_format((float) $data['qty'], 2, '.', ''), '0'), '.').' '.$material->unit;
