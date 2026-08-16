@@ -119,8 +119,18 @@ class UserController extends Controller
         $payrollRow = $seesMoney
             ? $payroll->perUser(true)->firstWhere('uid', $user->id)
             : null;
+        // Месяц блока «Зарплата»: он переключает И корректировки, И долг —
+        // иначе профиль показывал бы одно, а ведомость ЗП за тот же месяц
+        // другое, и сойтись они не могли бы в принципе.
+        $month = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $request->string('month')->toString())
+            ? $request->string('month')->toString()
+            : now()->format('Y-m');
+        $monthStart = $month.'-01';
+        $monthEnd = \Illuminate\Support\Carbon::parse($monthStart)->endOfMonth()->toDateString();
+
         $adjustments = $seesMoney
             ? \App\Models\PayrollAdjustment::where('user_id', $user->id)
+                ->whereDate('date', '>=', $monthStart)->whereDate('date', '<=', $monthEnd)
                 ->orderByDesc('date')->limit(20)->get()
                 ->map(fn ($a) => [
                     'id' => $a->id, 'type' => $a->type, 'amount' => (float) $a->amount,
@@ -128,6 +138,20 @@ class UserController extends Controller
                     'date' => $a->date?->toDateString(), 'note' => $a->note,
                 ])
             : [];
+
+        // Долг сотрудника: остаток, план удержания за выбранный месяц и
+        // история погашений — по ней видно, куда ушёл бонус.
+        $debt = null;
+        if ($seesMoney) {
+            $plan = app(\App\Services\EmployeeDebtService::class)->planFor($user->id, $month);
+            $payments = \App\Models\EmployeeDebtPayment::whereIn(
+                'employee_debt_id',
+                \App\Models\EmployeeDebt::where('user_id', $user->id)->select('id'),
+            )->orderByDesc('month')->limit(24)->get()
+                ->map(fn ($p) => ['id' => $p->id, 'month' => $p->month, 'amount' => (float) $p->amount]);
+
+            $debt = $plan + ['payments' => $payments];
+        }
 
         $headOf = Department::where('head_user_id', $user->id)->pluck('name');
 
@@ -154,6 +178,8 @@ class UserController extends Controller
             'tasks' => $tasks,
             'payrollRow' => $payrollRow,
             'adjustments' => $adjustments,
+            'debt' => $debt,
+            'month' => $month,
             'can' => ['manage' => $viewer->can('update', $user)],
         ]);
     }

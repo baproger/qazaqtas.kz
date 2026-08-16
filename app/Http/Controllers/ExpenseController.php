@@ -408,6 +408,15 @@ class ExpenseController extends Controller
         $this->authorize('delete', $expense);
         $this->assertOwnership(request()->user(), $expense->expenseable);
 
+        // Расход-выдача долга неотделим от самого долга: удалив его здесь,
+        // мы вернули бы деньги в кассу, оставив сотруднику долг, который
+        // нечем гасить. Отменяется он с ведомости ЗП — вместе с долгом.
+        if (\App\Models\EmployeeDebt::where('expense_id', $expense->id)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'expense' => 'Это выдача долга — отмените её в ведомости ЗП, там уйдут и долг, и расход.',
+            ]);
+        }
+
         // Удаление расхода по материалам возвращает количество на склад.
         \Illuminate\Support\Facades\DB::transaction(function () use ($expense) {
             if ($expense->material_id && $expense->qty && $expense->material) {

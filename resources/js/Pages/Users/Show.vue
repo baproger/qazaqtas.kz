@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Avatar from '@/Components/Avatar.vue';
 import { useE } from '@/composables/useTranslations';
@@ -14,8 +14,15 @@ const props = defineProps({
     tasks: { type: Array, default: () => [] },
     payrollRow: { type: Object, default: null },
     adjustments: { type: Array, default: () => [] },
+    debt: { type: Object, default: null },
+    month: { type: String, default: '' },
     can: { type: Object, default: () => ({ manage: false }) },
 });
+
+// Месяц блока «Зарплата» переключает и корректировки, и долг: профиль
+// должен сходиться с ведомостью ЗП за тот же месяц.
+const setMonth = (value) => router.get(route('users.show', props.person.id), { month: value || undefined },
+    { preserveState: true, preserveScroll: true, replace: true });
 
 const roleLabels = { admin: tr('СЕО (админ)'), director: tr('Директор'), financist: tr('Финансист-Бухгалтер'), manager: tr('Менеджер'), employee: tr('Сотрудник (цех)'), lawyer: tr('Юрист'), cook: tr('Повар'), designer: tr('Технолог'), supplier: tr('Снабженец') };
 const adjLabels = { absence: tr('Отгул'), sick: tr('Больничный'), fine: tr('Штраф'), advance: tr('Аванс'), bonus: tr('Премия') };
@@ -106,7 +113,11 @@ const stats = computed(() => ({
 
         <!-- ЗП (только руководство и сам сотрудник) -->
         <div v-if="payrollRow" class="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">{{ $e('Зарплата (текущий расчёт)') }}</h3>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ $e('Зарплата (текущий расчёт)') }}</h3>
+                <input :value="month" @change="setMonth($event.target.value)" type="month"
+                    class="rounded-lg border-slate-300 py-1 text-xs shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
+            </div>
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div><p class="text-lg font-bold text-slate-900">{{ fmt(payrollRow.salary) }}</p><p class="text-xs text-slate-500">{{ $e('Оклад') }}</p></div>
                 <div><p class="text-lg font-bold text-emerald-600">{{ fmt(payrollRow.bonus) }}</p><p class="text-xs text-slate-500">{{ $e('Бонус от маржи') }}</p></div>
@@ -132,6 +143,30 @@ const stats = computed(() => ({
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Долг: остаток, план удержания месяца и история погашений -->
+            <div v-if="debt && debt.items.length" class="mt-4 rounded-lg border border-rose-100 bg-rose-50/40 p-3">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-rose-600">{{ $e('Долг') }}</span>
+                    <span class="text-sm text-slate-600">
+                        {{ $e('Остаток') }} <b class="tabular-nums">{{ fmt(debt.balance) }}</b>
+                        <template v-if="debt.charge > 0"> · {{ $e('удержим') }} <b class="tabular-nums text-rose-600">− {{ fmt(debt.charge) }}</b></template>
+                        <template v-else> · {{ $e('в этом месяце удержания нет: бонуса не хватает') }}</template>
+                    </span>
+                </div>
+                <table v-if="debt.payments.length" class="mt-2 min-w-full text-sm">
+                    <thead class="text-left text-xs uppercase text-slate-400">
+                        <tr><th class="py-1 pr-4">{{ $e('Месяц') }}</th><th class="py-1 pr-4 text-right">{{ $e('Погашено') }}</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-rose-100">
+                        <tr v-for="p in debt.payments" :key="p.id">
+                            <td class="py-1.5 pr-4 text-slate-500">{{ p.month }}</td>
+                            <td class="py-1.5 pr-4 text-right font-medium tabular-nums text-emerald-600">{{ fmt(p.amount) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else class="mt-1 text-xs text-slate-400">{{ $e('Погашений ещё не было.') }}</p>
             </div>
         </div>
 

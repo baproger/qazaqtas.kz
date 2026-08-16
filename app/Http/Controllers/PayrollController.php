@@ -62,7 +62,15 @@ class PayrollController extends Controller
         $deptNorms = $deptByUser->pluck('department_id')->filter()->unique()
             ->mapWithKeys(fn ($id) => [$id => Setting::get('work_norm_'.$month.':dept:'.$id)])
             ->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
-        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms) {
+        // Долги: считаем план удержания только тем, у кого долг открыт —
+        // бонус за месяц запрашивается по одному сотруднику, и звать его на
+        // всю ведомость было бы дорого.
+        $debtService = app(\App\Services\EmployeeDebtService::class);
+        $debtUsers = \App\Models\EmployeeDebt::open()->whereIn('user_id', $rows->pluck('uid'))
+            ->pluck('user_id')->unique();
+        $debtPlans = $debtUsers->mapWithKeys(fn ($uid) => [$uid => $debtService->planFor((int) $uid, $month)]);
+
+        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans) {
             $r['dealsList'] = array_values(($breakdown->get($r['uid']) ?? collect())->all());
             $adj = $adjustments->get($r['uid']) ?? collect();
             $deductions = round((float) $adj->whereIn('type', PayrollAdjustment::DEDUCTIONS)->sum('amount'), 2);
@@ -86,7 +94,12 @@ class PayrollController extends Controller
             $r['base'] = $hours !== null && $norm > 0 ? round($hours * $rate, 2) : $r['salary'];
             // К выплате = почасовая база (или оклад) + бонус − удержания + премии.
             $r['payout'] = round($r['base'] + $r['bonus'], 2);
-            $r['final'] = round($r['payout'] - $deductions + $additions, 2);
+            // Долг — ОТДЕЛЬНОЕ поле расчёта, а не корректировка: аванс и долг
+            // независимы и не гасят друг друга. Удерживается только план
+            // текущего месяца и только из бонуса (EmployeeDebtService).
+            $r['debt'] = $debtPlans[$r['uid']] ?? null;
+            $r['debt_charge'] = (float) ($debtPlans[$r['uid']]['charge'] ?? 0);
+            $r['final'] = round($r['payout'] - $deductions + $additions - $r['debt_charge'], 2);
             $r['department'] = $deptByUser[$r['uid']]?->department?->name;
             $r['department_id'] = $deptId;
 
@@ -111,6 +124,7 @@ class PayrollController extends Controller
                 'payout' => (float) $rows->sum('payout'),
                 'deductions' => (float) $rows->sum('deductions'),
                 'additions' => (float) $rows->sum('additions'),
+                'debt_charge' => (float) $rows->sum('debt_charge'),
                 'final' => (float) $rows->sum('final'),
                 'company' => (float) $rows->sum('company'),
             ],

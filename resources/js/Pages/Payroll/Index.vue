@@ -105,6 +105,28 @@ const showAdj = ref(false);
 const adjForm = useForm({ user_id: '', type: 'absence', days: '', amount: '', date: new Date().toISOString().slice(0, 10), note: '', payment_method: 'cash' });
 const openAdj = (uid = '') => { adjForm.reset(); adjForm.user_id = uid; adjForm.date = new Date().toISOString().slice(0, 10); showAdj.value = true; };
 const submitAdj = () => adjForm.post(route('payroll.adjustments.store'), { preserveScroll: true, onSuccess: () => (showAdj.value = false) });
+// Долг: выдача из кассы/банка. От аванса отличается тем, что переходит из
+// месяца в месяц и гасится только из бонуса — подсказки в обеих модалках.
+const showDebt = ref(false);
+const debtForm = useForm({ user_id: '', amount: '', monthly_payment: '', payment_method: 'cash', note: '' });
+const openDebt = (uid = '') => {
+    debtForm.reset();
+    debtForm.clearErrors();
+    debtForm.user_id = uid;
+    showDebt.value = true;
+};
+const submitDebt = () => debtForm.post(route('payroll.debts.store'), { preserveScroll: true, onSuccess: () => (showDebt.value = false) });
+const cancelDebt = async (d) => {
+    if (await confirmDialog({
+        title: tr('Отменить выдачу долга'),
+        message: tr('Долг будет удалён, а деньги вернутся в кассу.'),
+        confirmText: tr('Отменить выдачу'),
+        danger: true,
+    })) {
+        router.delete(route('payroll.debts.destroy', d.id), { preserveScroll: true });
+    }
+};
+
 const delAdj = async (a) => {
     if (await confirmDialog({ title: tr('Удалить корректировку'), message: `«${typeLabels[a.type]} ${money(a.amount)}» будет удалена.`, confirmText: tr('Удалить'), danger: true })) {
         router.delete(route('payroll.adjustments.destroy', a.id), { preserveScroll: true });
@@ -345,6 +367,7 @@ const delAdj = async (a) => {
                                     <template v-if="r.deductions > 0">− {{ money(r.deductions) }}</template>
                                     <template v-else>—</template>
                                     <span v-if="r.additions > 0" class="text-emerald-600"> +{{ money(r.additions) }}</span>
+                                    <div v-if="r.debt_charge > 0" class="text-[10px] font-medium text-rose-500">{{ $e('долг') }} − {{ money(r.debt_charge) }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-right font-bold tabular-nums" :class="r.final > 0 ? 'text-emerald-600' : 'text-slate-300'">{{ r.final > 0 ? money(r.final) : '—' }}</td>
                             </tr>
@@ -377,6 +400,36 @@ const delAdj = async (a) => {
                                             </div>
                                         </div>
                                         <div v-else class="py-1 text-xs text-slate-300">{{ $e('Нет корректировок') }}</div>
+                                    </div>
+                                    <!-- Долги сотрудника: остаток, план удержания этого месяца -->
+                                    <div class="mb-3 rounded-lg border border-slate-200 bg-white p-3">
+                                        <div class="mb-1 flex items-center justify-between">
+                                            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ $e('Долг') }}</span>
+                                            <button v-if="canManage" class="text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="openDebt(r.uid)">{{ $e('+ выдать долг') }}</button>
+                                        </div>
+                                        <template v-if="r.debt && r.debt.items.length">
+                                            <p class="mb-1.5 text-xs text-slate-600">
+                                                {{ $e('Остаток') }} <b class="tabular-nums">{{ money(r.debt.balance) }}</b>
+                                                <template v-if="r.debt.charge > 0">
+                                                    · {{ $e('удержим') }} <b class="tabular-nums text-rose-600">− {{ money(r.debt.charge) }}</b>
+                                                    {{ $e('в этом месяце, останется') }} <b class="tabular-nums">{{ money(r.debt.balance - r.debt.charge) }}</b>
+                                                </template>
+                                                <template v-else>· {{ $e('в этом месяце удержания нет: бонуса не хватает') }}</template>
+                                            </p>
+                                            <div class="divide-y divide-slate-50 text-xs">
+                                                <div v-for="d in r.debt.items" :key="d.id" class="flex items-center justify-between gap-2 py-1.5">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-700">{{ $e('Долг') }}</span>
+                                                        <span class="text-slate-400">{{ formatDate(d.date) }} · {{ $e('по') }} {{ money(d.monthly) }} {{ $e('в месяц') }}<template v-if="d.note"> · {{ d.note }}</template></span>
+                                                    </div>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-semibold tabular-nums text-slate-700">{{ money(d.balance) }} {{ $e('из') }} {{ money(d.amount) }}</span>
+                                                        <button v-if="canManage && !d.has_payments" class="text-slate-300 hover:text-rose-600" :title="$e('Отменить выдачу')" @click="cancelDebt(d)">✕</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <div v-else class="py-1 text-xs text-slate-300">{{ $e('Долгов нет') }}</div>
                                     </div>
                                     <div v-if="r.dealsList && r.dealsList.length" class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
                                         <table class="min-w-full divide-y divide-slate-100 text-xs">
@@ -474,6 +527,7 @@ const delAdj = async (a) => {
                                 class="rounded-lg border px-3 py-1.5 text-sm font-medium">{{ $e('🏦 Банк') }}</button>
                         </div>
                         <p class="mt-1 text-[11px] text-slate-400">{{ $e('Аванс автоматически попадёт в Расходы на Финансах (категория «Расходы по сотрудникам»)') }}</p>
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Аванс — разовая выдача, удерживается целиком в этом месяце из всей выплаты. Переходящую выдачу оформляют долгом («+ выдать долг»).') }}</p>
                     </div>
                     <div :class="adjForm.type === 'absence' || adjForm.type === 'sick' || adjForm.type === 'advance' ? '' : 'sm:col-span-2'">
                         <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Комментарий') }}</label>
@@ -483,6 +537,58 @@ const delAdj = async (a) => {
                 <div class="mt-6 flex justify-end gap-2">
                     <SecondaryButton @click="showAdj = false">{{ $e('Отмена') }}</SecondaryButton>
                     <PrimaryButton :disabled="adjForm.processing || !adjForm.user_id" @click="submitAdj">{{ $e('Сохранить') }}</PrimaryButton>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Модалка выдачи долга -->
+        <Modal :show="showDebt" @close="showDebt = false" max-width="lg">
+            <div class="p-6">
+                <h2 class="mb-1 text-lg font-semibold text-slate-900">{{ $e('Выдать долг') }}</h2>
+                <p class="mb-4 text-xs text-slate-400">{{ $e('Долг — переходящий: гасится помесячно и только из бонуса. Нет бонуса в месяце — удержания нет, остаток едет дальше. Оклад долг не трогает.') }}</p>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Сотрудник *') }}</label>
+                        <select v-model="debtForm.user_id" class="w-full rounded-md border-slate-300 text-sm shadow-sm">
+                            <option value="">{{ $e('— выберите —') }}</option>
+                            <optgroup v-for="g in groups" :key="g.name" :label="g.name">
+                                <option v-for="r in g.list" :key="r.uid" :value="r.uid">{{ r.user }}</option>
+                            </optgroup>
+                        </select>
+                        <div v-if="debtForm.errors.user_id" class="mt-1 text-xs text-red-600">{{ debtForm.errors.user_id }}</div>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Сумма долга, ₸ *') }}</label>
+                        <input v-model="debtForm.amount" type="number" min="1" step="0.01" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
+                        <div v-if="debtForm.errors.amount" class="mt-1 text-xs text-red-600">{{ debtForm.errors.amount }}</div>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Удерживать в месяц, ₸ *') }}</label>
+                        <input v-model="debtForm.monthly_payment" type="number" min="1" step="0.01" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
+                        <div v-if="debtForm.errors.monthly_payment" class="mt-1 text-xs text-red-600">{{ debtForm.errors.monthly_payment }}</div>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Откуда выданы деньги *') }}</label>
+                        <div class="flex gap-2">
+                            <button type="button" @click="debtForm.payment_method = 'cash'"
+                                :class="debtForm.payment_method === 'cash' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'"
+                                class="rounded-lg border px-3 py-1.5 text-sm font-medium">{{ $e('💵 Наличные') }}</button>
+                            <button type="button" @click="debtForm.payment_method = 'bank'"
+                                :class="debtForm.payment_method === 'bank' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'"
+                                class="rounded-lg border px-3 py-1.5 text-sm font-medium">{{ $e('🏦 Банк') }}</button>
+                        </div>
+                        <div v-if="debtForm.errors.payment_method" class="mt-1 text-xs text-red-600">{{ debtForm.errors.payment_method }}</div>
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Выдача сразу уменьшает кассу или банк — это подтверждённый расход компании.') }}</p>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Заметка') }}</label>
+                        <input v-model="debtForm.note" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm" :placeholder="$e('За что…')" />
+                        <div v-if="debtForm.errors.note" class="mt-1 text-xs text-red-600">{{ debtForm.errors.note }}</div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-2">
+                    <SecondaryButton @click="showDebt = false">{{ $e('Отмена') }}</SecondaryButton>
+                    <PrimaryButton :disabled="debtForm.processing || !debtForm.user_id" @click="submitDebt">{{ $e('Выдать') }}</PrimaryButton>
                 </div>
             </div>
         </Modal>
