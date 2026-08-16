@@ -61,8 +61,17 @@ const allNav = [
     // Реализованные объекты: их фото идут крупными кадрами на главной.
     { key: 'nav.siteProjects', name: tr('Объекты сайта'), route: 'siteProjects.index', icon: '◱', roles: ['admin', 'director', 'financist'] },
     { key: 'nav.reports', name: tr('Сводный отчет'), route: 'reports.deals', icon: '▦', roles: ['admin', 'director'] },
-    { key: 'nav.finance', name: tr('Финансы'), route: 'finance.index', icon: '₸', perm: 'invoice.viewAny', leadershipOnly: true },
-    { key: 'nav.payroll', name: tr('Зарплата'), route: 'payroll.index', icon: '💵', perm: 'payroll.view' },
+    // «Финансы» — группа: под ней всё, что про деньги. Каждый пункт виден по
+    // СВОИМ правам, группа — если виден хоть один: цеховому она открывается
+    // «Моими расходами» и «Зарплатой», обзора фирмы он не увидит.
+    {
+        key: 'nav.finance', name: tr('Финансы'), icon: '₸', children: [
+            { key: 'nav.finance.overview', name: tr('Обзор'), route: 'finance.index', icon: '◔', perm: 'invoice.viewAny', leadershipOnly: true },
+            { key: 'nav.finance.expenses', name: tr('Расходы'), route: 'expensesBoard.index', icon: '◫', roles: ['admin', 'director', 'financist'] },
+            { key: 'nav.finance.myExpenses', name: tr('Мои расходы'), route: 'myExpenses.index', icon: '◨', perm: 'expense.create' },
+            { key: 'nav.finance.payroll', name: tr('Зарплата'), route: 'payroll.index', icon: '💵', perm: 'payroll.view' },
+        ],
+    },
     { key: 'nav.chat', name: tr('Чат'), route: 'chat.index', icon: '✉' },
     { key: 'nav.audit', name: tr('Аудит'), route: 'audit.index', icon: '❑', roles: ['admin'] },
     { key: 'nav.departments', name: tr('Отделы'), route: 'departments.index', icon: '⌂', perm: 'department.viewAny', leadershipOnly: true },
@@ -71,7 +80,13 @@ const allNav = [
     { key: 'nav.settings', name: tr('Настройки'), route: 'settings.index', icon: '⚙', perm: 'setting.update' },
     { key: 'nav.translations', name: tr('Переводы'), route: 'translations.index', icon: '🌐', perm: 'setting.update' },
 ];
-const nav = computed(() => allNav.filter((i) => (!i.perm || perms.value.includes(i.perm)) && (!i.leadershipOnly || isLeadership.value) && (!i.roles || i.roles.some((r) => roles.value.includes(r)))));
+const visible = (i) => (!i.perm || perms.value.includes(i.perm))
+    && (!i.leadershipOnly || isLeadership.value)
+    && (!i.roles || i.roles.some((r) => roles.value.includes(r)));
+// Группа остаётся в меню, только если внутри есть что открыть.
+const nav = computed(() => allNav
+    .map((i) => (i.children ? { ...i, children: i.children.filter(visible) } : i))
+    .filter((i) => (i.children ? i.children.length > 0 : visible(i))));
 
 // Инлайн-SVG иконки (Lucide-style outline) по route — заменяют псевдо-иконки.
 // Чисто презентационно: массив allNav и его perm/leadershipOnly не тронуты.
@@ -98,6 +113,25 @@ const isActive = (name) => {
     return route().current(base + '.*') || route().current(base);
 };
 const go = () => { mobileOpen.value = false; };
+
+// Раскрытие группы меню («Финансы») переживает переходы между страницами:
+// бухгалтер держит её открытой, цеховой — свёрнутой.
+const groupOpen = ref({});
+const groupStore = (key) => 'qt.menu.' + key.replace(/^nav\./, '');
+const groupActive = (item) => item.children.some((c) => isActive(c.route));
+const toggleGroup = (item) => {
+    groupOpen.value[item.key] = !groupOpen.value[item.key];
+    try { localStorage.setItem(groupStore(item.key), groupOpen.value[item.key] ? '1' : '0'); } catch { /* приватный режим */ }
+};
+onMounted(() => {
+    for (const item of allNav.filter((i) => i.children)) {
+        let stored = null;
+        try { stored = localStorage.getItem(groupStore(item.key)); } catch { /* приватный режим */ }
+        // По умолчанию группа открыта — иначе новые пункты никто не найдёт.
+        // Активный пункт внутри раскрывает её в любом случае.
+        groupOpen.value[item.key] = stored === null ? true : stored === '1' || groupActive(item);
+    }
+});
 
 // Company switcher — full data separation per firm.
 // «Все» (id=0) — общий отчёт по обеим фирмам для бухгалтера/админа.
@@ -174,22 +208,64 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 </div>
             </div>
             <nav class="flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
-                <Link v-for="item in nav" :key="item.route" :href="route(item.route)" @click="go"
-                    :title="collapsed ? t(item.key, item.name) : ''"
-                    :class="isActive(item.route) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                    class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
-                    <span v-if="isActive(item.route)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
-                    <svg v-if="navIcons[item.route]" class="h-5 w-5 shrink-0 transition-colors duration-200"
-                        :class="isActive(item.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        v-html="navIcons[item.route]"></svg>
-                    <span v-else class="text-lg leading-none transition-colors duration-200" :class="isActive(item.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ item.icon }}</span>
-                    <span v-if="!collapsed || mobileOpen" class="truncate">{{ t(item.key, item.name) }}</span>
-                    <span v-if="item.route === 'chat.index' && chatUnread > 0 && (!collapsed || mobileOpen)"
-                        class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
-                    <span v-else-if="item.route === 'chat.index' && chatUnread > 0"
-                        class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-slate-900"></span>
-                </Link>
+                <template v-for="item in nav" :key="item.key ?? item.route">
+                    <!-- ===== Группа («Финансы»): свои пункты по своим правам ===== -->
+                    <template v-if="item.children">
+                        <!-- Свёрнутое меню: подписи не помещаются — пункты идут
+                             значками, как и остальные разделы. -->
+                        <template v-if="collapsed && !mobileOpen">
+                            <Link v-for="child in item.children" :key="child.route"
+                                :href="route(child.route)" @click="go" :title="t(child.key, child.name)"
+                                :class="isActive(child.route) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                                class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                                <span v-if="isActive(child.route)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
+                                <span class="text-lg leading-none transition-colors duration-200"
+                                    :class="isActive(child.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ child.icon }}</span>
+                            </Link>
+                        </template>
+                        <div v-else>
+                            <button type="button" @click="toggleGroup(item)"
+                                :class="groupActive(item) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                                class="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                                <span v-if="groupActive(item)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
+                                <span class="text-lg leading-none transition-colors duration-200"
+                                    :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ item.icon }}</span>
+                                <span class="truncate">{{ t(item.key, item.name) }}</span>
+                                <span class="ml-auto text-xs text-slate-500 transition-transform duration-200"
+                                    :class="groupOpen[item.key] ? 'rotate-90' : ''">›</span>
+                            </button>
+                            <Transition
+                                enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 -translate-y-1"
+                                leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0 -translate-y-1">
+                                <div v-show="groupOpen[item.key]" class="mt-1 space-y-1 pl-5">
+                                    <Link v-for="child in item.children" :key="child.route" :href="route(child.route)" @click="go"
+                                        :class="isActive(child.route) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                                        class="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors duration-200 ease-out">
+                                        <span class="text-base leading-none" :class="isActive(child.route) ? 'text-indigo-400' : 'text-slate-500'">{{ child.icon }}</span>
+                                        <span class="truncate">{{ t(child.key, child.name) }}</span>
+                                    </Link>
+                                </div>
+                            </Transition>
+                        </div>
+                    </template>
+
+                    <Link v-else :href="route(item.route)" @click="go"
+                        :title="collapsed ? t(item.key, item.name) : ''"
+                        :class="isActive(item.route) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                        class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                        <span v-if="isActive(item.route)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
+                        <svg v-if="navIcons[item.route]" class="h-5 w-5 shrink-0 transition-colors duration-200"
+                            :class="isActive(item.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                            v-html="navIcons[item.route]"></svg>
+                        <span v-else class="text-lg leading-none transition-colors duration-200" :class="isActive(item.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ item.icon }}</span>
+                        <span v-if="!collapsed || mobileOpen" class="truncate">{{ t(item.key, item.name) }}</span>
+                        <span v-if="item.route === 'chat.index' && chatUnread > 0 && (!collapsed || mobileOpen)"
+                            class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
+                        <span v-else-if="item.route === 'chat.index' && chatUnread > 0"
+                            class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-slate-900"></span>
+                    </Link>
+                </template>
             </nav>
             <!-- User block -->
             <Link :href="route('profile.edit')" @click="go"
