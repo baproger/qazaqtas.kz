@@ -154,9 +154,11 @@ class PayrollController extends Controller
         // (не «прочие»). Удаление корректировки удалит и расход.
         if ($data['type'] === 'advance') {
             $employee = User::find($data['user_id']);
+            // Категория ищется по служебному коду, а не по имени: имя
+            // владелец правит из админки, код неизменен.
             $category = \App\Models\ExpenseCategory::firstOrCreate(
-                ['name' => 'Расходы по сотрудникам'],
-                ['is_active' => true]
+                ['code' => \App\Models\ExpenseCategory::EMPLOYEE],
+                ['name' => 'Расходы по сотрудникам', 'is_active' => true]
             );
             $expense = \App\Models\Expense::create([
                 'company_id' => \App\Support\CurrentCompany::id()
@@ -168,6 +170,10 @@ class PayrollController extends Controller
                 'description' => 'Аванс сотруднику: '.$employee->name
                     .(! empty($data['note']) ? ' — '.$data['note'] : ''),
                 'responsible_user_id' => $employee->id,
+                // Кому выдали — явной связью: описание устаревает при
+                // переименовании сотрудника, а фильтровать по строке нельзя.
+                'employee_id' => $employee->id,
+                'employee_payout' => 'advance',
                 'status' => 'confirmed',
                 'payment_method' => $data['payment_method'] ?? 'cash',
                 'confirmed_by' => $request->user()->id,

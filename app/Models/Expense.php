@@ -18,7 +18,15 @@ class Expense extends Model
         'expenseable_type', 'expenseable_id', 'company_id', 'category_id', 'material_id', 'qty', 'amount', 'date',
         'responsible_user_id', 'description', 'file_path', 'type', 'status',
         'payment_method', 'confirmed_by', 'confirmed_at',
+        // Кому выдали (аванс/долг) — ставит только сервер, из формы не приходит.
+        'employee_id', 'employee_payout',
     ];
+
+    /** Кому выдали деньги: аванс или долг. У обычного расхода пусто. */
+    public function employee(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'employee_id');
+    }
 
     protected $casts = [
         'amount' => 'decimal:2',

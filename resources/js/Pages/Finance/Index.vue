@@ -847,10 +847,19 @@ const delExpense = async (e) => {
                 <h3 class="mb-1 text-base font-semibold text-slate-900">{{ $e('Категории расходов компании') }}</h3>
                 <p class="mb-4 text-xs text-slate-400">{{ $e('Переименуйте прямо в поле (сохранение — Enter или клик мимо), ✕ — удалить.') }}</p>
                 <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
+                    <!-- Служебные категории (code) заблокированы: на них
+                         держатся расчёты — итог ЗП без двойного счёта и
+                         оплата закупа. Сервер их всё равно не отдаст, здесь
+                         просто не показываем кнопки, чтобы не звать в тупик. -->
                     <div v-for="c in categories" :key="c.id" class="flex items-center gap-2">
-                        <input v-model="catNames[c.id]" @keyup.enter="saveCat(c)" @blur="saveCat(c)" type="text"
+                        <input v-if="!c.code" v-model="catNames[c.id]" @keyup.enter="saveCat(c)" @blur="saveCat(c)" type="text"
                             class="flex-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                        <button @click="delCat(c)" class="rounded p-1.5 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить категорию')">✕</button>
+                        <span v-else class="flex flex-1 items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                            {{ c.name }}
+                            <span class="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
+                                :title="$e('На этой категории держатся расчёты — менять её нельзя')">{{ $e('служебная') }}</span>
+                        </span>
+                        <button v-if="!c.code" @click="delCat(c)" class="rounded p-1.5 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить категорию')">✕</button>
                     </div>
                     <div v-if="!categories.length" class="py-4 text-center text-sm text-slate-400">{{ $e('Категорий пока нет') }}</div>
                 </div>

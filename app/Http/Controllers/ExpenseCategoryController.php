@@ -30,9 +30,28 @@ class ExpenseCategoryController extends Controller
         return back()->with('success', 'Категория добавлена.');
     }
 
+    /**
+     * Служебная категория не переименовывается и не удаляется.
+     *
+     * На «Расходах по сотрудникам» держится итог без двойного счёта ЗП, на
+     * «Закупе материалов» — оплата склада при приходе. Код неизменен, но
+     * закрываем и переименование: бухгалтер, увидев в списке «Прочее»
+     * вместо «Расходы по сотрудникам», начнёт складывать туда обычные
+     * траты — и зарплата исчезнет из итога незаметно.
+     */
+    private function assertNotSystem(ExpenseCategory $category): void
+    {
+        abort_if(
+            $category->isSystem(),
+            403,
+            'Это служебная категория — на ней держатся расчёты, менять её нельзя.'
+        );
+    }
+
     public function update(Request $request, ExpenseCategory $category): RedirectResponse
     {
         $this->authorizeManage($request);
+        $this->assertNotSystem($category);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100', Rule::unique('expense_categories', 'name')->ignore($category->id)->where('is_active', true)],
         ]);
@@ -48,6 +67,7 @@ class ExpenseCategoryController extends Controller
     public function destroy(Request $request, ExpenseCategory $category): RedirectResponse
     {
         $this->authorizeManage($request);
+        $this->assertNotSystem($category);
         if (Expense::where('category_id', $category->id)->exists()) {
             $category->update(['is_active' => false]);
 

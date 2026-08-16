@@ -197,7 +197,7 @@ class InvoiceController extends Controller
             ->groupBy('category_id')->selectRaw('category_id, sum(amount) s')->pluck('s', 'category_id');
         // Для селекта формы — только активные; разбивка же строится по ФАКТУ
         // расходов (иначе деактивация категории «теряла» бы её суммы из итога).
-        $categories = \App\Models\ExpenseCategory::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        $categories = \App\Models\ExpenseCategory::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
         $catNames = \App\Models\ExpenseCategory::whereIn('id', $byCategory->keys())->pluck('name', 'id');
         $categoryRows = $byCategory
             ->map(fn ($sum, $id) => ['name' => $catNames[$id] ?? '—', 'sum' => (float) $sum])
