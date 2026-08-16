@@ -273,8 +273,14 @@ const delExpense = async (e) => {
                         <span>{{ $e('Списано со склада') }} <span class="text-[11px]">{{ $e('· учтено в закупе') }}</span></span>
                         <span class="tabular-nums">{{ money(summary.materialWriteoffs) }}</span>
                     </div>
-                    <div v-for="c in summary.categories" :key="c.name" class="flex justify-between">
-                        <span class="text-slate-500">{{ c.name }}</span><span class="tabular-nums text-slate-700">{{ money(c.sum) }}</span>
+                    <div v-for="c in summary.categories" :key="c.name" class="flex justify-between"
+                        :class="c.in_payroll ? 'text-slate-400' : ''">
+                        <span :class="c.in_payroll ? '' : 'text-slate-500'">
+                            {{ c.name }}
+                            <!-- Выплаты сотрудникам уже посчитаны строкой «Зарплата». -->
+                            <span v-if="c.in_payroll" class="text-[11px]">{{ $e('· учтено в строке «Зарплата»') }}</span>
+                        </span>
+                        <span class="tabular-nums" :class="c.in_payroll ? '' : 'text-slate-700'">{{ money(c.sum) }}</span>
                     </div>
                 </div>
             </div>

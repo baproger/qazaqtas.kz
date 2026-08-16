@@ -32,7 +32,28 @@ class PaymentController extends Controller
         $invoice = Invoice::findOrFail($request->integer('invoice_id'));
         $this->assertOwnership($request->user(), $invoice->invoiceable);
 
-        DB::transaction(function () use ($request, $finance) {
+        DB::transaction(function () use ($request, $finance, $invoice) {
+            // Счёт блокируем и остаток перечитываем ВНУТРИ транзакции: двойной
+            // клик присылает два одинаковых платежа, и без блокировки оба
+            // видели бы «не оплачено» — счёт оплачивался дважды, а дебиторка
+            // уходила в минус.
+            $locked = Invoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+            $paid = (float) $locked->payments()->sum('amount');
+            $left = round((float) $locked->amount - $paid, 2);
+            $amount = (float) $request->validated()['amount'];
+
+            if ($left <= 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'amount' => 'Счёт '.$locked->number.' уже оплачен полностью.',
+                ]);
+            }
+            if ($amount - $left > 0.005) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'amount' => 'Платёж больше остатка по счёту: осталось '
+                        .number_format($left, 2, '.', ' ').' ₸.',
+                ]);
+            }
+
             $payment = Payment::create($request->validated());
             $finance->recalcInvoiceStatus($payment->invoice);
         });

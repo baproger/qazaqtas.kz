@@ -11,6 +11,7 @@ use App\Services\DealNumberService;
 use App\Support\CurrentCompany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -235,6 +236,18 @@ class PreDealController extends Controller
         $company = $companyId ? \App\Models\Company::find($companyId) : null;
         $customer = $preDeal->customer ?: $preDeal->product;
 
+        // Двойной клик по «В работу ✓» создавал ДВЕ сделки: обе проверки
+        // статуса успевали пройти до того, как первая транзакция его меняла.
+        // Блокируем заявку и перечитываем статус под блокировкой — второй
+        // запрос дождётся первого и увидит уже переведённую заявку.
+        $deal = DB::transaction(function () use ($request, $preDeal, $numbers, $companyId, $company, $customer) {
+        $locked = PreDeal::whereKey($preDeal->id)->lockForUpdate()->firstOrFail();
+        if ($locked->status === 'confirmed') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'status' => 'Заявка уже переведена в сделку.',
+            ]);
+        }
+
         $deal = Deal::create([
             'number' => $numbers->generate($company),
             'name' => $customer,
@@ -279,7 +292,10 @@ class PreDealController extends Controller
             }
         }
 
-        $preDeal->update(['status' => 'confirmed', 'deal_id' => $deal->id]);
+        $locked->update(['status' => 'confirmed', 'deal_id' => $deal->id]);
+
+            return $deal;
+        });
 
         // «В работу» → сразу на страницу Сделки, где появилась новая сделка.
         return redirect()->route('deals.index')->with('success', 'Заказ подтверждён! Сделка '.$deal->number.' создана.');

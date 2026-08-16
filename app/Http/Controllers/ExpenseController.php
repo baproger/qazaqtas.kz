@@ -218,6 +218,21 @@ class ExpenseController extends Controller
             return back()->with('success', 'Расход по материалам добавлен — остаток на складе списан.');
         }
 
+        // Анти-дубль: тот же автор, сумма, дата и описание младше минуты —
+        // это повторная отправка формы, а не второй расход. Материальные
+        // списания сюда не попадают: они уходят из метода выше.
+        $duplicate = Expense::where('responsible_user_id', $data['responsible_user_id'])
+            ->where('amount', $data['amount'] ?? 0)
+            ->whereDate('date', $data['date'])
+            ->where('description', $data['description'] ?? null)
+            ->where('created_at', '>=', now()->subMinute())
+            ->exists();
+        if ($duplicate) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'amount' => 'Похоже на повторную отправку — такой расход уже создан минуту назад.',
+            ]);
+        }
+
         // Прочий расход: бухгалтер/админ подтверждают сразу; расход менеджера
         // (и директора) ждёт подтверждения бухгалтера — чек + нал/банк.
         $isAccountant = $request->user()->hasAnyRole(['admin', 'financist']);

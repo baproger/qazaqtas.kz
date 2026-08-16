@@ -234,8 +234,15 @@ class AnalyticsController extends Controller
         $byCat = (clone $expFull)->whereNotNull('category_id')
             ->groupBy('category_id')->selectRaw('category_id, sum(amount) s')->pluck('s', 'category_id');
         $catNames = \App\Models\ExpenseCategory::whereIn('id', $byCat->keys())->pluck('name', 'id');
-        $categoryRows = $byCat->map(fn ($s, $id) => ['name' => $catNames[$id] ?? '—', 'sum' => (float) $s])
-            ->sortByDesc('sum')->values();
+        // Категория «Расходы по сотрудникам» — это выплаты ЗП, аванса и долга.
+        // В итоге они уже стоят строкой «Зарплата», поэтому здесь помечены и
+        // из суммы исключены (иначе ЗП считалась бы дважды).
+        $employeeCategoryId = \App\Models\ExpenseCategory::findByCode(\App\Models\ExpenseCategory::EMPLOYEE)?->id;
+        $categoryRows = $byCat->map(fn ($s, $id) => [
+            'name' => $catNames[$id] ?? '—',
+            'sum' => (float) $s,
+            'in_payroll' => $employeeCategoryId !== null && (int) $id === (int) $employeeCategoryId,
+        ])->sortByDesc('sum')->values();
         // Списания со склада в итог не входят: деньги ушли при закупе, а это
         // себестоимость проданного (та же сумма второй раз). В разбивке видов
         // ниже они остаются — видно, сколько материала ушло в сделки.
@@ -261,7 +268,8 @@ class AnalyticsController extends Controller
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))->sum('amount');
         $payrollTotal = round((float) $salaryRows->sum('payout'), 2);
         // Все расходы компании: категории + по сделкам/цеху + ЗП (оклады+бонусы) + налог.
-        $expensesFull = round($categoryRows->sum('sum') + $dealExpensesSum + $payrollTotal + $companyTotals['tax'], 2);
+        $expensesFull = round($categoryRows->reject(fn ($r) => $r['in_payroll'])->sum('sum')
+            + $dealExpensesSum + $payrollTotal + $companyTotals['tax'], 2);
         $companyMoney = [
             'cash' => $balances['cash'],
             'bank' => $balances['bank'],

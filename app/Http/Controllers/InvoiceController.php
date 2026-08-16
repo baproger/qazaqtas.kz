@@ -109,8 +109,11 @@ class InvoiceController extends Controller
         ];
 
         // Дебиторка для финансиста: выставлено / оплачено / остаток к оплате.
-        $invoiced = (float) (clone $invBase)->sum('amount');
-        $invoicePaid = (float) \App\Models\Payment::whereIn('invoice_id', (clone $invBase)->select('id'))->sum('amount');
+        // Отменённый счёт долгом не является: его аннулировали, клиент по нему
+        // ничего не должен. Раньше он оставался в «нам должны» навсегда.
+        $liveInvoices = fn () => (clone $invBase)->where('status', '!=', 'cancelled');
+        $invoiced = (float) $liveInvoices()->sum('amount');
+        $invoicePaid = (float) \App\Models\Payment::whereIn('invoice_id', $liveInvoices()->select('id'))->sum('amount');
         $invoiceTotals = [
             'invoiced' => $invoiced,
             'paid' => $invoicePaid,
@@ -190,12 +193,22 @@ class InvoiceController extends Controller
         $confirmedNoPeriod = fn () => \App\Models\Expense::query()->tap($expScope)->where('status', 'confirmed');
         $byCategory = $monthly($confirmedNoPeriod())->whereNotNull('category_id')
             ->groupBy('category_id')->selectRaw('category_id, sum(amount) s')->pluck('s', 'category_id');
+        // Выплаты сотрудникам (аванс, долг, зарплата) — расход категории
+        // «Расходы по сотрудникам». В ИТОГ они не входят: зарплата стоит там
+        // отдельной строкой payrollTotal, и сложить обе значило бы посчитать
+        // ЗП дважды. Кассу/банк эти расходы уменьшают честно — там они деньги.
+        $employeeCategoryId = \App\Models\ExpenseCategory::findByCode(\App\Models\ExpenseCategory::EMPLOYEE)?->id;
         // Для селекта формы — только активные; разбивка же строится по ФАКТУ
         // расходов (иначе деактивация категории «теряла» бы её суммы из итога).
         $categories = \App\Models\ExpenseCategory::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
         $catNames = \App\Models\ExpenseCategory::whereIn('id', $byCategory->keys())->pluck('name', 'id');
         $categoryRows = $byCategory
-            ->map(fn ($sum, $id) => ['name' => $catNames[$id] ?? '—', 'sum' => (float) $sum])
+            ->map(fn ($sum, $id) => [
+                'name' => $catNames[$id] ?? '—',
+                'sum' => (float) $sum,
+                // Строка видна в разбивке, но помечена и не суммируется.
+                'in_payroll' => $employeeCategoryId !== null && (int) $id === (int) $employeeCategoryId,
+            ])
             ->sortByDesc('sum')->values();
         // Расходы по сделкам/цеху (закуп + прочие без категории).
         // Списание материала в сделку — НЕ трата денег: деньги ушли при закупе
@@ -214,7 +227,8 @@ class InvoiceController extends Controller
             $payrollTotal = 0.0;
             $taxRow = 0.0;
         }
-        $expensesTotal = round($categoryRows->sum('sum') + $dealExpenses + $payrollTotal + $taxRow, 2);
+        $expensesTotal = round($categoryRows->reject(fn ($r) => $r['in_payroll'])->sum('sum')
+            + $dealExpenses + $payrollTotal + $taxRow, 2);
 
         // Остатки касса/банк считает FinanceService::companyBalances (ниже):
         // касса — общая на холдинг, банк — по своей фирме.

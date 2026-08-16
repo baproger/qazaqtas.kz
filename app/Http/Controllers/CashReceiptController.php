@@ -30,6 +30,22 @@ class CashReceiptController extends Controller
 
         $data['company_id'] = CurrentCompany::id() ?: null;
         $data['created_by'] = $request->user()->id;
+
+        // Анти-дубль: та же сумма, дата и источник от того же человека младше
+        // минуты — это повторная отправка формы (двойной клик, «назад» в
+        // браузере), а не второе поступление.
+        $duplicate = CashReceipt::where('created_by', $data['created_by'])
+            ->where('amount', $data['amount'])
+            ->whereDate('date', $data['date'])
+            ->where('source', $data['source'])
+            ->where('created_at', '>=', now()->subMinute())
+            ->exists();
+        if ($duplicate) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'amount' => 'Похоже на повторную отправку — такое поступление уже создано минуту назад.',
+            ]);
+        }
+
         CashReceipt::create($data);
 
         return back()->with('success', 'Поступление добавлено.');
