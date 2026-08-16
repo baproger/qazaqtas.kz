@@ -27,6 +27,36 @@ class ExpenseController extends Controller
         }
     }
 
+    /**
+     * Кому виден чек.
+     *
+     * У расхода по сделке действует общее правило видимости расходов. У
+     * заявки компании его недостаточно: заявку подаёт цеховой или повар, у
+     * которых нет права `expense.view` вовсе, — иначе сотрудник не увидел бы
+     * даже собственный чек в «Моих расходах». Поэтому здесь явный список:
+     * автор, тот, кому выдали деньги, и руководство.
+     *
+     * Чужую заявку компании посторонний не откроет — это чек с суммой и
+     * назначением, личные данные другого человека.
+     */
+    private function assertCanSeeReceipt(User $user, Expense $expense): void
+    {
+        if ($expense->expenseable_id !== null) {
+            $this->authorize('view', $expense);
+            $this->assertOwnership($user, $expense->expenseable);
+
+            return;
+        }
+
+        abort_unless(
+            $user->hasAnyRole(['admin', 'director', 'financist'])
+                || $expense->responsible_user_id === $user->id
+                || $expense->employee_id === $user->id,
+            403,
+            'Этот чек виден автору заявки и бухгалтерии.'
+        );
+    }
+
     private function resolve(?string $type, ?int $id): ?Model
     {
         if (! $id) {
@@ -258,6 +288,14 @@ class ExpenseController extends Controller
 
     public function update(ExpenseRequest $request, Expense $expense): RedirectResponse
     {
+        // Подтверждённый бухгалтером расход заморожен для автора: чек
+        // приложен, деньги ушли. Иначе запрет на удаление обходился бы
+        // правкой суммы на 1 ₸.
+        abort_if(
+            $expense->confirmed_by !== null && ! $request->user()->hasAnyRole(['admin', 'financist']),
+            403,
+            'Расход подтверждён бухгалтером — изменить его может только бухгалтер.'
+        );
         $this->authorize('update', $expense);
         $this->assertOwnership($request->user(), $expense->expenseable);
 
@@ -300,8 +338,7 @@ class ExpenseController extends Controller
 
     public function receipt(Expense $expense): StreamedResponse
     {
-        $this->authorize('view', $expense);
-        $this->assertOwnership(request()->user(), $expense->expenseable);
+        $this->assertCanSeeReceipt(request()->user(), $expense);
 
         abort_unless($expense->file_path && Storage::disk('local')->exists($expense->file_path), 404);
 
@@ -317,6 +354,11 @@ class ExpenseController extends Controller
 
     public function destroy(Expense $expense): RedirectResponse
     {
+        abort_unless(
+            request()->user()->hasAnyRole(['admin', 'financist']),
+            403,
+            'Расходы удаляет бухгалтер или админ — удаление двигает деньги и склад.'
+        );
         $this->authorize('delete', $expense);
         $this->assertOwnership(request()->user(), $expense->expenseable);
 

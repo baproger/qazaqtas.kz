@@ -65,6 +65,9 @@ class RolePermissionSeeder extends Seeder
             'project.viewAny', 'project.view',
             'task.viewAny', 'task.view', 'task.update',
             'payroll.view',
+            // Заявка «Расход компании» — счёт бухгалтеру на оплату. Право
+            // только на создание: подтверждает и удаляет бухгалтер.
+            'expense.create',
         ]);
 
         // Должности компании (юрист/повар/технолог/снабженец) — права уровня
@@ -75,6 +78,8 @@ class RolePermissionSeeder extends Seeder
                 'project.viewAny', 'project.view',
                 'task.viewAny', 'task.view', 'task.update',
                 'payroll.view',
+                // Заявку на расход компании подаёт любой сотрудник.
+                'expense.create',
             ];
             // Технолог и снабженец подтверждают гейт-этапы («Замер и расчёт»,
             // «Закуп сырья») — им нужен просмотр сделок.
@@ -99,6 +104,13 @@ class RolePermissionSeeder extends Seeder
         // department.viewAny намеренно НЕ выдаётся менеджеру: страница «Отделы»
         // видна только admin / director / financist.
         $abilities[] = 'payroll.view';
+
+        // Удалять расходы — только бухгалтер и админ. Менеджер ошибся в
+        // материальном списании — просит бухгалтера удалить (остаток
+        // вернётся на склад) и заводит заново. Правило продублировано в
+        // ExpensePolicy: оно должно держаться, даже если права поменяют
+        // через админку.
+        $abilities = array_values(array_diff($abilities, ['expense.delete']));
 
         return $abilities;
     }

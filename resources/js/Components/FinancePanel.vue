@@ -299,7 +299,10 @@ const delExpense = async (e) => { if (await confirmDialog({ title: tr('Удал�
                             <button v-if="canConfirm && e.status !== 'confirmed' && confirmFor !== e.id"
                                 class="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors duration-150 hover:bg-emerald-700"
                                 @click="openConfirm(e)">{{ $e('✓ Подтвердить') }}</button>
-                            <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-rose-600" :title="$e('Удалить')" @click="delExpense(e)">
+                            <!-- Удаляет расходы только бухгалтер: удаление
+                                 двигает деньги и склад. Менеджеру кнопку не
+                                 показываем — сервер всё равно откажет. -->
+                            <button v-if="canConfirm" class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-rose-600" :title="$e('Удалить')" @click="delExpense(e)">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
                             </button>
                         </div>

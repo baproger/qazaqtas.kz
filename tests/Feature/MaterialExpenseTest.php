@@ -70,6 +70,13 @@ class MaterialExpenseTest extends TestCase
         $this->assertSame(0, Expense::count());
     }
 
+    /**
+     * Удаление списания возвращает остаток на склад.
+     *
+     * Удаляет БУХГАЛТЕР: расходы удаляет только он (удаление двигает деньги
+     * и склад). Менеджер, ошибившийся в количестве, просит бухгалтера
+     * удалить запись и заводит списание заново — проверяем и это.
+     */
     public function test_deleting_material_expense_restores_stock(): void
     {
         $this->actingAs($this->manager)->post(route('expenses.store'), [
@@ -79,7 +86,18 @@ class MaterialExpenseTest extends TestCase
         ]);
         $this->assertEquals(12.0, (float) $this->material->fresh()->quantity);
 
-        $this->actingAs($this->manager)->delete(route('expenses.destroy', Expense::first()->id))->assertRedirect();
+        $expenseId = Expense::first()->id;
+
+        $this->actingAs($this->manager)->delete(route('expenses.destroy', $expenseId))->assertForbidden();
+        $this->assertEquals(12.0, (float) $this->material->fresh()->quantity, 'Отказ не должен трогать остаток.');
+
+        // Бухгалтера привязываем к той же фирме: изоляция компаний закрывает
+        // чужие расходы даже финансисту.
+        $accountant = \App\Models\User::factory()->create();
+        $accountant->assignRole('financist');
+        $accountant->companies()->attach(Company::where('code', 'QT')->value('id'));
+
+        $this->actingAs($accountant)->delete(route('expenses.destroy', $expenseId))->assertRedirect();
         $this->assertEquals(20.0, (float) $this->material->fresh()->quantity);
     }
 
