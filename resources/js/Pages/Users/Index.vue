@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import Avatar from '@/Components/Avatar.vue';
@@ -50,22 +50,17 @@ const daysToBirthday = (u) => {
     return Math.round((next - today) / 86400000);
 };
 
-// Стаж: «в компании с 03.2024 · 1 г. 4 мес.»
-const tenure = (u) => {
+// «с 12.06.2026» под именем: дата приёма. Стажем (`tenure`) пользуется
+// карточка сотрудника; в таблице нужна короткая дата.
+const hiredSince = (u) => {
     if (!u.hired_at) return null;
-    const from = new Date(u.hired_at);
-    const now = new Date();
-    let months = (now.getFullYear() - from.getFullYear()) * 12 + now.getMonth() - from.getMonth();
-    if (now.getDate() < from.getDate()) months--;
-    months = Math.max(0, months);
-    const y = Math.floor(months / 12);
-    const m = months % 12;
-    const parts = [];
-    if (y) parts.push(`${y} г.`);
-    if (m || !y) parts.push(`${m} мес.`);
-    const since = `${String(from.getMonth() + 1).padStart(2, '0')}.${from.getFullYear()}`;
-    return `с ${since} · ${parts.join(' ')}`;
+    const d = new Date(u.hired_at);
+
+    return `с ${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
 };
+
+// Себя отключать нельзя — кнопку не показываем.
+const currentUserId = computed(() => usePage().props.auth.user?.id);
 
 // --- Фильтры (всё на клиенте — мгновенно, без запросов) ---
 const search = ref('');
@@ -95,17 +90,6 @@ const deptChips = computed(() => {
         .filter((c) => c.count > 0);
     if (counts[0]) chips.push({ id: 0, name: tr('Без отдела'), count: counts[0] });
     return chips;
-});
-
-// Секции: отделы по алфавиту, «Без отдела» — в конце.
-const groups = computed(() => {
-    const map = new Map();
-    visibleUsers.value.forEach((u) => {
-        const key = u.department_id ?? 0;
-        if (!map.has(key)) map.set(key, { id: key, name: u.department?.name ?? tr('Без отдела'), users: [] });
-        map.get(key).users.push(u);
-    });
-    return [...map.values()].sort((a, b) => (a.id === 0) - (b.id === 0) || a.name.localeCompare(b.name, 'ru'));
 });
 
 const stats = computed(() => ({
@@ -219,57 +203,81 @@ const deactivate = async (u) => {
             </label>
         </div>
 
-        <!-- Секции по отделам -->
-        <div v-for="g in groups" :key="g.id" class="mb-7">
-            <div class="mb-2.5 flex items-center gap-2">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ g.name }}</h3>
-                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">{{ g.users.length }}</span>
-                <div class="h-px flex-1 bg-slate-200"></div>
-            </div>
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <div v-for="u in g.users" :key="u.id"
-                    class="group cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-indigo-200 hover:shadow-md"
-                    :class="{ 'opacity-60': !u.is_active }"
-                    @click="router.visit(route('users.show', u.id))">
-                    <div class="flex items-start gap-3">
-                        <Avatar :name="u.name" :src="u.avatar" :size="44" />
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-1.5">
-                                <span v-if="headIds.has(u.id)" :title="$e('Руководитель отдела')">⭐</span>
-                                <p class="truncate font-semibold text-slate-900">{{ u.name }}</p>
-                                <span v-if="!u.is_active" class="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{{ $e('Отключён') }}</span>
+        <!-- Таблица сотрудников: одна строка — один человек.
+             Отделы раньше были секциями с карточками; на десятке сотрудников
+             карточки занимали три экрана, и сравнить людей глазами было
+             нельзя. Отдел остался колонкой и фильтром-чипом выше. -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                    <tr>
+                        <th class="px-6 py-3">{{ $e('Пользователь') }}</th>
+                        <th class="px-4 py-3">{{ $e('Email') }}</th>
+                        <th class="px-4 py-3">{{ $e('Роль') }}</th>
+                        <th class="px-4 py-3">{{ $e('Филиал') }}</th>
+                        <th class="px-4 py-3">{{ $e('Отдел') }}</th>
+                        <th class="px-4 py-3">{{ $e('Статус') }}</th>
+                        <th v-if="can.manage" class="px-4 py-3 text-right">{{ $e('Действия') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <tr v-for="u in visibleUsers" :key="u.id"
+                        class="group cursor-pointer transition-colors duration-150 hover:bg-slate-50/70"
+                        :class="{ 'opacity-60': !u.is_active }"
+                        @click="router.visit(route('users.show', u.id))">
+                        <td class="px-6 py-3">
+                            <div class="flex items-center gap-3">
+                                <Avatar :name="u.name" :src="u.avatar" :size="40" />
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <span v-if="headIds.has(u.id)" :title="$e('Руководитель отдела')">⭐</span>
+                                        <span class="truncate font-semibold text-slate-900">{{ u.name }}</span>
+                                        <span v-if="daysToBirthday(u) === 0" class="rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold text-pink-600">{{ $e('🎂 сегодня!') }}</span>
+                                        <span v-else-if="daysToBirthday(u) !== null && daysToBirthday(u) <= 7" class="rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold text-pink-600">{{ $e('🎂 через') }} {{ daysToBirthday(u) }} {{ $e('дн.') }}</span>
+                                    </div>
+                                    <div class="text-xs text-slate-400">{{ hiredSince(u) ?? '—' }}</div>
+                                </div>
                             </div>
-                            <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                                <span class="inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1"
-                                    :class="roleColors[u.role] ?? roleColors.employee">
-                                    {{ roleLabels[u.role] ?? u.role ?? '—' }}
-                                </span>
-                                <span v-if="daysToBirthday(u) === 0" class="rounded-full bg-pink-50 px-2 py-0.5 text-[11px] font-semibold text-pink-600 ring-1 ring-pink-200">{{ $e('🎂 сегодня!') }}</span>
-                                <span v-else-if="daysToBirthday(u) !== null && daysToBirthday(u) <= 7" class="rounded-full bg-pink-50 px-2 py-0.5 text-[11px] font-semibold text-pink-600 ring-1 ring-pink-200">{{ $e('🎂 через') }} {{ daysToBirthday(u) }} {{ $e('дн.') }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-3 space-y-1 text-sm">
-                        <a :href="`mailto:${u.email}`" class="block truncate text-slate-500 hover:text-indigo-600" @click.stop>✉️ {{ u.email }}</a>
-                        <a v-if="u.phone" :href="`tel:${u.phone}`" class="block text-slate-500 hover:text-indigo-600" @click.stop>📞 {{ u.phone }}</a>
-                        <p v-if="tenure(u)" class="text-xs text-slate-400">{{ $e('🗓 в компании') }} {{ tenure(u) }}</p>
-                        <p v-if="u.workshops?.length" class="text-xs text-slate-400">🏭 {{ u.workshops.join(' + ') }}</p>
-                    </div>
-                    <div class="mt-3 flex items-center justify-between gap-2">
-                        <div class="flex flex-wrap gap-1">
-                            <span v-for="cid in u.company_ids" :key="cid" class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
-                                {{ companyNames[cid] }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <a :href="`mailto:${u.email}`" class="text-slate-500 transition-colors hover:text-indigo-600" @click.stop>{{ u.email }}</a>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ring-1"
+                                :class="roleColors[u.role] ?? roleColors.employee">{{ roleLabels[u.role] ?? u.role ?? '—' }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <!-- Филиал = цех, к которому у сотрудника есть доступ.
+                                 Пусто — доступны все (руководство). -->
+                            <span v-if="u.workshops?.length" class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700">
+                                <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>{{ u.workshops.join(' · ') }}
                             </span>
-                        </div>
-                        <div v-if="can.manage" class="flex shrink-0 items-center gap-2 text-xs opacity-0 transition group-hover:opacity-100">
-                            <button class="font-semibold text-indigo-600 hover:underline" @click.stop="openEdit(u)">{{ $e('Изменить') }}</button>
-                            <button v-if="u.is_active" class="font-semibold text-red-500 hover:underline" @click.stop="deactivate(u)">{{ $e('Откл.') }}</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                            <span v-else class="text-slate-300">—</span>
+                        </td>
+                        <td class="px-4 py-3 text-slate-500">{{ u.department?.name ?? '—' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                                :class="u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'">
+                                <span class="h-1.5 w-1.5 rounded-full" :class="u.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+                                {{ u.is_active ? $e('Активен') : $e('Отключён') }}
+                            </span>
+                        </td>
+                        <td v-if="can.manage" class="px-4 py-3">
+                            <div class="flex items-center justify-end gap-2">
+                                <button class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors duration-150 hover:bg-emerald-100"
+                                    @click.stop="openEdit(u)">✏️ {{ $e('Изменить') }}</button>
+                                <!-- Себя не отключают: иначе можно закрыть себе вход. -->
+                                <button v-if="u.is_active && u.id !== currentUserId"
+                                    class="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors duration-150 hover:bg-rose-100"
+                                    @click.stop="deactivate(u)">🗑 {{ $e('Удалить') }}</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-        <div v-if="!groups.length" class="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-14 text-center text-slate-400">
+
+        <div v-if="!visibleUsers.length" class="mt-3 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-14 text-center text-slate-400">
             {{ $e('Никого не нашли — измените поиск или фильтр') }}
         </div>
 
