@@ -257,11 +257,30 @@ class PayrollService
      */
     public function bonusByUserForMonth(int $userId, string $month): float
     {
+        return $this->bonusByUsersForMonth([$userId], $month)[$userId] ?? 0.0;
+    }
+
+    /**
+     * То же самое сразу для НЕСКОЛЬКИХ сотрудников — ведомость ЗП строит
+     * плитку и колонку месяца по всем строкам, и звать метод в цикле значило
+     * бы три запроса на каждого. Формула тут не своя: она одна на оба метода,
+     * ниже по коду.
+     *
+     * @param  array<int, int>|\Illuminate\Support\Collection<int, int>  $userIds
+     * @return array<int, float>  бонус по id сотрудника
+     */
+    public function bonusByUsersForMonth($userIds, string $month): array
+    {
+        $userIds = collect($userIds)->map(fn ($id) => (int) $id)->unique()->values();
+        if ($userIds->isEmpty()) {
+            return [];
+        }
+
         $start = \Illuminate\Support\Carbon::createFromFormat('Y-m', $month)->startOfMonth();
         $end = (clone $start)->endOfMonth();
 
         $deals = Deal::won()->forCurrentCompany()
-            ->where('responsible_user_id', $userId)
+            ->whereIn('responsible_user_id', $userIds)
             ->where(fn ($w) => $w
                 ->where(fn ($c) => $c->whereNotNull('contract_date')
                     ->whereBetween('contract_date', [$start->toDateString(), $end->toDateString()]))
@@ -270,7 +289,7 @@ class PayrollService
             ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id']);
 
         if ($deals->isEmpty()) {
-            return 0.0;
+            return [];
         }
 
         $ids = $deals->pluck('id');
@@ -287,7 +306,7 @@ class PayrollService
             ->whereIn('expenseable_id', $ids)
             ->groupBy('expenseable_id')->selectRaw('expenseable_id as did, SUM(amount) as v')->pluck('v', 'did');
 
-        $bonus = $deals->sum(function ($d) use ($paidByDeal, $expenseByDeal, $taxRate) {
+        $perDeal = fn ($d) => (function ($d) use ($paidByDeal, $expenseByDeal, $taxRate) {
             $budget = (float) $d->budget;
             $expense = (float) ($expenseByDeal[$d->id] ?? 0);
             $tax = round($budget * $taxRate, 2);
@@ -303,9 +322,12 @@ class PayrollService
                 $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
                 self::userBonusPercent($d->responsible_user_id),
             ) * $payRatio;
-        });
+        })($d);
 
-        return round($bonus, 2);
+        return $deals->groupBy('responsible_user_id')
+            ->map(fn ($rows) => round((float) $rows->sum($perDeal), 2))
+            ->mapWithKeys(fn ($sum, $uid) => [(int) $uid => $sum])
+            ->all();
     }
 
     public function perUser(bool $includeAllActive = false): Collection

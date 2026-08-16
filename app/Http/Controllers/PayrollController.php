@@ -62,6 +62,10 @@ class PayrollController extends Controller
         $deptNorms = $deptByUser->pluck('department_id')->filter()->unique()
             ->mapWithKeys(fn ($id) => [$id => Setting::get('work_norm_'.$month.':dept:'.$id)])
             ->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
+        // Бонус за ВЫБРАННЫЙ месяц — одним запросом на всю ведомость (тем же
+        // методом, что считает удержание долгов; второго расчёта нет).
+        $bonusMonth = $payroll->bonusByUsersForMonth($rows->pluck('uid'), $month);
+
         // Долги: считаем план удержания только тем, у кого долг открыт —
         // бонус за месяц запрашивается по одному сотруднику, и звать его на
         // всю ведомость было бы дорого.
@@ -70,7 +74,7 @@ class PayrollController extends Controller
             ->pluck('user_id')->unique();
         $debtPlans = $debtUsers->mapWithKeys(fn ($uid) => [$uid => $debtService->planFor((int) $uid, $month)]);
 
-        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans) {
+        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans, $bonusMonth) {
             $r['dealsList'] = array_values(($breakdown->get($r['uid']) ?? collect())->all());
             $adj = $adjustments->get($r['uid']) ?? collect();
             $deductions = round((float) $adj->whereIn('type', PayrollAdjustment::DEDUCTIONS)->sum('amount'), 2);
@@ -92,6 +96,11 @@ class PayrollController extends Controller
             $r['hours'] = $hours;
             $r['hourly_rate'] = $norm > 0 ? round($rate, 2) : null;
             $r['base'] = $hours !== null && $norm > 0 ? round($hours * $rate, 2) : $r['salary'];
+            // Бонус выбранного месяца — справочная цифра рядом с бонусом «за всё
+            // время». В «К выплате» он НЕ входит: решение владельца BAIA,
+            // перенесено как есть — бонус выплачивается по факту закрытия
+            // сделок, а не помесячно.
+            $r['bonus_month'] = (float) ($bonusMonth[$r['uid']] ?? 0);
             // К выплате = почасовая база (или оклад) + бонус − удержания + премии.
             $r['payout'] = round($r['base'] + $r['bonus'], 2);
             // Долг — ОТДЕЛЬНОЕ поле расчёта, а не корректировка: аванс и долг
@@ -124,6 +133,7 @@ class PayrollController extends Controller
                 'payout' => (float) $rows->sum('payout'),
                 'deductions' => (float) $rows->sum('deductions'),
                 'additions' => (float) $rows->sum('additions'),
+                'bonus_month' => (float) $rows->sum('bonus_month'),
                 'debt_charge' => (float) $rows->sum('debt_charge'),
                 'final' => (float) $rows->sum('final'),
                 'company' => (float) $rows->sum('company'),
