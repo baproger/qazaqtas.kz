@@ -366,8 +366,12 @@ class DealController extends Controller
             'Галочку ставит только '.(self::GATE_ROLE_LABELS[$gateRole] ?? $gateRole).' или админ.'
         );
 
+        // Галочка гейта закрывает задачу — и гасит её уведомления у исполнителей.
         $deal->tasks()->where('title', 'like', $gateStage->gate_task_title.'%')->where('status', '!=', 'done')
-            ->get()->each(fn ($t) => $t->update(['status' => 'done', 'completed_at' => now()]));
+            ->get()->each(function ($t) {
+                $t->update(['status' => 'done', 'completed_at' => now()]);
+                \App\Support\NotificationResolver::taskDone($t);
+            });
 
         return back()->with('success', 'Галочка поставлена — сделку можно переводить дальше.');
     }

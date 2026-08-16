@@ -148,7 +148,21 @@ const openNotification = (n) => {
     markRead(n.id);
     if (n.data?.url) router.get(n.data.url);
 };
-const markAllRead = () => router.patch(route('notifications.readAll'), {}, { preserveScroll: true });
+const markAllRead = (silent = false) => router.patch(route('notifications.readAll'), { silent },
+    { preserveScroll: true, preserveState: silent });
+
+// Колокольчик как в мессенджерах: список открыли — через 1,5 с непрочитанное
+// считается прочитанным. Раньше красный счётчик держался, пока каждое
+// уведомление не откроют руками, и его переставали замечать. Кнопка
+// «Открыть» на конкретном уведомлении работает независимо.
+let bellTimer = null;
+const bellClicked = () => {
+    clearTimeout(bellTimer);
+    bellTimer = setTimeout(() => {
+        if (notifications.value.unread > 0) markAllRead(true);
+    }, 1500);
+};
+onUnmounted(() => clearTimeout(bellTimer));
 const setLocale = (l) => router.patch(route('locale.update'), { locale: l }, { preserveScroll: true });
 const i18n = useLocale();
 // Иконка/цвет уведомления по смыслу заголовка (просрочка, назначение, этап).
@@ -326,7 +340,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
 
                     <Dropdown align="right" width="80">
                         <template #trigger>
-                            <button class="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100">
+                            <button class="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100" @click="bellClicked">
                                 <span class="text-lg">🔔</span>
                                 <span v-if="notifications.unread > 0" class="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">{{ notifications.unread > 9 ? '9+' : notifications.unread }}</span>
                             </button>

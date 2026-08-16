@@ -16,6 +16,7 @@ class FinanceRecordDeleted extends Notification
     public function __construct(
         public string $what,    // что удалено (описание с суммой)
         public string $byName,  // кто удалил
+        public ?string $url = null, // куда вести: сделка/заказ хозяина записи
     ) {}
 
     /** @return array<int, string> */
@@ -31,7 +32,8 @@ class FinanceRecordDeleted extends Notification
             'type' => 'finance_deleted',
             'title' => 'Удалена финансовая запись',
             'message' => $this->what.' — удалил(а) '.$this->byName,
-            'url' => route('finance.index', absolute: false),
+            // Старые уведомления без ссылки остаются как есть — это нормально.
+            'url' => $this->url ?: route('finance.index', absolute: false),
         ];
     }
 }

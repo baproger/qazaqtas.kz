@@ -14,10 +14,16 @@ class NotificationController extends Controller
         return back();
     }
 
+    /**
+     * `silent` — автоотметка при открытии колокольчика: сообщение об успехе
+     * тут не нужно, человек ничего не нажимал осознанно.
+     */
     public function markAllRead(Request $request): RedirectResponse
     {
         $request->user()->unreadNotifications->markAsRead();
 
-        return back()->with('success', 'Все уведомления прочитаны.');
+        return $request->boolean('silent')
+            ? back()
+            : back()->with('success', 'Все уведомления прочитаны.');
     }
 }

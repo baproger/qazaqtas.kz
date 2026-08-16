@@ -335,10 +335,17 @@ class ExpenseController extends Controller
             'confirmed_at' => now(),
         ]);
 
+        // Работа сделана — «ждёт проверки» гаснет у ВСЕХ бухгалтеров само.
+        // Гасим ДО новых уведомлений: иначе прочитанными стали бы и они.
+        \App\Support\NotificationResolver::expenseHandled($expense->id);
+
         // Закрываем задачи «Подтвердить расход #N …» у бухгалтеров.
         \App\Models\Task::where('title', 'like', 'Подтвердить расход #'.$expense->id.' %')
             ->where('status', '!=', 'done')
-            ->get()->each(fn ($t) => $t->update(['status' => 'done', 'completed_at' => now()]));
+            ->get()->each(function ($t) {
+                $t->update(['status' => 'done', 'completed_at' => now()]);
+                \App\Support\NotificationResolver::taskDone($t);
+            });
 
         // Автору — уведомление о подтверждении. У заявки компании оно ведёт
         // в «Мои расходы»: там сотрудник видит статус и способ оплаты, а
@@ -444,6 +451,9 @@ class ExpenseController extends Controller
             ]);
         }
 
+        // Расхода больше нет — уведомления о нём тоже не нужны.
+        \App\Support\NotificationResolver::expenseHandled($expense->id);
+
         // Удаление расхода по материалам возвращает количество на склад.
         \Illuminate\Support\Facades\DB::transaction(function () use ($expense) {
             if ($expense->material_id && $expense->qty && $expense->material) {
@@ -452,7 +462,11 @@ class ExpenseController extends Controller
             $expense->delete();
         });
 
-        \App\Support\FinanceAudit::notifyDeleted('Расход на '.number_format((float) $expense->amount, 0, '.', ' ').' ₸'.($expense->description ? ' («'.\Illuminate\Support\Str::limit($expense->description, 60).'»)' : ''));
+        \App\Support\FinanceAudit::notifyDeleted(
+            'Расход на '.number_format((float) $expense->amount, 0, '.', ' ').' ₸'.($expense->description ? ' («'.\Illuminate\Support\Str::limit($expense->description, 60).'»)' : ''),
+            $expense->expenseable_type,
+            $expense->expenseable_id,
+        );
 
         return back()->with('success', $expense->material_id ? 'Расход удалён — остаток возвращён на склад.' : 'Расход удалён.');
     }
