@@ -24,9 +24,14 @@ class ProjectService
         }
 
         $companyId = $deal->company_id ? (int) $deal->company_id : null;
-        $returnStage = \App\Models\DealStage::logisticsStage($companyId) ?? \App\Models\DealStage::actStage($companyId);
+        // Куда вернуть сделку, решает системный тип «Логистика (возврат из
+        // цеха)». Подставлять этап по позиции нельзя: в воронке без логистики
+        // им оказывалась «Оплата успешно», и заказ из цеха закрывал сделку
+        // успешной — с деньгами, ЗП и аналитикой.
+        $returnStage = \App\Models\DealStage::logisticsStage($companyId)
+            ?? \App\Models\DealStage::actStage($companyId);
         if (! $returnStage) {
-            return [false, 'Не найден этап «Логистика».'];
+            return [false, 'Не задан этап возврата из цеха: назначьте системный тип «Логистика (возврат из цеха)» нужному этапу в Настройки → Этапы.'];
         }
 
         $deal->update(['deal_stage_id' => $returnStage->id, 'status' => 'active', 'closed_at' => null]);

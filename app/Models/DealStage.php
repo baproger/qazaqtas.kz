@@ -67,10 +67,18 @@ class DealStage extends Model
         return self::funnel($companyId)->firstWhere('stage_type', $type);
     }
 
-    /** «Акт утверждение» — с него сделку ведёт бухгалтер. */
+    /**
+     * «Акт утверждение» — с него сделку ведёт бухгалтер.
+     *
+     * Нет этапа с этим типом — значит в воронке его нет, и правила акта не
+     * действуют. Раньше здесь подставлялся «второй с конца», и в воронке без
+     * акта им оказывалась «Оплата успешно»: правило «на оплату — только с
+     * предыдущего этапа» начинало требовать, чтобы сделка УЖЕ была на оплате,
+     * и закрыть её успешной становилось нельзя.
+     */
     public static function actStage(?int $companyId = null): ?self
     {
-        return self::ofType('act', $companyId) ?? self::funnel($companyId)->slice(-2, 1)->first();
+        return self::ofType('act', $companyId);
     }
 
     /** «ЭСФ» — после акта. Может отсутствовать в воронке. */
@@ -84,8 +92,12 @@ class DealStage extends Model
     {
         $active = self::funnel($companyId);
 
+        // is_won — тоже признак из админки, поэтому он остаётся запасным.
+        // А вот «последний этап воронки» запасным быть не может: последним
+        // обычно стоит «Закрытый» / «База», и сделки становились бы там
+        // успешными сами собой.
         return $active->firstWhere('stage_type', 'payment_won')
-            ?? $active->firstWhere('is_won', true) ?? $active->last();
+            ?? $active->firstWhere('is_won', true);
     }
 
     /** «Логистика» — сюда цех возвращает сделку после производства. */
@@ -94,10 +106,15 @@ class DealStage extends Model
         return self::ofType('logistics', $companyId);
     }
 
-    /** Этап-ворота в цех — на нём доступна кнопка «В цех». */
+    /**
+     * Этап-ворота в цех — на нём доступна кнопка «В цех».
+     *
+     * Без назначенного типа возвращается null: «третий с конца» ставил кнопку
+     * на случайный этап воронки, и убрать её через админку было нельзя.
+     */
     public static function workshopGateStage(?int $companyId = null): ?self
     {
-        return self::ofType('shop_gate', $companyId) ?? self::funnel($companyId)->slice(-3, 1)->first();
+        return self::ofType('shop_gate', $companyId);
     }
 
     /** Настроен ли на этапе гейт (задача на входе, блокирующая выход). */
