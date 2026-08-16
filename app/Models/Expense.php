@@ -15,7 +15,7 @@ class Expense extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'expenseable_type', 'expenseable_id', 'company_id', 'category_id', 'material_id', 'qty', 'amount', 'date',
+        'expenseable_type', 'expenseable_id', 'company_id', 'category_id', 'material_id', 'qty', 'amount', 'sale_amount', 'date',
         'responsible_user_id', 'description', 'file_path', 'type', 'status',
         'payment_method', 'confirmed_by', 'confirmed_at',
         // Кому выдали (аванс/долг) — ставит только сервер, из формы не приходит.
@@ -30,6 +30,7 @@ class Expense extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'sale_amount' => 'decimal:2',
         'qty' => 'decimal:2',
         'date' => 'date',
         'confirmed_at' => 'datetime',

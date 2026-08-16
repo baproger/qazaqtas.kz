@@ -15,7 +15,7 @@ import { useE } from '@/composables/useTranslations';
 const tr = useE();
 
 const props = defineProps({
-    materials: Array, writeoffs: Object, receipts: Array, units: Array,
+    materials: Array, writeoffs: Object, receipts: Array, units: Array, defaultMarkup: { type: Number, default: 0 },
     canManage: Boolean, allMode: Boolean, companyName: String, filters: Object,
 });
 
@@ -32,7 +32,11 @@ const showModal = ref(false);
 const mode = ref('existing'); // existing | new
 // payment — откуда заплатили поставщику: нал / банк / «не списывать».
 // Оплата закупа и есть момент ухода денег, поэтому она в форме прихода.
-const form = useForm({ material_id: '', name: '', unit: tr('штук'), quantity: '', price: '', date: '', note: '', payment: 'none' });
+const form = useForm({ material_id: '', name: '', unit: tr('штук'), quantity: '', price: '', markup_pct: '', date: '', note: '', payment: 'none' });
+// Цена продажи = закуп + наценка. Наценка позиции пустая — действует общая
+// из настроек; от разницы «продажа − закуп» считается бонус менеджера.
+const markupNow = computed(() => (form.markup_pct === '' ? props.defaultMarkup : Number(form.markup_pct)));
+const salePriceNow = computed(() => Number(form.price || 0) * (1 + markupNow.value / 100));
 const openReceipt = () => {
     form.reset(); form.unit = tr('штук'); form.payment = 'none';
     mode.value = props.materials.length ? 'existing' : 'new';
@@ -48,12 +52,13 @@ const submit = () => {
 // Правка позиции склада: название, единица, закупочная цена, заметка.
 // Остаток здесь не меняем — он считается приходами и списаниями.
 const editingMaterial = ref(null);
-const materialForm = useForm({ name: '', unit: '', price: '', note: '' });
+const materialForm = useForm({ name: '', unit: '', price: '', markup_pct: '', note: '' });
 const startEditMaterial = (m) => {
     editingMaterial.value = m.id;
     materialForm.clearErrors();
     Object.assign(materialForm, {
-        name: m.name, unit: m.unit ?? '', price: m.price ?? '', note: m.note ?? '',
+        name: m.name, unit: m.unit ?? '', price: m.price ?? '',
+        markup_pct: m.markup_pct ?? '', note: m.note ?? '',
     });
 };
 const saveMaterial = (m) => materialForm.put(route('warehouse.materials.update', m.id), {
@@ -174,7 +179,13 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                         <td v-if="allMode" class="px-4 py-3 text-slate-500">{{ m.company?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-slate-500">{{ m.unit }}</td>
                         <td class="px-4 py-3 text-right tabular-nums text-slate-600">
-                            <template v-if="Number(m.price) > 0">{{ money(m.price) }}</template>
+                            <template v-if="Number(m.price) > 0">
+                                {{ money(m.price) }}
+                                <!-- Цена продажи и наценка: от них считается бонус менеджера. -->
+                                <div v-if="Number(m.markup_effective) > 0" class="text-[11px] text-emerald-600">
+                                    {{ $e('продажа') }} {{ money(m.sale_price) }} <span class="text-slate-400">+{{ m.markup_effective }}%</span>
+                                </div>
+                            </template>
                             <span v-else class="text-slate-300">—</span>
                         </td>
                         <td class="px-4 py-3 text-right tabular-nums text-emerald-600">
@@ -225,6 +236,10 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                                 <label>
                                     <span class="text-xs text-slate-500">{{ $e('Цена закупки') }}</span>
                                     <TextInput v-model="materialForm.price" type="number" min="0" step="any" class="mt-1 w-32" />
+                                </label>
+                                <label>
+                                    <span class="text-xs text-slate-500">{{ $e('Наценка, %') }}</span>
+                                    <TextInput v-model="materialForm.markup_pct" type="number" min="0" step="0.01" class="mt-1 w-24" :placeholder="String(defaultMarkup)" />
                                 </label>
                                 <label class="flex-1 min-w-40">
                                     <span class="text-xs text-slate-500">{{ $e('Заметка') }}</span>
@@ -361,6 +376,14 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                     </div>
                     <!-- Оплата закупа: деньги уходят здесь, а не при списании
                          материала в сделку. -->
+                    <div class="col-span-2 sm:col-span-1">
+                        <InputLabel :value="$e('Наценка, %')" />
+                        <TextInput v-model="form.markup_pct" type="number" min="0" step="0.01" class="mt-1 w-full" :placeholder="String(defaultMarkup)" />
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            {{ $e('Пусто — общая наценка') }} {{ defaultMarkup }}%.
+                            <template v-if="form.price">{{ $e('Цена продажи:') }} <b class="tabular-nums text-slate-600">{{ money(salePriceNow) }}</b></template>
+                        </p>
+                    </div>
                     <div class="col-span-2">
                         <InputLabel :value="$e('Оплата закупа')" />
                         <div class="mt-1 flex flex-wrap gap-2">

@@ -82,7 +82,9 @@ class ReportController extends Controller
             ->whereIn('deal_id', $deals->pluck('id'))
             ->get()->keyBy('deal_id');
 
-        $rows = $deals->map(function ($d) use ($paidByDeal, $expByDeal, $workshopByDeal, $taxRate) {
+        $materials = PayrollService::materialsByDeal($deals->pluck('id'));
+
+        $rows = $deals->map(function ($d) use ($paidByDeal, $expByDeal, $workshopByDeal, $materials, $taxRate) {
             $budget = (float) $d->budget;
             $material = (float) ($expByDeal[$d->id]->material ?? 0);
             $delivery = (float) ($expByDeal[$d->id]->delivery ?? 0);
@@ -94,9 +96,10 @@ class ReportController extends Controller
             $partner = PayrollService::partnerSum($budget, $d->partner_pct);
             $remainder = round($budget - $tax - $expense - $partner, 2);
             // Та же формула бонуса, что на карточке сделки и в ЗП (с ручным % финансиста).
-            $bonus = PayrollService::marginBonus($budget, $remainder, $tax,
+            $bonus = PayrollService::dealBonus($budget, $remainder, $tax, $expense,
                 $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
-                PayrollService::userBonusPercent($d->responsible_user_id));
+                PayrollService::userBonusPercent($d->responsible_user_id),
+                (float) ($materials['sale'][$d->id] ?? 0), (float) ($materials['cost'][$d->id] ?? 0))['total'];
             $company = round($remainder - $bonus, 2);
 
             return [

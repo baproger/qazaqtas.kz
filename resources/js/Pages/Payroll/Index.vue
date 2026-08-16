@@ -506,6 +506,8 @@ const delAdj = async (a) => {
                                                     <td class="px-3 py-2 text-right tabular-nums text-rose-600">{{ money(d.tax) }}</td>
                                                     <td class="px-3 py-2 text-right font-semibold tabular-nums text-emerald-600">
                                                         {{ money(d.bonus) }}
+                                                        <!-- Сколько из бонуса пришло за товар со склада (процент от наценки). -->
+                                                        <div v-if="d.bonus_warehouse > 0" class="text-[10px] font-normal text-slate-400">{{ $e('в т.ч. за товар') }} {{ money(d.bonus_warehouse) }}</div>
                                                         <span v-if="d.bonus_manual" class="ml-1 rounded bg-amber-100 px-1 py-px text-[9px] font-bold uppercase text-amber-700" :title="$e('Ручной % финансиста: ') + d.bonus_rate + '%'">{{ d.bonus_rate }}%</span>
                                                     </td>
                                                 </tr>

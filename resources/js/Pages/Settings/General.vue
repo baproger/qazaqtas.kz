@@ -13,6 +13,8 @@ const form = useForm({
     configurator_enabled: !!props.settings.configurator_enabled,
     default_locale: props.settings.default_locale,
     tax_percent: props.settings.tax_percent,
+    material_markup_percent: props.settings.material_markup_percent,
+    warehouse_bonus_percent: props.settings.warehouse_bonus_percent,
 });
 const save = () => form.put(route('settings.update'), { preserveScroll: true });
 </script>
@@ -56,6 +58,19 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
                 <div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-500 ring-1 ring-slate-200">
                     <div class="font-semibold text-slate-600">{{ $e('Бонус сотрудника — по марже сделки (фиксировано):') }}</div>
                     {{ $e('до 10% — нет · 11–15% — 5% · 16–20% — 7% · 21–30% — 10% · 31–40% — 13% · от 41% — 15% от остатка') }}
+                </div>
+            </div>
+            <!-- Товар со склада: наценка и бонус менеджера от неё -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <InputLabel :value="$e('Наценка на товар со склада, %')" />
+                    <TextInput v-model="form.material_markup_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
+                    <p class="mt-1 text-xs text-slate-400">{{ $e('Общая: цена продажи = закуп + наценка. У позиции склада может быть своя.') }}</p>
+                </div>
+                <div>
+                    <InputLabel :value="$e('Бонус менеджера от наценки, %')" />
+                    <TextInput v-model="form.warehouse_bonus_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
+                    <p class="mt-1 text-xs text-slate-400">{{ $e('За проданный товар со склада: процент от наценки (продажа − закуп). Ступенчатый бонус по этой части не начисляется.') }}</p>
                 </div>
             </div>
             <label class="flex items-center gap-2 text-sm">

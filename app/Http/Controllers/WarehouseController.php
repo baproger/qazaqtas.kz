@@ -79,6 +79,9 @@ class WarehouseController extends Controller
             $sum = (float) ($received[$m->id]->total ?? 0);
             $m->received_sum = $sum > 0 ? $sum : round($m->received_qty * (float) ($m->price ?? 0), 2);
             $m->written_off_qty = (float) ($writtenOff[$m->id] ?? 0);
+            // Цена продажи считается сервером: наценка позиции или общая.
+            $m->markup_effective = $m->markup();
+            $m->sale_price = $m->salePrice();
         });
 
         $receipts = MaterialReceipt::whereIn('material_id', $ids)
@@ -91,6 +94,8 @@ class WarehouseController extends Controller
             'receipts' => $receipts,
             'units' => Deal::UNITS,
             'canManage' => $this->canManage($request),
+            // Общая наценка из настроек — подсказка в форме («как у всех»).
+            'defaultMarkup' => (float) \App\Models\Setting::get('material_markup_percent', 0),
             'allMode' => $allMode,
             'companyName' => $allMode ? 'Все компании' : (CurrentCompany::get()?->name ?? ''),
             'filters' => ['from' => $from, 'to' => $to],
@@ -108,6 +113,9 @@ class WarehouseController extends Controller
             'unit' => ['nullable', Rule::in(Deal::UNITS)],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'price' => ['nullable', 'numeric', 'min:0'],
+            // Наценка позиции: по ней считается цена продажи и бонус менеджера
+            // за проданный товар. Пусто — общая наценка из настроек.
+            'markup_pct' => ['nullable', 'numeric', 'min:0', 'max:1000'],
             'date' => ['nullable', 'date'],
             'note' => ['nullable', 'string', 'max:255'],
             // Откуда заплатили поставщику: нал / банк / «не списывать»
@@ -150,6 +158,9 @@ class WarehouseController extends Controller
             // расход по материалам в сделке (количество × цена).
             if (isset($data['price'])) {
                 $material->update(['price' => $data['price']]);
+            }
+            if (array_key_exists('markup_pct', $data) && $data['markup_pct'] !== null) {
+                $material->update(['markup_pct' => $data['markup_pct']]);
             }
         });
 
@@ -289,6 +300,7 @@ class WarehouseController extends Controller
                 Rule::unique('materials', 'name')->where('company_id', $material->company_id)->ignore($material->id)],
             'unit' => ['nullable', Rule::in(Deal::UNITS)],
             'price' => ['nullable', 'numeric', 'min:0'],
+            'markup_pct' => ['nullable', 'numeric', 'min:0', 'max:1000'],
             'note' => ['nullable', 'string', 'max:255'],
         ], [
             'name.unique' => 'Позиция с таким названием на складе уже есть.',
@@ -298,6 +310,8 @@ class WarehouseController extends Controller
             'name' => trim($data['name']),
             'unit' => $data['unit'] ?? $material->unit,
             'price' => $data['price'] ?? $material->price,
+            // Пустая наценка = «как у всех»: позиция возвращается к общей.
+            'markup_pct' => $data['markup_pct'] ?? null,
             'note' => $data['note'] ?? null,
         ]);
 

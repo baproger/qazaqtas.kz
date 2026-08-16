@@ -18,6 +18,10 @@ class SettingsController extends Controller
         // bonus_percent удалён: бонус теперь ступенчатый от маржи сделки
         // (PayrollService::bonusRateForMargin), настройкой не регулируется.
         'tax_percent' => 3,
+        // Наценка на товар со склада по умолчанию (у позиции может быть своя)
+        // и ставка бонуса менеджера от наценки проданного товара.
+        'material_markup_percent' => 0,
+        'warehouse_bonus_percent' => 2,
         // 3D-конфигуратор двора на сайте: пока выключен, включается здесь.
         'configurator_enabled' => false,
     ];
@@ -49,6 +53,10 @@ class SettingsController extends Controller
             'auto_create_project' => ['boolean'],
             'default_locale' => ['required', \Illuminate\Validation\Rule::in(\App\Support\Locales::ALL)],
             'tax_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+            // sometimes: форму настроек присылают и без этих полей (старые
+            // экраны, тесты) — отсутствие поля не должно ронять сохранение.
+            'material_markup_percent' => ['sometimes', 'numeric', 'min:0', 'max:1000'],
+            'warehouse_bonus_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'configurator_enabled' => ['boolean'],
         ]);
 

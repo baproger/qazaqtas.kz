@@ -181,6 +181,12 @@ class ExpenseController extends Controller
                 ]);
             }
             $data['amount'] = (float) $data['amount'];
+            // Цена продажи фиксируется ЗДЕСЬ, а не считается потом: наценку на
+            // складе поменяют, а бонус по уже проданному товару меняться не
+            // должен — иначе прошлые ведомости ЗП начнут «плыть».
+            $data['sale_amount'] = $material->markup() > 0
+                ? round((float) $data['qty'] * $material->salePrice(), 2)
+                : null;
 
             // Внутреннее списание — подтверждение бухгалтера не требуется.
             $data['status'] = 'confirmed';

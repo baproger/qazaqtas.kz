@@ -249,7 +249,14 @@ class DealController extends Controller
         // Личный % ответственного менеджера — та же ставка, что и в ЗП.
         $dealUserPercent = \App\Services\PayrollService::userBonusPercent($deal->responsible_user_id);
         $dealBonusRate = \App\Services\PayrollService::effectiveBonusRate($dealMarginPct, $bonusOverride, $dealUserPercent);
-        $dealBonus = \App\Services\PayrollService::marginBonus($dealBudget, $dealRemainder, $dealTax, $bonusOverride, $dealUserPercent);
+        // Товар со склада оплачивается менеджеру процентом от наценки, а не
+        // ступенью, — единая точка расчёта на все страницы.
+        $dealMaterials = \App\Services\PayrollService::materialsByDeal([$deal->id]);
+        $dealBonusParts = \App\Services\PayrollService::dealBonus(
+            $dealBudget, $dealRemainder, $dealTax, $confirmedExpense, $bonusOverride, $dealUserPercent,
+            (float) ($dealMaterials['sale'][$deal->id] ?? 0), (float) ($dealMaterials['cost'][$deal->id] ?? 0),
+        );
+        $dealBonus = $dealBonusParts['total'];
 
         // Галочка-гейт текущего этапа (настраивается в Настройки → Этапы).
         $gateStage = self::gateStage($deal);

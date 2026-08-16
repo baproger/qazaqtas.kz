@@ -136,15 +136,19 @@ class FinanceService
             ->whereIn('expenseable_id', $deals->pluck('id'))
             ->groupBy('expenseable_id')->selectRaw('expenseable_id d, sum(amount) s')->pluck('s', 'd');
 
-        return round($deals->sum(function ($d) use ($expByDeal, $taxRate) {
+        $materials = \App\Services\PayrollService::materialsByDeal($deals->pluck('id'));
+
+        return round($deals->sum(function ($d) use ($expByDeal, $materials, $taxRate) {
             $budget = (float) $d->budget;
             $tax = round($budget * $taxRate, 2);
-            $remainder = round($budget - $tax - (float) ($expByDeal[$d->id] ?? 0)
+            $expense = (float) ($expByDeal[$d->id] ?? 0);
+            $remainder = round($budget - $tax - $expense
                 - \App\Services\PayrollService::partnerSum($budget, $d->partner_pct), 2);
 
-            return $remainder - \App\Services\PayrollService::marginBonus($budget, $remainder, $tax,
+            return $remainder - \App\Services\PayrollService::dealBonus($budget, $remainder, $tax, $expense,
                 $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
-                \App\Services\PayrollService::userBonusPercent($d->responsible_user_id));
+                \App\Services\PayrollService::userBonusPercent($d->responsible_user_id),
+                (float) ($materials['sale'][$d->id] ?? 0), (float) ($materials['cost'][$d->id] ?? 0))['total'];
         }), 2);
     }
 
