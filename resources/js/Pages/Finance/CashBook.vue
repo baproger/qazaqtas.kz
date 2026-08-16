@@ -1,8 +1,9 @@
 <script setup>
 import { computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import { formatDate, money } from '@/utils/format';
+import FinanceTile from '@/Components/FinanceTile.vue';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
@@ -42,10 +43,7 @@ const printPage = () => window.print();
 
 <template>
     <Head :title="$e('Касса')" />
-    <AppLayout>
-        <template #header>{{ $e('Касса') }}</template>
-
-        <div class="mx-auto max-w-7xl">
+    <FinanceLayout :title="$e('Касса')" :subtitle="$e('кассовая книга за день: начало → операции → конец')" width="max-w-7xl">
             <!-- Панель дня: печать снимает её вместе с меню (см. print-стили). -->
             <div class="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-1">
@@ -72,24 +70,12 @@ const printPage = () => window.print();
                 <div class="text-sm">{{ formatDate(date) }} · {{ modes.find((m) => m.key === mode)?.label }}</div>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div class="text-2xl font-bold tabular-nums text-slate-800">{{ money(totals.opening) }}</div>
-                    <div class="mt-1 text-xs text-slate-400">{{ $e('Остаток на начало дня') }}</div>
-                    <div v-if="cashCorrection" class="mt-0.5 text-[11px] text-amber-500">{{ $e('· скорректировано') }}</div>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div class="text-2xl font-bold tabular-nums text-emerald-600">+{{ money(totals.income) }}</div>
-                    <div class="mt-1 text-xs text-slate-400">{{ $e('Приход за день') }}</div>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div class="text-2xl font-bold tabular-nums text-rose-600">−{{ money(totals.outcome) }}</div>
-                    <div class="mt-1 text-xs text-slate-400">{{ $e('Расход за день') }}</div>
-                </div>
-                <div class="rounded-2xl p-5 shadow-md" style="background-color: #1A3B5C">
-                    <div class="text-2xl font-bold tabular-nums" :class="totals.closing >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ money(totals.closing) }}</div>
-                    <div class="mt-1 text-xs text-white/60">{{ $e('Доступно сейчас') }}</div>
-                </div>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <FinanceTile :label="$e('Остаток на начало дня')" :value="money(totals.opening)"
+                    :hint="cashCorrection ? $e('· скорректировано') : ''" />
+                <FinanceTile tone="good" :label="$e('Приход за день')" :value="'+' + money(totals.income)" />
+                <FinanceTile tone="bad" :label="$e('Расход за день')" :value="'−' + money(totals.outcome)" />
+                <FinanceTile tone="dark" :label="$e('Доступно сейчас')" :value="money(totals.closing)" />
             </div>
 
             <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -152,8 +138,7 @@ const printPage = () => window.print();
                 <div>{{ $e('Кассир') }} ______________________</div>
                 <div>{{ $e('Бухгалтер') }} ______________________</div>
             </div>
-        </div>
-    </AppLayout>
+    </FinanceLayout>
 </template>
 
 <style>

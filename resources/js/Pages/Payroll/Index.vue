@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import Avatar from '@/Components/Avatar.vue';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -166,18 +166,15 @@ const delAdj = async (a) => {
 
 <template>
     <Head :title="$e('Зарплата')" />
-    <AppLayout>
-        <template #header>
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <span>{{ $t('page.payroll', 'Зарплата и бонусы') }}</span>
-                <div class="flex items-center gap-2">
-                    <label class="flex items-center gap-1 text-xs font-normal text-slate-400">{{ $e('месяц') }}
-                        <input v-model="monthSel" @change="setMonth" type="month" class="rounded-lg border-slate-200 py-1.5 text-xs font-normal shadow-sm" />
-                    </label>
-                    <button v-if="canManage" @click="openAdj()"
-                        class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700">{{ $e('+ Корректировка') }}</button>
-                </div>
-            </div>
+    <FinanceLayout :title="$e('Зарплата')" :subtitle="$e('ведомость за месяц: оклад, бонус, удержания, долги')">
+        <!-- Фильтр месяца и кнопка — в общем месте каркаса, как на других
+             денежных страницах. -->
+        <template #actions>
+            <label class="flex items-center gap-1 text-xs font-normal text-slate-400">{{ $e('месяц') }}
+                <input v-model="monthSel" @change="setMonth" type="month" class="rounded-lg border-slate-200 py-1.5 text-xs font-normal shadow-sm" />
+            </label>
+            <button v-if="canManage" @click="openAdj()"
+                class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700">{{ $e('+ Корректировка') }}</button>
         </template>
 
         <!-- Manager: слева выплата/корректировки/сделки, справа — шкала бонусов -->
@@ -641,5 +638,5 @@ const delAdj = async (a) => {
                 </div>
             </div>
         </Modal>
-    </AppLayout>
+    </FinanceLayout>
 </template>

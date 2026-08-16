@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -47,10 +47,7 @@ const allTime = computed(() => Number(props.totals.cash || 0) + Number(props.tot
 
 <template>
     <Head :title="$e('Поступления денег')" />
-    <AppLayout>
-        <template #header>{{ $e('Поступления денег') }}</template>
-
-        <div class="mx-auto max-w-7xl">
+    <FinanceLayout :title="$e('Поступления денег')" :subtitle="$e('нал и банк: откуда пришли деньги')" width="max-w-7xl">
         <!-- ================= Поступления денег ================= -->
         <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4">
@@ -136,7 +133,6 @@ const allTime = computed(() => Number(props.totals.cash || 0) + Number(props.tot
                     </div>
                 </div>
             </div>
-        </div>
 
         </div>
 
@@ -180,5 +176,5 @@ const allTime = computed(() => Number(props.totals.cash || 0) + Number(props.tot
                 </div>
             </div>
         </Modal>
-    </AppLayout>
+    </FinanceLayout>
 </template>

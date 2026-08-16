@@ -1,8 +1,9 @@
 <script setup>
 import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import FinanceTile from '@/Components/FinanceTile.vue';
 import { formatDate, money } from '@/utils/format';
 import { useE } from '@/composables/useTranslations';
 
@@ -46,34 +47,19 @@ const submit = () => form.post(route('expenses.store'), {
 
 <template>
     <Head :title="$e('Мои расходы')" />
-    <AppLayout>
-        <template #header>{{ $e('Мои расходы') }}</template>
+    <FinanceLayout :title="$e('Мои расходы')" :subtitle="$e('мои заявки на расход и мои выплаты')" width="max-w-5xl">
+        <template #actions>
+            <span class="text-xs text-slate-400">{{ $e('Месяц:') }}</span>
+            <input v-model="month" @change="applyMonth" type="month"
+                class="rounded-lg border-slate-300 py-1.5 text-sm shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
+            <button @click="openForm"
+                class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('+ Заявка') }}</button>
+        </template>
 
-        <div class="mx-auto max-w-5xl">
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-400">{{ $e('Месяц:') }}</span>
-                    <input v-model="month" @change="applyMonth" type="month"
-                        class="rounded-lg border-slate-300 py-1.5 text-sm shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
-                </div>
-                <button @click="openForm"
-                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('+ Заявка') }}</button>
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-3">
-                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-                    <div class="text-2xl font-bold tabular-nums text-amber-700">{{ money(totals.pending) }}</div>
-                    <div class="mt-1 text-xs text-amber-600">{{ $e('Ждёт бухгалтера') }}</div>
-                    <div class="mt-0.5 text-[11px] text-amber-500">{{ $e('за всё время — заявки не теряются') }}</div>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div class="text-2xl font-bold tabular-nums text-emerald-600">{{ money(totals.paid) }}</div>
-                    <div class="mt-1 text-xs text-slate-400">{{ $e('Оплачено за месяц') }}</div>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div class="text-2xl font-bold tabular-nums text-slate-800">{{ money(totals.payouts) }}</div>
-                    <div class="mt-1 text-xs text-slate-400">{{ $e('Мне выдано за месяц') }}</div>
-                </div>
+            <div class="grid gap-3 sm:grid-cols-3">
+                <FinanceTile tone="warn" :label="$e('Ждёт бухгалтера')" :value="money(totals.pending)" :hint="$e('за всё время — заявки не теряются')" />
+                <FinanceTile tone="good" :label="$e('Оплачено за месяц')" :value="money(totals.paid)" />
+                <FinanceTile :label="$e('Мне выдано за месяц')" :value="money(totals.payouts)" />
             </div>
 
             <!-- ================= Мои заявки ================= -->
@@ -141,7 +127,6 @@ const submit = () => form.post(route('expenses.store'), {
                     </table>
                 </div>
             </div>
-        </div>
 
         <!-- ================= Новая заявка ================= -->
         <Modal :show="showForm" @close="showForm = false" max-width="lg">
@@ -187,5 +172,5 @@ const submit = () => form.post(route('expenses.store'), {
                 </div>
             </div>
         </Modal>
-    </AppLayout>
+    </FinanceLayout>
 </template>

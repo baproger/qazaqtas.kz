@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import DdsPanel from '@/Components/DdsPanel.vue';
 import CompanyExpenseModal from '@/Components/CompanyExpenseModal.vue';
 import ExpenseCategoriesModal from '@/Components/ExpenseCategoriesModal.vue';
@@ -42,8 +42,7 @@ const monthLabel = computed(() => monthActive.value
 
 <template>
     <Head :title="$e('Финансы')" />
-    <AppLayout>
-        <template #header>{{ $t('page.finance', 'Финансы') }}</template>
+    <FinanceLayout :title="$e('Финансы — обзор')" :subtitle="$e('картина целиком; записи ведутся в разделах')">
 
         <!-- ================= ДДС: ручная сводка финансиста (первый блок) ================= -->
         <div class="mb-4">
@@ -171,5 +170,5 @@ const monthLabel = computed(() => monthActive.value
         <CompanyExpenseModal :show="showCompanyExpense" :categories="categories"
             :cash="Number(summary.cash)" :bank="Number(summary.bank)" @close="showCompanyExpense = false" />
         <ExpenseCategoriesModal :show="showCats" :categories="categories" @close="showCats = false" />
-    </AppLayout>
+    </FinanceLayout>
 </template>

@@ -1,8 +1,9 @@
 <script setup>
 import { ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
+import FinanceTile from '@/Components/FinanceTile.vue';
 import { formatDate } from '@/utils/format';
 import { useE } from '@/composables/useTranslations';
 
@@ -29,25 +30,13 @@ const resetInvFilters = () => { invSearch.value = ''; applyInvFilters(); };
 
 <template>
     <Head :title="$e('Счета')" />
-    <AppLayout>
-        <template #header>{{ $e('Счета') }}</template>
-
-        <div class="mx-auto max-w-7xl">
+    <FinanceLayout :title="$e('Счета')" :subtitle="$e('выставлено, оплачено, остаток к оплате')" width="max-w-7xl">
             <!-- Плитки: выставлено / оплачено / остаток к оплате -->
-            <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Выставлено') }}</div>
-                    <div class="mt-1 text-xl font-bold tabular-nums text-slate-800">{{ money(invoiceTotals.invoiced) }}</div>
-                </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Оплачено') }}</div>
-                    <div class="mt-1 text-xl font-bold tabular-nums text-emerald-600">{{ money(invoiceTotals.paid) }}</div>
-                </div>
-                <div class="rounded-2xl border p-5 shadow-sm" :class="invoiceTotals.debt > 0 ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'">
-                    <div class="text-[11px] uppercase tracking-wide" :class="invoiceTotals.debt > 0 ? 'text-rose-500' : 'text-slate-400'">{{ $e('Осталось оплатить') }}</div>
-                    <div class="mt-1 text-xl font-bold tabular-nums" :class="invoiceTotals.debt > 0 ? 'text-rose-600' : 'text-slate-800'">{{ money(invoiceTotals.debt) }}</div>
-                    <div class="mt-0.5 text-[11px] text-slate-400">{{ $e('отменённые счета сюда не входят') }}</div>
-                </div>
+            <div class="mb-4 grid gap-3 sm:grid-cols-3">
+                <FinanceTile :label="$e('Выставлено')" :value="money(invoiceTotals.invoiced)" />
+                <FinanceTile tone="good" :label="$e('Оплачено')" :value="money(invoiceTotals.paid)" />
+                <FinanceTile :tone="invoiceTotals.debt > 0 ? 'bad' : 'default'" :label="$e('Осталось оплатить')"
+                    :value="money(invoiceTotals.debt)" :hint="$e('отменённые счета сюда не входят')" />
             </div>
 
             <div class="overflow-hidden rounded-2xl bg-white shadow-sm border border-slate-200">
@@ -127,6 +116,5 @@ const resetInvFilters = () => { invSearch.value = ''; applyInvFilters(); };
                     </div>
                 </div>
             </div>
-        </div>
-    </AppLayout>
+    </FinanceLayout>
 </template>

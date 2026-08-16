@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -53,10 +53,7 @@ const delDebt = async (d) => {
 
 <template>
     <Head :title="$e('Задолженности')" />
-    <AppLayout>
-        <template #header>{{ $e('Задолженности') }}</template>
-
-        <div class="mx-auto max-w-5xl">
+    <FinanceLayout :title="$e('Задолженности')" :subtitle="$e('кто нам должен: счета сделок и записи вручную')" width="max-w-5xl">
         <!-- ================= Задолженности (аккордеоны) =================
              Кредиторка скрыта по просьбе владельца (24.07.2026) — вернуть:
              добавить обратно строку { type: 'payable', … } в массив. -->
@@ -106,7 +103,6 @@ const delDebt = async (d) => {
                         class="mt-2 w-full rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-500 transition hover:border-indigo-400 hover:text-indigo-600">{{ $e('+ Добавить запись') }}</button>
                 </div>
             </div>
-        </div>
 
         </div>
 
@@ -142,5 +138,5 @@ const delDebt = async (d) => {
                 </div>
             </div>
         </Modal>
-    </AppLayout>
+    </FinanceLayout>
 </template>

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import Pagination from '@/Components/Pagination.vue';
 import CompanyExpenseModal from '@/Components/CompanyExpenseModal.vue';
@@ -94,10 +94,7 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
 
 <template>
     <Head :title="$e('Расходы')" />
-    <AppLayout>
-        <template #header>{{ $e('Расходы') }}</template>
-
-        <div class="mx-auto max-w-7xl">
+    <FinanceLayout :title="$e('Расходы')" :subtitle="$e('очередь на проверку и оплаченные за месяц')" width="max-w-7xl">
             <!-- ================= Очередь на проверку ================= -->
             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-3">
@@ -233,7 +230,6 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                 </div>
                 <div v-if="paid.data.length" class="border-t border-slate-100 p-4"><Pagination :links="paid.links" /></div>
             </div>
-        </div>
 
         <!-- ================= Подтверждение оплаты ================= -->
         <Modal :show="!!confirming" @close="confirming = null" max-width="lg">
@@ -308,7 +304,7 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
         <CompanyExpenseModal :show="showCompanyExpense" :categories="categories"
             :cash="Number(balances.cash)" :bank="Number(balances.bank)" @close="showCompanyExpense = false" />
         <ExpenseCategoriesModal :show="showCats" :categories="categories" @close="showCats = false" />
-    </AppLayout>
+    </FinanceLayout>
 </template>
 
 <style scoped>
