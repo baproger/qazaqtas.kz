@@ -240,6 +240,74 @@ class PayrollService
      * Per-manager totals. The bonus is computed PER DEAL (each deal falls into its
      * own margin tier) and then summed — not one rate over the aggregate.
      */
+    /**
+     * Бонус сотрудника за КОНКРЕТНЫЙ месяц.
+     *
+     * Месяц определяется по дате ДОГОВОРА, а без неё — по дате создания:
+     * ровно то же правило, что у фильтра «Месяц» на Финансах и в Сводном
+     * отчёте (ReportController). Разойдись они — ведомость перестала бы
+     * сходиться с отчётом, и спорить пришлось бы о том, какая страница врёт.
+     *
+     * Формула не своя: тот же marginBonus (ручной % по сделке и личный %
+     * сотрудника работают сами) × доля фактической оплаты. Это единственная
+     * точка расчёта «бонус за месяц» — её зовут и погашение долгов, и плитка
+     * в ведомости; второй раз нигде не пересчитывать.
+     *
+     * @param  string  $month  формат YYYY-MM
+     */
+    public function bonusByUserForMonth(int $userId, string $month): float
+    {
+        $start = \Illuminate\Support\Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+        $end = (clone $start)->endOfMonth();
+
+        $deals = Deal::won()->forCurrentCompany()
+            ->where('responsible_user_id', $userId)
+            ->where(fn ($w) => $w
+                ->where(fn ($c) => $c->whereNotNull('contract_date')
+                    ->whereBetween('contract_date', [$start->toDateString(), $end->toDateString()]))
+                ->orWhere(fn ($c) => $c->whereNull('contract_date')
+                    ->whereBetween('created_at', [$start->startOfDay(), $end->endOfDay()])))
+            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id']);
+
+        if ($deals->isEmpty()) {
+            return 0.0;
+        }
+
+        $ids = $deals->pluck('id');
+        $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
+
+        $paidByDeal = Payment::query()
+            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+            ->where('invoices.invoiceable_type', 'deal')
+            ->whereIn('invoices.invoiceable_id', $ids)
+            ->groupBy('invoices.invoiceable_id')
+            ->selectRaw('invoices.invoiceable_id as did, SUM(payments.amount) as v')->pluck('v', 'did');
+
+        $expenseByDeal = Expense::where('status', 'confirmed')->where('expenseable_type', 'deal')
+            ->whereIn('expenseable_id', $ids)
+            ->groupBy('expenseable_id')->selectRaw('expenseable_id as did, SUM(amount) as v')->pluck('v', 'did');
+
+        $bonus = $deals->sum(function ($d) use ($paidByDeal, $expenseByDeal, $taxRate) {
+            $budget = (float) $d->budget;
+            $expense = (float) ($expenseByDeal[$d->id] ?? 0);
+            $tax = round($budget * $taxRate, 2);
+            $remainder = round($budget - $tax - $expense - self::partnerSum($budget, $d->partner_pct), 2);
+
+            $paid = (float) ($paidByDeal[$d->id] ?? 0);
+            $payRatio = $budget > 0 ? min(1, $paid / $budget) : 0;
+
+            return self::marginBonus(
+                $budget,
+                $remainder,
+                $tax,
+                $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
+                self::userBonusPercent($d->responsible_user_id),
+            ) * $payRatio;
+        });
+
+        return round($bonus, 2);
+    }
+
     public function perUser(bool $includeAllActive = false): Collection
     {
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
