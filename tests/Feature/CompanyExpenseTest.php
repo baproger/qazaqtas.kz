@@ -55,14 +55,24 @@ class CompanyExpenseTest extends TestCase
         ])->assertSessionHasErrors('category_id');
     }
 
-    public function test_manager_cannot_create_company_expense(): void
+    /**
+     * Раньше расход компании вводил только бухгалтер. Теперь заявку подаёт
+     * любой сотрудник — это счёт бухгалтеру на оплату, — но она ЖДЁТ его
+     * проверки и кассу не двигает: откуда платить, решает бухгалтер.
+     */
+    public function test_manager_submits_company_expense_as_a_request(): void
     {
         $mgr = $this->user('manager');
         $cat = ExpenseCategory::firstOrCreate(['name' => 'Бензин / ГСМ'], ['is_active' => true]);
 
         $this->actingAs($mgr)->post(route('expenses.store'), [
             'category_id' => $cat->id, 'amount' => 1000, 'date' => now()->toDateString(),
-        ])->assertForbidden();
+        ])->assertSessionHasNoErrors();
+
+        $expense = \App\Models\Expense::latest('id')->firstOrFail();
+
+        $this->assertSame('pending', $expense->status);
+        $this->assertNull($expense->payment_method);
     }
 
     public function test_finance_page_shows_summary(): void

@@ -19,11 +19,19 @@ class ExpenseController extends Controller
     {
         // Изоляция фирм: расходы чужой компании недоступны никому,
         // кто к этой компании не привязан, — включая финансиста и директора.
+        // Расход КОМПАНИИ (аренда, канцтовары, ГСМ) к сделке не привязан —
+        // проверять «своя ли это сделка» тут нечего. Раньше проверка ниже
+        // всё равно срабатывала на пустой сущности и отдавала менеджеру 403
+        // на собственной заявке.
+        if ($entity === null) {
+            return;
+        }
+
         $companyId = $entity instanceof Project ? $entity->deal?->company_id : $entity?->company_id;
-        abort_unless($entity === null || $user->worksInCompany($companyId ? (int) $companyId : null), 403);
+        abort_unless($user->worksInCompany($companyId ? (int) $companyId : null), 403);
 
         if ($user->hasRole('manager') && ! $user->hasAnyRole(['admin', 'director', 'financist'])) {
-            abort_unless($entity && $entity->responsible_user_id === $user->id, 403);
+            abort_unless($entity->responsible_user_id === $user->id, 403);
         }
     }
 
@@ -108,7 +116,18 @@ class ExpenseController extends Controller
         // Расход КОМПАНИИ (без сделки): аренда/комуслуги/интернет/бензин и т.п.
         // Вводит только бухгалтер/админ, категория обязательна, склад — нельзя.
         if ($entity === null) {
-            abort_unless($request->user()->hasAnyRole(['admin', 'financist']), 403, 'Расход компании вводит бухгалтер или админ.');
+            // Заявку подаёт ЛЮБОЙ сотрудник — это счёт бухгалтеру на оплату.
+            // Он же решает, откуда платить, поэтому у заявки нет способа
+            // оплаты и она всегда ждёт проверки: иначе касса уменьшалась бы
+            // до того, как деньги реально ушли. Статус и способ ставим
+            // сервером — из формы они приходить не должны.
+            if (! $request->user()->hasAnyRole(['admin', 'financist'])) {
+                $data['status'] = 'pending';
+                $data['payment_method'] = null;
+                $data['confirmed_by'] = null;
+                $data['confirmed_at'] = null;
+            }
+
             if (empty($data['category_id'])) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'category_id' => 'Выберите категорию расхода (аренда, интернет, бензин…).',
@@ -208,6 +227,19 @@ class ExpenseController extends Controller
      */
     private function notifyAccountants(Expense $expense, ?Model $entity): void
     {
+        // Заявка компании не привязана к сделке: задачу вешать не на что, а
+        // ссылка ведёт на рабочее место бухгалтера, где заявки лежат
+        // очередью с открытыми чеками. Админ получает её наравне с
+        // финансистом — заявку оплачивает любой из них.
+        if ($entity === null) {
+            User::where('is_active', true)
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['admin', 'financist']))
+                ->get()
+                ->each(fn (User $u) => $u->notify(new \App\Notifications\CompanyExpenseSubmitted($expense)));
+
+            return;
+        }
+
         $title = 'Подтвердить расход #'.$expense->id.' — '.number_format((float) $expense->amount, 0, '.', ' ').' ₸'
             .($entity?->number ? ' ('.$entity->number.')' : '');
 
@@ -271,8 +303,12 @@ class ExpenseController extends Controller
             ->where('status', '!=', 'done')
             ->get()->each(fn ($t) => $t->update(['status' => 'done', 'completed_at' => now()]));
 
-        // Автору — уведомление о подтверждении.
-        $expense->responsible?->notify(new \App\Notifications\ExpenseConfirmed($expense));
+        // Автору — уведомление о подтверждении. У заявки компании оно ведёт
+        // в «Мои расходы»: там сотрудник видит статус и способ оплаты, а
+        // сделки, на которую могла бы вести обычная ссылка, у заявки нет.
+        $expense->responsible?->notify($expense->expenseable_id === null
+            ? new \App\Notifications\CompanyExpensePaid($expense)
+            : new \App\Notifications\ExpenseConfirmed($expense));
         $this->checkExpenseThreshold($expense->expenseable, (float) $expense->amount);
 
         // Остальным бухгалтерам — «расход уже подтверждён (Имя)», чтобы не
