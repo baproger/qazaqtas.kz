@@ -131,12 +131,7 @@ class InvoiceController extends Controller
         $companyId = \App\Support\CurrentCompany::id();
         // Скоуп расходов текущей фирмы: по сделке/заказу + расходы КОМПАНИИ
         // (аренда/интернет/бензин… — без сделки, по company_id).
-        $expScope = fn ($q) => $q->when($companyId, fn ($qq, $c) => $qq->where(fn ($w) => $w
-            ->where(fn ($d) => $d->where('expenseable_type', 'deal')
-                ->whereIn('expenseable_id', \App\Models\Deal::where('company_id', $c)->select('id')))
-            ->orWhere(fn ($p) => $p->where('expenseable_type', 'project')
-                ->whereIn('expenseable_id', \App\Models\Project::whereHas('deal', fn ($d) => $d->where('company_id', $c))->select('id')))
-            ->orWhere('company_id', $c)));
+        $expScope = fn ($q) => app(\App\Services\FinanceService::class)->scopeCompanyExpenses($q, $companyId ?: null);
 
         // Без периода — для таблиц «сегодня / прошлые» ниже.
         $expScopeBase = \App\Models\Expense::query()->tap($expScope);

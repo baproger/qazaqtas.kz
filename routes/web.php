@@ -150,6 +150,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('expenses/{expense}/confirm', [ExpenseController::class, 'confirm'])->name('expenses.confirm');
     Route::get('expenses/{expense}/receipt', [ExpenseController::class, 'receipt'])->name('expenses.receipt');
     Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
+    // «Расходы» — рабочее место бухгалтера: очередь на проверку + оплаченные.
+    Route::get('expenses-board', [\App\Http\Controllers\ExpensesBoardController::class, 'index'])->name('expensesBoard.index');
     // «Мои расходы» — личная страница сотрудника: свои заявки и свои выплаты.
     Route::get('my-expenses', [\App\Http\Controllers\MyExpensesController::class, 'index'])->name('myExpenses.index');
 

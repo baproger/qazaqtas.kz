@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Invoice;
 use App\Models\Payment;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -24,6 +25,27 @@ class FinanceService
             'cash' => $this->methodBalance(null, 'cash'),       // весь холдинг
             'bank' => $this->methodBalance($companyId, 'bank'), // своя фирма
         ];
+    }
+
+    /**
+     * Скоуп расходов фирмы: по сделке, по заказу цеха и расход КОМПАНИИ
+     * (аренда/интернет/бензин — без сделки, по company_id).
+     *
+     * Живёт здесь, а не копией в каждом контроллере: остатки, Финансы и
+     * рабочее место бухгалтера обязаны отбирать ОДНИ И ТЕ ЖЕ записи —
+     * разошедшийся скоуп означает страницы с разными цифрами.
+     *
+     * @param  Builder<\App\Models\Expense>  $query
+     * @return Builder<\App\Models\Expense>
+     */
+    public function scopeCompanyExpenses(Builder $query, ?int $companyId): Builder
+    {
+        return $query->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w
+            ->where(fn ($d) => $d->where('expenseable_type', 'deal')
+                ->whereIn('expenseable_id', \App\Models\Deal::where('company_id', $c)->select('id')))
+            ->orWhere(fn ($p) => $p->where('expenseable_type', 'project')
+                ->whereIn('expenseable_id', \App\Models\Project::whereHas('deal', fn ($d) => $d->where('company_id', $c))->select('id')))
+            ->orWhere('company_id', $c)));
     }
 
     /** Остаток по способу оплаты (cash|bank); $companyId null = без фильтра фирмы. */
@@ -48,13 +70,10 @@ class FinanceService
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
             ->where('method', $kind === 'cash' ? 'cash' : 'bank')->sum('amount');
 
-        $exp = \App\Models\Expense::query()->where('status', 'confirmed')
-            ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w
-                ->where(fn ($d) => $d->where('expenseable_type', 'deal')
-                    ->whereIn('expenseable_id', \App\Models\Deal::where('company_id', $c)->select('id')))
-                ->orWhere(fn ($p) => $p->where('expenseable_type', 'project')
-                    ->whereIn('expenseable_id', \App\Models\Project::whereHas('deal', fn ($d) => $d->where('company_id', $c))->select('id')))
-                ->orWhere('company_id', $c)));
+        $exp = $this->scopeCompanyExpenses(
+            \App\Models\Expense::query()->where('status', 'confirmed'),
+            $companyId,
+        );
         $expSum = (float) ($kind === 'cash'
             ? (clone $exp)->where('payment_method', 'cash')->sum('amount')
             : (clone $exp)->where('payment_method', '!=', 'cash')->whereNotNull('payment_method')->sum('amount'));
