@@ -15,6 +15,8 @@ const props = defineProps({
     dealStages: Array, projectStages: Array,
     companies: Array, selectedCompanyId: Number,
     stageTypes: Object, gateRoles: Object, missingTypes: Object,
+    stageTypeHints: { type: Object, default: () => ({}) },
+    typeOwners: { type: Object, default: () => ({}) },
 });
 
 // Готовая палитра — админ выбирает цвет в один клик, без возни с пипеткой.
@@ -51,7 +53,7 @@ const switchFunnel = (v) => {
 // Добавление
 const newForm = useForm({ kind: 'deal', name: '', color: '#6366F1', workshop: '' });
 const adding = ref(false);
-const startAdd = () => { adding.value = true; editing.value = null; newForm.reset(); newForm.kind = kind.value; newForm.color = '#6366F1'; newForm.workshop = isWorkshop.value ? activeWs.value : ''; };
+const startAdd = () => { adding.value = true; editing.value = null; editingType.value = ''; newForm.reset(); newForm.kind = kind.value; newForm.color = '#6366F1'; newForm.workshop = isWorkshop.value ? activeWs.value : ''; };
 const add = () => newForm
     .transform((d) => ({ ...d, kind: kind.value }))
     .post(route('stages.store', { company: funnel.value }), { preserveScroll: true, onSuccess: () => (adding.value = false) });
@@ -124,6 +126,9 @@ const onDrop = (index) => {
 
 // Редактор этапа: имя + цвет + (для сделок) тип и гейт / (для цеха) завершающий.
 const editing = ref(null);
+// Тип, который этап держал на момент открытия формы: его нужно оставить в
+// списке, иначе собственный тип этапа пропал бы из выбора.
+const editingType = ref('');
 const editForm = useForm({ name: '', color: '#6366F1', stage_type: '', gate_task_title: '', gate_task_role: 'financist', gate_task_days: '', is_completed: false, requires_document: false, workshop: '' });
 const startEdit = (stage) => {
     editing.value = stage.id;
@@ -132,6 +137,7 @@ const startEdit = (stage) => {
     editForm.name = stage.name;
     editForm.color = stage.color || '#6366F1';
     editForm.stage_type = stage.stage_type ?? '';
+    editingType.value = stage.stage_type ?? '';
     editForm.gate_task_title = stage.gate_task_title ?? '';
     editForm.gate_task_role = stage.gate_task_role ?? 'financist';
     editForm.gate_task_days = stage.gate_task_days ?? '';
@@ -176,6 +182,14 @@ const confirmRemove = (stage) => router.delete(route('stages.destroy', [kind.val
 });
 
 const typeBadge = (s) => s.stage_type ? (props.stageTypes[s.stage_type] ?? s.stage_type) : null;
+// Тип уникален в воронке. Занятый другим этапом выбрать нельзя, поэтому в
+// списке его нет — вместо неактивного пункта подписываем, кто его держит.
+const availableTypes = computed(() => Object.fromEntries(
+    Object.entries(props.stageTypes).filter(([t]) => !props.typeOwners[t] || t === editingType.value),
+));
+const takenTypes = computed(() => Object.entries(props.typeOwners)
+    .filter(([t]) => t !== editingType.value)
+    .map(([type, stage]) => ({ type, stage, label: props.stageTypes[type] ?? type })));
 const companyName = computed(() => props.companies.find((c) => c.id === funnel.value)?.name ?? '');
 </script>
 
@@ -337,9 +351,18 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                                 <InputLabel :value="$e('Системный тип (логика этапа)')" />
                                 <select v-model="editForm.stage_type" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400">
                                     <option value="">{{ $e('— обычный этап —') }}</option>
-                                    <option v-for="(label, t) in stageTypes" :key="t" :value="t">{{ label }}</option>
+                                    <option v-for="(label, t) in availableTypes" :key="t" :value="t">{{ label }}</option>
                                 </select>
                                 <div v-if="editForm.errors.stage_type" class="mt-1 text-xs text-red-600">{{ editForm.errors.stage_type }}</div>
+                                <!-- Что делает выбранный тип: владелец не должен угадывать. -->
+                                <p v-if="editForm.stage_type" class="mt-1 text-[11px] leading-snug text-slate-500">{{ stageTypeHints[editForm.stage_type] }}</p>
+                                <p v-else class="mt-1 text-[11px] leading-snug text-slate-400">{{ $e('Обычный этап: логики не несёт — название, цвет и порядок настраиваются здесь же.') }}</p>
+                                <!-- Занятые типы в списке не показываем: выбрать их всё равно
+                                     нельзя (тип уникален в воронке), поэтому подписываем, где они. -->
+                                <p v-if="takenTypes.length" class="mt-1 text-[11px] leading-snug text-slate-400">
+                                    {{ $e('Уже заняты:') }}
+                                    <span v-for="(t, i) in takenTypes" :key="t.type">{{ i ? ' · ' : '' }}{{ t.label }} — «{{ t.stage }}»</span>
+                                </p>
                             </div>
                         </div>
 

@@ -89,18 +89,18 @@ class StageTransitionService
             $postActIds = collect([$actStage?->id, $esfStage?->id, $wonStage?->id])->filter();
             if (! $accountant && $current && $postActIds->contains($current->id)) {
                 throw ValidationException::withMessages([
-                    'stage' => 'После «Акт утверждение» сделку двигает только бухгалтер или админ.',
+                    'stage' => 'После «'.$current->name.'» сделку двигает только бухгалтер или админ.',
                 ]);
             }
             if (! $accountant && $postActIds->contains($target->id) && (! $actStage || $target->id !== $actStage->id)) {
                 throw ValidationException::withMessages([
-                    'stage' => 'Этапы «ЭСФ» и «Оплата успешно» переводит только бухгалтер или админ.',
+                    'stage' => 'Этап «'.$target->name.'» переводит только бухгалтер или админ.',
                 ]);
             }
 
             if ($esfStage && $target->id === $esfStage->id && (! $current || ! $actStage || $current->id !== $actStage->id)) {
                 throw ValidationException::withMessages([
-                    'stage' => 'На «ЭСФ» можно перейти только с этапа «Акт утверждение».',
+                    'stage' => 'На «'.$esfStage->name.'» можно перейти только с этапа «'.($actStage?->name ?? 'Акт').'».',
                 ]);
             }
             // Порядок «Акт → ЭСФ → Оплата» проверяем ТОЛЬКО если такие этапы в

@@ -85,9 +85,16 @@ class StageController extends Controller
             'companies' => Company::orderBy('id')->get(['id', 'name']),
             'selectedCompanyId' => $companyId,
             'stageTypes' => DealStage::STAGE_TYPES,
+            'stageTypeHints' => DealStage::STAGE_TYPE_HINTS,
+            // Тип уникален в воронке: иначе система не знала бы, какой из двух
+            // этапов считать «Оплатой». Показываем, кто какой тип держит, —
+            // чтобы было понятно, куда идти освобождать.
+            'typeOwners' => $dealStages->whereNotNull('stage_type')
+                ->mapWithKeys(fn ($s) => [$s->stage_type => $s->name])->all(),
             'gateRoles' => ['financist' => 'Бухгалтер', 'designer' => 'Технолог', 'supplier' => 'Снабженец', 'manager' => 'Менеджер', 'director' => 'Директор', 'admin' => 'Админ'],
             // Обязательные типы: без payment_won не работает подсчёт денег/won.
-            'missingTypes' => collect(['payment_won' => 'Оплата успешно (won)', 'shop_gate' => 'Закуп / отправка в цех', 'logistics' => 'Логистика (возврат из цеха)'])
+            'missingTypes' => collect(['payment_won', 'shop_gate', 'logistics'])
+                ->mapWithKeys(fn ($type) => [$type => DealStage::STAGE_TYPES[$type]])
                 ->reject(fn ($label, $type) => $dealStages->contains('stage_type', $type))
                 ->all(),
         ]);
