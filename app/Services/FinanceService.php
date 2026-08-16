@@ -48,18 +48,42 @@ class FinanceService
             ->orWhere('company_id', $c)));
     }
 
-    /** Остаток по способу оплаты (cash|bank); $companyId null = без фильтра фирмы. */
-    private function methodBalance(?int $companyId, string $kind): float
+    /**
+     * Скоуп счетов фирмы (счета заказов цеха идут через сделку заказа).
+     *
+     * @param  Builder<Invoice>  $query
+     * @return Builder<Invoice>
+     */
+    public function scopeCompanyInvoices(Builder $query, ?int $companyId): Builder
     {
-        $invIds = Invoice::query()
-            ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w
-                ->where(fn ($d) => $d->where('invoiceable_type', 'deal')
-                    ->whereIn('invoiceable_id', \App\Models\Deal::where('company_id', $c)->select('id')))
-                ->orWhere(fn ($p) => $p->where('invoiceable_type', 'project')
-                    ->whereIn('invoiceable_id', \App\Models\Project::whereHas('deal', fn ($d) => $d->where('company_id', $c))->select('id')))))
-            ->select('id');
+        return $query->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w
+            ->where(fn ($d) => $d->where('invoiceable_type', 'deal')
+                ->whereIn('invoiceable_id', \App\Models\Deal::where('company_id', $c)->select('id')))
+            ->orWhere(fn ($p) => $p->where('invoiceable_type', 'project')
+                ->whereIn('invoiceable_id', \App\Models\Project::whereHas('deal', fn ($d) => $d->where('company_id', $c))->select('id')))));
+    }
 
-        $pay = Payment::whereIn('invoice_id', $invIds);
+    /**
+     * Остаток на НАЧАЛО дня — тот же расчёт, что и текущий остаток, только
+     * по операциям СТРОГО ДО даты. Кассовая книга берёт его отсюда, а не
+     * считает по-своему: иначе «конец дня» книги разошёлся бы с плиткой
+     * Финансов на первой же правке формулы.
+     */
+    public function balanceBefore(?int $companyId, string $kind, string $date): float
+    {
+        return $this->methodBalance($companyId, $kind, $date);
+    }
+
+    /**
+     * Остаток по способу оплаты (cash|bank); $companyId null = без фильтра фирмы.
+     * $before (YYYY-MM-DD) — считать только операции ДО этой даты.
+     */
+    private function methodBalance(?int $companyId, string $kind, ?string $before = null): float
+    {
+        $invIds = $this->scopeCompanyInvoices(Invoice::query(), $companyId)->select('id');
+
+        $pay = Payment::whereIn('invoice_id', $invIds)
+            ->when($before, fn ($q, $d) => $q->whereDate('payment_date', '<', $d));
         $pay = $kind === 'cash'
             ? $pay->where('payment_method', 'cash')
             // Банк = всё, что не нал (включая платежи без указанного способа — как раньше).
@@ -68,12 +92,13 @@ class FinanceService
 
         $recSum = (float) \App\Models\CashReceipt::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
+            ->when($before, fn ($q, $d) => $q->whereDate('date', '<', $d))
             ->where('method', $kind === 'cash' ? 'cash' : 'bank')->sum('amount');
 
         $exp = $this->scopeCompanyExpenses(
             \App\Models\Expense::query()->where('status', 'confirmed'),
             $companyId,
-        );
+        )->when($before, fn ($q, $d) => $q->whereDate('date', '<', $d));
         $expSum = (float) ($kind === 'cash'
             ? (clone $exp)->where('payment_method', 'cash')->sum('amount')
             : (clone $exp)->where('payment_method', '!=', 'cash')->whereNotNull('payment_method')->sum('amount'));
