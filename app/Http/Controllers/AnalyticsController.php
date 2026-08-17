@@ -139,10 +139,9 @@ class AnalyticsController extends Controller
         $companyTotals = $payroll->companyTotals();
         // «На подходе» = Акт + ЭСФ (по stage_type, у каждой компании своя воронка).
         $allStages = DealStage::where('is_active', true)->orderBy('order')->get();
+        // Без этапов act/esf блока «на подходе» нет — случайный этап по позиции
+        // сюда больше не подставляется (см. PayrollService::dealBreakdown).
         $pendingIds = $allStages->whereIn('stage_type', ['act', 'esf'])->pluck('id');
-        if ($pendingIds->isEmpty() && ($fallback = $allStages->slice(-2, 1)->first())) {
-            $pendingIds = collect([$fallback->id]);
-        }
         // Из просрочки исключается только ЭСФ (и won): Акт — просрочка.
         $esfIds = $allStages->where('stage_type', 'esf')->pluck('id');
         $today = now()->startOfDay();
@@ -220,17 +219,20 @@ class AnalyticsController extends Controller
         })->sortByDesc('bonus')->values();
 
         // ---- Деньги (перенесено с Дашборда): дебиторка = выставлено − оплачено ----
-        $invBase = Invoice::query()->when($companyId, fn ($q, $c) => $this->morphCompanyScope($q, 'invoiceable_type', 'invoiceable_id', $c));
+        // Скоупы берём из FinanceService: своя копия здесь уже разошлась с
+        // Финансами — она не видела расходов КОМПАНИИ (аренда, бензин), и
+        // счётчик «заявки ждут проверки» занижал их число.
+        $finance = app(\App\Services\FinanceService::class);
+        $invBase = $finance->scopeCompanyInvoices(Invoice::query(), $companyId ?: null);
         $invoiced = (float) (clone $invBase)->sum('amount');
         $invoicePaid = (float) Payment::whereIn('invoice_id', (clone $invBase)->select('id'))->sum('amount');
 
         // ---- Деньги компании (как на Финансах): касса/банк, все расходы с разбивкой ----
         $balances = app(\App\Services\FinanceService::class)->companyBalances($companyId ?: null);
-        $expFull = Expense::where('status', 'confirmed')
-            ->when($companyId, fn ($q, $c) => $q->where(function ($w) use ($c) {
-                $this->morphCompanyScope($w, 'expenseable_type', 'expenseable_id', $c);
-                $w->orWhere('company_id', $c); // расходы компании (аренда/бензин…)
-            }));
+        $expFull = $finance->scopeCompanyExpenses(
+            Expense::where('status', 'confirmed'),
+            $companyId ?: null,
+        );
         $byCat = (clone $expFull)->whereNotNull('category_id')
             ->groupBy('category_id')->selectRaw('category_id, sum(amount) s')->pluck('s', 'category_id');
         $catNames = \App\Models\ExpenseCategory::whereIn('id', $byCat->keys())->pluck('name', 'id');
@@ -297,7 +299,8 @@ class AnalyticsController extends Controller
                 ->orWhere(fn ($m) => $this->morphCompanyScope($m, 'taskable_type', 'taskable_id', $c))))
             ->count();
 
-        $expBase = Expense::query()->when($companyId, fn ($q, $c) => $this->morphCompanyScope($q, 'expenseable_type', 'expenseable_id', $c));
+        $expBase = app(\App\Services\FinanceService::class)
+            ->scopeCompanyExpenses(Expense::query(), $companyId ?: null);
         $pendingExpenses = [
             'count' => (clone $expBase)->where('status', 'pending')->count(),
             'sum' => (float) (clone $expBase)->where('status', 'pending')->sum('amount'),

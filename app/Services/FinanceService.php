@@ -40,11 +40,16 @@ class FinanceService
      */
     public function scopeCompanyExpenses(Builder $query, ?int $companyId): Builder
     {
+        // withTrashed: у сделок мягкое удаление, а деньги по ним УЖЕ ушли.
+        // Без этого удаление сделки молча меняло остаток кассы — расходы и
+        // платежи по ней выпадали из подсчёта, хотя физически деньги никуда
+        // не вернулись. Удаление сделки не должно двигать кассу.
         return $query->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w
             ->where(fn ($d) => $d->where('expenseable_type', 'deal')
-                ->whereIn('expenseable_id', \App\Models\Deal::where('company_id', $c)->select('id')))
+                ->whereIn('expenseable_id', \App\Models\Deal::withTrashed()->where('company_id', $c)->select('id')))
             ->orWhere(fn ($p) => $p->where('expenseable_type', 'project')
-                ->whereIn('expenseable_id', \App\Models\Project::whereHas('deal', fn ($d) => $d->where('company_id', $c))->select('id')))
+                ->whereIn('expenseable_id', \App\Models\Project::withTrashed()
+                    ->whereHas('deal', fn ($d) => $d->withTrashed()->where('company_id', $c))->select('id')))
             ->orWhere('company_id', $c)));
     }
 
@@ -56,11 +61,14 @@ class FinanceService
      */
     public function scopeCompanyInvoices(Builder $query, ?int $companyId): Builder
     {
+        // withTrashed — по той же причине, что и у расходов: платежи по
+        // удалённой сделке остаются деньгами, полученными в кассу.
         return $query->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w
             ->where(fn ($d) => $d->where('invoiceable_type', 'deal')
-                ->whereIn('invoiceable_id', \App\Models\Deal::where('company_id', $c)->select('id')))
+                ->whereIn('invoiceable_id', \App\Models\Deal::withTrashed()->where('company_id', $c)->select('id')))
             ->orWhere(fn ($p) => $p->where('invoiceable_type', 'project')
-                ->whereIn('invoiceable_id', \App\Models\Project::whereHas('deal', fn ($d) => $d->where('company_id', $c))->select('id')))));
+                ->whereIn('invoiceable_id', \App\Models\Project::withTrashed()
+                    ->whereHas('deal', fn ($d) => $d->withTrashed()->where('company_id', $c))->select('id')))));
     }
 
     /**

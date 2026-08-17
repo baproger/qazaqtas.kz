@@ -69,10 +69,8 @@ class PayrollController extends Controller
         // Долги: считаем план удержания только тем, у кого долг открыт —
         // бонус за месяц запрашивается по одному сотруднику, и звать его на
         // всю ведомость было бы дорого.
-        $debtService = app(\App\Services\EmployeeDebtService::class);
-        $debtUsers = \App\Models\EmployeeDebt::open()->whereIn('user_id', $rows->pluck('uid'))
-            ->pluck('user_id')->unique();
-        $debtPlans = $debtUsers->mapWithKeys(fn ($uid) => [$uid => $debtService->planFor((int) $uid, $month)]);
+        $debtPlans = collect(app(\App\Services\EmployeeDebtService::class)
+            ->planForUsers($rows->pluck('uid'), $month));
 
         $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans, $bonusMonth) {
             $r['dealsList'] = array_values(($breakdown->get($r['uid']) ?? collect())->all());
@@ -160,6 +158,8 @@ class PayrollController extends Controller
             'payment_method' => ['nullable', Rule::in(['cash', 'bank'])],
         ]);
 
+        $this->assertSameCompany($request, User::findOrFail($data['user_id']));
+
         // Автосумма для отгула/больничного: оклад / 22 рабочих дня × дни.
         if (empty($data['amount']) && ! empty($data['days']) && in_array($data['type'], ['absence', 'sick'], true)) {
             $salary = (float) (User::find($data['user_id'])->salary ?? 0);
@@ -218,18 +218,39 @@ class PayrollController extends Controller
     {
         abort_unless($this->canManage($request), 403);
         // Аванс: удаляем и его расход на Финансах (деньги вернулись в кассу).
+        // Это движение денег, поэтому СЕО и директор узнают о нём, как и о
+        // любом другом удалении финзаписи.
         if ($adjustment->expense_id) {
             \App\Models\Expense::find($adjustment->expense_id)?->delete();
+            \App\Support\FinanceAudit::notifyDeleted(
+                'Аванс сотруднику на '.number_format((float) $adjustment->amount, 0, '.', ' ').' ₸'
+            );
         }
         $adjustment->delete();
 
         return back()->with('success', 'Корректировка удалена.');
     }
 
+    /**
+     * Изоляция фирм в ведомости: оклад, часы и корректировки ставятся только
+     * своим сотрудникам. Админ работает со всеми (Gate::before), остальные —
+     * с теми, с кем делят фирму.
+     */
+    private function assertSameCompany(Request $request, User $user): void
+    {
+        $companies = $user->companies()->pluck('companies.id');
+        abort_unless(
+            $companies->isEmpty() || $companies->contains(fn ($id) => $request->user()->worksInCompany((int) $id)),
+            403,
+            'Сотрудник другой фирмы.'
+        );
+    }
+
     /** Оклад вводит бухгалтер/админ прямо в ведомости. */
     public function updateSalary(Request $request, User $user): RedirectResponse
     {
         abort_unless($this->canManage($request), 403, 'Оклад вводит бухгалтер или админ.');
+        $this->assertSameCompany($request, $user);
 
         $data = $request->validate(['salary' => ['required', 'numeric', 'min:0', 'max:99999999']]);
         $user->update(['salary' => $data['salary']]);
@@ -244,6 +265,7 @@ class PayrollController extends Controller
     public function updateHours(Request $request, User $user): RedirectResponse
     {
         abort_unless($this->canManage($request), 403, 'Часы вводит бухгалтер или админ.');
+        $this->assertSameCompany($request, $user);
 
         $data = $request->validate([
             'month' => ['required', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],

@@ -64,9 +64,20 @@ class DebtController extends Controller
     }
 
     /** Изоляция фирм: запись чужой компании недоступна по прямой ссылке. */
+    /**
+     * Изоляция фирм.
+     *
+     * Раньше проверка отключалась в режиме «Все компании» (CurrentCompany::id()
+     * там пустой) — и запись чужой фирмы удалялась по прямой ссылке. Теперь
+     * спрашиваем не «какая фирма выбрана», а «работает ли человек в фирме
+     * записи»: у админа доступ ко всем, у остальных — только к своим.
+     */
     private function assertCompany(Debt $debt): void
     {
-        $companyId = CurrentCompany::id();
-        abort_if($companyId && $debt->company_id && (int) $debt->company_id !== $companyId, 403);
+        abort_unless(
+            request()->user()->worksInCompany($debt->company_id ? (int) $debt->company_id : null),
+            403,
+            'Запись другой фирмы.'
+        );
     }
 }

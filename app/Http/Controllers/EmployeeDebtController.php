@@ -49,6 +49,14 @@ class EmployeeDebtController extends Controller
         }
 
         $employee = User::findOrFail($data['user_id']);
+        // Долг выдаётся своему сотруднику: чужой фирме — 403, как и в ведомости.
+        $employeeCompanies = $employee->companies()->pluck('companies.id');
+        abort_unless(
+            $employeeCompanies->isEmpty()
+                || $employeeCompanies->contains(fn ($id) => $request->user()->worksInCompany((int) $id)),
+            403,
+            'Сотрудник другой фирмы.'
+        );
         $companyId = CurrentCompany::id() ?: $employee->companies()->value('companies.id');
 
         // Долг и его расход создаются вместе: долг без расхода — это деньги,

@@ -11,8 +11,9 @@ use Illuminate\Support\Str;
  * (до 1600 px) и превью (до 600 px) — витрина отдаёт нужный размер через
  * srcset, поэтому мобильный не тянет мегабайтные снимки с телефона.
  *
- * Всё лежит в storage/app/public (симлинк public/storage), файлы веб-сервер
- * отдаёт напрямую — Laravel в раздаче не участвует.
+ * Медиа каталога лежит в storage/app/public (симлинк public/storage) — файлы
+ * отдаёт веб-сервер напрямую. Чеки расходов (storeReceipt) идут на ПРИВАТНЫЙ
+ * диск storage/app/private и отдаются только guard-маршрутом.
  */
 class MediaService
 {

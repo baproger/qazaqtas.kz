@@ -55,8 +55,14 @@ class CashReceiptController extends Controller
     {
         abort_unless($this->canManage($request), 403);
         // Изоляция фирм: поступление чужой компании не удалить по прямой ссылке.
-        $companyId = CurrentCompany::id();
-        abort_if($companyId && $receipt->company_id && (int) $receipt->company_id !== $companyId, 403);
+        // Изоляция фирм: спрашиваем не «какая фирма выбрана» (в режиме «Все
+        // компании» она пуста, и проверка отключалась), а работает ли человек
+        // в фирме поступления.
+        abort_unless(
+            $request->user()->worksInCompany($receipt->company_id ? (int) $receipt->company_id : null),
+            403,
+            'Поступление другой фирмы.'
+        );
 
         $receipt->delete();
         \App\Support\FinanceAudit::notifyDeleted('Поступление на '.number_format((float) $receipt->amount, 0, '.', ' ').' ₸ ('.($receipt->method === 'cash' ? 'касса' : 'банк').', '.$receipt->source.')');

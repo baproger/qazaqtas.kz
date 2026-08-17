@@ -262,7 +262,14 @@ class WarehouseController extends Controller
                 }
                 $material->decrement('quantity', $receipt->quantity);
                 // Приход отменён — оплата закупа вместе с ним: деньги вернулись.
-                $receipt->expense?->delete();
+                // Возврат денег в кассу — событие для СЕО и директора.
+                if ($receipt->expense) {
+                    $paid = (float) $receipt->expense->amount;
+                    $receipt->expense->delete();
+                    \App\Support\FinanceAudit::notifyDeleted(
+                        'Оплата закупа на '.number_format($paid, 0, '.', ' ').' ₸ ('.$material->name.')'
+                    );
+                }
                 $receipt->delete();
                 $this->syncLastPurchasePrice($material);
             });

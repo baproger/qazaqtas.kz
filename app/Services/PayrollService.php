@@ -258,10 +258,11 @@ class PayrollService
 
         // «На подходе» = сделки на Акте и ЭСФ (по stage_type, не по имени/позиции —
         // этапы переименовываются и перемещаются в настройках).
+        // Нет этапов с типами act/esf — значит в воронке их нет, и блока «на
+        // подходе» тоже нет. Раньше здесь подставлялся «второй с конца», и в
+        // воронке без акта под «деньги на подходе» попадал случайный этап —
+        // перестановка воронки в настройках меняла цифры ЗП без правки кода.
         $pendingIds = $stages->whereIn('stage_type', ['act', 'esf'])->pluck('id');
-        if ($pendingIds->isEmpty() && ($fallback = $stages->slice(-2, 1)->first())) {
-            $pendingIds = collect([$fallback->id]);
-        }
         $stageFilter = $wonStageIds->merge($pendingIds)->unique()->all();
 
         $deals = Deal::forCurrentCompany()->whereNotNull('responsible_user_id')
@@ -299,6 +300,9 @@ class PayrollService
             $bonus = round($parts['total'] * $payRatio, 2);
             $bonusWarehouse = round($parts['warehouse'] * $payRatio, 2);
             $marginPct = self::marginPct($budget, $remainder, $tax);
+            // Личный % сотрудника участвует и в показываемой ставке: иначе
+            // строка показывала авто-ступень, а платили по личному проценту —
+            // бухгалтер видел число, которое не сходится с выплатой.
 
             return [
                 'uid' => (int) $d->responsible_user_id,
@@ -315,7 +319,7 @@ class PayrollService
                 'partner' => $partner,
                 'tax' => $tax,
                 'margin_pct' => $marginPct,
-                'bonus_rate' => round(self::effectiveBonusRate($marginPct, $override) * 100, 2),
+                'bonus_rate' => round(self::effectiveBonusRate($marginPct, $override, $userPercent) * 100, 2),
                 // Ручной % финансиста (бейдж «вручную» на странице ЗП).
                 'bonus_manual' => $override !== null,
                 'bonus' => $bonus,

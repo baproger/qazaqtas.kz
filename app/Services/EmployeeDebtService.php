@@ -27,16 +27,42 @@ class EmployeeDebtService
      */
     public function planFor(int $userId, string $month): array
     {
-        $debts = EmployeeDebt::open()->where('user_id', $userId)
-            ->orderBy('created_at')->orderBy('id')->with('payments')->get();
+        return $this->planForUsers([$userId], $month)[$userId]
+            ?? ['balance' => 0.0, 'monthly' => 0.0, 'charge' => 0.0, 'bonus' => 0.0, 'items' => []];
+    }
 
-        if ($debts->isEmpty()) {
-            return ['balance' => 0.0, 'monthly' => 0.0, 'charge' => 0.0, 'bonus' => 0.0, 'items' => []];
+    /**
+     * Планы сразу по нескольким сотрудникам — для ведомости ЗП.
+     *
+     * Поштучный вызов давал по три запроса на каждого должника: ведомость с
+     * десятком долгов превращалась в тридцать лишних запросов. Здесь долги
+     * берутся одним запросом, бонусы — одним батчем.
+     *
+     * @param  array<int, int>|\Illuminate\Support\Collection<int, int>  $userIds
+     * @return array<int, array{balance: float, monthly: float, charge: float, bonus: float, items: array<int, array<string, mixed>>}>
+     */
+    public function planForUsers($userIds, string $month): array
+    {
+        $userIds = collect($userIds)->map(fn ($id) => (int) $id)->unique()->values();
+        if ($userIds->isEmpty()) {
+            return [];
         }
 
-        $bonus = $this->payroll->bonusByUserForMonth($userId, $month);
+        $byUser = EmployeeDebt::open()->whereIn('user_id', $userIds)
+            ->orderBy('created_at')->orderBy('id')->with('payments')->get()
+            ->groupBy('user_id');
+        if ($byUser->isEmpty()) {
+            return [];
+        }
 
-        return $this->plan($debts, $bonus, $month);
+        $bonuses = $this->payroll->bonusByUsersForMonth($byUser->keys(), $month);
+
+        $plans = [];
+        foreach ($byUser as $userId => $debts) {
+            $plans[(int) $userId] = $this->plan($debts, (float) ($bonuses[(int) $userId] ?? 0), $month);
+        }
+
+        return $plans;
     }
 
     /**

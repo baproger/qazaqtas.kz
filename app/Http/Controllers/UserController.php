@@ -238,7 +238,9 @@ class UserController extends Controller
             'hired_at' => $data['hired_at'] ?? null,
             'salary' => $data['salary'] ?? 0,
             'bonus_percent' => $data['bonus_percent'] ?? null,
-            'contract_path' => $request->hasFile('contract') ? $request->file('contract')->store('contracts') : null,
+            // Диск указан явно: договор — персональные данные, он не должен
+            // зависеть от значения FILESYSTEM_DISK в окружении.
+            'contract_path' => $request->hasFile('contract') ? $request->file('contract')->store('contracts', 'local') : null,
             'is_active' => $data['is_active'] ?? true,
             'language' => 'ru',
         ]);
@@ -278,7 +280,7 @@ class UserController extends Controller
             if ($user->contract_path) {
                 \Illuminate\Support\Facades\Storage::delete($user->contract_path);
             }
-            $user->update(['contract_path' => $request->file('contract')->store('contracts')]);
+            $user->update(['contract_path' => $request->file('contract')->store('contracts', 'local')]);
         }
         if (! empty($data['password'])) {
             $user->update(['password' => Hash::make($data['password'])]);
