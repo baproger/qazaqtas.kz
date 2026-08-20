@@ -96,6 +96,41 @@ class PreDealController extends Controller
     }
 
     /** @return array<string, mixed> */
+    /**
+     * Свести позиции в цифры заявки: сумма КП = Σ (количество × цена), закуп
+     * = Σ (количество × закупочная цена).
+     *
+     * Одиночные поля (объём, цена за единицу) при этом обнуляются: иначе
+     * PreDeal::calculate пересчитал бы сумму по ним и она разошлась бы с
+     * составом заказа.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function applyItems(array $items, array $data): array
+    {
+        $service = app(\App\Services\DealItemService::class);
+        $rows = $service->normalize($items, withPurchasePrice: true);
+        if ($rows === []) {
+            return $data;
+        }
+
+        $data['contract_sum'] = $service->total($rows);
+        $purchase = $service->purchaseTotal($rows);
+        if ($purchase > 0) {
+            $data['purchase_price'] = $purchase;
+        }
+        // Обнуляем, а не убираем: колонки NOT NULL, а нулевые объём и цена
+        // за единицу заставляют PreDeal::calculate взять готовую сумму строк.
+        $data['quantity'] = 0;
+        $data['unit_price'] = 0;
+        // Изделие — перечень позиций: он идёт в название сделки и в списки.
+        $data['product'] = collect($rows)->pluck('name')->join(', ');
+
+        return $data;
+    }
+
     private function validated(Request $request, ?PreDeal $ignore = null): array
     {
         return $request->validate([
@@ -109,11 +144,19 @@ class PreDealController extends Controller
             'object_address' => ['nullable', 'string', 'max:255'],
             'client_name' => ['nullable', 'string', 'max:255'],
             'client_phone' => ['nullable', 'string', 'max:40'],
-            'product' => ['required', 'string', 'max:255'],
+            // При нескольких позициях изделие и сумма берутся из строк —
+            // одиночные поля тогда не обязательны.
+            'product' => ['required_without:items', 'nullable', 'string', 'max:255'],
             'quantity' => ['nullable', 'numeric', 'min:0'],
             'unit' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Deal::UNITS)],
             'unit_price' => ['nullable', 'numeric', 'min:0'],
-            'contract_sum' => ['required', 'numeric', 'min:1'],
+            'contract_sum' => ['required_without:items', 'nullable', 'numeric', 'min:1'],
+            'items' => ['sometimes', 'array'],
+            'items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'items.*.name' => ['nullable', 'string', 'max:255'],
+            'items.*.quantity' => ['nullable', 'numeric', 'min:0'],
+            'items.*.price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.purchase_price' => ['nullable', 'numeric', 'min:0'],
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
             'partner_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'delivery' => ['nullable', 'numeric', 'min:0'],
@@ -183,10 +226,18 @@ class PreDealController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->guardAccess($request);
-        $data = PreDeal::calculate($this->validated($request));
+        $data = $this->validated($request);
+        $items = $data['items'] ?? [];
+        unset($data['items']);
+
+        $data = PreDeal::calculate($this->applyItems($items, $data));
         $data['user_id'] = $request->user()->id;
         $data['company_id'] = CurrentCompany::id() ?: null;
-        PreDeal::create($data);
+        $preDeal = PreDeal::create($data);
+
+        if ($items !== []) {
+            app(\App\Services\DealItemService::class)->syncPreDeal($preDeal, $items);
+        }
 
         return back()->with('success', 'Заявка добавлена — маржа рассчитана.');
     }
@@ -197,7 +248,14 @@ class PreDealController extends Controller
         if ($preDeal->status === 'confirmed') {
             return back()->with('error', 'Заявка уже переведена в сделку — правки только в самой сделке.');
         }
-        $preDeal->update(PreDeal::calculate($this->validated($request, $preDeal)));
+        $data = $this->validated($request, $preDeal);
+        $items = $data['items'] ?? null;
+        unset($data['items']);
+
+        $preDeal->update(PreDeal::calculate($this->applyItems($items ?? [], $data)));
+        if ($items !== null) {
+            app(\App\Services\DealItemService::class)->syncPreDeal($preDeal, $items);
+        }
 
         return back()->with('success', 'Пересчитано.');
     }
@@ -291,6 +349,10 @@ class PreDealController extends Controller
                 ]);
             }
         }
+
+        // Товары заявки становятся позициями сделки: вводить их второй раз
+        // менеджеру не нужно.
+        app(\App\Services\DealItemService::class)->copyToDeal($locked->load('items'), $deal);
 
         $locked->update(['status' => 'confirmed', 'deal_id' => $deal->id]);
 

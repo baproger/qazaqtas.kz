@@ -101,6 +101,12 @@ class Deal extends Model
         return $this->belongsTo(Department::class);
     }
 
+    /** Позиции сделки: товар, количество, цена. Сумма сделки = их сумма. */
+    public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DealItem::class)->orderBy('sort')->orderBy('id');
+    }
+
     public function stage(): BelongsTo
     {
         return $this->belongsTo(DealStage::class, 'deal_stage_id');

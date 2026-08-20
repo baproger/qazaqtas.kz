@@ -45,7 +45,15 @@ class DealRequest extends FormRequest
             'client_id' => ['nullable', 'exists:clients,id'],
             'responsible_user_id' => ['nullable', 'exists:users,id'],
             'department_id' => ['nullable', 'exists:departments,id'],
+            // Сумма приходит из формы, но при наличии позиций её пересчитает
+            // сервер по строкам — руками её тогда не задать.
             'budget' => ['required', 'numeric', 'min:0'],
+            // Позиции сделки: товар из каталога, количество и цена.
+            'items' => ['sometimes', 'array'],
+            'items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'items.*.name' => ['nullable', 'string', 'max:255'],
+            'items.*.quantity' => ['nullable', 'numeric', 'min:0'],
+            'items.*.price' => ['nullable', 'numeric', 'min:0'],
             // Доля партнёра — только %; сумма считается от суммы договора.
             'partner_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'deadline' => ['nullable', 'date'],

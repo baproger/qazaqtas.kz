@@ -212,7 +212,15 @@ class DealController extends Controller
             $data['responsible_user_id'] = $request->user()->id;
         }
 
-        Deal::create($data);
+        // Позиции не поле сделки — их пишет DealItemService, он же
+        // пересчитывает сумму по строкам.
+        $items = $data['items'] ?? [];
+        unset($data['items']);
+
+        $deal = Deal::create($data);
+        if ($items !== []) {
+            app(\App\Services\DealItemService::class)->syncDeal($deal, $items);
+        }
 
         return back()->with('success', 'Сделка создана.');
     }
@@ -340,7 +348,16 @@ class DealController extends Controller
         $data = $request->validated();
         // Название сделки зеркалит название компании (поле убрано из UI).
         $data['name'] = $data['company_name'];
+
+        // `items` присылают только формы, где товары редактируются: отсутствие
+        // ключа означает «не трогать позиции», пустой массив — «удалить все».
+        $items = $data['items'] ?? null;
+        unset($data['items']);
+
         $deal->update($data);
+        if ($items !== null) {
+            app(\App\Services\DealItemService::class)->syncDeal($deal, $items);
+        }
 
         return back()->with('success', 'Сделка обновлена.');
     }

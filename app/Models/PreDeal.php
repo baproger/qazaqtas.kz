@@ -28,6 +28,12 @@ class PreDeal extends Model
     }
 
     /** Порог «берём в работу»: маржа ≥ N% (по умолчанию 15). */
+    /** Позиции заявки: товар, количество, цена продажи и закуп. */
+    public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PreDealItem::class)->orderBy('sort')->orderBy('id');
+    }
+
     public static function minMargin(): float
     {
         return (float) Setting::get('predeal_min_margin', 15);
