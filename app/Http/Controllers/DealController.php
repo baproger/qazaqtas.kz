@@ -111,9 +111,10 @@ class DealController extends Controller
             'companies' => $request->user()->companies()->where('is_active', true)->orderBy('name')->get(['companies.id', 'name', 'code']),
             // Филиалы = производственные площадки; каталог — источник товара.
             'branches' => \Database\Seeders\StageSeeder::WORKSHOPS,
-            'catalog' => \App\Models\Product::active()->orderBy('name')
-                ->get(['id', 'name', 'unit', 'price'])
-                ->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'unit' => $p->unit, 'price' => (float) $p->price]),
+            // Каталог + категории: товары выбираются через категорию, поэтому
+            // страница получает и то, и другое.
+            'catalog' => \App\Models\Product::catalogForPicker(),
+            'productCategories' => \App\Models\Product::pickerCategories(),
             'currentCompanyId' => \App\Support\CurrentCompany::id(),
             // Цеха фирмы: если их несколько, кнопка «В цех» открывает выбор.
             'workshopsByCompany' => \App\Models\Company::where('is_active', true)->pluck('id')

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ProductPicker from '@/Components/ProductPicker.vue';
 import Avatar from '@/Components/Avatar.vue';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -19,6 +20,8 @@ const tr = useE();
 const props = defineProps({
     preDeals: Array, items: Array, minMargin: Number, taxPercent: Number,
     leadership: Boolean, stats: Array, managers: Array, filters: Object, canManageChecklist: Boolean,
+    catalog: { type: Array, default: () => [] },
+    productCategories: { type: Array, default: () => [] },
 });
 
 const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v ?? 0)) + ' ₸';
@@ -60,11 +63,20 @@ const requestGroups = computed(() => {
 
 const showForm = ref(false);
 const editingId = ref(null);
-const form = useForm({ request_number: '', valid_until: '', bin: '', customer: '', object_address: '', client_name: '', client_phone: '', product: '', quantity: '', unit: tr('м²'), unit_price: '', contract_sum: '', purchase_price: '', partner_pct: '', delivery: '', assembly: '', commission: '' });
+const form = useForm({ request_number: '', valid_until: '', bin: '', customer: '', object_address: '', client_name: '', client_phone: '', product: '', quantity: '', unit: tr('м²'), unit_price: '', contract_sum: '', purchase_price: '', partner_pct: '', delivery: '', assembly: '', commission: '', items: [] });
+
+// Позиции заявки: сумма КП и закуп считаются по строкам, а поля суммы и
+// себестоимости становятся показом итога.
+const itemsSum = computed(() => form.items.reduce((s, r) => s + Number(r.quantity || 0) * Number(r.price || 0), 0));
+const itemsPurchase = computed(() => form.items.reduce((s, r) => s + Number(r.quantity || 0) * Number(r.purchase_price || 0), 0));
+watch(itemsSum, (v) => { if (form.items.length) form.contract_sum = v; });
+watch(itemsPurchase, (v) => { if (form.items.length && v > 0) form.purchase_price = v; });
 // Срок действия КП: сегодня/прошёл у незакрытой заявки — подсветка.
 const quoteUrgent = (p) => p.valid_until && p.status === 'new' && new Date(p.valid_until) <= new Date(new Date().toDateString());
 // Сумма КП = объём × цена за единицу (если заданы оба), иначе вводится вручную.
 const autoSum = computed(() => {
+    // Есть товары — сумма только по ним; иначе прежний расчёт объём × цена.
+    if (form.items.length) return Math.round(itemsSum.value * 100) / 100;
     const q = Number(form.quantity || 0), p = Number(form.unit_price || 0);
     return q > 0 && p > 0 ? Math.round(q * p * 100) / 100 : null;
 });
@@ -341,7 +353,12 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                     <div><InputLabel :value="$e('Заказчик (компания или частное лицо)')" /><TextInput v-model="form.customer" class="mt-1 w-full" /></div>
                     <div><InputLabel :value="$e('БИН / ИИН заказчика')" /><TextInput v-model="form.bin" class="mt-1 w-full" /></div>
                     <div class="sm:col-span-2"><InputLabel :value="$e('Объект (адрес доставки / монтажа)')" /><TextInput v-model="form.object_address" class="mt-1 w-full" :placeholder="$e('г. Астана, ЖК …')" /></div>
-                    <div><InputLabel :value="$e('Изделие *')" /><TextInput v-model="form.product" class="mt-1 w-full" :placeholder="$e('Тротуарная плитка 300×300, вазон…')" /><div v-if="form.errors.product" class="mt-1 text-xs text-rose-600">{{ form.errors.product }}</div></div>
+                    <div class="sm:col-span-2">
+                        <InputLabel :value="$e('Товары заказа')" />
+                        <p class="mb-1.5 text-[11px] text-slate-400">{{ $e('Выберите категории, затем товары. Единица подставится из каталога, закуп по строке нужен для маржи.') }}</p>
+                        <ProductPicker v-model="form.items" :catalog="catalog" :categories="productCategories" with-purchase-price :errors="form.errors" />
+                    </div>
+                    <div v-if="!form.items.length"><InputLabel :value="$e('Изделие *')" /><TextInput v-model="form.product" class="mt-1 w-full" :placeholder="$e('Тротуарная плитка 300×300, вазон…')" /><div v-if="form.errors.product" class="mt-1 text-xs text-rose-600">{{ form.errors.product }}</div></div>
                     <div>
                         <InputLabel :value="$e('Объём и единица')" />
                         <div class="mt-1 flex gap-2">
@@ -361,7 +378,12 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                     </div>
                     <div><InputLabel :value="$e('Имя клиента (контакт)')" /><TextInput v-model="form.client_name" class="mt-1 w-full" /></div>
                     <div><InputLabel :value="$e('Телефон клиента')" /><TextInput v-model="form.client_phone" class="mt-1 w-full" placeholder="+7 ___ ___ __ __" /></div>
-                    <div><InputLabel :value="$e('Себестоимость (сырьё, производство)')" /><TextInput v-model="form.purchase_price" type="number" min="0" class="mt-1 w-full" /></div>
+                    <div>
+                        <InputLabel :value="$e('Себестоимость (сырьё, производство)')" />
+                        <TextInput v-model="form.purchase_price" type="number" min="0" class="mt-1 w-full"
+                            :disabled="form.items.length > 0 && itemsPurchase > 0" :class="form.items.length && itemsPurchase > 0 ? 'bg-slate-100' : ''" />
+                        <p v-if="form.items.length && itemsPurchase > 0" class="mt-1 text-[11px] text-slate-400">{{ $e('Считается по закупу строк.') }}</p>
+                    </div>
                     <div><InputLabel :value="$e('Доля партнёра, %')" /><TextInput v-model="form.partner_pct" type="number" min="0" max="100" step="0.1" class="mt-1 w-full" /></div>
                     <div><InputLabel :value="$e('Доставка, разгрузка')" /><TextInput v-model="form.delivery" type="number" min="0" class="mt-1 w-full" /></div>
                     <div><InputLabel :value="$e('Монтаж / укладка')" /><TextInput v-model="form.assembly" type="number" min="0" class="mt-1 w-full" /></div>

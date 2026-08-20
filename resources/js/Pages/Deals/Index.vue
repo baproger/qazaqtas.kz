@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Modal from '@/Components/Modal.vue';
@@ -10,6 +10,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Pagination from '@/Components/Pagination.vue';
+import ProductPicker from '@/Components/ProductPicker.vue';
 import SearchSelect from '@/Components/SearchSelect.vue';
 import ManagerPicker from '@/Components/ManagerPicker.vue';
 import { deadlineClass } from '@/utils/deadline';
@@ -20,7 +21,7 @@ import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 
-const props = defineProps({ deals: [Array, Object], stages: Array, view: String, filters: Object, users: Array, can: Object, isLeadership: Boolean, companies: { type: Array, default: () => [] }, currentCompanyId: Number, workshopsByCompany: { type: Object, default: () => ({}) }, branches: { type: Array, default: () => [] }, branchCounts: { type: Object, default: () => ({}) }, catalog: { type: Array, default: () => [] } });
+const props = defineProps({ deals: [Array, Object], stages: Array, view: String, filters: Object, users: Array, can: Object, isLeadership: Boolean, companies: { type: Array, default: () => [] }, currentCompanyId: Number, workshopsByCompany: { type: Object, default: () => ({}) }, branches: { type: Array, default: () => [] }, branchCounts: { type: Object, default: () => ({}) }, catalog: { type: Array, default: () => [] }, productCategories: { type: Array, default: () => [] } });
 
 const list = computed(() => Array.isArray(props.deals) ? props.deals : props.deals.data);
 const byStage = (id) => list.value.filter((d) => d.deal_stage_id === id);
@@ -151,16 +152,15 @@ const bulkDelete = async () => {
 };
 
 const showModal = ref(false);
-const form = useForm({ company_id: props.currentCompanyId || props.companies[0]?.id || '', branch: '', company_name: '', address: '', bin: '', contract_date: '', client_name: '', product_id: '', lot_number: '', unit: '', area_m2: '', source: '', responsible_user_id: '', budget: 0, partner_pct: '', deadline: '', description: '', note: '' });
+const form = useForm({ company_id: props.currentCompanyId || props.companies[0]?.id || '', branch: '', company_name: '', address: '', bin: '', contract_date: '', client_name: '', product_id: '', lot_number: '', unit: '', area_m2: '', source: '', responsible_user_id: '', budget: 0, partner_pct: '', deadline: '', description: '', note: '', items: [] });
+
+// Сумма сделки считается по строкам товаров: пока они есть, поле суммы
+// только показывает итог (сервер всё равно пересчитает его сам).
+const itemsTotal = computed(() => form.items.reduce((sum, r) => sum + Number(r.quantity || 0) * Number(r.price || 0), 0));
+watch(itemsTotal, (value) => { if (form.items.length) form.budget = value; });
 
 // Товар выбирается из каталога: подставляем название и единицу измерения,
 // чтобы менеджер не вводил их руками и не расходился с прайсом.
-const pickProduct = (id) => {
-    const product = props.catalog.find((p) => p.id === Number(id));
-    if (!product) return;
-    form.client_name = product.name;
-    if (product.unit) form.unit = product.unit;
-};
 const openCreate = () => { form.reset(); form.company_id = props.currentCompanyId || props.companies[0]?.id || ''; binMatch.value = null; showBinModal.value = false; showModal.value = true; };
 const submit = () => form.post(route('deals.store'), { preserveScroll: true, onSuccess: () => (showModal.value = false) });
 
@@ -392,12 +392,9 @@ const applyBinMatch = () => {
                         <InputError :message="form.errors.source" class="mt-1" />
                     </div>
                     <div class="sm:col-span-2">
-                        <InputLabel :value="$e('Товар из каталога')" />
-                        <select v-model="form.product_id" class="mt-1 w-full rounded-md border-slate-300 shadow-sm" @change="pickProduct(form.product_id)">
-                            <option value="">{{ $e('— выбрать из каталога —') }}</option>
-                            <option v-for="p in catalog" :key="p.id" :value="p.id">{{ p.name }}</option>
-                        </select>
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Название и единица подставятся сами; поле ниже можно поправить руками.') }}</p>
+                        <InputLabel :value="$e('Товары заказа')" />
+                        <p class="mb-1.5 text-[11px] text-slate-400">{{ $e('Клиент берёт несколько позиций — выберите категории, затем товары. Единица подставится из каталога.') }}</p>
+                        <ProductPicker v-model="form.items" :catalog="catalog" :categories="productCategories" :errors="form.errors" />
                     </div>
                     <div><InputLabel :value="$e('Наименование товара *')" /><TextInput v-model="form.client_name" class="mt-1 w-full" /><InputError :message="form.errors.client_name" class="mt-1" /></div>
                     <div>
@@ -423,7 +420,13 @@ const applyBinMatch = () => {
                             <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
                         </select>
                     </div>
-                    <div><InputLabel :value="$e('Сумма договора *')" /><TextInput v-model="form.budget" type="number" step="0.01" class="mt-1 w-full" /><InputError :message="form.errors.budget" class="mt-1" /></div>
+                    <div>
+                        <InputLabel :value="$e('Сумма договора *')" />
+                        <TextInput v-model="form.budget" type="number" step="0.01" class="mt-1 w-full"
+                            :disabled="form.items.length > 0" :class="form.items.length ? 'bg-slate-100' : ''" />
+                        <p v-if="form.items.length" class="mt-1 text-[11px] text-slate-400">{{ $e('Считается по товарам заказа.') }}</p>
+                        <InputError :message="form.errors.budget" class="mt-1" />
+                    </div>
                     <div>
                         <InputLabel :value="$e('Доля партнёра, %')" /><TextInput v-model="form.partner_pct" type="number" min="0" max="100" step="0.01" class="mt-1 w-full" placeholder="0" />
                         <p v-if="Number(form.partner_pct) > 0 && Number(form.budget) > 0" class="mt-1 text-[11px] text-slate-400">= {{ money(Number(form.budget) * Number(form.partner_pct) / 100) }} {{ $e('партнёру (вычитается из остатка)') }}</p>

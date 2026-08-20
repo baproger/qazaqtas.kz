@@ -31,6 +31,31 @@ class Product extends Model
         'is_service', 'is_active', 'is_featured', 'in_stock', 'order',
     ];
 
+    /**
+     * Товары для выбора в сделке и заявке: id, название, категория, единица и
+     * цена. Один источник на обе страницы — иначе список товаров в заявке и в
+     * сделке со временем разъедется.
+     */
+    public static function catalogForPicker(): \Illuminate\Support\Collection
+    {
+        return static::active()->orderBy('name')
+            ->get(['id', 'category_id', 'name', 'unit', 'price'])
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'category_id' => $p->category_id,
+                'name' => $p->name,
+                'unit' => $p->unit,
+                'price' => (float) $p->price,
+            ]);
+    }
+
+    /** Категории, в которых есть активные товары — пустые в выборе не нужны. */
+    public static function pickerCategories(): \Illuminate\Support\Collection
+    {
+        return ProductCategory::whereIn('id', static::active()->select('category_id'))
+            ->orderBy('order')->orderBy('name')->get(['id', 'name']);
+    }
+
     protected $casts = [
         'specs' => 'array',
         'colors' => 'array',

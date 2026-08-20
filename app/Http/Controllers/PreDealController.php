@@ -92,6 +92,9 @@ class PreDealController extends Controller
             'managers' => $lead ? User::role('manager')->where('is_active', true)->orderBy('name')->get(['id', 'name']) : [],
             'filters' => $request->only('manager', 'status', 'month'),
             'canManageChecklist' => $request->user()->hasAnyRole(['admin', 'financist']),
+            // Товары заявки выбираются так же, как в сделке: категория → товар.
+            'catalog' => \App\Models\Product::catalogForPicker(),
+            'productCategories' => \App\Models\Product::pickerCategories(),
         ]);
     }
 
