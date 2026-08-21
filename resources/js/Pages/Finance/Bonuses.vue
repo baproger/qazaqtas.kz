@@ -113,17 +113,19 @@ const cellClass = (cell) => {
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                            <th class="px-6 py-2.5">{{ $e('Сотрудник') }}</th>
+                            <!-- Сотрудник слева, «К выплате» справа — прилипают
+                                 к краям: 12 месяцев в экран не помещаются, и
+                                 главная цифра уезжала за правый край. -->
+                            <th class="sticky left-0 z-10 bg-slate-50 px-6 py-2.5">{{ $e('Сотрудник') }}</th>
                             <th v-for="(m, i) in MONTHS" :key="m" class="px-2 py-2.5 text-right">{{ m }}</th>
                             <th class="px-4 py-2.5 text-right">{{ $e('Начислено') }}</th>
                             <th class="px-4 py-2.5 text-right">{{ $e('Выплачено') }}</th>
-                            <th class="px-4 py-2.5 text-right">{{ $e('К выплате') }}</th>
-                            <th v-if="canPay" class="px-4 py-2.5"></th>
+                            <th class="sticky right-0 z-10 border-l border-slate-200 bg-slate-50 px-4 py-2.5 text-right">{{ $e('К выплате') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="r in rows" :key="r.uid" class="transition-colors duration-150 hover:bg-slate-50/60">
-                            <td class="whitespace-nowrap px-6 py-2.5">
+                            <td class="sticky left-0 z-10 whitespace-nowrap bg-white px-6 py-2.5">
                                 <div class="flex items-center gap-2">
                                     <Avatar :name="r.name" :src="r.avatar" :size="28" />
                                     <span class="font-medium text-slate-900">{{ r.name }}</span>
@@ -147,11 +149,15 @@ const cellClass = (cell) => {
                             </td>
                             <td class="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-800">{{ money(r.accrued) }}</td>
                             <td class="px-4 py-2.5 text-right tabular-nums text-emerald-600">{{ money(r.paid) }}</td>
-                            <td class="px-4 py-2.5 text-right font-bold tabular-nums"
-                                :class="r.left > 0 ? 'text-amber-700' : 'text-slate-300'">{{ r.left > 0 ? money(r.left) : '—' }}</td>
-                            <td v-if="canPay" class="whitespace-nowrap px-4 py-2.5 text-right">
-                                <button v-if="r.left > 0" @click="openPay(r)"
-                                    class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('Выплатить') }}</button>
+                            <!-- Кнопка выплаты живёт в этой же ячейке: отдельным
+                                 столбцом она оказывалась правее прилипшей
+                                 колонки и закрывала сумму при прокрутке. -->
+                            <td class="sticky right-0 z-10 whitespace-nowrap border-l border-slate-200 bg-white px-4 py-2.5 text-right">
+                                <div class="font-bold tabular-nums" :class="r.left > 0 ? 'text-amber-700' : 'text-slate-300'">
+                                    {{ r.left > 0 ? money(r.left) : '—' }}
+                                </div>
+                                <button v-if="canPay && r.left > 0" @click="openPay(r)"
+                                    class="mt-1 rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('Выплатить') }}</button>
                             </td>
                         </tr>
                     </tbody>

@@ -59,7 +59,10 @@ class DealController extends Controller
             ->addSelect(['stage_entered_at' => \App\Models\DealStageLog::select('entered_at')
                 ->whereColumn('deal_id', 'deals.id')->whereNull('left_at')
                 ->latest('entered_at')->limit(1)])
-            ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order'])
+            // items — товары сделки: на карточке видно, что именно продали.
+            // Без них сделка с пятью позициями выглядела на доске пустой.
+            ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order',
+                'items:id,deal_id,name,unit,quantity'])
             ->withCount('tasks')
             ->withCount(['tasks as overdue_count' => fn ($q) => $q->where('status', '!=', 'done')->whereNotNull('due_date')->where('due_date', '<', now())]);
 

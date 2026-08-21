@@ -285,6 +285,12 @@ const applyBinMatch = () => {
                             <div class="mt-1.5 space-y-0.5 text-[11px] leading-4 text-slate-500">
                                 <div v-if="deal.address" class="truncate">📍 {{ deal.address }}</div>
                                 <div class="truncate">📦 {{ deal.client_name || '—' }}<template v-if="deal.lot_number"> · {{ deal.lot_number }} {{ deal.unit || '' }}</template><template v-if="deal.area_m2"> · {{ Number(deal.area_m2) }} {{ $e('м²') }}</template></div>
+                                <!-- Товары сделки: первая позиция и «+N», иначе
+                                     сделка с несколькими товарами выглядит пустой. -->
+                                <div v-if="deal.items?.length" class="truncate text-slate-400">
+                                    🧱 {{ deal.items[0].name }} · {{ Number(deal.items[0].quantity) }} {{ deal.items[0].unit }}
+                                    <template v-if="deal.items.length > 1"> +{{ deal.items.length - 1 }}</template>
+                                </div>
                                 <div v-if="deal.branch" class="truncate text-[11px] text-slate-400">🏭 {{ deal.branch }}</div>
                             </div>
                             <!-- Когда и кто ведёт -->
