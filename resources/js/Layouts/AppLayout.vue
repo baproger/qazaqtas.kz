@@ -45,27 +45,33 @@ router.on('finish', () => {
 });
 
 const allNav = [
-    // Дашборд слит с Аналитикой: financist видит её по роли (как раньше дашборд).
-    // Порядок меню — просьба от 22.07.2026: Аналитика → Просроченные → Сделки
-    // → Цех → Склад → Сводный отчет → Финансы → ЗП → остальное.
+    // Меню собрано в разделы (просьба от 21.08.2026: «слишком много пунктов»).
+    // Наверху остаётся только то, куда заходят каждый день; остальное лежит
+    // по смыслу — продажи, производство, деньги, сайт, управление.
+    // Раздел виден, если внутри есть хоть один доступный пункт, а раскрыт
+    // по умолчанию только тот, в котором открыта текущая страница.
     { key: 'nav.analytics', name: tr('Аналитика'), route: 'analytics.index', icon: '◊', leadershipOnly: true },
-    { key: 'nav.overdue', name: tr('Просроченные'), route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny' },
-    { key: 'nav.predeals', name: tr('Заявки'), route: 'preDeals.index', icon: '◧', roles: ['admin', 'director', 'financist', 'manager'] },
-    // Заказы, оформленные на сайте: менеджер превращает их в сделки.
-    { key: 'nav.siteOrders', name: tr('Заказы с сайта'), route: 'siteOrders.index', icon: '🛒', roles: ['admin', 'director', 'financist', 'manager'] },
-    { key: 'nav.deals', name: tr('Сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny' },
-    { key: 'nav.workshop', name: tr('Цех'), route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
-    // Производство: выработка бригад по сменам (бригадир видит свои бригады).
-    { key: 'nav.production', name: tr('Производство'), route: 'production.index', icon: '⚒', roles: ['admin', 'director', 'financist', 'foreman'] },
-    { key: 'nav.warehouse', name: tr('Склад'), route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
-    // Каталог сайта: карточки продукции, которые видит витрина.
-    { key: 'nav.catalog', name: tr('Каталог сайта'), route: 'catalog.index', icon: '▥', perm: 'product.viewAny' },
-    // Реализованные объекты: их фото идут крупными кадрами на главной.
-    { key: 'nav.siteProjects', name: tr('Объекты сайта'), route: 'siteProjects.index', icon: '◱', roles: ['admin', 'director', 'financist'] },
-    { key: 'nav.reports', name: tr('Сводный отчет'), route: 'reports.deals', icon: '▦', roles: ['admin', 'director'] },
-    // «Финансы» — группа: под ней всё, что про деньги. Каждый пункт виден по
-    // СВОИМ правам, группа — если виден хоть один: цеховому она открывается
-    // «Моими расходами» и «Зарплатой», обзора фирмы он не увидит.
+    {
+        key: 'nav.sales', name: tr('Продажи'), icon: '◈', children: [
+            { key: 'nav.deals', name: tr('Сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny' },
+            { key: 'nav.overdue', name: tr('Просроченные'), route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny' },
+            { key: 'nav.predeals', name: tr('Заявки'), route: 'preDeals.index', icon: '◧', roles: ['admin', 'director', 'financist', 'manager'] },
+            // Заказы, оформленные на сайте: менеджер превращает их в сделки.
+            { key: 'nav.siteOrders', name: tr('Заказы с сайта'), route: 'siteOrders.index', icon: '🛒', roles: ['admin', 'director', 'financist', 'manager'] },
+            { key: 'nav.reports', name: tr('Сводный отчет'), route: 'reports.deals', icon: '▦', roles: ['admin', 'director'] },
+        ],
+    },
+    {
+        key: 'nav.factory', name: tr('Производство'), icon: '⚒', children: [
+            { key: 'nav.workshop', name: tr('Цех'), route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
+            // Выработка бригад по сменам (бригадир видит только свои бригады).
+            { key: 'nav.production', name: tr('Наряды бригад'), route: 'production.index', icon: '⚒', roles: ['admin', 'director', 'financist', 'foreman'] },
+            { key: 'nav.warehouse', name: tr('Склад'), route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
+        ],
+    },
+    // «Финансы» — всё, что про деньги. Каждый пункт виден по СВОИМ правам:
+    // цеховому раздел откроется «Моими расходами» и «Зарплатой», обзора фирмы
+    // он не увидит.
     {
         key: 'nav.finance', name: tr('Финансы'), icon: '₸', children: [
             { key: 'nav.finance.overview', name: tr('Обзор'), route: 'finance.index', icon: '◔', perm: 'invoice.viewAny', leadershipOnly: true },
@@ -79,13 +85,25 @@ const allNav = [
             { key: 'nav.finance.bonuses', name: tr('Бонусы'), route: 'bonuses.index', icon: '◍', perm: 'payroll.view' },
         ],
     },
+    {
+        key: 'nav.site', name: tr('Сайт'), icon: '▥', children: [
+            // Каталог сайта: карточки продукции, которые видит витрина.
+            { key: 'nav.catalog', name: tr('Каталог сайта'), route: 'catalog.index', icon: '▥', perm: 'product.viewAny' },
+            // Реализованные объекты: их фото идут крупными кадрами на главной.
+            { key: 'nav.siteProjects', name: tr('Объекты сайта'), route: 'siteProjects.index', icon: '◱', roles: ['admin', 'director', 'financist'] },
+        ],
+    },
     { key: 'nav.chat', name: tr('Чат'), route: 'chat.index', icon: '✉' },
-    { key: 'nav.audit', name: tr('Аудит'), route: 'audit.index', icon: '❑', roles: ['admin'] },
-    { key: 'nav.departments', name: tr('Отделы'), route: 'departments.index', icon: '⌂', perm: 'department.viewAny', leadershipOnly: true },
-    { key: 'nav.users', name: tr('Сотрудники'), route: 'users.index', icon: '☻', perm: 'user.viewAny' },
-    { key: 'nav.profile', name: tr('Профиль'), route: 'profile.edit', icon: '🪪' },
-    { key: 'nav.settings', name: tr('Настройки'), route: 'settings.index', icon: '⚙', perm: 'setting.update' },
-    { key: 'nav.translations', name: tr('Переводы'), route: 'translations.index', icon: '🌐', perm: 'setting.update' },
+    {
+        key: 'nav.admin', name: tr('Управление'), icon: '⚙', children: [
+            { key: 'nav.users', name: tr('Сотрудники'), route: 'users.index', icon: '☻', perm: 'user.viewAny' },
+            { key: 'nav.departments', name: tr('Отделы'), route: 'departments.index', icon: '⌂', perm: 'department.viewAny', leadershipOnly: true },
+            { key: 'nav.audit', name: tr('Аудит'), route: 'audit.index', icon: '❑', roles: ['admin'] },
+            { key: 'nav.settings', name: tr('Настройки'), route: 'settings.index', icon: '⚙', perm: 'setting.update' },
+            { key: 'nav.translations', name: tr('Переводы'), route: 'translations.index', icon: '🌐', perm: 'setting.update' },
+        ],
+    },
+    // «Профиль» отдельным пунктом не нужен: в него ведёт карточка внизу меню.
 ];
 const visible = (i) => (!i.perm || perms.value.includes(i.perm))
     && (!i.leadershipOnly || isLeadership.value)
@@ -98,6 +116,11 @@ const nav = computed(() => allNav
 // Инлайн-SVG иконки (Lucide-style outline) по route — заменяют псевдо-иконки.
 // Чисто презентационно: массив allNav и его perm/leadershipOnly не тронуты.
 const navIcons = {
+    'nav.sales': '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    'nav.factory': '<path d="M2 20h20"/><path d="M4 20V10l5 4v-4l5 4V6h6v14"/>',
+    'nav.finance': '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+    'nav.site': '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+    'nav.admin': '<path d="M12 2 4 6v6c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/>',
     'analytics.index': '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 15v-4M12 15V7M17 15v-6"/>',
     'reports.deals': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
     'deals.index': '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
@@ -126,6 +149,12 @@ const go = () => { mobileOpen.value = false; };
 const groupOpen = ref({});
 const groupStore = (key) => 'qt.menu.' + key.replace(/^nav\./, '');
 const groupActive = (item) => item.children.some((c) => isActive(c.route));
+// Клик по разделу в узком меню: разворачиваем меню и открываем раздел —
+// иначе значок ведёт в никуда.
+const openFromRail = (item) => {
+    collapsed.value = false;
+    groupOpen.value[item.key] = true;
+};
 const toggleGroup = (item) => {
     groupOpen.value[item.key] = !groupOpen.value[item.key];
     try { localStorage.setItem(groupStore(item.key), groupOpen.value[item.key] ? '1' : '0'); } catch { /* приватный режим */ }
@@ -134,9 +163,10 @@ onMounted(() => {
     for (const item of allNav.filter((i) => i.children)) {
         let stored = null;
         try { stored = localStorage.getItem(groupStore(item.key)); } catch { /* приватный режим */ }
-        // По умолчанию группа открыта — иначе новые пункты никто не найдёт.
-        // Активный пункт внутри раскрывает её в любом случае.
-        groupOpen.value[item.key] = stored === null ? true : stored === '1' || groupActive(item);
+        // По умолчанию раскрыт только раздел с текущей страницей: разделы
+        // затевались ради короткого меню, а открытые сразу все его удлиняют.
+        // Ручное раскрытие запоминается и переживает переходы.
+        groupOpen.value[item.key] = stored === null ? groupActive(item) : stored === '1' || groupActive(item);
     }
 });
 
@@ -232,24 +262,32 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 <template v-for="item in nav" :key="item.key ?? item.route">
                     <!-- ===== Группа («Финансы»): свои пункты по своим правам ===== -->
                     <template v-if="item.children">
-                        <!-- Свёрнутое меню: подписи не помещаются — пункты идут
-                             значками, как и остальные разделы. -->
+                        <!-- Узкое меню: раздел — один значок. Раньше сюда
+                             вываливались все его пункты, и рельс становился
+                             длиннее развёрнутого меню. Клик разворачивает
+                             меню и открывает сам раздел. -->
                         <template v-if="collapsed && !mobileOpen">
-                            <Link v-for="child in item.children" :key="child.route"
-                                :href="route(child.route)" @click="go" :title="t(child.key, child.name)"
-                                :class="isActive(child.route) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                                class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
-                                <span v-if="isActive(child.route)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
-                                <span class="text-lg leading-none transition-colors duration-200"
-                                    :class="isActive(child.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ child.icon }}</span>
-                            </Link>
+                            <button type="button" @click="openFromRail(item)" :title="t(item.key, item.name)"
+                                :class="groupActive(item) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                                class="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                                <span v-if="groupActive(item)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
+                                <svg v-if="navIcons[item.key]" class="h-5 w-5 shrink-0 transition-colors duration-200"
+                                    :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    v-html="navIcons[item.key]"></svg>
+                                <span v-else class="text-lg leading-none">{{ item.icon }}</span>
+                            </button>
                         </template>
                         <div v-else>
                             <button type="button" @click="toggleGroup(item)"
                                 :class="groupActive(item) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
                                 class="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
                                 <span v-if="groupActive(item)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
-                                <span class="text-lg leading-none transition-colors duration-200"
+                                <svg v-if="navIcons[item.key]" class="h-5 w-5 shrink-0 transition-colors duration-200"
+                                    :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                                    v-html="navIcons[item.key]"></svg>
+                                <span v-else class="text-lg leading-none transition-colors duration-200"
                                     :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ item.icon }}</span>
                                 <span class="truncate">{{ t(item.key, item.name) }}</span>
                                 <span class="ml-auto text-xs text-slate-500 transition-transform duration-200"
