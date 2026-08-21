@@ -95,8 +95,8 @@ const cellClass = (cell) => {
         <div class="grid gap-3 sm:grid-cols-3">
             <FinanceTile :label="$e('Начислено за год')" :value="money(totals.accrued)" />
             <FinanceTile tone="good" :label="$e('Выплачено')" :value="money(totals.paid)" />
-            <FinanceTile tone="warn" :label="$e('Накоплено — к выдаче')" :value="money(totals.left)"
-                :hint="$e('сотрудник не забрал: копится до выплаты')" />
+            <FinanceTile tone="warn" :label="$e('К выплате сотрудникам')" :value="money(totals.left)"
+                :hint="$e('накопленный бонус, который ещё не забрали')" />
         </div>
 
         <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -117,7 +117,7 @@ const cellClass = (cell) => {
                             <th v-for="(m, i) in MONTHS" :key="m" class="px-2 py-2.5 text-right">{{ m }}</th>
                             <th class="px-4 py-2.5 text-right">{{ $e('Начислено') }}</th>
                             <th class="px-4 py-2.5 text-right">{{ $e('Выплачено') }}</th>
-                            <th class="px-4 py-2.5 text-right">{{ $e('Накоплено') }}</th>
+                            <th class="px-4 py-2.5 text-right">{{ $e('К выплате') }}</th>
                             <th v-if="canPay" class="px-4 py-2.5"></th>
                         </tr>
                     </thead>
@@ -130,12 +130,20 @@ const cellClass = (cell) => {
                                 </div>
                             </td>
                             <!-- Ячейка месяца: зелёная — забрал, янтарная — копится -->
+                            <!-- В месяце видно и сумму, и судьбу бонуса: забрал
+                                 его сотрудник или он копится дальше. -->
                             <td v-for="cell in r.months" :key="cell.month"
-                                class="px-2 py-2.5 text-right tabular-nums" :class="cellClass(cell)"
+                                class="whitespace-nowrap px-2 py-2.5 text-right tabular-nums" :class="cellClass(cell)"
                                 :title="cell.accrued > 0
                                     ? `${$e('начислено')} ${money(cell.accrued)} · ${$e('выплачено')} ${money(cell.paid)}`
                                     : $e('нет начислений')">
-                                {{ cell.accrued > 0 ? money(cell.accrued) : '—' }}
+                                <template v-if="cell.accrued > 0">
+                                    {{ money(cell.accrued) }}
+                                    <div class="text-[10px] font-normal">
+                                        {{ cell.left <= 0 ? $e('✓ получил') : $e('копит') }}
+                                    </div>
+                                </template>
+                                <span v-else>—</span>
                             </td>
                             <td class="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-800">{{ money(r.accrued) }}</td>
                             <td class="px-4 py-2.5 text-right tabular-nums text-emerald-600">{{ money(r.paid) }}</td>
@@ -150,7 +158,7 @@ const cellClass = (cell) => {
                 </table>
             </div>
             <p class="border-t border-slate-100 px-6 py-3 text-[11px] text-slate-400">
-                {{ $e('Зелёным — месяц выплачен, янтарным — бонус копится. В «К выплате» ведомости ЗП идёт только накопленный остаток.') }}
+                {{ $e('Зелёным — бонус за месяц получен, янтарным — копится. «К выплате» — сколько сотруднику должны на сегодня; в ведомости ЗП идёт та же сумма.') }}
             </p>
         </div>
 

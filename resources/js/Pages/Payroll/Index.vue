@@ -42,7 +42,7 @@ const onSearch = (value) => {
     searchTimer = setTimeout(() => (search.value = value.trim().toLowerCase()), 300);
 };
 const FILTERS = [
-    { key: 'bonus_month', label: tr('с бонусом за месяц'), test: (r) => (r.bonus_month || 0) > 0 },
+    { key: 'bonus_left', label: tr('с накопленным бонусом'), test: (r) => (r.bonus_left || 0) > 0 },
     { key: 'debt', label: tr('с долгом'), test: (r) => (r.debt?.balance || 0) > 0 },
     { key: 'deductions', label: tr('с удержаниями'), test: (r) => (r.deductions || 0) > 0 },
 ];
@@ -278,7 +278,7 @@ const delAdj = async (a) => {
 
             <!-- Ведомость — только про ЗП: 4 плитки. Деньги сделок — на Финансах и в Сводном
                  отчёте; здесь по сотруднику они видны при раскрытии строки. -->
-            <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+            <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Оклады (начислено)') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-slate-800 xl:text-xl">{{ money(totals.base) }}</div>
@@ -287,11 +287,6 @@ const delAdj = async (a) => {
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бонусы (по марже)') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-emerald-600 xl:text-xl">{{ money(totals.bonus) }}</div>
-                </div>
-                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бонус за') }} {{ monthLabel }}</div>
-                    <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-emerald-600 xl:text-xl">{{ money(totals.bonus_month) }}</div>
-                    <div class="truncate text-[10px] text-slate-400">{{ $e('справочно — в «К выплате» не входит') }}</div>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Удержания / премии') }}</div>
@@ -405,7 +400,9 @@ const delAdj = async (a) => {
                                 </td>
                                 <td class="px-4 py-3 text-right tabular-nums" :class="r.bonus > 0 ? 'font-medium text-emerald-600' : 'text-slate-300'">
                                     {{ r.bonus > 0 ? money(r.bonus) : '—' }}
-                                    <div v-if="r.bonus_month > 0" class="text-[10px] text-slate-400">{{ $e('за месяц') }} {{ money(r.bonus_month) }}</div>
+                                    <!-- Невыплаченный остаток: он и идёт в «К выплате».
+                                         Разбивка по месяцам — на странице «Бонусы». -->
+                                    <div v-if="r.bonus_left > 0 && r.bonus_left !== r.bonus" class="text-[10px] text-amber-600">{{ $e('не выплачено') }} {{ money(r.bonus_left) }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-right tabular-nums" :class="r.deductions > 0 ? 'text-rose-600 font-medium' : 'text-slate-300'">
                                     <template v-if="r.deductions > 0">− {{ money(r.deductions) }}</template>
