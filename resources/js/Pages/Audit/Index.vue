@@ -89,10 +89,20 @@ const hasFilters = () => fTable.value || fAction.value || fUser.value || fFrom.v
                             <span v-else class="text-slate-300">—</span>
                         </td>
                         <td class="px-4 py-3 font-medium" :class="actionColor[log.action]">{{ actionLabel[log.action] ?? log.action }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ log.field ?? '—' }}</td>
+                        <td class="px-4 py-3 text-slate-600">
+                            {{ log.field ?? (log.snapshot.length ? $e('вся запись') : '—') }}
+                        </td>
                         <td class="px-4 py-3 text-xs text-slate-500">
                             <!-- «не было» — поле раньше не заполнялось; «убрано» — значение очистили -->
                             <span v-if="log.field"><span :class="log.old ? 'text-red-500' : 'text-slate-300 italic'">{{ log.old ?? $e('не было') }}</span> → <span :class="log.new ? 'text-green-600' : 'text-slate-300 italic'">{{ log.new ?? $e('убрано') }}</span></span>
+                            <!-- Снимок записи: что именно ввели в модальном окне -->
+                            <div v-else-if="log.snapshot.length" class="flex flex-wrap gap-1">
+                                <span v-for="f in log.snapshot" :key="f.label"
+                                    class="rounded border px-1.5 py-0.5"
+                                    :class="log.action === 'deleted' ? 'border-red-100 bg-red-50/60 text-red-700' : 'border-slate-200 bg-slate-50 text-slate-600'">
+                                    <span class="text-slate-400">{{ f.label }}:</span> <b class="font-medium">{{ f.value }}</b>
+                                </span>
+                            </div>
                             <span v-else>—</span>
                         </td>
                     </tr>

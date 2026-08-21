@@ -16,8 +16,12 @@ trait Auditable
 
     public static function bootAuditable(): void
     {
-        static::created(fn ($model) => $model->writeAudit('created'));
-        static::deleted(fn ($model) => $model->writeAudit('deleted'));
+        // При создании и удалении пишем СНИМОК записи целиком: раньше в
+        // журнале стояло голое «создано», и что именно ввели в модальном
+        // окне — сумму, дату, кому — приходилось искать по самой записи.
+        // Для удалённой записи искать уже негде.
+        static::created(fn ($model) => $model->writeAudit('created', AuditLog::SNAPSHOT, null, $model->auditSnapshot()));
+        static::deleted(fn ($model) => $model->writeAudit('deleted', AuditLog::SNAPSHOT, $model->auditSnapshot(), null));
         static::updated(function ($model) {
             foreach ($model->getChanges() as $field => $new) {
                 if (in_array($field, $model->auditExclude, true)) {
@@ -26,6 +30,19 @@ trait Auditable
                 $model->writeAudit('updated', $field, Arr::get($model->getOriginal(), $field), $new);
             }
         });
+    }
+
+    /**
+     * Значимые поля записи для журнала.
+     *
+     * @return array<string, mixed>
+     */
+    protected function auditSnapshot(): array
+    {
+        return collect(Arr::except($this->getAttributes(), $this->auditExclude))
+            // Пустые поля в журнале только мешают читать, что ввели.
+            ->reject(fn ($v) => $v === null || $v === '')
+            ->all();
     }
 
     protected function writeAudit(string $action, ?string $field = null, $old = null, $new = null): void

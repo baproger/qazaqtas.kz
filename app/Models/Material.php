@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
+use App\Support\CurrentCompany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Material extends Model
 {
+    use Auditable;
+
     protected $fillable = ['company_id', 'name', 'unit', 'quantity', 'price', 'markup_pct', 'note'];
 
     protected $casts = ['quantity' => 'decimal:2', 'price' => 'decimal:2', 'markup_pct' => 'decimal:2'];
@@ -24,7 +28,7 @@ class Material extends Model
     {
         return $this->markup_pct !== null
             ? (float) $this->markup_pct
-            : (float) \App\Models\Setting::get('material_markup_percent', 0);
+            : (float) Setting::get('material_markup_percent', 0);
     }
 
     /** Цена продажи = закупочная + наценка. */
@@ -45,6 +49,6 @@ class Material extends Model
 
     public function scopeForCurrentCompany($query)
     {
-        return $query->when(\App\Support\CurrentCompany::id(), fn ($q, $c) => $q->where('company_id', $c));
+        return $query->when(CurrentCompany::id(), fn ($q, $c) => $q->where('company_id', $c));
     }
 }

@@ -9,6 +9,9 @@ class AuditLog extends Model
 {
     public const UPDATED_AT = null;
 
+    /** Псевдо-поле снимка: в значении лежит JSON со всеми полями записи. */
+    public const SNAPSHOT = '*';
+
     protected $fillable = [
         'user_id', 'ip', 'user_agent', 'table_name', 'record_id',
         'action', 'field_name', 'old_value', 'new_value', 'created_at',

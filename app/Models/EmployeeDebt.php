@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class EmployeeDebt extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'user_id', 'company_id', 'amount', 'monthly_payment',
         'payment_method', 'expense_id', 'note', 'closed_at',

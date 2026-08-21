@@ -222,6 +222,9 @@ const removeOrder = async (order) => {
                         <div class="text-right text-xs text-slate-400">
                             <div class="tabular-nums">{{ o.totals.m2 }} {{ $e('м²') }} · {{ o.totals.pcs }} {{ $e('штук') }}</div>
                             <div class="font-semibold text-slate-700">{{ money(o.totals.workers + o.totals.foreman) }}</div>
+                            <!-- Кто внёс и кто подтвердил: за нарядом стоят чужие деньги. -->
+                            <div v-if="o.created_by" class="mt-0.5">{{ $e('внёс') }}: {{ o.created_by }}</div>
+                            <div v-if="o.confirmed_by">{{ $e('подтвердил') }}: {{ o.confirmed_by }} · {{ o.confirmed_at }}</div>
                         </div>
                     </div>
 

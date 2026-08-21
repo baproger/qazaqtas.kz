@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /** Заявка (запрос КП): расчёт маржи до создания настоящей сделки. */
 class PreDeal extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'company_id', 'user_id', 'request_number', 'valid_until', 'bin', 'customer', 'object_address',
         'client_name', 'client_phone', 'product', 'quantity', 'unit', 'unit_price',
@@ -29,7 +33,7 @@ class PreDeal extends Model
 
     /** Порог «берём в работу»: маржа ≥ N% (по умолчанию 15). */
     /** Позиции заявки: товар, количество, цена продажи и закуп. */
-    public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function items(): HasMany
     {
         return $this->hasMany(PreDealItem::class)->orderBy('sort')->orderBy('id');
     }

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Concerns\Auditable;
+use App\Services\PayrollService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -21,8 +23,10 @@ use Spatie\Permission\Traits\HasRoles;
 #[Hidden(['password', 'remember_token', 'salary', 'contract_path'])]
 class User extends Authenticatable
 {
+    use Auditable;
+
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, HasRoles;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * Get the attributes that should be cast.
@@ -107,6 +111,6 @@ class User extends Authenticatable
     {
         // Процент бонуса кэшируется в PayrollService на время запроса —
         // после правки сотрудника кэш обязан устареть.
-        static::saved(fn () => \App\Services\PayrollService::forgetBonusPercents());
+        static::saved(fn () => PayrollService::forgetBonusPercents());
     }
 }

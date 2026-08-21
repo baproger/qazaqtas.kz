@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class WorkOrderLine extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'work_order_id', 'user_id', 'qty_pcs', 'qty_m2',
         'rate_pcs', 'rate_m2', 'amount', 'role',

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class BonusPayout extends Model
 {
+    use Auditable;
+
     protected $fillable = [
         'user_id', 'company_id', 'month', 'amount',
         'payment_method', 'expense_id', 'paid_by', 'note',

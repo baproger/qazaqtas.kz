@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class EmployeeDebtPayment extends Model
 {
+    use Auditable;
+
     protected $fillable = ['employee_debt_id', 'month', 'amount'];
 
     protected $casts = ['amount' => 'decimal:2'];

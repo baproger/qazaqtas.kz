@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** Поступление денег (нал/банк): вводит финансист на странице Финансы. */
 class CashReceipt extends Model
 {
+    use Auditable;
+
     protected $fillable = ['company_id', 'amount', 'method', 'source', 'date', 'note', 'created_by'];
 
     protected $casts = [

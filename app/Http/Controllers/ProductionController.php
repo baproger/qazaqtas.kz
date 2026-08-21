@@ -59,7 +59,11 @@ class ProductionController extends Controller
             ->when($isForeman, fn ($q) => $q->whereIn('brigade_id',
                 Brigade::where('foreman_id', $request->user()->id)->select('id')))
             ->whereDate('date', '>=', $start)->whereDate('date', '<=', $end)
-            ->with(['brigade:id,name,workshop,foreman_id', 'lines.user:id,name', 'project:id,number'])
+            // Кто внёс наряд и кто подтвердил — прямо на карточке: за этими
+            // цифрами стоят чужие деньги, и автор должен быть виден без
+            // похода в журнал.
+            ->with(['brigade:id,name,workshop,foreman_id', 'lines.user:id,name', 'project:id,number',
+                'creator:id,name', 'confirmer:id,name'])
             ->orderByDesc('date')->orderByDesc('id')
             ->get()
             ->map(fn (WorkOrder $o) => [
@@ -71,6 +75,9 @@ class ProductionController extends Controller
                 'project' => $o->project?->number,
                 'status' => $o->status,
                 'note' => $o->note,
+                'created_by' => $o->creator?->name,
+                'confirmed_by' => $o->confirmer?->name,
+                'confirmed_at' => $o->confirmed_at?->format('d.m.Y H:i'),
                 'totals' => $bonuses->totals($o),
                 'lines' => $o->lines->map(fn ($l) => [
                     'id' => $l->id,
