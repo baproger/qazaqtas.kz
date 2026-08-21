@@ -2,14 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\PayrollAdjustment;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\WorkHour;
+use App\Services\BonusPayoutService;
+use App\Services\EmployeeDebtService;
 use App\Services\PayrollService;
+use App\Services\ProductionBonusService;
+use App\Support\CurrentCompany;
+use App\Support\FinanceAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,7 +42,7 @@ class PayrollController extends Controller
         $month = preg_match('/^\d{4}-\d{2}$/', $request->string('month')->toString())
             ? $request->string('month')->toString() : now()->format('Y-m');
         $monthStart = $month.'-01';
-        $monthEnd = \Illuminate\Support\Carbon::parse($monthStart)->endOfMonth()->toDateString();
+        $monthEnd = Carbon::parse($monthStart)->endOfMonth()->toDateString();
 
         $adjustments = PayrollAdjustment::with('creator:id,name')
             ->whereDate('date', '>=', $monthStart)->whereDate('date', '<=', $monthEnd)
@@ -64,19 +73,27 @@ class PayrollController extends Controller
             ->filter(fn ($v) => $v !== null)->map(fn ($v) => (float) $v);
         // Бонус за ВЫБРАННЫЙ месяц — одним запросом на всю ведомость (тем же
         // методом, что считает удержание долгов; второго расчёта нет).
-        $bonusMonth = $payroll->bonusByUsersForMonth($rows->pluck('uid'), $month);
+        // Бонус месяца — тоже целиком: сделки и выработка вместе.
+        $bonusMonth = app(BonusPayoutService::class)
+            ->accrualsByMonths($rows->pluck('uid'), [$month])[$month] ?? [];
 
         // Долги: считаем план удержания только тем, у кого долг открыт —
         // бонус за месяц запрашивается по одному сотруднику, и звать его на
         // всю ведомость было бы дорого.
-        $debtPlans = collect(app(\App\Services\EmployeeDebtService::class)
+        $debtPlans = collect(app(EmployeeDebtService::class)
             ->planForUsers($rows->pluck('uid'), $month));
 
         // Уже выплаченный бонус: в «К выплате» он входить не должен, иначе
         // бухгалтер заплатит его второй раз. Копится ровно то, что не забрали.
-        $bonusPaid = app(\App\Services\BonusPayoutService::class)->paidTotals($rows->pluck('uid'));
+        $bonusPaid = app(BonusPayoutService::class)->paidTotals($rows->pluck('uid'));
 
-        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans, $bonusMonth, $bonusPaid) {
+        // Бонус за выработку цеха. Ведомость обязана показывать ВЕСЬ бонус
+        // человека: бригадир зарабатывает объёмом, а не процентом со сделок,
+        // и без этого его строка выглядела бы как «только оклад», расходясь
+        // со страницей «Бонусы».
+        $bonusProduction = app(ProductionBonusService::class)->totalsByUser($rows->pluck('uid'));
+
+        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans, $bonusMonth, $bonusPaid, $bonusProduction) {
             $r['dealsList'] = array_values(($breakdown->get($r['uid']) ?? collect())->all());
             $adj = $adjustments->get($r['uid']) ?? collect();
             $deductions = round((float) $adj->whereIn('type', PayrollAdjustment::DEDUCTIONS)->sum('amount'), 2);
@@ -106,6 +123,10 @@ class PayrollController extends Controller
             // Бонус выплачивают отдельно и не обязательно каждый месяц: в
             // «К выплате» идёт только НЕВЫПЛАЧЕННЫЙ остаток.
             $r['bonus_paid'] = (float) ($bonusPaid[$r['uid']] ?? 0);
+            // Бонус строки = сделки + выработка цеха: у человека он один.
+            $r['bonus_production'] = (float) ($bonusProduction[$r['uid']] ?? 0);
+            $r['bonus_deals'] = $r['bonus'];
+            $r['bonus'] = round($r['bonus'] + $r['bonus_production'], 2);
             $r['bonus_left'] = round(max($r['bonus'] - $r['bonus_paid'], 0), 2);
             // К выплате = почасовая база (или оклад) + остаток бонуса − удержания + премии.
             $r['payout'] = round($r['base'] + $r['bonus_left'], 2);
@@ -132,8 +153,8 @@ class PayrollController extends Controller
             // Ставки бонуса — из настроек: шкала в правой колонке показывает
             // то, по чему реально платят.
             'bonusRates' => [
-                'sale' => \App\Services\PayrollService::rateForType(\App\Services\PayrollService::TYPE_PRODUCTION),
-                'resale' => \App\Services\PayrollService::rateForType(\App\Services\PayrollService::TYPE_RESALE),
+                'sale' => PayrollService::rateForType(PayrollService::TYPE_PRODUCTION),
+                'resale' => PayrollService::rateForType(PayrollService::TYPE_RESALE),
             ],
             'totals' => [
                 'budget' => (float) $rows->sum('budget'),
@@ -182,7 +203,7 @@ class PayrollController extends Controller
             $data['amount'] = round($salary / 22 * (float) $data['days'], 2);
         }
         if (empty($data['amount']) || (float) $data['amount'] <= 0) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'amount' => 'Укажите сумму (или дни — для отгула/больничного при заполненном окладе).',
             ]);
         }
@@ -196,12 +217,12 @@ class PayrollController extends Controller
             $employee = User::find($data['user_id']);
             // Категория ищется по служебному коду, а не по имени: имя
             // владелец правит из админки, код неизменен.
-            $category = \App\Models\ExpenseCategory::firstOrCreate(
-                ['code' => \App\Models\ExpenseCategory::EMPLOYEE],
+            $category = ExpenseCategory::firstOrCreate(
+                ['code' => ExpenseCategory::EMPLOYEE],
                 ['name' => 'Расходы по сотрудникам', 'is_active' => true]
             );
-            $expense = \App\Models\Expense::create([
-                'company_id' => \App\Support\CurrentCompany::id()
+            $expense = Expense::create([
+                'company_id' => CurrentCompany::id()
                     ?: $employee->companies()->value('companies.id'),
                 'category_id' => $category->id,
                 'type' => 'direct',
@@ -237,8 +258,8 @@ class PayrollController extends Controller
         // Это движение денег, поэтому СЕО и директор узнают о нём, как и о
         // любом другом удалении финзаписи.
         if ($adjustment->expense_id) {
-            \App\Models\Expense::find($adjustment->expense_id)?->delete();
-            \App\Support\FinanceAudit::notifyDeleted(
+            Expense::find($adjustment->expense_id)?->delete();
+            FinanceAudit::notifyDeleted(
                 'Аванс сотруднику на '.number_format((float) $adjustment->amount, 0, '.', ' ').' ₸'
             );
         }

@@ -131,6 +131,31 @@ class ProductionBonusService
     }
 
     /**
+     * Начислено за выработку ЗА ВСЁ ВРЕМЯ — для ведомости зарплаты.
+     *
+     * Ведомость считает бонус нарастающим итогом (сколько заработано минус
+     * сколько уже выдали), поэтому месяц здесь не при чём.
+     *
+     * @return array<int, float> [id сотрудника => сумма]
+     */
+    public function totalsByUser($userIds): array
+    {
+        $userIds = collect($userIds)->map(fn ($id) => (int) $id)->unique();
+        if ($userIds->isEmpty()) {
+            return [];
+        }
+
+        return WorkOrderLine::query()
+            ->whereIn('user_id', $userIds)
+            ->whereHas('order', fn ($q) => $q->where('status', 'confirmed'))
+            ->groupBy('user_id')
+            ->selectRaw('user_id, SUM(amount) as total')
+            ->pluck('total', 'user_id')
+            ->map(fn ($v) => round((float) $v, 2))
+            ->all();
+    }
+
+    /**
      * Итоги наряда — для страницы производства.
      *
      * @return array{pcs: float, m2: float, workers: float, foreman: float}

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\EmployeeDebt;
 use App\Models\EmployeeDebtPayment;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -38,7 +39,7 @@ class EmployeeDebtService
      * десятком долгов превращалась в тридцать лишних запросов. Здесь долги
      * берутся одним запросом, бонусы — одним батчем.
      *
-     * @param  array<int, int>|\Illuminate\Support\Collection<int, int>  $userIds
+     * @param  array<int, int>|Collection<int, int>  $userIds
      * @return array<int, array{balance: float, monthly: float, charge: float, bonus: float, items: array<int, array<string, mixed>>}>
      */
     public function planForUsers($userIds, string $month): array
@@ -55,7 +56,10 @@ class EmployeeDebtService
             return [];
         }
 
-        $bonuses = $this->payroll->bonusByUsersForMonth($byUser->keys(), $month);
+        // Весь бонус месяца: сделки и выработка цеха вместе — план удержания
+        // обязан совпадать с тем, что реально спишет `debts:charge`.
+        $bonuses = app(BonusPayoutService::class)
+            ->accrualsByMonths($byUser->keys(), [$month])[$month] ?? [];
 
         $plans = [];
         foreach ($byUser as $userId => $debts) {
@@ -68,7 +72,7 @@ class EmployeeDebtService
     /**
      * Разложить бонус месяца по открытым долгам — старые гасятся первыми.
      *
-     * @param  \Illuminate\Support\Collection<int, EmployeeDebt>  $debts
+     * @param  Collection<int, EmployeeDebt>  $debts
      * @return array{balance: float, monthly: float, charge: float, bonus: float, items: array<int, array<string, mixed>>}
      */
     private function plan($debts, float $bonus, string $month): array
@@ -134,7 +138,10 @@ class EmployeeDebtService
             ->with('payments')->get()->groupBy('user_id');
 
         foreach ($byUser as $userId => $debts) {
-            $left = $this->payroll->bonusByUserForMonth((int) $userId, $month);
+            // Долг гасится из ВСЕГО бонуса месяца — и со сделок, и за
+            // выработку цеха: для сотрудника это одни и те же деньги.
+            $left = (float) (app(BonusPayoutService::class)
+                ->accrualsByMonths([(int) $userId], [$month])[$month][(int) $userId] ?? 0);
 
             foreach ($debts as $debt) {
                 if ($left <= 0) {

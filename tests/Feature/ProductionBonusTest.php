@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Brigade;
 use App\Models\Company;
+use App\Models\EmployeeDebt;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\WorkOrder;
@@ -184,6 +185,45 @@ class ProductionBonusTest extends TestCase
 
         $august = collect($row['months'])->firstWhere('month', '2026-08');
         $this->assertSame(4500.0, round((float) $august['accrued'], 2));
+    }
+
+    /**
+     * Выработка идёт и в ведомость зарплаты.
+     *
+     * Бригадир зарабатывает объёмом, а не процентом со сделок: без этого его
+     * строка в ЗП показывала бы «только оклад» и расходилась со страницей
+     * «Бонусы» — две правды о том, сколько человеку должны.
+     */
+    public function test_payroll_row_includes_production_bonus(): void
+    {
+        $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 10, 'qty_pcs' => 0]]);
+        $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id));
+
+        $this->actingAs($this->director)->get(route('payroll.index', ['month' => '2026-08']))
+            ->assertInertia(fn ($page) => $page
+                ->where('rows', function ($rows) {
+                    $row = collect($rows)->firstWhere('uid', $this->foreman->id);
+
+                    return round((float) $row['bonus_production'], 2) === 4500.0
+                        && round((float) $row['bonus'], 2) === 4500.0
+                        && round((float) $row['payout'], 2) === round((float) $row['base'] + 4500, 2);
+                }));
+    }
+
+    /** Долг гасится и из бонуса за выработку — деньги для сотрудника одни. */
+    public function test_debt_is_charged_from_the_production_bonus(): void
+    {
+        $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 10, 'qty_pcs' => 0]]);
+        $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id));
+
+        $debt = EmployeeDebt::create([
+            'user_id' => $this->foreman->id, 'amount' => 20000,
+            'monthly_payment' => 3000, 'payment_method' => 'cash',
+        ]);
+
+        $this->artisan('debts:charge', ['--month' => '2026-08'])->assertSuccessful();
+
+        $this->assertSame(round(20000 - 3000, 2), $debt->fresh()->balance());
     }
 
     /** Страница производства показывает, кто сколько сделал. */

@@ -182,7 +182,7 @@ const delAdj = async (a) => {
                         <span class="text-slate-500">{{ $e('Оклад') }}<template v-if="me?.hours != null"> · {{ me.hours }} {{ $e('ч ×') }} {{ money(me.hourly_rate) }}{{ $e('/ч') }}</template></span>
                         <span class="font-medium tabular-nums">{{ money(me?.base ?? me?.salary ?? 0) }}</span>
                     </div>
-                    <div class="flex justify-between"><span class="text-slate-500">{{ $e('Бонус по марже сделок') }}</span><span class="font-medium tabular-nums text-emerald-600">{{ money(me?.bonus ?? 0) }}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">{{ $e('Бонус: сделки и выработка') }}</span><span class="font-medium tabular-nums text-emerald-600">{{ money(me?.bonus ?? 0) }}</span></div>
                     <div v-if="me?.deductions" class="flex justify-between"><span class="text-slate-500">{{ $e('Удержания (отгул/больничный/штраф/аванс)') }}</span><span class="font-medium tabular-nums text-rose-600">− {{ money(me.deductions) }}</span></div>
                     <div v-if="me?.additions" class="flex justify-between"><span class="text-slate-500">{{ $e('Премии') }}</span><span class="font-medium tabular-nums text-emerald-600">+ {{ money(me.additions) }}</span></div>
                     <div class="flex justify-between"><span class="text-slate-500">{{ $e('Успешных сделок') }}</span><span class="font-medium">{{ me?.closed ?? 0 }}</span></div>
@@ -282,7 +282,7 @@ const delAdj = async (a) => {
                     <div v-if="totals.base !== totals.salary" class="truncate text-[10px] text-slate-400">{{ $e('по карточкам') }} {{ money(totals.salary) }}</div>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бонусы (по марже)') }}</div>
+                    <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бонусы') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-emerald-600 xl:text-xl">{{ money(totals.bonus) }}</div>
                 </div>
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -399,6 +399,8 @@ const delAdj = async (a) => {
                                     {{ r.bonus > 0 ? money(r.bonus) : '—' }}
                                     <!-- Невыплаченный остаток: он и идёт в «К выплате».
                                          Разбивка по месяцам — на странице «Бонусы». -->
+                                    <!-- Видно, откуда бонус: процент со сделок и деньги за объём — разные заработки. -->
+                                    <div v-if="r.bonus_production > 0" class="text-[10px] font-normal text-slate-400">{{ $e('в т.ч. цех') }} {{ money(r.bonus_production) }}</div>
                                     <div v-if="r.bonus_left > 0 && r.bonus_left !== r.bonus" class="text-[10px] text-amber-600">{{ $e('не выплачено') }} {{ money(r.bonus_left) }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-right tabular-nums" :class="r.deductions > 0 ? 'text-rose-600 font-medium' : 'text-slate-300'">
