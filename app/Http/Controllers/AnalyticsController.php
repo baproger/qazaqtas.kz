@@ -167,17 +167,16 @@ class AnalyticsController extends Controller
         $empDeals = $empDealsRaw->groupBy('responsible_user_id');
 
         $wonIdsList = $wonStageIds->all();
-        $dealMaterials = PayrollService::materialsByDeal($empDealsRaw->pluck('id'));
-        $mapDeal = function ($d) use ($dealExpense, $dealMaterials, $taxRate) {
+        $mapDeal = function ($d) use ($dealExpense, $taxRate) {
             $budget = (float) $d->budget;
             $tax = round($budget * $taxRate, 2);
             $expense = (float) ($dealExpense[$d->id] ?? 0);
             $remainder = round($budget - $tax - $expense - PayrollService::partnerSum($budget, $d->partner_pct), 2);
             // Бонус: ручной % финансиста по сделке (bonus_rate_override) или авто-ступень.
-            $bonus = PayrollService::dealBonus($budget, $remainder, $tax, $expense,
+            $bonus = PayrollService::dealBonus($remainder,
                 $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
                 PayrollService::userBonusPercent($d->responsible_user_id),
-                (float) ($dealMaterials['sale'][$d->id] ?? 0), (float) ($dealMaterials['cost'][$d->id] ?? 0))['total'];
+                $d->deal_type ?? PayrollService::TYPE_PRODUCTION)['total'];
             $company = round($remainder - $bonus, 2);
 
             return [

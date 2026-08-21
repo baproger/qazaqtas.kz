@@ -12,21 +12,15 @@ import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 
-const props = defineProps({ rows: Array, leadership: Boolean, canManage: Boolean, month: String, normHours: Number, deptNorms: { type: [Object, Array], default: () => ({}) }, taxRate: Number, totals: Object });
+const props = defineProps({ rows: Array, leadership: Boolean, canManage: Boolean, month: String, normHours: Number, deptNorms: { type: [Object, Array], default: () => ({}) }, taxRate: Number, totals: Object, bonusRates: { type: Object, default: () => ({ sale: 1, resale: 2 }) } });
 const me = props.rows[0] ?? null;
 
 // Шкала бонусов — коммерческая информация: видят только отдел продаж
 // (менеджеры), финансисты и админ; цеху и прочим сотрудникам не показываем.
 const myRoles = usePage().props.auth.user?.roles ?? [];
 const seesBonusScale = ['manager', 'financist', 'admin'].some((r) => myRoles.includes(r));
-const BONUS_TIERS = [
-    { m: 'до 10%', b: 'бонуса нет', muted: true },
-    { m: '11% – 15%', b: '5% от остатка' },
-    { m: '16% – 20%', b: '7% от остатка' },
-    { m: '21% – 30%', b: '10% от остатка' },
-    { m: '31% – 40%', b: '13% от остатка' },
-    { m: 'от 41%', b: '15% от остатка' },
-];
+// Ступени заменены ставкой по типу сделки (21.08.2026): своё производство —
+// один процент от остатка, перепродажа — другой. Ставки в Настройках.
 
 const open = ref(new Set());
 const toggle = (uid) => { const s = new Set(open.value); s.has(uid) ? s.delete(uid) : s.add(uid); open.value = s; };
@@ -232,15 +226,18 @@ const delAdj = async (a) => {
 
             <!-- Правая колонка: система бонусов — только отдел продаж/финансист/админ -->
             <div v-if="seesBonusScale" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-4">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $e('Система бонусов — по марже сделки') }}</div>
+                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $e('Система бонусов — ставка от остатка') }}</div>
                 <div class="mt-3 space-y-1.5 text-sm">
-                    <div v-for="t in BONUS_TIERS" :key="t.m" class="flex items-center justify-between rounded-lg px-3 py-1.5"
-                        :class="t.muted ? 'bg-slate-50 text-slate-400' : 'bg-emerald-50/50'">
-                        <span :class="t.muted ? '' : 'text-slate-600'">{{ $e('маржа') }} {{ t.m }}</span>
-                        <span class="font-semibold tabular-nums" :class="t.muted ? '' : 'text-emerald-700'">{{ t.b }}</span>
+                    <div class="flex items-center justify-between rounded-lg bg-emerald-50/50 px-3 py-1.5">
+                        <span class="text-slate-600">{{ $e('🏭 Своё производство') }}</span>
+                        <span class="font-semibold tabular-nums text-emerald-700">{{ bonusRates.sale }}%</span>
+                    </div>
+                    <div class="flex items-center justify-between rounded-lg bg-amber-50/60 px-3 py-1.5">
+                        <span class="text-slate-600">{{ $e('📦 Перепродажа') }}</span>
+                        <span class="font-semibold tabular-nums text-amber-700">{{ bonusRates.resale }}%</span>
                     </div>
                 </div>
-                <p class="mt-3 text-[11px] text-slate-400">{{ $e('Маржа = (сумма договора − расходы) / сумма договора. Остаток = сумма − налог − расходы.') }}</p>
+                <p class="mt-3 text-[11px] text-slate-400">{{ $e('Остаток = сумма договора − налог − расходы − доля партнёра. Бонус приходит пропорционально оплате клиента; ставки — в Настройках.') }}</p>
             </div>
         </div>
 

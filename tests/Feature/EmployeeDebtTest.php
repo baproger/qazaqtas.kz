@@ -49,8 +49,14 @@ class EmployeeDebtTest extends TestCase
         $this->manager->companies()->attach(Company::where('code', 'QT')->value('id'));
     }
 
-    /** Выигранная и оплаченная сделка месяца — источник бонуса. */
-    private function wonDeal(string $contractDate, float $budget = 1000000): Deal
+    /**
+     * Выигранная и оплаченная сделка месяца — источник бонуса.
+     *
+     * Бонус теперь ставка от остатка (1% на своём производстве), поэтому
+     * сделки в тестах крупнее: иначе бонус не покрывал бы платёж по долгу и
+     * проверялось бы не то.
+     */
+    private function wonDeal(string $contractDate, float $budget = 5000000): Deal
     {
         $deal = Deal::create([
             'company_id' => Company::where('code', 'QT')->value('id'),

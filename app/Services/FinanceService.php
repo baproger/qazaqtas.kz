@@ -137,26 +137,24 @@ class FinanceService
                 // и строгий whereBetween терял сделки последнего дня месяца.
                 ->where(fn ($c) => $c->whereDate('contract_date', '>=', $from)->whereDate('contract_date', '<=', $to))
                 ->orWhere(fn ($n) => $n->whereNull('contract_date')->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to))))
-            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id']);
+            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id', 'deal_type']);
 
         $expByDeal = \App\Models\Expense::where('status', 'confirmed')
             ->where('expenseable_type', 'deal')
             ->whereIn('expenseable_id', $deals->pluck('id'))
             ->groupBy('expenseable_id')->selectRaw('expenseable_id d, sum(amount) s')->pluck('s', 'd');
 
-        $materials = \App\Services\PayrollService::materialsByDeal($deals->pluck('id'));
-
-        return round($deals->sum(function ($d) use ($expByDeal, $materials, $taxRate) {
+        return round($deals->sum(function ($d) use ($expByDeal, $taxRate) {
             $budget = (float) $d->budget;
             $tax = round($budget * $taxRate, 2);
             $expense = (float) ($expByDeal[$d->id] ?? 0);
             $remainder = round($budget - $tax - $expense
                 - \App\Services\PayrollService::partnerSum($budget, $d->partner_pct), 2);
 
-            return $remainder - \App\Services\PayrollService::dealBonus($budget, $remainder, $tax, $expense,
+            return $remainder - \App\Services\PayrollService::dealBonus($remainder,
                 $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
                 \App\Services\PayrollService::userBonusPercent($d->responsible_user_id),
-                (float) ($materials['sale'][$d->id] ?? 0), (float) ($materials['cost'][$d->id] ?? 0))['total'];
+                $d->deal_type ?? \App\Services\PayrollService::TYPE_PRODUCTION)['total'];
         }), 2);
     }
 

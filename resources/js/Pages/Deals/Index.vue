@@ -152,7 +152,7 @@ const bulkDelete = async () => {
 };
 
 const showModal = ref(false);
-const form = useForm({ company_id: props.currentCompanyId || props.companies[0]?.id || '', branch: '', company_name: '', address: '', bin: '', contract_date: '', client_name: '', product_id: '', lot_number: '', unit: '', area_m2: '', source: '', responsible_user_id: '', budget: 0, partner_pct: '', deadline: '', description: '', note: '', items: [] });
+const form = useForm({ company_id: props.currentCompanyId || props.companies[0]?.id || '', branch: '', company_name: '', address: '', bin: '', contract_date: '', client_name: '', product_id: '', lot_number: '', unit: '', area_m2: '', source: '', responsible_user_id: '', budget: 0, partner_pct: '', deadline: '', description: '', note: '', items: [], deal_type: 'production' });
 
 // Сумма сделки считается по строкам товаров: пока они есть, поле суммы
 // только показывает итог (сервер всё равно пересчитает его сам).
@@ -390,6 +390,19 @@ const applyBinMatch = () => {
                             <option v-for="s in SOURCES" :key="s" :value="s">{{ s }}</option>
                         </select>
                         <InputError :message="form.errors.source" class="mt-1" />
+                    </div>
+                    <!-- Тип сделки решает ставку бонуса менеджера. -->
+                    <div class="sm:col-span-2">
+                        <InputLabel :value="$e('Тип сделки')" />
+                        <div class="mt-1 flex gap-2">
+                            <button type="button" @click="form.deal_type = 'production'"
+                                class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-150"
+                                :class="form.deal_type === 'production' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'">{{ $e('🏭 Своё производство') }}</button>
+                            <button type="button" @click="form.deal_type = 'resale'"
+                                class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-150"
+                                :class="form.deal_type === 'resale' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'">{{ $e('📦 Перепродажа') }}</button>
+                        </div>
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('От типа зависит ставка бонуса менеджера.') }}</p>
                     </div>
                     <div class="sm:col-span-2">
                         <InputLabel :value="$e('Товары заказа')" />

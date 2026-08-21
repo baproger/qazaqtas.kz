@@ -41,6 +41,11 @@ class DealRequest extends FormRequest
             'area_m2' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
             // Товар выбирается из каталога; название дублируется в client_name.
             'product_id' => ['nullable', 'exists:products,id'],
+            // Тип сделки решает ставку бонуса: производство или перепродажа.
+            'deal_type' => ['nullable', \Illuminate\Validation\Rule::in([
+                \App\Services\PayrollService::TYPE_PRODUCTION,
+                \App\Services\PayrollService::TYPE_RESALE,
+            ])],
             'source' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Deal::SOURCES)],
             'client_id' => ['nullable', 'exists:clients,id'],
             'responsible_user_id' => ['nullable', 'exists:users,id'],

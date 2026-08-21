@@ -129,6 +129,12 @@ class PayrollController extends Controller
             'normHours' => $normHours,
             'deptNorms' => $deptNorms,
             'taxRate' => $taxRate * 100,
+            // Ставки бонуса — из настроек: шкала в правой колонке показывает
+            // то, по чему реально платят.
+            'bonusRates' => [
+                'sale' => \App\Services\PayrollService::rateForType(\App\Services\PayrollService::TYPE_PRODUCTION),
+                'resale' => \App\Services\PayrollService::rateForType(\App\Services\PayrollService::TYPE_RESALE),
+            ],
             'totals' => [
                 'budget' => (float) $rows->sum('budget'),
                 'tax' => (float) $rows->sum('tax'),

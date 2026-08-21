@@ -5,10 +5,8 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\Deal;
 use App\Models\DealStage;
-use App\Models\Expense;
-use App\Models\Invoice;
 use App\Models\Material;
-use App\Models\Payment;
+use App\Models\ProductCategory;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\PayrollService;
@@ -18,20 +16,17 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Бонус за товар со склада: процент от НАЦЕНКИ (продажа − закуп).
+ * Перепродажа оплачивается ставкой по ТИПУ СДЕЛКИ.
  *
- * Правило владельца (16.08.2026): товар покупают за 10 000 ₸, добавляют свой
- * процент и продают; с наценки менеджер получает 2%. По складской части
- * ступенчатый бонус от маржи НЕ начисляется — иначе за один товар платили бы
- * дважды.
+ * Раньше складской товар давал отдельный бонус «процент от наценки», а
+ * остальная часть сделки считалась ступенями от маржи. С 21.08.2026 правило
+ * владельца проще: своё производство — одна ставка от остатка, перепродажа —
+ * другая. Отдельного бонуса за наценку больше нет — иначе за перепродажу
+ * платили бы дважды.
  */
 class WarehouseMarkupBonusTest extends TestCase
 {
     use RefreshDatabase;
-
-    private User $accountant;
-
-    private User $manager;
 
     protected function setUp(): void
     {
@@ -39,175 +34,90 @@ class WarehouseMarkupBonusTest extends TestCase
 
         $this->seed(RolePermissionSeeder::class);
         $this->seed(StageSeeder::class);
-
-        $this->accountant = User::factory()->create();
-        $this->accountant->assignRole('financist');
-        $this->accountant->companies()->attach(Company::where('code', 'QT')->value('id'));
-
-        $this->manager = User::factory()->create();
-        $this->manager->assignRole('manager');
-        $this->manager->companies()->attach(Company::where('code', 'QT')->value('id'));
     }
 
-    /** Товар на складе: закуп 10 000 ₸ за штуку, наценка 30%. */
-    private function stock(float $price = 10000, ?float $markup = 30, float $qty = 10): Material
+    /** Своё производство: ставка из настроек, от остатка сделки. */
+    public function test_production_deal_uses_the_sale_rate(): void
     {
-        $this->actingAs($this->accountant)->post(route('warehouse.receipt'), array_filter([
-            'name' => 'Вазон «Тау»',
-            'unit' => 'штук',
-            'quantity' => $qty,
-            'price' => $price,
-            'markup_pct' => $markup,
-            'payment' => 'cash',
-        ], fn ($v) => $v !== null))->assertSessionHasNoErrors();
+        $parts = PayrollService::dealBonus(870000, null, null, PayrollService::TYPE_PRODUCTION);
 
-        return Material::firstOrFail();
+        $this->assertSame(1.0, $parts['rate']);
+        $this->assertSame(8700.0, $parts['total']);
     }
 
-    /** Оплаченная сделка — бонус начисляется по факту прихода денег. */
-    private function paidDeal(float $budget = 500000): Deal
+    /** Перепродажа: своя ставка, вдвое выше. */
+    public function test_resale_deal_uses_the_resale_rate(): void
     {
-        $deal = Deal::create([
-            'company_id' => Company::where('code', 'QT')->value('id'),
-            'number' => 'QT-'.uniqid(), 'name' => 'Сделка', 'company_name' => 'Клиент',
-            'budget' => $budget, 'status' => 'active', 'contract_date' => now()->toDateString(),
-            'deal_stage_id' => DealStage::where('is_won', true)->value('id'),
-            'responsible_user_id' => $this->manager->id,
-        ]);
+        $parts = PayrollService::dealBonus(870000, null, null, PayrollService::TYPE_RESALE);
 
-        $invoice = Invoice::create([
-            'invoiceable_type' => 'deal', 'invoiceable_id' => $deal->id,
-            'number' => 'INV-'.uniqid(), 'amount' => $budget, 'status' => 'sent',
-        ]);
-        Payment::create([
-            'invoice_id' => $invoice->id, 'amount' => $budget,
-            'payment_date' => now()->toDateString(), 'payment_method' => 'bank',
-        ]);
-
-        return $deal;
+        $this->assertSame(2.0, $parts['rate']);
+        $this->assertSame(17400.0, $parts['total']);
     }
 
-    private function writeOff(Deal $deal, Material $material, float $qty): Expense
+    /** Ставки владелец меняет в настройках, без правки кода. */
+    public function test_rates_come_from_settings(): void
     {
-        $this->actingAs($this->manager)->post(route('expenses.store'), [
-            'expenseable_type' => 'deal', 'expenseable_id' => $deal->id,
-            'material_id' => $material->id, 'qty' => $qty, 'date' => now()->toDateString(),
-        ])->assertSessionHasNoErrors();
+        Setting::set('bonus_sale_percent', 1.5);
+        Setting::set('bonus_resale_percent', 3);
 
-        return Expense::where('material_id', $material->id)->latest('id')->firstOrFail();
+        $this->assertSame(1.5, PayrollService::rateForType(PayrollService::TYPE_PRODUCTION));
+        $this->assertSame(3.0, PayrollService::rateForType(PayrollService::TYPE_RESALE));
     }
 
-    /** Цена продажи фиксируется в момент списания — по ней и считается наценка. */
-    public function test_sale_price_is_frozen_at_write_off(): void
+    /** Ручной % по сделке и личный % сотрудника переопределяют ставку типа. */
+    public function test_manual_and_personal_percent_override_the_rate(): void
     {
-        $material = $this->stock();
-        $expense = $this->writeOff($this->paidDeal(), $material, 2);
-
-        // 2 × 10 000 = 20 000 закуп; продажа 2 × 13 000 = 26 000.
-        $this->assertSame(20000.0, (float) $expense->amount);
-        $this->assertSame(26000.0, (float) $expense->sale_amount);
-
-        // Наценку на складе подняли — уже проданный товар не пересчитывается.
-        $material->update(['markup_pct' => 90]);
-        $this->assertSame(26000.0, (float) $expense->fresh()->sale_amount);
+        $this->assertSame(5.0, PayrollService::dealBonus(100000, 5, 3, PayrollService::TYPE_RESALE)['rate']);
+        $this->assertSame(3.0, PayrollService::dealBonus(100000, null, 3, PayrollService::TYPE_RESALE)['rate']);
     }
 
-    /** Бонус за складской товар = 2% от наценки. */
-    public function test_bonus_is_two_percent_of_the_markup(): void
+    /** Убыточная сделка бонуса не приносит: отрицательный бонус — удержание. */
+    public function test_loss_making_deal_pays_no_bonus(): void
     {
-        $material = $this->stock();
-        $deal = $this->paidDeal();
-        $this->writeOff($deal, $material, 2);
-
-        // Наценка = 26 000 − 20 000 = 6 000 → бонус за товар = 120 ₸.
-        $parts = PayrollService::dealBonus(
-            budget: 500000, remainder: 400000, tax: 15000, expense: 20000,
-            override: null, userPercent: null, materialSale: 26000, materialCost: 20000,
-        );
-
-        $this->assertSame(120.0, $parts['warehouse']);
-        $this->assertSame(round($parts['tier'] + 120, 2), $parts['total']);
-    }
-
-    /** Ставку бонуса владелец меняет в настройках. */
-    public function test_bonus_rate_comes_from_settings(): void
-    {
-        Setting::set('warehouse_bonus_percent', 5);
-
-        $parts = PayrollService::dealBonus(
-            budget: 500000, remainder: 400000, tax: 15000, expense: 20000,
-            override: null, userPercent: null, materialSale: 26000, materialCost: 20000,
-        );
-
-        $this->assertSame(300.0, $parts['warehouse'], '5% от наценки 6 000 ₸.');
+        $this->assertSame(0.0, PayrollService::dealBonus(-50000)['total']);
     }
 
     /**
-     * По складской части ступенчатый бонус не идёт: он считается по остальной
-     * сделке, поэтому итог меньше, чем был бы по старому правилу.
+     * Наценка склада осталась ценой продажи товара, но отдельного бонуса
+     * больше не даёт: за перепродажу платит ставка типа сделки.
      */
-    public function test_tier_bonus_is_computed_without_the_warehouse_part(): void
+    public function test_markup_no_longer_creates_a_separate_bonus(): void
     {
-        $withStock = PayrollService::dealBonus(
-            budget: 500000, remainder: 400000, tax: 15000, expense: 20000,
-            override: null, userPercent: null, materialSale: 26000, materialCost: 20000,
-        );
-        $plain = PayrollService::marginBonus(500000, 400000, 15000);
+        $company = Company::where('code', 'QT')->value('id');
+        $manager = User::factory()->create();
+        $manager->assignRole('manager');
+        $manager->companies()->attach($company);
 
-        $this->assertLessThan($plain, $withStock['tier'], 'Складская выручка вышла из базы ступени.');
-        // Ступень считается по сделке без товара: 474 000 договора.
-        $this->assertGreaterThan(0, $withStock['tier']);
-    }
+        ProductCategory::create(['name' => 'Плитка', 'slug' => 'plitka', 'is_active' => true]);
+        $material = Material::create([
+            'company_id' => $company, 'name' => 'Плитка', 'unit' => 'м²',
+            'quantity' => 100, 'price' => 1000, 'markup_pct' => 50,
+        ]);
 
-    /** Сделка без складского товара считается ровно как раньше. */
-    public function test_deal_without_stock_is_unchanged(): void
-    {
-        $parts = PayrollService::dealBonus(
-            budget: 500000, remainder: 400000, tax: 15000, expense: 20000,
-        );
+        $deal = Deal::create([
+            'company_id' => $company, 'number' => 'QT-1', 'name' => 'Сделка',
+            'company_name' => 'Клиент', 'budget' => 1000000, 'status' => 'active',
+            'deal_stage_id' => DealStage::where('is_won', true)->value('id'),
+            'responsible_user_id' => $manager->id,
+        ]);
 
-        $this->assertSame(PayrollService::marginBonus(500000, 400000, 15000), $parts['total']);
-        $this->assertSame(0.0, $parts['warehouse']);
-    }
+        $this->actingAs($manager)->post(route('expenses.store'), [
+            'expenseable_type' => 'deal', 'expenseable_id' => $deal->id,
+            'material_id' => $material->id, 'qty' => 10, 'date' => now()->toDateString(),
+        ])->assertSessionHasNoErrors();
 
-    /** Без наценки правило не включается: старые списания бонус не теряют. */
-    public function test_stock_without_markup_stays_in_the_tier_bonus(): void
-    {
-        $material = $this->stock(markup: 0);
-        $deal = $this->paidDeal();
-        $expense = $this->writeOff($deal, $material, 2);
+        // Бонус пропорционален оплате — без денег клиента его нет вовсе.
+        $invoice = \App\Models\Invoice::create([
+            'invoiceable_type' => 'deal', 'invoiceable_id' => $deal->id,
+            'number' => 'INV-1', 'amount' => 1000000, 'status' => 'paid',
+        ]);
+        \App\Models\Payment::create([
+            'invoice_id' => $invoice->id, 'amount' => 1000000,
+            'payment_date' => now()->toDateString(), 'payment_method' => 'bank',
+        ]);
 
-        $this->assertNull($expense->sale_amount, 'Наценки нет — фиксировать нечего.');
-
-        $materials = PayrollService::materialsByDeal([$deal->id]);
-        $this->assertSame(0.0, (float) ($materials['sale'][$deal->id] ?? 0));
-    }
-
-    /** Ведомость ЗП показывает бонус целиком, вместе со складской частью. */
-    public function test_payroll_row_includes_the_warehouse_bonus(): void
-    {
-        $material = $this->stock();
-        $deal = $this->paidDeal();
-        $this->writeOff($deal, $material, 2);
-
-        $row = app(PayrollService::class)->perUser()->firstWhere('uid', $this->manager->id);
-        $breakdown = app(PayrollService::class)->dealBreakdown()->get($this->manager->id)->first();
-
-        $this->assertGreaterThan(0, $breakdown['bonus_warehouse']);
-        $this->assertSame(120.0, $breakdown['bonus_warehouse'], '2% от наценки 6 000 ₸ при полной оплате.');
-        $this->assertSame(round((float) $breakdown['bonus'], 2), round((float) $row['bonus'], 2));
-    }
-
-    /** Товар не может «продаться» дороже договора — наценка обрезается суммой сделки. */
-    public function test_sale_is_capped_by_the_deal_budget(): void
-    {
-        $parts = PayrollService::dealBonus(
-            budget: 20000, remainder: 15000, tax: 600, expense: 10000,
-            override: null, userPercent: null, materialSale: 26000, materialCost: 10000,
-        );
-
-        // Продажа обрезана до 20 000: наценка 10 000, бонус 200 ₸.
-        $this->assertSame(200.0, $parts['warehouse']);
-        $this->assertSame(0.0, $parts['tier'], 'Сделка ушла в товар целиком — ступени нет.');
+        // Остаток: 1 000 000 − налог 30 000 − списание 10 000 = 960 000 → 1%.
+        $row = app(PayrollService::class)->perUser()->firstWhere('uid', $manager->id);
+        $this->assertSame(9600.0, (float) $row['bonus']);
     }
 }

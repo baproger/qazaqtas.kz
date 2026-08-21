@@ -12,7 +12,7 @@ class PreDeal extends Model
         'company_id', 'user_id', 'request_number', 'valid_until', 'bin', 'customer', 'object_address',
         'client_name', 'client_phone', 'product', 'quantity', 'unit', 'unit_price',
         'contract_sum', 'purchase_price', 'partner_pct', 'partner_sum',
-        'delivery', 'assembly', 'commission', 'tax', 'remainder', 'margin', 'checks', 'status', 'deal_id',
+        'delivery', 'assembly', 'commission', 'tax', 'remainder', 'margin', 'deal_type', 'checks', 'status', 'deal_id',
     ];
 
     protected $casts = ['checks' => 'array', 'valid_until' => 'date'];

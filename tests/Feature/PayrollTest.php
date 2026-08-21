@@ -43,21 +43,37 @@ class PayrollTest extends TestCase
         return $deal;
     }
 
-    public function test_bonus_follows_margin_tiers(): void
+    /**
+     * Бонус — ставка по типу сделки (правило владельца от 21.08.2026,
+     * заменило ступени от маржи): своё производство 1% от остатка.
+     */
+    public function test_bonus_is_a_rate_of_the_remainder(): void
     {
         $admin = $this->user('admin');
         $mgr = $this->user('manager');
-        // budget 1M − tax 3% (30k) − expenses 100k = remainder 870k.
-        // Маржа 87% → ставка 15% → полный бонус 130 500; оплачено 500k из 1M
-        // → пропорция 0.5 → к выплате 65 250, компании 870 000 − 65 250.
+        // budget 1M − налог 3% (30k) − расходы 100k = остаток 870k.
+        // Производство → 1% → полный бонус 8 700; оплачено 500k из 1M →
+        // пропорция 0.5 → к выплате 4 350, компании 870 000 − 4 350.
         $this->wonDealWithFinance($mgr, 500000, 100000);
 
         $this->actingAs($admin)->get(route('payroll.index'))
             ->assertInertia(fn (Assert $p) => $p->component('Payroll/Index')
                 ->where('leadership', true)
-                ->where('rows.0.net', 804750)
-                ->where('rows.0.bonus', 65250)
-                ->where('rows.0.company', 804750));
+                ->where('rows.0.bonus', 4350)
+                ->where('rows.0.company', 865650));
+    }
+
+    /** Перепродажа оплачивается вдвое дороже: 2% вместо 1%. */
+    public function test_resale_pays_the_higher_rate(): void
+    {
+        $admin = $this->user('admin');
+        $mgr = $this->user('manager');
+        $deal = $this->wonDealWithFinance($mgr, 1000000, 100000);
+        $deal->update(['deal_type' => \App\Services\PayrollService::TYPE_RESALE]);
+
+        // Остаток 870 000 → 2% = 17 400 при полной оплате.
+        $this->actingAs($admin)->get(route('payroll.index'))
+            ->assertInertia(fn (Assert $p) => $p->where('rows.0.bonus', 17400));
     }
 
     public function test_bonus_tier_rates(): void
@@ -90,7 +106,7 @@ class PayrollTest extends TestCase
         $this->wonDealWithFinance($other, 900000, 100000);
 
         $this->actingAs($mgr)->get(route('payroll.index'))
-            ->assertInertia(fn (Assert $p) => $p->where('leadership', false)->has('rows', 1)->where('rows.0.bonus', 65250)); // 130 500 × 0.5 (оплачена половина)
+            ->assertInertia(fn (Assert $p) => $p->where('leadership', false)->has('rows', 1)->where('rows.0.bonus', 4350)); // 8 700 × 0.5 (оплачена половина)
     }
 
     public function test_unsuccessful_deal_not_counted(): void

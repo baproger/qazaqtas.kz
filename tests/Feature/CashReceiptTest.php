@@ -65,7 +65,8 @@ class CashReceiptTest extends TestCase
         \App\Models\Expense::create(['amount' => 200, 'date' => $past->toDateString(), 'status' => 'confirmed', 'payment_method' => 'cash']);
 
         // «Доход» тоже месячный: сделка прошлого месяца (по дате договора)
-        // попадает, сегодняшняя — нет. 100000 − 3% − бонус 15% от остатка = 82450.
+        // попадает, сегодняшняя — нет. Остаток 100 000 − налог 3% = 97 000,
+        // бонус менеджера 1% от остатка (970) → доход 96 030.
         $stage = \App\Models\DealStage::orderBy('order')->first()->id;
         \App\Models\Deal::create(['number' => 'QT-101', 'name' => 'X', 'company_name' => 'Т', 'client_name' => 'И', 'budget' => 100000, 'status' => 'active', 'deal_stage_id' => $stage, 'contract_date' => $past->toDateString()]);
         \App\Models\Deal::create(['number' => 'QT-102', 'name' => 'Y', 'company_name' => 'Т', 'client_name' => 'И', 'budget' => 500000, 'status' => 'active', 'deal_stage_id' => $stage, 'contract_date' => now()->toDateString()]);
@@ -76,7 +77,7 @@ class CashReceiptTest extends TestCase
             ->assertInertia(fn ($p) => $p
                 ->where('summary.income', 500)
                 ->where('summary.incomeManual', 500)
-                ->where('summary.dealsIncome', 82450)
+                ->where('summary.dealsIncome', 96030)
                 ->where('summary.expensesTotal', 200)
                 ->where('summary.net', 300)
                 ->where('summary.payroll', 0)

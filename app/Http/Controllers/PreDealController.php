@@ -147,6 +147,10 @@ class PreDealController extends Controller
             'object_address' => ['nullable', 'string', 'max:255'],
             'client_name' => ['nullable', 'string', 'max:255'],
             'client_phone' => ['nullable', 'string', 'max:40'],
+            'deal_type' => ['nullable', \Illuminate\Validation\Rule::in([
+                \App\Services\PayrollService::TYPE_PRODUCTION,
+                \App\Services\PayrollService::TYPE_RESALE,
+            ])],
             // При нескольких позициях изделие и сумма берутся из строк —
             // одиночные поля тогда не обязательны.
             'product' => ['required_without:items', 'nullable', 'string', 'max:255'],
@@ -320,6 +324,9 @@ class PreDealController extends Controller
             'partner_pct' => $preDeal->partner_pct !== null && (float) $preDeal->partner_pct > 0
                 ? $preDeal->partner_pct : null,
             'status' => 'active',
+            // Тип заявки — тип сделки: ставка бонуса не должна меняться на
+            // полпути от заявки к сделке.
+            'deal_type' => $locked->deal_type ?? \App\Services\PayrollService::TYPE_PRODUCTION,
             'company_id' => $companyId,
             'deal_stage_id' => DealStage::funnel($companyId)->first()?->id,
             'responsible_user_id' => $preDeal->user_id,

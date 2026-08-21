@@ -14,7 +14,8 @@ const form = useForm({
     default_locale: props.settings.default_locale,
     tax_percent: props.settings.tax_percent,
     material_markup_percent: props.settings.material_markup_percent,
-    warehouse_bonus_percent: props.settings.warehouse_bonus_percent,
+    bonus_sale_percent: props.settings.bonus_sale_percent,
+    bonus_resale_percent: props.settings.bonus_resale_percent,
 });
 const save = () => form.put(route('settings.update'), { preserveScroll: true });
 </script>
@@ -68,9 +69,14 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
                     <p class="mt-1 text-xs text-slate-400">{{ $e('Общая: цена продажи = закуп + наценка. У позиции склада может быть своя.') }}</p>
                 </div>
                 <div>
-                    <InputLabel :value="$e('Бонус менеджера от наценки, %')" />
-                    <TextInput v-model="form.warehouse_bonus_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
-                    <p class="mt-1 text-xs text-slate-400">{{ $e('За проданный товар со склада: процент от наценки (продажа − закуп). Ступенчатый бонус по этой части не начисляется.') }}</p>
+                    <InputLabel :value="$e('Бонус менеджера: своё производство, %')" />
+                    <TextInput v-model="form.bonus_sale_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
+                    <p class="mt-1 text-xs text-slate-400">{{ $e('Процент от остатка сделки (сумма − налог − расходы − партнёр), пропорционально оплате клиента.') }}</p>
+                </div>
+                <div>
+                    <InputLabel :value="$e('Бонус менеджера: перепродажа, %')" />
+                    <TextInput v-model="form.bonus_resale_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
+                    <p class="mt-1 text-xs text-slate-400">{{ $e('Купили → склад → продали: своя ставка, обычно выше производственной.') }}</p>
                 </div>
             </div>
             <label class="flex items-center gap-2 text-sm">

@@ -12,6 +12,12 @@ use Illuminate\Support\Collection;
 
 class PayrollService
 {
+    /** Своё производство — базовая ставка бонуса. */
+    public const TYPE_PRODUCTION = 'production';
+
+    /** Перепродажа (купили → склад → продали) — своя ставка. */
+    public const TYPE_RESALE = 'resale';
+
     /**
      * Ступенчатый бонус менеджера от маржи сделки (остаток / бюджет):
      *   маржа ≤ 10%  → бонуса нет
@@ -91,84 +97,42 @@ class PayrollService
     }
 
     /**
-     * Складская часть сделок: закупочная стоимость списанного товара и его
-     * выручка (цена продажи, зафиксированная при списании).
-     *
-     * В расчёт берутся ТОЛЬКО списания с наценкой (`sale_amount > amount`).
-     * Старые записи, у которых цены продажи нет, и товар без наценки остаются
-     * в обычном ступенчатом бонусе целиком — иначе менеджеры молча потеряли бы
-     * часть заработка на смене правила.
-     *
-     * @param  \Illuminate\Support\Collection<int, int>|array<int, int>  $dealIds
-     * @return array{cost: \Illuminate\Support\Collection<int, float>, sale: \Illuminate\Support\Collection<int, float>}
-     */
-    public static function materialsByDeal($dealIds): array
-    {
-        $rows = Expense::where('status', 'confirmed')
-            ->where('expenseable_type', 'deal')
-            ->whereIn('expenseable_id', $dealIds)
-            ->whereNotNull('material_id')
-            ->whereColumn('sale_amount', '>', 'amount')
-            ->groupBy('expenseable_id')
-            ->selectRaw('expenseable_id as did, sum(amount) as cost, sum(sale_amount) as sale')
-            ->get();
-
-        return [
-            'cost' => $rows->pluck('cost', 'did')->map(fn ($v) => (float) $v),
-            'sale' => $rows->pluck('sale', 'did')->map(fn ($v) => (float) $v),
-        ];
-    }
-
-    /**
      * Бонус менеджера по сделке — ЕДИНАЯ точка расчёта.
      *
-     * Обычная сделка считается ступенчатым бонусом от маржи, как раньше. Но
-     * если в сделку ушёл товар со склада, по этой части действует другое
-     * правило владельца: менеджер получает процент ОТ НАЦЕНКИ (продажа −
-     * закуп), а ступенчатый бонус по ней НЕ начисляется — иначе за один и тот
-     * же товар платили бы дважды.
+     * Ставка зависит от ТИПА сделки: своё производство — один процент,
+     * перепродажа — другой (правило владельца от 21.08.2026, заменило
+     * ступенчатую шкалу от маржи). Считается от ОСТАТКА сделки: сумма минус
+     * налог, расходы и доля партнёра — то есть с того, что сделка реально
+     * принесла, а не с оборота.
      *
-     * Складская часть вынимается из сделки целиком: из суммы договора уходит
-     * выручка по товару, из расходов — его закупочная стоимость, а налог и
-     * доля партнёра делятся пропорционально. Со ступеней остаётся то, что
-     * менеджер заработал собственно на сделке.
+     * Ручной % по сделке и личный % сотрудника остаются переопределением
+     * ставки: сначала ручной, затем личный, затем ставка типа.
      *
-     * @param  float  $expense  все подтверждённые расходы сделки (вместе со складскими)
-     * @param  float  $materialSale  выручка по списанному товару (цена продажи на момент списания)
-     * @param  float  $materialCost  закупочная стоимость того же товара
-     * @return array{tier: float, warehouse: float, total: float}
+     * @param  float  $remainder  остаток сделки (сумма − налог − расходы − партнёр)
+     * @param  string  $dealType  production | resale
+     * @return array{rate: float, total: float}
      */
     public static function dealBonus(
-        float $budget,
         float $remainder,
-        float $tax,
-        float $expense,
         ?float $override = null,
         ?float $userPercent = null,
-        float $materialSale = 0,
-        float $materialCost = 0,
+        string $dealType = self::TYPE_PRODUCTION,
     ): array {
-        // Товара со склада в сделке нет — расчёт ровно прежний.
-        if ($materialSale <= 0 || $budget <= 0) {
-            $tier = self::marginBonus($budget, $remainder, $tax, $override, $userPercent);
+        $rate = $override ?? $userPercent ?? self::rateForType($dealType);
 
-            return ['tier' => $tier, 'warehouse' => 0.0, 'total' => $tier];
-        }
+        // Убыточная сделка бонуса не приносит: платить процент от минуса не с
+        // чего, а отрицательный бонус превратился бы в удержание.
+        $total = $remainder > 0 ? round($remainder * $rate / 100, 2) : 0.0;
 
-        // Товар не может «продаться» дороже самого договора: наценку задают
-        // на складе, а сделка могла уйти со скидкой.
-        $sale = min($materialSale, $budget);
-        $markup = max($sale - $materialCost, 0);
-        $warehouse = round($markup * (float) Setting::get('warehouse_bonus_percent', 2) / 100, 2);
+        return ['rate' => (float) $rate, 'total' => $total];
+    }
 
-        // Остальная часть сделки: налог и партнёр — пропорционально выручке.
-        $share = ($budget - $sale) / $budget;
-        $taxAndPartner = $budget - $expense - $remainder;   // налог + доля партнёра
-        $restBudget = round($budget - $sale, 2);
-        $restRemainder = round($remainder - ($sale - $materialCost) + $taxAndPartner * ($sale / $budget), 2);
-        $tier = self::marginBonus($restBudget, $restRemainder, round($tax * $share, 2), $override, $userPercent);
-
-        return ['tier' => $tier, 'warehouse' => $warehouse, 'total' => round($tier + $warehouse, 2)];
+    /** Ставка бонуса по типу сделки — из настроек, без правки кода. */
+    public static function rateForType(string $dealType): float
+    {
+        return $dealType === self::TYPE_RESALE
+            ? (float) Setting::get('bonus_resale_percent', 2)
+            : (float) Setting::get('bonus_sale_percent', 1);
     }
 
     /**
@@ -269,7 +233,7 @@ class PayrollService
             ->whereIn('deal_stage_id', $stageFilter)
             ->where('status', '!=', 'cancelled')
             ->orderByDesc('budget')
-            ->get(['id', 'number', 'company_name', 'budget', 'partner_pct', 'bonus_rate_override', 'deal_stage_id', 'responsible_user_id', 'status']);
+            ->get(['id', 'number', 'company_name', 'budget', 'partner_pct', 'bonus_rate_override', 'deal_stage_id', 'responsible_user_id', 'status', 'deal_type']);
 
         $ids = $deals->pluck('id');
         $paidByDeal = Payment::query()
@@ -282,9 +246,7 @@ class PayrollService
             ->whereIn('expenseable_id', $ids)
             ->groupBy('expenseable_id')->selectRaw('expenseable_id as did, SUM(amount) as v')->pluck('v', 'did');
 
-        $materials = self::materialsByDeal($ids);
-
-        return $deals->map(function ($d) use ($paidByDeal, $expenseByDeal, $materials, $taxRate, $wonStageIds, $stageNames) {
+        return $deals->map(function ($d) use ($paidByDeal, $expenseByDeal, $taxRate, $wonStageIds, $stageNames) {
             $budget = (float) $d->budget;
             $paid = (float) ($paidByDeal[$d->id] ?? 0);
             $expense = (float) ($expenseByDeal[$d->id] ?? 0);
@@ -295,10 +257,8 @@ class PayrollService
             $payRatio = $budget > 0 ? min(1, $paid / $budget) : 0;
             $override = $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null;
             $userPercent = self::userBonusPercent($d->responsible_user_id);
-            $parts = self::dealBonus($budget, $remainder, $tax, $expense, $override, $userPercent,
-                (float) ($materials['sale'][$d->id] ?? 0), (float) ($materials['cost'][$d->id] ?? 0));
+            $parts = self::dealBonus($remainder, $override, $userPercent, $d->deal_type ?? self::TYPE_PRODUCTION);
             $bonus = round($parts['total'] * $payRatio, 2);
-            $bonusWarehouse = round($parts['warehouse'] * $payRatio, 2);
             $marginPct = self::marginPct($budget, $remainder, $tax);
             // Личный % сотрудника участвует и в показываемой ставке: иначе
             // строка показывала авто-ступень, а платили по личному проценту —
@@ -306,8 +266,6 @@ class PayrollService
 
             return [
                 'uid' => (int) $d->responsible_user_id,
-                // Сколько из бонуса пришло за товар со склада — видно в ЗП.
-                'bonus_warehouse' => $bonusWarehouse,
                 'id' => $d->id,
                 'number' => $d->number,
                 'company' => $d->company_name,
@@ -319,7 +277,7 @@ class PayrollService
                 'partner' => $partner,
                 'tax' => $tax,
                 'margin_pct' => $marginPct,
-                'bonus_rate' => round(self::effectiveBonusRate($marginPct, $override, $userPercent) * 100, 2),
+                'bonus_rate' => $parts['rate'],
                 // Ручной % финансиста (бейдж «вручную» на странице ЗП).
                 'bonus_manual' => $override !== null,
                 'bonus' => $bonus,
@@ -391,7 +349,7 @@ class PayrollService
         // нужном месяце по сделке любого возраста.
         $deals = Deal::won()->forCurrentCompany()
             ->whereIn('responsible_user_id', $userIds)
-            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id']);
+            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id', 'deal_type']);
 
         if ($deals->isEmpty()) {
             return $empty;
@@ -403,8 +361,6 @@ class PayrollService
         $expenseByDeal = Expense::where('status', 'confirmed')->where('expenseable_type', 'deal')
             ->whereIn('expenseable_id', $ids)
             ->groupBy('expenseable_id')->selectRaw('expenseable_id as did, SUM(amount) as v')->pluck('v', 'did');
-
-        $materials = self::materialsByDeal($ids);
 
         // Платежи по сделкам с датой: по ней и раскладываем бонус по месяцам.
         $payments = Payment::query()
@@ -427,14 +383,10 @@ class PayrollService
                 'budget' => $budget,
                 'uid' => (int) $d->responsible_user_id,
                 'bonus' => self::dealBonus(
-                    $budget,
                     $remainder,
-                    $tax,
-                    $expense,
                     $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
                     self::userBonusPercent($d->responsible_user_id),
-                    (float) ($materials['sale'][$d->id] ?? 0),
-                    (float) ($materials['cost'][$d->id] ?? 0),
+                    $d->deal_type ?? self::TYPE_PRODUCTION,
                 )['total'],
             ];
         }
@@ -486,7 +438,7 @@ class PayrollService
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
 
         $deals = Deal::won()->forCurrentCompany()->whereNotNull('responsible_user_id')
-            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id']);
+            ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id', 'deal_type']);
         $ids = $deals->pluck('id');
 
         $paidByDeal = Payment::query()
@@ -502,9 +454,7 @@ class PayrollService
         $totalByUser = Deal::forCurrentCompany()->whereNotNull('responsible_user_id')
             ->groupBy('responsible_user_id')->selectRaw('responsible_user_id as uid, count(*) as c')->pluck('c', 'uid');
 
-        $materials = self::materialsByDeal($ids);
-
-        $perDeal = $deals->map(function ($d) use ($paidByDeal, $expenseByDeal, $materials, $taxRate) {
+        $perDeal = $deals->map(function ($d) use ($paidByDeal, $expenseByDeal, $taxRate) {
             $budget = (float) $d->budget;
             $expense = (float) ($expenseByDeal[$d->id] ?? 0);
             $tax = round($budget * $taxRate, 2);
@@ -523,14 +473,10 @@ class PayrollService
                 'tax' => $tax,
                 'remainder' => $remainder,
                 'bonus' => round(self::dealBonus(
-                    $budget,
                     $remainder,
-                    $tax,
-                    $expense,
                     $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
                     self::userBonusPercent($d->responsible_user_id),
-                    (float) ($materials['sale'][$d->id] ?? 0),
-                    (float) ($materials['cost'][$d->id] ?? 0),
+                    $d->deal_type ?? self::TYPE_PRODUCTION,
                 )['total'] * $payRatio, 2),
             ];
         })->groupBy('uid');

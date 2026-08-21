@@ -21,7 +21,10 @@ class SettingsController extends Controller
         // Наценка на товар со склада по умолчанию (у позиции может быть своя)
         // и ставка бонуса менеджера от наценки проданного товара.
         'material_markup_percent' => 0,
-        'warehouse_bonus_percent' => 2,
+        // Бонус менеджера: ставка от остатка сделки. Своё производство — 1%,
+        // перепродажа — 2% (правило владельца от 21.08.2026).
+        'bonus_sale_percent' => 1,
+        'bonus_resale_percent' => 2,
         // 3D-конфигуратор двора на сайте: пока выключен, включается здесь.
         'configurator_enabled' => false,
     ];
@@ -56,7 +59,8 @@ class SettingsController extends Controller
             // sometimes: форму настроек присылают и без этих полей (старые
             // экраны, тесты) — отсутствие поля не должно ронять сохранение.
             'material_markup_percent' => ['sometimes', 'numeric', 'min:0', 'max:1000'],
-            'warehouse_bonus_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'bonus_sale_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'bonus_resale_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'configurator_enabled' => ['boolean'],
         ]);
 
