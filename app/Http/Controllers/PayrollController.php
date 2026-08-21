@@ -72,7 +72,11 @@ class PayrollController extends Controller
         $debtPlans = collect(app(\App\Services\EmployeeDebtService::class)
             ->planForUsers($rows->pluck('uid'), $month));
 
-        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans, $bonusMonth) {
+        // Уже выплаченный бонус: в «К выплате» он входить не должен, иначе
+        // бухгалтер заплатит его второй раз. Копится ровно то, что не забрали.
+        $bonusPaid = app(\App\Services\BonusPayoutService::class)->paidTotals($rows->pluck('uid'));
+
+        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans, $bonusMonth, $bonusPaid) {
             $r['dealsList'] = array_values(($breakdown->get($r['uid']) ?? collect())->all());
             $adj = $adjustments->get($r['uid']) ?? collect();
             $deductions = round((float) $adj->whereIn('type', PayrollAdjustment::DEDUCTIONS)->sum('amount'), 2);
@@ -99,8 +103,12 @@ class PayrollController extends Controller
             // перенесено как есть — бонус выплачивается по факту закрытия
             // сделок, а не помесячно.
             $r['bonus_month'] = (float) ($bonusMonth[$r['uid']] ?? 0);
-            // К выплате = почасовая база (или оклад) + бонус − удержания + премии.
-            $r['payout'] = round($r['base'] + $r['bonus'], 2);
+            // Бонус выплачивают отдельно и не обязательно каждый месяц: в
+            // «К выплате» идёт только НЕВЫПЛАЧЕННЫЙ остаток.
+            $r['bonus_paid'] = (float) ($bonusPaid[$r['uid']] ?? 0);
+            $r['bonus_left'] = round(max($r['bonus'] - $r['bonus_paid'], 0), 2);
+            // К выплате = почасовая база (или оклад) + остаток бонуса − удержания + премии.
+            $r['payout'] = round($r['base'] + $r['bonus_left'], 2);
             // Долг — ОТДЕЛЬНОЕ поле расчёта, а не корректировка: аванс и долг
             // независимы и не гасят друг друга. Удерживается только план
             // текущего месяца и только из бонуса (EmployeeDebtService).
@@ -132,6 +140,8 @@ class PayrollController extends Controller
                 'deductions' => (float) $rows->sum('deductions'),
                 'additions' => (float) $rows->sum('additions'),
                 'bonus_month' => (float) $rows->sum('bonus_month'),
+                'bonus_paid' => (float) $rows->sum('bonus_paid'),
+                'bonus_left' => (float) $rows->sum('bonus_left'),
                 'debt_charge' => (float) $rows->sum('debt_charge'),
                 'final' => (float) $rows->sum('final'),
                 'company' => (float) $rows->sum('company'),

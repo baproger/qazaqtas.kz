@@ -363,36 +363,42 @@ class PayrollService
      */
     public function bonusByUsersForMonth($userIds, string $month): array
     {
+        return $this->bonusByMonths($userIds, [$month])[$month] ?? [];
+    }
+
+    /**
+     * Бонусы по МЕСЯЦАМ ОПЛАТЫ.
+     *
+     * Месяц бонуса — тот, когда деньги пришли от клиента, а не когда подписан
+     * договор: бонус платится с денег, а не с обещания. Сделка, оплаченная
+     * частями, отдаёт бонус теми же частями — по 30% оплаты приходит 30%
+     * бонуса в свой месяц, и сумма месяцев всегда равна бонусу сделки.
+     *
+     * @param  array<int, int>|\Illuminate\Support\Collection<int, int>  $userIds
+     * @param  array<int, string>  $months  список YYYY-MM
+     * @return array<string, array<int, float>>  [месяц => [id сотрудника => бонус]]
+     */
+    public function bonusByMonths($userIds, array $months): array
+    {
         $userIds = collect($userIds)->map(fn ($id) => (int) $id)->unique()->values();
-        if ($userIds->isEmpty()) {
-            return [];
+        $months = array_values(array_unique($months));
+        $empty = array_fill_keys($months, []);
+        if ($userIds->isEmpty() || $months === []) {
+            return $empty;
         }
 
-        $start = \Illuminate\Support\Carbon::createFromFormat('Y-m', $month)->startOfMonth();
-        $end = (clone $start)->endOfMonth();
-
+        // Берём ВСЕ выигранные сделки этих сотрудников: платёж мог прийти в
+        // нужном месяце по сделке любого возраста.
         $deals = Deal::won()->forCurrentCompany()
             ->whereIn('responsible_user_id', $userIds)
-            ->where(fn ($w) => $w
-                ->where(fn ($c) => $c->whereNotNull('contract_date')
-                    ->whereBetween('contract_date', [$start->toDateString(), $end->toDateString()]))
-                ->orWhere(fn ($c) => $c->whereNull('contract_date')
-                    ->whereBetween('created_at', [$start->startOfDay(), $end->endOfDay()])))
             ->get(['id', 'budget', 'partner_pct', 'bonus_rate_override', 'responsible_user_id']);
 
         if ($deals->isEmpty()) {
-            return [];
+            return $empty;
         }
 
         $ids = $deals->pluck('id');
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
-
-        $paidByDeal = Payment::query()
-            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
-            ->where('invoices.invoiceable_type', 'deal')
-            ->whereIn('invoices.invoiceable_id', $ids)
-            ->groupBy('invoices.invoiceable_id')
-            ->selectRaw('invoices.invoiceable_id as did, SUM(payments.amount) as v')->pluck('v', 'did');
 
         $expenseByDeal = Expense::where('status', 'confirmed')->where('expenseable_type', 'deal')
             ->whereIn('expenseable_id', $ids)
@@ -400,31 +406,79 @@ class PayrollService
 
         $materials = self::materialsByDeal($ids);
 
-        $perDeal = fn ($d) => (function ($d) use ($paidByDeal, $expenseByDeal, $materials, $taxRate) {
+        // Платежи по сделкам с датой: по ней и раскладываем бонус по месяцам.
+        $payments = Payment::query()
+            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+            ->where('invoices.invoiceable_type', 'deal')
+            ->whereIn('invoices.invoiceable_id', $ids)
+            ->orderBy('payments.payment_date')->orderBy('payments.id')
+            ->get(['invoices.invoiceable_id as did', 'payments.amount', 'payments.payment_date']);
+
+        // Полный бонус сделки — при 100% оплаты. Доля месяца = деньги месяца
+        // ÷ сумма договора, поэтому Σ месяцев = бонус × доля оплаты.
+        $fullBonus = [];
+        foreach ($deals as $d) {
             $budget = (float) $d->budget;
             $expense = (float) ($expenseByDeal[$d->id] ?? 0);
             $tax = round($budget * $taxRate, 2);
             $remainder = round($budget - $tax - $expense - self::partnerSum($budget, $d->partner_pct), 2);
 
-            $paid = (float) ($paidByDeal[$d->id] ?? 0);
-            $payRatio = $budget > 0 ? min(1, $paid / $budget) : 0;
+            $fullBonus[$d->id] = [
+                'budget' => $budget,
+                'uid' => (int) $d->responsible_user_id,
+                'bonus' => self::dealBonus(
+                    $budget,
+                    $remainder,
+                    $tax,
+                    $expense,
+                    $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
+                    self::userBonusPercent($d->responsible_user_id),
+                    (float) ($materials['sale'][$d->id] ?? 0),
+                    (float) ($materials['cost'][$d->id] ?? 0),
+                )['total'],
+            ];
+        }
 
-            return self::dealBonus(
-                $budget,
-                $remainder,
-                $tax,
-                $expense,
-                $d->bonus_rate_override !== null ? (float) $d->bonus_rate_override : null,
-                self::userBonusPercent($d->responsible_user_id),
-                (float) ($materials['sale'][$d->id] ?? 0),
-                (float) ($materials['cost'][$d->id] ?? 0),
-            )['total'] * $payRatio;
-        })($d);
+        $result = $empty;
+        $paidSoFar = [];
+        foreach ($payments as $payment) {
+            $deal = $fullBonus[$payment->did] ?? null;
+            if (! $deal || $deal['budget'] <= 0) {
+                continue;
+            }
 
-        return $deals->groupBy('responsible_user_id')
-            ->map(fn ($rows) => round((float) $rows->sum($perDeal), 2))
-            ->mapWithKeys(fn ($sum, $uid) => [(int) $uid => $sum])
-            ->all();
+            // Переплата бонуса не приносит: за пределами суммы договора
+            // считать нечего.
+            $already = $paidSoFar[$payment->did] ?? 0.0;
+            $counted = max(0, min((float) $payment->amount, $deal['budget'] - $already));
+            $paidSoFar[$payment->did] = $already + $counted;
+            if ($counted <= 0) {
+                continue;
+            }
+
+            $month = \Illuminate\Support\Carbon::parse($payment->payment_date)->format('Y-m');
+            if (! array_key_exists($month, $result)) {
+                continue;   // месяц вне запрошенного окна
+            }
+
+            $share = $deal['bonus'] * ($counted / $deal['budget']);
+            $result[$month][$deal['uid']] = round(($result[$month][$deal['uid']] ?? 0) + $share, 2);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Двенадцать месяцев года по сотрудникам — для страницы «Бонусы».
+     *
+     * @return array<string, array<int, float>>
+     */
+    public function bonusYear($userIds, int $year): array
+    {
+        $months = collect(range(1, 12))
+            ->map(fn ($m) => sprintf('%04d-%02d', $year, $m))->all();
+
+        return $this->bonusByMonths($userIds, $months);
     }
 
     public function perUser(bool $includeAllActive = false): Collection

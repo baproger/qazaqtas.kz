@@ -39,6 +39,7 @@ const TABS = [
     { name: tr('Задолженности'), route: 'finance.debts', perm: 'invoice.viewAny', leadership: true },
     { name: tr('Мои расходы'), route: 'myExpenses.index', perm: 'expense.create' },
     { name: tr('Зарплата'), route: 'payroll.index', perm: 'payroll.view' },
+    { name: tr('Бонусы'), route: 'bonuses.index', perm: 'payroll.view' },
 ];
 
 const tabs = computed(() => TABS.filter((t) => (!t.perm || perms.value.includes(t.perm))

@@ -74,6 +74,7 @@ const allNav = [
             { key: 'nav.finance.debts', name: tr('Задолженности'), route: 'finance.debts', icon: '◵', perm: 'invoice.viewAny', leadershipOnly: true },
             { key: 'nav.finance.myExpenses', name: tr('Мои расходы'), route: 'myExpenses.index', icon: '◨', perm: 'expense.create' },
             { key: 'nav.finance.payroll', name: tr('Зарплата'), route: 'payroll.index', icon: '💵', perm: 'payroll.view' },
+            { key: 'nav.finance.bonuses', name: tr('Бонусы'), route: 'bonuses.index', icon: '◍', perm: 'payroll.view' },
         ],
     },
     { key: 'nav.chat', name: tr('Чат'), route: 'chat.index', icon: '✉' },

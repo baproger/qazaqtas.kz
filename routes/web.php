@@ -140,6 +140,10 @@ Route::middleware('auth')->group(function () {
     Route::put('finance/debts/{debt}', [\App\Http\Controllers\DebtController::class, 'update'])->name('finance.debts.update');
     Route::delete('finance/debts/{debt}', [\App\Http\Controllers\DebtController::class, 'destroy'])->name('finance.debts.destroy');
     Route::get('payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    // «Бонусы»: год целиком — начислено по месяцам, выплачено, накоплено.
+    Route::get('payroll/bonuses', [\App\Http\Controllers\BonusController::class, 'index'])->name('bonuses.index');
+    Route::post('payroll/bonuses/pay', [\App\Http\Controllers\BonusController::class, 'pay'])->name('bonuses.pay');
+    Route::delete('payroll/bonuses/{payout}', [\App\Http\Controllers\BonusController::class, 'destroy'])->name('bonuses.destroy');
     Route::post('payroll/adjustments', [PayrollController::class, 'storeAdjustment'])->name('payroll.adjustments.store');
     Route::delete('payroll/adjustments/{adjustment}', [PayrollController::class, 'destroyAdjustment'])->name('payroll.adjustments.destroy');
     Route::patch('payroll/salary/{user}', [PayrollController::class, 'updateSalary'])->name('payroll.salary');

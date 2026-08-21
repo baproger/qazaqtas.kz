@@ -16,8 +16,9 @@ use Tests\TestCase;
 /**
  * Бонус за месяц — единственная точка расчёта для долгов и ведомости.
  *
- * Месяц определяется по дате ДОГОВОРА (без неё — по дате создания): то же
- * правило, что у фильтра «Месяц» на Финансах и в Сводном отчёте.
+ * Месяц бонуса — тот, когда пришли ДЕНЬГИ от клиента (решение владельца от
+ * 21.08.2026): бонус платится с денег, а не с подписанного договора. Сделка,
+ * оплаченная частями, отдаёт бонус теми же частями по своим месяцам.
  */
 class BonusByMonthTest extends TestCase
 {
@@ -78,9 +79,9 @@ class BonusByMonthTest extends TestCase
         $this->assertGreaterThan(0, $this->payroll->bonusByUserForMonth($this->manager->id, '2026-07'));
     }
 
-    public function test_month_is_taken_from_the_contract_date(): void
+    public function test_month_is_taken_from_the_payment_date(): void
     {
-        // Договор в августе, запись создана позже — считаем по договору.
+        // Оплата в августе, запись создана позже — считаем по оплате.
         $deal = $this->wonDeal('2026-08-10');
         $deal->forceFill(['created_at' => '2026-09-20 10:00:00'])->save();
 
@@ -88,14 +89,37 @@ class BonusByMonthTest extends TestCase
         $this->assertSame(0.0, $this->payroll->bonusByUserForMonth($this->manager->id, '2026-09'));
     }
 
-    /** Без даты договора месяц берётся по дате создания — как в отчёте. */
-    public function test_without_contract_date_falls_back_to_created_at(): void
+    /**
+     * Дата договора на месяц бонуса больше не влияет: важно, когда пришли
+     * деньги. Договор августовский, оплата — сентябрьская.
+     */
+    public function test_contract_date_does_not_decide_the_month(): void
     {
         $deal = $this->wonDeal('2026-08-10');
-        $deal->forceFill(['contract_date' => null, 'created_at' => '2026-09-05 12:00:00'])->save();
+        \App\Models\Payment::query()->update(['payment_date' => '2026-09-05']);
 
         $this->assertSame(0.0, $this->payroll->bonusByUserForMonth($this->manager->id, '2026-08'));
         $this->assertGreaterThan(0, $this->payroll->bonusByUserForMonth($this->manager->id, '2026-09'));
+        $this->assertNotNull($deal->fresh()->contract_date);
+    }
+
+    /** Частичные оплаты делят бонус по своим месяцам, а сумма сходится. */
+    public function test_partial_payments_split_the_bonus_across_months(): void
+    {
+        $deal = $this->wonDeal('2026-07-01', 1000000, 400000);   // 40% в июле
+        $invoice = \App\Models\Invoice::where('invoiceable_id', $deal->id)->firstOrFail();
+        \App\Models\Payment::create([
+            'invoice_id' => $invoice->id, 'amount' => 600000,
+            'payment_date' => '2026-08-15', 'payment_method' => 'bank',
+        ]);
+
+        $july = $this->payroll->bonusByUserForMonth($this->manager->id, '2026-07');
+        $august = $this->payroll->bonusByUserForMonth($this->manager->id, '2026-08');
+
+        $this->assertGreaterThan(0, $july);
+        $this->assertGreaterThan(0, $august);
+        // 40% и 60% одного бонуса: август в полтора раза больше июля.
+        $this->assertEqualsWithDelta($july * 1.5, $august, 1.0);
     }
 
     /**
