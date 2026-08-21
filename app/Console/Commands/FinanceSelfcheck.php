@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\CashReceipt;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Setting;
@@ -143,7 +144,11 @@ class FinanceSelfcheck extends Command
     {
         $rows = $payroll->perUser(true);
         $sum = round((float) $rows->sum('payout'), 2);
-        $bySalaryAndBonus = round((float) $rows->sum('salary') + (float) $rows->sum('bonus'), 2);
+        // Бонус человека = сделки + выработка цеха. Проверять только по
+        // сделкам значило бы каждый месяц ловить ложное расхождение на
+        // зарплате бригад.
+        $bySalaryAndBonus = round((float) $rows->sum('salary')
+            + (float) $rows->sum('bonus') + (float) $rows->sum('bonus_production'), 2);
 
         $this->add('ЗП: Σ «К выплате» == оклады + бонусы', $bySalaryAndBonus, $sum, round($sum - $bySalaryAndBonus, 2));
     }
@@ -188,7 +193,7 @@ class FinanceSelfcheck extends Command
     /** Сколько денег ушло сотрудникам — справкой: в итог расходов они не входят. */
     private function reportEmployeePayouts(?int $companyId): void
     {
-        $category = \App\Models\ExpenseCategory::findByCode(\App\Models\ExpenseCategory::EMPLOYEE);
+        $category = ExpenseCategory::findByCode(ExpenseCategory::EMPLOYEE);
         if (! $category) {
             return;
         }

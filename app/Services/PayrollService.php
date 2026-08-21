@@ -8,36 +8,18 @@ use App\Models\Expense;
 use App\Models\Payment;
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class PayrollService
 {
+    public function __construct(private ProductionBonusService $production) {}
+
     /** Своё производство — базовая ставка бонуса. */
     public const TYPE_PRODUCTION = 'production';
 
     /** Перепродажа (купили → склад → продали) — своя ставка. */
     public const TYPE_RESALE = 'resale';
-
-    /**
-     * Ступенчатый бонус менеджера от маржи сделки (остаток / бюджет):
-     *   маржа ≤ 10%  → бонуса нет
-     *   11% – 15%    → 5% от остатка
-     *   16% – 20%    → 7% от остатка
-     *   21% – 30%    → 10% от остатка
-     *   31% – 40%    → 13% от остатка
-     *   от 41%       → 15% от остатка
-     */
-    public static function bonusRateForMargin(float $marginPct): float
-    {
-        return match (true) {
-            $marginPct <= 10 => 0.0,
-            $marginPct <= 15 => 0.05,
-            $marginPct <= 20 => 0.07,
-            $marginPct <= 30 => 0.10,
-            $marginPct <= 40 => 0.13,
-            default => 0.15,
-        };
-    }
 
     /** Доля партнёра сделки: только % (deals.partner_pct), сумма = % × сумма договора. */
     public static function partnerSum(float $budget, mixed $pct): float
@@ -46,54 +28,15 @@ class PayrollService
     }
 
     /**
-     * Маржа сделки для выбора ступени — ДО налога, как на карточке сделки:
+     * Маржа сделки — ДО налога, как на карточке сделки:
      * (сумма − расходы) / сумма = (остаток + налог) / сумма.
+     *
+     * Показатель здоровья сделки для карточки, ЗП и отчётов. На бонус она
+     * больше не влияет: ставку задаёт тип сделки (см. dealBonus).
      */
     public static function marginPct(float $budget, float $remainder, float $tax = 0): float
     {
         return $budget > 0 ? round(($remainder + $tax) / $budget * 100, 1) : 0.0;
-    }
-
-    /**
-     * Эффективная ставка бонуса (доля, не %). Приоритет — от частного к общему:
-     *   1. ручной % по конкретной сделке (deals.bonus_rate_override);
-     *   2. личный % сотрудника (users.bonus_percent) — основной режим;
-     *   3. авто-ступень от маржи — только если у сотрудника % не задан,
-     *      чтобы старые расчёты не обнулились.
-     */
-    public static function effectiveBonusRate(float $marginPct, ?float $override = null, ?float $userPercent = null): float
-    {
-        if ($override !== null) {
-            return $override / 100;
-        }
-
-        if ($userPercent !== null) {
-            return $userPercent / 100;
-        }
-
-        return self::bonusRateForMargin($marginPct);
-    }
-
-    /**
-     * Bonus for one deal: remainder = budget − tax − expenses. The tier is picked
-     * by the PRE-TAX margin (the one shown on the deal card) and applied to the
-     * remainder. $override — ручной % финансиста по этой сделке (null = авто).
-     */
-    public static function marginBonus(
-        float $budget,
-        float $remainder,
-        float $tax = 0,
-        ?float $override = null,
-        ?float $userPercent = null,
-    ): float {
-        if ($budget <= 0 || $remainder <= 0) {
-            return 0.0;
-        }
-
-        // Процент считается от ЧИСТОГО ОСТАТКА сделки (после налога и расходов).
-        $rate = self::effectiveBonusRate(self::marginPct($budget, $remainder, $tax), $override, $userPercent);
-
-        return round($remainder * $rate, 2);
     }
 
     /**
@@ -152,7 +95,7 @@ class PayrollService
         }
 
         if (! array_key_exists($userId, self::$bonusPercentCache)) {
-            $value = \App\Models\User::whereKey($userId)->value('bonus_percent');
+            $value = User::whereKey($userId)->value('bonus_percent');
             self::$bonusPercentCache[$userId] = $value === null ? null : (float) $value;
         }
 
@@ -210,7 +153,7 @@ class PayrollService
      * (pending — shown so the financist sees what is about to land). Each deal carries
      * the same money math as the deal card, so the ЗП figure can be verified line by line.
      *
-     * @return Collection<int, Collection<int, array<string, mixed>>>  keyed by user id
+     * @return Collection<int, Collection<int, array<string, mixed>>> keyed by user id
      */
     public function dealBreakdown(): Collection
     {
@@ -287,21 +230,18 @@ class PayrollService
     }
 
     /**
-     * Per-manager totals. The bonus is computed PER DEAL (each deal falls into its
-     * own margin tier) and then summed — not one rate over the aggregate.
-     */
-    /**
      * Бонус сотрудника за КОНКРЕТНЫЙ месяц.
      *
-     * Месяц определяется по дате ДОГОВОРА, а без неё — по дате создания:
-     * ровно то же правило, что у фильтра «Месяц» на Финансах и в Сводном
-     * отчёте (ReportController). Разойдись они — ведомость перестала бы
-     * сходиться с отчётом, и спорить пришлось бы о том, какая страница врёт.
+     * Месяц бонуса — тот, в котором пришли ДЕНЬГИ ОТ КЛИЕНТА (см.
+     * bonusByMonths): бонус платится с денег, а не с обещания. Это НЕ то же
+     * самое, что фильтр «Месяц» на Финансах и в Сводном отчёте — там сделки
+     * отбираются по дате договора. Разные вопросы: «сколько сделок этого
+     * месяца» и «за какой месяц человек заработал».
      *
-     * Формула не своя: тот же marginBonus (ручной % по сделке и личный %
-     * сотрудника работают сами) × доля фактической оплаты. Это единственная
-     * точка расчёта «бонус за месяц» — её зовут и погашение долгов, и плитка
-     * в ведомости; второй раз нигде не пересчитывать.
+     * Формула не своя: расчёт целиком делегирован bonusByMonths — это
+     * единственная точка расчёта «бонус за месяц» по сделкам; второй раз
+     * нигде не пересчитывать. Бонус за выработку цеха живёт в
+     * ProductionBonusService, а складывает их BonusPayoutService.
      *
      * @param  string  $month  формат YYYY-MM
      */
@@ -316,8 +256,8 @@ class PayrollService
      * бы три запроса на каждого. Формула тут не своя: она одна на оба метода,
      * ниже по коду.
      *
-     * @param  array<int, int>|\Illuminate\Support\Collection<int, int>  $userIds
-     * @return array<int, float>  бонус по id сотрудника
+     * @param  array<int, int>|Collection<int, int>  $userIds
+     * @return array<int, float> бонус по id сотрудника
      */
     public function bonusByUsersForMonth($userIds, string $month): array
     {
@@ -332,9 +272,9 @@ class PayrollService
      * частями, отдаёт бонус теми же частями — по 30% оплаты приходит 30%
      * бонуса в свой месяц, и сумма месяцев всегда равна бонусу сделки.
      *
-     * @param  array<int, int>|\Illuminate\Support\Collection<int, int>  $userIds
+     * @param  array<int, int>|Collection<int, int>  $userIds
      * @param  array<int, string>  $months  список YYYY-MM
-     * @return array<string, array<int, float>>  [месяц => [id сотрудника => бонус]]
+     * @return array<string, array<int, float>> [месяц => [id сотрудника => бонус]]
      */
     public function bonusByMonths($userIds, array $months): array
     {
@@ -408,7 +348,7 @@ class PayrollService
                 continue;
             }
 
-            $month = \Illuminate\Support\Carbon::parse($payment->payment_date)->format('Y-m');
+            $month = Carbon::parse($payment->payment_date)->format('Y-m');
             if (! array_key_exists($month, $result)) {
                 continue;   // месяц вне запрошенного окна
             }
@@ -490,10 +430,14 @@ class PayrollService
         $uids = $perDeal->keys()->merge($totalByUser->keys())->merge($salaryUids)->unique()->filter()->values();
 
         $people = User::whereIn('id', $uids)->get(['id', 'name', 'avatar', 'salary'])->keyBy('id');
+        // Бонус за выработку цеха: он такой же заработок, как процент со
+        // сделки. Считается здесь, а не в контроллере ЗП, иначе Аналитика и
+        // самопроверка видели бы ЗП компании меньше, чем ведомость.
+        $production = $this->production->totalsByUser($uids);
         // Drop orphaned responsible ids (deleted users) so only real employees show.
         $uids = $uids->filter(fn ($id) => $people->has($id))->values();
 
-        return $uids->map(function ($uid) use ($perDeal, $totalByUser, $people) {
+        return $uids->map(function ($uid) use ($perDeal, $totalByUser, $people, $production) {
             $rows = $perDeal[$uid] ?? collect();
             $income = (float) $rows->sum('income');
             $expense = (float) $rows->sum('expense');
@@ -501,6 +445,7 @@ class PayrollService
             $tax = round((float) $rows->sum('tax'), 2);
             $remainder = round((float) $rows->sum('remainder'), 2);
             $bonus = round((float) $rows->sum('bonus'), 2);
+            $productionBonus = round((float) ($production[$uid] ?? 0), 2);
             $company = round($remainder - $bonus, 2);
             $margin = $budget > 0 ? round($company / $budget * 100, 1) : 0.0;
 
@@ -517,8 +462,13 @@ class PayrollService
                 'remainder' => $remainder,
                 'bonus' => $bonus,
                 // ЗП сотрудника = оклад (из карточки сотрудника) + бонус по марже.
+                // bonus — только со сделок: на нём стоит экономика сделки
+                // (company = остаток − бонус). Выработка цеха к сделке
+                // отношения не имеет и живёт отдельным полем.
+                'bonus_production' => $productionBonus,
+                'bonus_total' => round($bonus + $productionBonus, 2),
                 'salary' => (float) ($people[$uid]->salary ?? 0),
-                'payout' => round((float) ($people[$uid]->salary ?? 0) + $bonus, 2),
+                'payout' => round((float) ($people[$uid]->salary ?? 0) + $bonus + $productionBonus, 2),
                 'company' => $company,
                 'net' => $company,
                 'margin' => $margin,

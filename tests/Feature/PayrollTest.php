@@ -8,6 +8,7 @@ use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\PayrollService;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,6 +30,7 @@ class PayrollTest extends TestCase
     {
         $u = User::factory()->create();
         $u->assignRole($role);
+
         return $u;
     }
 
@@ -40,6 +42,7 @@ class PayrollTest extends TestCase
         $inv = Invoice::create(['number' => 'I-'.uniqid(), 'invoiceable_type' => 'deal', 'invoiceable_id' => $deal->id, 'amount' => $paid, 'status' => 'paid']);
         Payment::create(['invoice_id' => $inv->id, 'amount' => $paid, 'payment_date' => now()->toDateString()]);
         Expense::create(['expenseable_type' => 'deal', 'expenseable_id' => $deal->id, 'amount' => $expense, 'date' => now()->toDateString(), 'status' => 'confirmed']);
+
         return $deal;
     }
 
@@ -69,33 +72,28 @@ class PayrollTest extends TestCase
         $admin = $this->user('admin');
         $mgr = $this->user('manager');
         $deal = $this->wonDealWithFinance($mgr, 1000000, 100000);
-        $deal->update(['deal_type' => \App\Services\PayrollService::TYPE_RESALE]);
+        $deal->update(['deal_type' => PayrollService::TYPE_RESALE]);
 
         // Остаток 870 000 → 2% = 17 400 при полной оплате.
         $this->actingAs($admin)->get(route('payroll.index'))
             ->assertInertia(fn (Assert $p) => $p->where('rows.0.bonus', 17400));
     }
 
-    public function test_bonus_tier_rates(): void
-    {
-        // ≤10 → 0; ≤15 → 5%; ≤20 → 7%; ≤30 → 10%; ≤40 → 13%; от 41% → 15%.
-        $this->assertSame(0.0, \App\Services\PayrollService::bonusRateForMargin(10));
-        $this->assertSame(0.05, \App\Services\PayrollService::bonusRateForMargin(15));
-        $this->assertSame(0.07, \App\Services\PayrollService::bonusRateForMargin(20));
-        $this->assertSame(0.10, \App\Services\PayrollService::bonusRateForMargin(30));
-        $this->assertSame(0.13, \App\Services\PayrollService::bonusRateForMargin(40));
-        $this->assertSame(0.15, \App\Services\PayrollService::bonusRateForMargin(45));
-        // Низкомаржинальная сделка: маржа 7% → бонуса нет.
-        $this->assertSame(0.0, \App\Services\PayrollService::marginBonus(1000000, 70000));
-    }
-
-    public function test_tier_uses_pre_tax_margin(): void
+    /**
+     * Маржа осталась показателем здоровья сделки, но бонуса больше не задаёт.
+     *
+     * Ступени от маржи отменены 21.08.2026: ставку задаёт тип сделки. Пока в
+     * коде жили оба правила, следующий вызов мог заплатить по отменённому.
+     */
+    public function test_margin_is_only_a_health_number(): void
     {
         // Кейс ALT-001: бюджет 1М, расходы 780k, налог 3% (30k) → остаток 190k.
-        // Маржа для ступени — ДО налога: (1М − 780k)/1М = 22% → ставка 10%,
-        // бонус = 10% × 190 000 = 19 000 (а не 7% × 190 000 = 13 300).
-        $this->assertSame(22.0, \App\Services\PayrollService::marginPct(1000000, 190000, 30000));
-        $this->assertSame(19000.0, \App\Services\PayrollService::marginBonus(1000000, 190000, 30000));
+        // Маржа — ДО налога: (1М − 780k)/1М = 22%.
+        $this->assertSame(22.0, PayrollService::marginPct(1000000, 190000, 30000));
+        // На бонус она не влияет: 1% от остатка независимо от маржи.
+        $this->assertSame(1900.0, PayrollService::dealBonus(190000)['total']);
+        $this->assertFalse(method_exists(PayrollService::class, 'bonusRateForMargin'),
+            'Ступени от маржи отменены — второго правила расчёта бонуса быть не должно.');
     }
 
     public function test_manager_sees_only_own(): void
@@ -131,7 +129,7 @@ class PayrollTest extends TestCase
         $deal = Deal::create(['number' => 'E-1', 'name' => 'X', 'company_name' => 'ТОО', 'client_name' => 'И', 'budget' => 500000, 'status' => 'active', 'deal_stage_id' => $stage, 'responsible_user_id' => $mgr->id]);
         Expense::create(['expenseable_type' => 'deal', 'expenseable_id' => $deal->id, 'amount' => 75000, 'date' => now()->toDateString(), 'status' => 'confirmed']);
 
-        $totals = app(\App\Services\PayrollService::class)->companyTotals();
+        $totals = app(PayrollService::class)->companyTotals();
         $this->assertEquals(75000.0, (float) $totals['expense']);
         // Доход/бонус по НЕ-won сделке по-прежнему не считаются (факт прихода).
         $this->assertEquals(0.0, (float) $totals['income']);

@@ -44,23 +44,32 @@ class ManualBonusAndDealFieldsTest extends TestCase
 
     public function test_employee_percent_is_applied_to_the_net_remainder(): void
     {
-        // 1 % от остатка вместо ступеней: 1 000 000 остатка → 10 000.
-        $this->assertSame(10000.0, PayrollService::marginBonus(2000000, 1000000, 60000, null, 1.0));
+        // Личный % сотрудника: 1% от остатка 1 000 000 → 10 000.
+        $this->assertSame(10000.0, PayrollService::dealBonus(1000000, null, 1.0)['total']);
     }
 
     public function test_deal_override_beats_the_employee_percent(): void
     {
         $this->assertSame(
             50000.0,
-            PayrollService::marginBonus(2000000, 1000000, 60000, 5.0, 1.0),
+            PayrollService::dealBonus(1000000, 5.0, 1.0)['total'],
             'Ручной % по сделке должен перекрывать личный % сотрудника.'
         );
     }
 
-    public function test_without_a_percent_the_margin_scale_still_works(): void
+    /**
+     * Без личного % платит ставка ТИПА сделки, а не маржа.
+     *
+     * Раньше здесь была ступень от маржи (53% → 15%). Ступени отменены
+     * 21.08.2026: своё производство 1%, перепродажа 2%.
+     */
+    public function test_without_a_percent_the_deal_type_rate_applies(): void
     {
-        // Маржа (1 000 000 + 60 000) / 2 000 000 = 53% → ступень 15%.
-        $this->assertSame(150000.0, PayrollService::marginBonus(2000000, 1000000, 60000));
+        $this->assertSame(10000.0, PayrollService::dealBonus(1000000)['total']);
+        $this->assertSame(
+            20000.0,
+            PayrollService::dealBonus(1000000, null, null, PayrollService::TYPE_RESALE)['total']
+        );
     }
 
     public function test_payroll_uses_the_percent_saved_on_the_employee(): void

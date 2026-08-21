@@ -12,19 +12,19 @@ use Tests\TestCase;
 
 /**
  * Ручной % бонуса менеджера по сделке (deals.bonus_rate_override):
- * ставит финансист/админ; null = авто-ступень от маржи.
+ * ставит финансист/админ; null = ставка по типу сделки.
  */
 class DealBonusOverrideTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_manual_rate_overrides_margin_ladder(): void
+    public function test_manual_rate_overrides_the_deal_type_rate(): void
     {
-        // Маржа 50% → авто-ступень 15% от остатка 50 = 7.5; ручные 10% должны победить.
-        $this->assertSame(7.5, PayrollService::marginBonus(100.0, 50.0, 0.0));
-        $this->assertSame(5.0, PayrollService::marginBonus(100.0, 50.0, 0.0, 10.0));
+        // Своё производство → 1% от остатка 50 000 = 500; ручные 10% побеждают.
+        $this->assertSame(500.0, PayrollService::dealBonus(50000)['total']);
+        $this->assertSame(5000.0, PayrollService::dealBonus(50000, 10)['total']);
         // Ручной 0% — бонуса нет вовсе.
-        $this->assertSame(0.0, PayrollService::marginBonus(100.0, 50.0, 0.0, 0.0));
+        $this->assertSame(0.0, PayrollService::dealBonus(50000, 0)['total']);
     }
 
     public function test_financist_sets_and_resets_rate_but_manager_cannot(): void

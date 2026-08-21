@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,12 +16,13 @@ class SettingsController extends Controller
         'company_name' => 'QAZAQ TAS',
         'currency' => '₸',
         'auto_create_project' => true,
-        'default_locale' => \App\Support\Locales::FALLBACK,
-        // bonus_percent удалён: бонус теперь ступенчатый от маржи сделки
-        // (PayrollService::bonusRateForMargin), настройкой не регулируется.
+        'default_locale' => Locales::FALLBACK,
+        // bonus_percent удалён: ставка бонуса зависит от типа сделки и
+        // задаётся ниже (bonus_sale_percent / bonus_resale_percent).
         'tax_percent' => 3,
-        // Наценка на товар со склада по умолчанию (у позиции может быть своя)
-        // и ставка бонуса менеджера от наценки проданного товара.
+        // Наценка на товар со склада по умолчанию (у позиции может быть
+        // своя): цена продажи = закуп + наценка. Отдельного бонуса «процент
+        // от наценки» больше нет — за перепродажу платит ставка типа сделки.
         'material_markup_percent' => 0,
         // Бонус менеджера: ставка от остатка сделки. Своё производство — 1%,
         // перепродажа — 2% (правило владельца от 21.08.2026).
@@ -60,7 +63,7 @@ class SettingsController extends Controller
             'company_name' => ['required', 'string', 'max:255'],
             'currency' => ['required', 'string', 'max:10'],
             'auto_create_project' => ['boolean'],
-            'default_locale' => ['required', \Illuminate\Validation\Rule::in(\App\Support\Locales::ALL)],
+            'default_locale' => ['required', Rule::in(Locales::ALL)],
             'tax_percent' => ['required', 'numeric', 'min:0', 'max:100'],
             // sometimes: форму настроек присылают и без этих полей (старые
             // экраны, тесты) — отсутствие поля не должно ронять сохранение.

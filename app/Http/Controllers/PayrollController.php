@@ -11,7 +11,6 @@ use App\Models\WorkHour;
 use App\Services\BonusPayoutService;
 use App\Services\EmployeeDebtService;
 use App\Services\PayrollService;
-use App\Services\ProductionBonusService;
 use App\Support\CurrentCompany;
 use App\Support\FinanceAudit;
 use Illuminate\Http\RedirectResponse;
@@ -87,13 +86,7 @@ class PayrollController extends Controller
         // бухгалтер заплатит его второй раз. Копится ровно то, что не забрали.
         $bonusPaid = app(BonusPayoutService::class)->paidTotals($rows->pluck('uid'));
 
-        // Бонус за выработку цеха. Ведомость обязана показывать ВЕСЬ бонус
-        // человека: бригадир зарабатывает объёмом, а не процентом со сделок,
-        // и без этого его строка выглядела бы как «только оклад», расходясь
-        // со страницей «Бонусы».
-        $bonusProduction = app(ProductionBonusService::class)->totalsByUser($rows->pluck('uid'));
-
-        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans, $bonusMonth, $bonusPaid, $bonusProduction) {
+        $rows = $rows->map(function ($r) use ($breakdown, $adjustments, $hoursByUser, $normHours, $deptByUser, $deptNorms, $debtPlans, $bonusMonth, $bonusPaid) {
             $r['dealsList'] = array_values(($breakdown->get($r['uid']) ?? collect())->all());
             $adj = $adjustments->get($r['uid']) ?? collect();
             $deductions = round((float) $adj->whereIn('type', PayrollAdjustment::DEDUCTIONS)->sum('amount'), 2);
@@ -124,9 +117,9 @@ class PayrollController extends Controller
             // «К выплате» идёт только НЕВЫПЛАЧЕННЫЙ остаток.
             $r['bonus_paid'] = (float) ($bonusPaid[$r['uid']] ?? 0);
             // Бонус строки = сделки + выработка цеха: у человека он один.
-            $r['bonus_production'] = (float) ($bonusProduction[$r['uid']] ?? 0);
+            // Обе части приходят из PayrollService — здесь их не пересчитывают.
             $r['bonus_deals'] = $r['bonus'];
-            $r['bonus'] = round($r['bonus'] + $r['bonus_production'], 2);
+            $r['bonus'] = (float) $r['bonus_total'];
             $r['bonus_left'] = round(max($r['bonus'] - $r['bonus_paid'], 0), 2);
             // К выплате = почасовая база (или оклад) + остаток бонуса − удержания + премии.
             $r['payout'] = round($r['base'] + $r['bonus_left'], 2);

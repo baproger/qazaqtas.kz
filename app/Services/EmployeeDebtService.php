@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  */
 class EmployeeDebtService
 {
-    public function __construct(private PayrollService $payroll) {}
+    public function __construct(private BonusPayoutService $bonuses) {}
 
     /**
      * План удержания сотрудника за месяц (плюс сами долги — для ведомости).
@@ -58,8 +58,7 @@ class EmployeeDebtService
 
         // Весь бонус месяца: сделки и выработка цеха вместе — план удержания
         // обязан совпадать с тем, что реально спишет `debts:charge`.
-        $bonuses = app(BonusPayoutService::class)
-            ->accrualsByMonths($byUser->keys(), [$month])[$month] ?? [];
+        $bonuses = $this->bonuses->accrualsByMonths($byUser->keys(), [$month])[$month] ?? [];
 
         $plans = [];
         foreach ($byUser as $userId => $debts) {
@@ -140,7 +139,7 @@ class EmployeeDebtService
         foreach ($byUser as $userId => $debts) {
             // Долг гасится из ВСЕГО бонуса месяца — и со сделок, и за
             // выработку цеха: для сотрудника это одни и те же деньги.
-            $left = (float) (app(BonusPayoutService::class)
+            $left = (float) ($this->bonuses
                 ->accrualsByMonths([(int) $userId], [$month])[$month][(int) $userId] ?? 0);
 
             foreach ($debts as $debt) {
