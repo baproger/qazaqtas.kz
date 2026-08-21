@@ -25,6 +25,12 @@ class SettingsController extends Controller
         // перепродажа — 2% (правило владельца от 21.08.2026).
         'bonus_sale_percent' => 1,
         'bonus_resale_percent' => 2,
+        // Производство: бонус за сделанный объём. Ставка бригадира названа
+        // владельцем; ставку рабочего он задаёт сам — выдумывать её нельзя.
+        'foreman_rate_m2' => 450,
+        'foreman_rate_pcs' => 35,
+        'worker_rate_m2' => 0,
+        'worker_rate_pcs' => 0,
         // 3D-конфигуратор двора на сайте: пока выключен, включается здесь.
         'configurator_enabled' => false,
     ];
@@ -61,6 +67,10 @@ class SettingsController extends Controller
             'material_markup_percent' => ['sometimes', 'numeric', 'min:0', 'max:1000'],
             'bonus_sale_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'bonus_resale_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'foreman_rate_m2' => ['sometimes', 'numeric', 'min:0'],
+            'foreman_rate_pcs' => ['sometimes', 'numeric', 'min:0'],
+            'worker_rate_m2' => ['sometimes', 'numeric', 'min:0'],
+            'worker_rate_pcs' => ['sometimes', 'numeric', 'min:0'],
             'configurator_enabled' => ['boolean'],
         ]);
 

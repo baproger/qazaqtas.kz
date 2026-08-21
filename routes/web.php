@@ -91,6 +91,15 @@ Route::middleware('auth')->group(function () {
     Route::patch('deals/{deal}/bonus-rate', [DealController::class, 'updateBonusRate'])->name('deals.bonusRate');
     Route::patch('deals/{deal}/stage-task', [DealController::class, 'completeStageTask'])->name('deals.stageTask');
 
+    // Производство: сменные наряды бригад — выработка в штуках и м².
+    Route::get('production', [\App\Http\Controllers\ProductionController::class, 'index'])->name('production.index');
+    Route::post('production/orders', [\App\Http\Controllers\ProductionController::class, 'store'])->name('production.orders.store');
+    Route::patch('production/orders/{order}/confirm', [\App\Http\Controllers\ProductionController::class, 'confirm'])->name('production.orders.confirm');
+    Route::delete('production/orders/{order}', [\App\Http\Controllers\ProductionController::class, 'destroy'])->name('production.orders.destroy');
+    Route::post('production/brigades', [\App\Http\Controllers\ProductionController::class, 'storeBrigade'])->name('production.brigades.store');
+    Route::patch('production/brigades/{brigade}', [\App\Http\Controllers\ProductionController::class, 'updateBrigade'])->name('production.brigades.update');
+    Route::delete('production/brigades/{brigade}', [\App\Http\Controllers\ProductionController::class, 'destroyBrigade'])->name('production.brigades.destroy');
+
     // Склад (приход товара + остатки, у каждой компании свой)
     Route::get('warehouse', [\App\Http\Controllers\WarehouseController::class, 'index'])->name('warehouse.index');
     Route::post('warehouse/receipt', [\App\Http\Controllers\WarehouseController::class, 'receipt'])->name('warehouse.receipt');

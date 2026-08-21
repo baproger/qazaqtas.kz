@@ -73,7 +73,9 @@ class RolePermissionSeeder extends Seeder
         // Должности компании (юрист/повар/технолог/снабженец) — права уровня
         // «сотрудник»: цех, задачи, своя ЗП. СЕО = роль admin (подпись в UI),
         // «Финансист-Бухгалтер» = financist.
-        foreach (['lawyer', 'cook', 'designer', 'supplier'] as $job) {
+        // Бригадир — уровень сотрудника плюс своя страница производства:
+        // он ведёт наряды своей бригады (доступ проверяется в контроллере).
+        foreach (['lawyer', 'cook', 'designer', 'supplier', 'foreman'] as $job) {
             $perms = [
                 'project.viewAny', 'project.view',
                 'task.viewAny', 'task.view', 'task.update',

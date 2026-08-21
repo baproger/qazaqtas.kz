@@ -16,6 +16,10 @@ const form = useForm({
     material_markup_percent: props.settings.material_markup_percent,
     bonus_sale_percent: props.settings.bonus_sale_percent,
     bonus_resale_percent: props.settings.bonus_resale_percent,
+    foreman_rate_m2: props.settings.foreman_rate_m2,
+    foreman_rate_pcs: props.settings.foreman_rate_pcs,
+    worker_rate_m2: props.settings.worker_rate_m2,
+    worker_rate_pcs: props.settings.worker_rate_pcs,
 });
 const save = () => form.put(route('settings.update'), { preserveScroll: true });
 </script>
@@ -57,8 +61,8 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
                     <TextInput v-model="form.tax_percent" type="number" step="0.1" class="mt-1 w-full" />
                 </div>
                 <div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-500 ring-1 ring-slate-200">
-                    <div class="font-semibold text-slate-600">{{ $e('Бонус сотрудника — по марже сделки (фиксировано):') }}</div>
-                    {{ $e('до 10% — нет · 11–15% — 5% · 16–20% — 7% · 21–30% — 10% · 31–40% — 13% · от 41% — 15% от остатка') }}
+                    <div class="font-semibold text-slate-600">{{ $e('Бонус считается двумя ставками:') }}</div>
+                    {{ $e('отдел продаж — процент от остатка сделки, производство — деньги за сделанный объём.') }}
                 </div>
             </div>
             <!-- Товар со склада: наценка и бонус менеджера от неё -->
@@ -77,6 +81,27 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
                     <InputLabel :value="$e('Бонус менеджера: перепродажа, %')" />
                     <TextInput v-model="form.bonus_resale_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
                     <p class="mt-1 text-xs text-slate-400">{{ $e('Купили → склад → продали: своя ставка, обычно выше производственной.') }}</p>
+                </div>
+            </div>
+            <!-- Производство: деньги за объём, а не процент от сделки -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <InputLabel :value="$e('Бригадир: ₸ за м²')" />
+                    <TextInput v-model="form.foreman_rate_m2" type="number" step="1" min="0" class="mt-1 w-full" />
+                    <p class="mt-1 text-xs text-slate-400">{{ $e('Бригадиру платят за весь объём смены его бригады.') }}</p>
+                </div>
+                <div>
+                    <InputLabel :value="$e('Бригадир: ₸ за штуку')" />
+                    <TextInput v-model="form.foreman_rate_pcs" type="number" step="1" min="0" class="mt-1 w-full" />
+                </div>
+                <div>
+                    <InputLabel :value="$e('Рабочий: ₸ за м²')" />
+                    <TextInput v-model="form.worker_rate_m2" type="number" step="1" min="0" class="mt-1 w-full" />
+                    <p class="mt-1 text-xs text-slate-400">{{ $e('Ноль — рабочим за объём не платим, только бригадиру.') }}</p>
+                </div>
+                <div>
+                    <InputLabel :value="$e('Рабочий: ₸ за штуку')" />
+                    <TextInput v-model="form.worker_rate_pcs" type="number" step="1" min="0" class="mt-1 w-full" />
                 </div>
             </div>
             <label class="flex items-center gap-2 text-sm">

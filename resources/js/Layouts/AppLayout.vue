@@ -55,6 +55,8 @@ const allNav = [
     { key: 'nav.siteOrders', name: tr('Заказы с сайта'), route: 'siteOrders.index', icon: '🛒', roles: ['admin', 'director', 'financist', 'manager'] },
     { key: 'nav.deals', name: tr('Сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny' },
     { key: 'nav.workshop', name: tr('Цех'), route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
+    // Производство: выработка бригад по сменам (бригадир видит свои бригады).
+    { key: 'nav.production', name: tr('Производство'), route: 'production.index', icon: '⚒', roles: ['admin', 'director', 'financist', 'foreman'] },
     { key: 'nav.warehouse', name: tr('Склад'), route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
     // Каталог сайта: карточки продукции, которые видит витрина.
     { key: 'nav.catalog', name: tr('Каталог сайта'), route: 'catalog.index', icon: '▥', perm: 'product.viewAny' },

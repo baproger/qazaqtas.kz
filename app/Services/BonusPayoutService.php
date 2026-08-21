@@ -22,7 +22,36 @@ use Illuminate\Support\Facades\DB;
  */
 class BonusPayoutService
 {
-    public function __construct(private PayrollService $payroll) {}
+    public function __construct(
+        private PayrollService $payroll,
+        private ProductionBonusService $production,
+    ) {}
+
+    /**
+     * Начисления за месяцы: продажи и производство ВМЕСТЕ.
+     *
+     * Бонус у человека один, даже если заработан по-разному: бригадир может
+     * закрыть сделку, а менеджер — выйти на смену. Две копилки в разных
+     * местах означали бы две правды о том, сколько человеку должны.
+     *
+     * @return array<string, array<int, float>>
+     */
+    public function accrualsByMonths($userIds, array $months): array
+    {
+        $sales = $this->payroll->bonusByMonths($userIds, $months);
+        $work = $this->production->accrualsByMonths($userIds, $months);
+
+        $merged = [];
+        foreach ($months as $month) {
+            $sum = $sales[$month] ?? [];
+            foreach ($work[$month] ?? [] as $uid => $amount) {
+                $sum[$uid] = round(($sum[$uid] ?? 0) + $amount, 2);
+            }
+            $merged[$month] = $sum;
+        }
+
+        return $merged;
+    }
 
     /**
      * Годовая картина по сотрудникам: 12 месяцев начислений, выплаты и остаток.
@@ -33,8 +62,8 @@ class BonusPayoutService
     public function yearFor($users, int $year): array
     {
         $ids = $users->pluck('id');
-        $accrued = $this->payroll->bonusYear($ids, $year);
-        $months = array_keys($accrued);
+        $months = collect(range(1, 12))->map(fn ($m) => sprintf('%04d-%02d', $year, $m))->all();
+        $accrued = $this->accrualsByMonths($ids, $months);
 
         // Выплаты берём за ВСЁ время, а не только за год: бонус за декабрь
         // прошлого года могли выдать в феврале этого, и остаток обязан это
@@ -92,7 +121,7 @@ class BonusPayoutService
     public function pay(User $employee, array $months, string $method, ?User $actor = null, ?string $note = null): array
     {
         $months = array_values(array_unique($months));
-        $accrued = $this->payroll->bonusByMonths([$employee->id], $months);
+        $accrued = $this->accrualsByMonths([$employee->id], $months);
         $alreadyPaid = BonusPayout::where('user_id', $employee->id)
             ->whereIn('month', $months)->get()->groupBy('month')
             ->map(fn ($g) => round((float) $g->sum('amount'), 2));
