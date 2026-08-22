@@ -1,41 +1,67 @@
 <?php
 
-use App\Http\Controllers\CommentController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuditController;
-use App\Http\Controllers\CustomFieldController;
-use App\Http\Controllers\CustomFieldValueController;
+use App\Http\Controllers\BinLookupController;
+use App\Http\Controllers\BonusController;
+use App\Http\Controllers\CashBookController;
+use App\Http\Controllers\CashReceiptController;
+use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\CatalogMediaController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\CustomFieldController;
+use App\Http\Controllers\CustomFieldValueController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DdsController;
+use App\Http\Controllers\DealAssignmentController;
 use App\Http\Controllers\DealController;
+use App\Http\Controllers\DealStageController;
+use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\EmployeeDebtController;
+use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
-use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\ExpensesBoardController;
 use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\MyExpensesController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PreDealController;
+use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\StageController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SiteOrderController;
+use App\Http\Controllers\SiteProjectController;
+use App\Http\Controllers\SiteSettingsController;
+use App\Http\Controllers\StageController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\WorkshopScreenController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 // «/» отдаёт публичную витрину (routes/site.php); ERP начинается с /login.
-Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 // ТВ-экран цеха: без логина, вход по коду (один код = один цех).
-Route::get('screen', [\App\Http\Controllers\WorkshopScreenController::class, 'show'])->name('screen.show');
-Route::post('screen', [\App\Http\Controllers\WorkshopScreenController::class, 'enter'])->middleware('throttle:10,1')->name('screen.enter');
-Route::post('screen/leave', [\App\Http\Controllers\WorkshopScreenController::class, 'leave'])->name('screen.leave');
+Route::get('screen', [WorkshopScreenController::class, 'show'])->name('screen.show');
+Route::post('screen', [WorkshopScreenController::class, 'enter'])->middleware('throttle:10,1')->name('screen.enter');
+Route::post('screen/leave', [WorkshopScreenController::class, 'leave'])->name('screen.leave');
 // «Далее» с ТВ-экрана: двигает этап заказа своего цеха (доступ — код экрана в сессии).
-Route::post('screen/projects/{project}/advance', [\App\Http\Controllers\WorkshopScreenController::class, 'advanceProject'])->middleware('throttle:60,1')->name('screen.advanceProject');
+Route::post('screen/projects/{project}/advance', [WorkshopScreenController::class, 'advanceProject'])->middleware('throttle:60,1')->name('screen.advanceProject');
 // «Готово» с ТВ-экрана: только с последнего этапа («Отправка») → сделка на Логистику.
-Route::post('screen/projects/{project}/complete', [\App\Http\Controllers\WorkshopScreenController::class, 'completeProject'])->middleware('throttle:30,1')->name('screen.completeProject');
+Route::post('screen/projects/{project}/complete', [WorkshopScreenController::class, 'completeProject'])->middleware('throttle:30,1')->name('screen.completeProject');
 
 Route::middleware('auth')->group(function () {
     // Single profile page (role-aware card). `update`/`destroy` back the Breeze
@@ -49,7 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::get('profile/avatar/{user}', [ProfileController::class, 'avatarShow'])->name('profile.avatar.show');
 
     // Company switcher
-    Route::patch('company/switch', [\App\Http\Controllers\CompanyController::class, 'switch'])->name('company.switch');
+    Route::patch('company/switch', [CompanyController::class, 'switch'])->name('company.switch');
 
     // Users
     // export — до resource: иначе GET users/export сматчится как users/{user}.
@@ -63,50 +89,50 @@ Route::middleware('auth')->group(function () {
 
     // Deals
     // Заявки / запросы КП: расчёт маржи до создания сделки.
-    Route::get('pre-deals', [\App\Http\Controllers\PreDealController::class, 'index'])->name('preDeals.index');
-    Route::post('pre-deals', [\App\Http\Controllers\PreDealController::class, 'store'])->name('preDeals.store');
+    Route::get('pre-deals', [PreDealController::class, 'index'])->name('preDeals.index');
+    Route::post('pre-deals', [PreDealController::class, 'store'])->name('preDeals.store');
     // Быстрая проверка № заявки ДО заполнения формы (кнопка «Проверить» у поля).
-    Route::get('pre-deals/check-number', [\App\Http\Controllers\PreDealController::class, 'checkNumber'])->middleware('throttle:60,1')->name('preDeals.checkNumber');
-    Route::put('pre-deals/{preDeal}', [\App\Http\Controllers\PreDealController::class, 'update'])->name('preDeals.update');
-    Route::delete('pre-deals/{preDeal}', [\App\Http\Controllers\PreDealController::class, 'destroy'])->name('preDeals.destroy');
-    Route::post('pre-deals/{preDeal}/confirm', [\App\Http\Controllers\PreDealController::class, 'confirm'])->name('preDeals.confirm');
+    Route::get('pre-deals/check-number', [PreDealController::class, 'checkNumber'])->middleware('throttle:60,1')->name('preDeals.checkNumber');
+    Route::put('pre-deals/{preDeal}', [PreDealController::class, 'update'])->name('preDeals.update');
+    Route::delete('pre-deals/{preDeal}', [PreDealController::class, 'destroy'])->name('preDeals.destroy');
+    Route::post('pre-deals/{preDeal}/confirm', [PreDealController::class, 'confirm'])->name('preDeals.confirm');
     // Откат случайного «В работу ✓»: сделка удаляется, заявка снова «В работе».
-    Route::post('pre-deals/{preDeal}/revert', [\App\Http\Controllers\PreDealController::class, 'revert'])->name('preDeals.revert');
-    Route::post('pre-deals/{preDeal}/check/{item}', [\App\Http\Controllers\PreDealController::class, 'check'])->name('preDeals.check');
-    Route::post('pre-deal-items', [\App\Http\Controllers\PreDealController::class, 'storeItem'])->name('preDealItems.store');
-    Route::put('pre-deal-items/{item}', [\App\Http\Controllers\PreDealController::class, 'updateItem'])->name('preDealItems.update');
-    Route::delete('pre-deal-items/{item}', [\App\Http\Controllers\PreDealController::class, 'destroyItem'])->name('preDealItems.destroy');
+    Route::post('pre-deals/{preDeal}/revert', [PreDealController::class, 'revert'])->name('preDeals.revert');
+    Route::post('pre-deals/{preDeal}/check/{item}', [PreDealController::class, 'check'])->name('preDeals.check');
+    Route::post('pre-deal-items', [PreDealController::class, 'storeItem'])->name('preDealItems.store');
+    Route::put('pre-deal-items/{item}', [PreDealController::class, 'updateItem'])->name('preDealItems.update');
+    Route::delete('pre-deal-items/{item}', [PreDealController::class, 'destroyItem'])->name('preDealItems.destroy');
     Route::get('deals/overdue', [DealController::class, 'overdue'])->name('deals.overdue');
     // До resource-маршрута: иначе DELETE deals/bulk сматчится как deals/{deal}.
     Route::delete('deals/bulk', [DealController::class, 'bulkDestroy'])->name('deals.bulkDestroy');
-    Route::get('deals/bin-lookup', [DealController::class, 'binLookup'])
+    Route::get('deals/bin-lookup', [BinLookupController::class, 'binLookup'])
         ->middleware('throttle:30,1')
         ->name('deals.binLookup');
     Route::resource('deals', DealController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
-    Route::patch('deals/{deal}/stage', [DealController::class, 'updateStage'])->name('deals.stage');
-    Route::patch('deals/{deal}/advance', [DealController::class, 'advance'])->name('deals.advance');
-    Route::post('deals/{deal}/to-workshop', [DealController::class, 'sendToWorkshop'])->name('deals.toWorkshop');
-    Route::patch('deals/{deal}/responsible', [DealController::class, 'updateResponsible'])->name('deals.responsible');
+    Route::patch('deals/{deal}/stage', [DealStageController::class, 'updateStage'])->name('deals.stage');
+    Route::patch('deals/{deal}/advance', [DealStageController::class, 'advance'])->name('deals.advance');
+    Route::post('deals/{deal}/to-workshop', [DealStageController::class, 'sendToWorkshop'])->name('deals.toWorkshop');
+    Route::patch('deals/{deal}/responsible', [DealAssignmentController::class, 'updateResponsible'])->name('deals.responsible');
     // Ручной % бонуса менеджера по сделке (финансист/админ).
-    Route::patch('deals/{deal}/bonus-rate', [DealController::class, 'updateBonusRate'])->name('deals.bonusRate');
-    Route::patch('deals/{deal}/stage-task', [DealController::class, 'completeStageTask'])->name('deals.stageTask');
+    Route::patch('deals/{deal}/bonus-rate', [DealAssignmentController::class, 'updateBonusRate'])->name('deals.bonusRate');
+    Route::patch('deals/{deal}/stage-task', [DealStageController::class, 'completeStageTask'])->name('deals.stageTask');
 
     // Производство: сменные наряды бригад — выработка в штуках и м².
-    Route::get('production', [\App\Http\Controllers\ProductionController::class, 'index'])->name('production.index');
-    Route::post('production/orders', [\App\Http\Controllers\ProductionController::class, 'store'])->name('production.orders.store');
-    Route::patch('production/orders/{order}/confirm', [\App\Http\Controllers\ProductionController::class, 'confirm'])->name('production.orders.confirm');
-    Route::delete('production/orders/{order}', [\App\Http\Controllers\ProductionController::class, 'destroy'])->name('production.orders.destroy');
-    Route::post('production/brigades', [\App\Http\Controllers\ProductionController::class, 'storeBrigade'])->name('production.brigades.store');
-    Route::patch('production/brigades/{brigade}', [\App\Http\Controllers\ProductionController::class, 'updateBrigade'])->name('production.brigades.update');
-    Route::delete('production/brigades/{brigade}', [\App\Http\Controllers\ProductionController::class, 'destroyBrigade'])->name('production.brigades.destroy');
+    Route::get('production', [ProductionController::class, 'index'])->name('production.index');
+    Route::post('production/orders', [ProductionController::class, 'store'])->name('production.orders.store');
+    Route::patch('production/orders/{order}/confirm', [ProductionController::class, 'confirm'])->name('production.orders.confirm');
+    Route::delete('production/orders/{order}', [ProductionController::class, 'destroy'])->name('production.orders.destroy');
+    Route::post('production/brigades', [ProductionController::class, 'storeBrigade'])->name('production.brigades.store');
+    Route::patch('production/brigades/{brigade}', [ProductionController::class, 'updateBrigade'])->name('production.brigades.update');
+    Route::delete('production/brigades/{brigade}', [ProductionController::class, 'destroyBrigade'])->name('production.brigades.destroy');
 
     // Склад (приход товара + остатки, у каждой компании свой)
-    Route::get('warehouse', [\App\Http\Controllers\WarehouseController::class, 'index'])->name('warehouse.index');
-    Route::post('warehouse/receipt', [\App\Http\Controllers\WarehouseController::class, 'receipt'])->name('warehouse.receipt');
-    Route::put('warehouse/materials/{material}', [\App\Http\Controllers\WarehouseController::class, 'updateMaterial'])->name('warehouse.materials.update');
-    Route::delete('warehouse/materials/{material}', [\App\Http\Controllers\WarehouseController::class, 'destroyMaterial'])->name('warehouse.materials.destroy');
-    Route::put('warehouse/receipts/{receipt}', [\App\Http\Controllers\WarehouseController::class, 'updateReceipt'])->name('warehouse.receipts.update');
-    Route::delete('warehouse/receipts/{receipt}', [\App\Http\Controllers\WarehouseController::class, 'destroyReceipt'])->name('warehouse.receipts.destroy');
+    Route::get('warehouse', [WarehouseController::class, 'index'])->name('warehouse.index');
+    Route::post('warehouse/receipt', [WarehouseController::class, 'receipt'])->name('warehouse.receipt');
+    Route::put('warehouse/materials/{material}', [WarehouseController::class, 'updateMaterial'])->name('warehouse.materials.update');
+    Route::delete('warehouse/materials/{material}', [WarehouseController::class, 'destroyMaterial'])->name('warehouse.materials.destroy');
+    Route::put('warehouse/receipts/{receipt}', [WarehouseController::class, 'updateReceipt'])->name('warehouse.receipts.update');
+    Route::delete('warehouse/receipts/{receipt}', [WarehouseController::class, 'destroyReceipt'])->name('warehouse.receipts.destroy');
 
     // Projects
     Route::resource('projects', ProjectController::class)->only(['index', 'show']);
@@ -130,37 +156,37 @@ Route::middleware('auth')->group(function () {
     // Корректировка кассы: финансист задаёт фактический остаток наличных.
     Route::post('finance/cash-correction', [InvoiceController::class, 'cashCorrection'])->name('finance.cashCorrection');
     // ДДС — ручная сводка финансиста (без связей с расчётами).
-    Route::post('finance/dds', [\App\Http\Controllers\DdsController::class, 'store'])->name('finance.dds.store');
-    Route::put('finance/dds/{entry}', [\App\Http\Controllers\DdsController::class, 'update'])->name('finance.dds.update');
-    Route::delete('finance/dds/{entry}', [\App\Http\Controllers\DdsController::class, 'destroy'])->name('finance.dds.destroy');
-    Route::post('finance/dds-date', [\App\Http\Controllers\DdsController::class, 'date'])->name('finance.dds.date');
+    Route::post('finance/dds', [DdsController::class, 'store'])->name('finance.dds.store');
+    Route::put('finance/dds/{entry}', [DdsController::class, 'update'])->name('finance.dds.update');
+    Route::delete('finance/dds/{entry}', [DdsController::class, 'destroy'])->name('finance.dds.destroy');
+    Route::post('finance/dds-date', [DdsController::class, 'date'])->name('finance.dds.date');
     // Поступления денег (нал/банк) — вводит финансист/админ.
-    Route::post('finance/receipts', [\App\Http\Controllers\CashReceiptController::class, 'store'])->name('finance.receipts.store');
-    Route::delete('finance/receipts/{receipt}', [\App\Http\Controllers\CashReceiptController::class, 'destroy'])->name('finance.receipts.destroy');
+    Route::post('finance/receipts', [CashReceiptController::class, 'store'])->name('finance.receipts.store');
+    Route::delete('finance/receipts/{receipt}', [CashReceiptController::class, 'destroy'])->name('finance.receipts.destroy');
     // Задолженности: дебиторка (кто должен нам) / кредиторка (кому должны мы).
-    Route::get('settings/screens', [\App\Http\Controllers\WorkshopScreenController::class, 'admin'])->name('screens.index');
-    Route::post('workshop-screens', [\App\Http\Controllers\WorkshopScreenController::class, 'upsert'])->name('workshopScreens.upsert');
-    Route::post('workshop-screens/{screen}/toggle', [\App\Http\Controllers\WorkshopScreenController::class, 'toggle'])->name('workshopScreens.toggle');
-    Route::post('workshop-screens/plan', [\App\Http\Controllers\WorkshopScreenController::class, 'plan'])->name('workshopScreens.plan');
-    Route::post('expense-categories', [\App\Http\Controllers\ExpenseCategoryController::class, 'store'])->name('expenseCategories.store');
-    Route::put('expense-categories/{category}', [\App\Http\Controllers\ExpenseCategoryController::class, 'update'])->name('expenseCategories.update');
-    Route::delete('expense-categories/{category}', [\App\Http\Controllers\ExpenseCategoryController::class, 'destroy'])->name('expenseCategories.destroy');
-    Route::post('finance/debts', [\App\Http\Controllers\DebtController::class, 'store'])->name('finance.debts.store');
-    Route::put('finance/debts/{debt}', [\App\Http\Controllers\DebtController::class, 'update'])->name('finance.debts.update');
-    Route::delete('finance/debts/{debt}', [\App\Http\Controllers\DebtController::class, 'destroy'])->name('finance.debts.destroy');
+    Route::get('settings/screens', [WorkshopScreenController::class, 'admin'])->name('screens.index');
+    Route::post('workshop-screens', [WorkshopScreenController::class, 'upsert'])->name('workshopScreens.upsert');
+    Route::post('workshop-screens/{screen}/toggle', [WorkshopScreenController::class, 'toggle'])->name('workshopScreens.toggle');
+    Route::post('workshop-screens/plan', [WorkshopScreenController::class, 'plan'])->name('workshopScreens.plan');
+    Route::post('expense-categories', [ExpenseCategoryController::class, 'store'])->name('expenseCategories.store');
+    Route::put('expense-categories/{category}', [ExpenseCategoryController::class, 'update'])->name('expenseCategories.update');
+    Route::delete('expense-categories/{category}', [ExpenseCategoryController::class, 'destroy'])->name('expenseCategories.destroy');
+    Route::post('finance/debts', [DebtController::class, 'store'])->name('finance.debts.store');
+    Route::put('finance/debts/{debt}', [DebtController::class, 'update'])->name('finance.debts.update');
+    Route::delete('finance/debts/{debt}', [DebtController::class, 'destroy'])->name('finance.debts.destroy');
     Route::get('payroll', [PayrollController::class, 'index'])->name('payroll.index');
     // «Бонусы»: год целиком — начислено по месяцам, выплачено, накоплено.
-    Route::get('payroll/bonuses', [\App\Http\Controllers\BonusController::class, 'index'])->name('bonuses.index');
-    Route::post('payroll/bonuses/pay', [\App\Http\Controllers\BonusController::class, 'pay'])->name('bonuses.pay');
-    Route::delete('payroll/bonuses/{payout}', [\App\Http\Controllers\BonusController::class, 'destroy'])->name('bonuses.destroy');
+    Route::get('payroll/bonuses', [BonusController::class, 'index'])->name('bonuses.index');
+    Route::post('payroll/bonuses/pay', [BonusController::class, 'pay'])->name('bonuses.pay');
+    Route::delete('payroll/bonuses/{payout}', [BonusController::class, 'destroy'])->name('bonuses.destroy');
     Route::post('payroll/adjustments', [PayrollController::class, 'storeAdjustment'])->name('payroll.adjustments.store');
     Route::delete('payroll/adjustments/{adjustment}', [PayrollController::class, 'destroyAdjustment'])->name('payroll.adjustments.destroy');
     Route::patch('payroll/salary/{user}', [PayrollController::class, 'updateSalary'])->name('payroll.salary');
     Route::patch('payroll/hours/{user}', [PayrollController::class, 'updateHours'])->name('payroll.hours');
     Route::patch('payroll/norm', [PayrollController::class, 'updateNorm'])->name('payroll.norm');
     // Долги сотрудников: выдача из кассы, отмена выдачи (бухгалтер/админ).
-    Route::post('payroll/debts', [\App\Http\Controllers\EmployeeDebtController::class, 'store'])->name('payroll.debts.store');
-    Route::delete('payroll/debts/{debt}', [\App\Http\Controllers\EmployeeDebtController::class, 'destroy'])->name('payroll.debts.destroy');
+    Route::post('payroll/debts', [EmployeeDebtController::class, 'store'])->name('payroll.debts.store');
+    Route::delete('payroll/debts/{debt}', [EmployeeDebtController::class, 'destroy'])->name('payroll.debts.destroy');
     Route::post('invoices', [InvoiceController::class, 'store'])->name('invoices.store');
     Route::put('invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
     Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
@@ -172,11 +198,11 @@ Route::middleware('auth')->group(function () {
     Route::get('expenses/{expense}/receipt', [ExpenseController::class, 'receipt'])->name('expenses.receipt');
     Route::delete('expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy');
     // Касса — кассовая книга за день (начало → операции → конец).
-    Route::get('cash-book', [\App\Http\Controllers\CashBookController::class, 'index'])->name('cashBook.index');
+    Route::get('cash-book', [CashBookController::class, 'index'])->name('cashBook.index');
     // «Расходы» — рабочее место бухгалтера: очередь на проверку + оплаченные.
-    Route::get('expenses-board', [\App\Http\Controllers\ExpensesBoardController::class, 'index'])->name('expensesBoard.index');
+    Route::get('expenses-board', [ExpensesBoardController::class, 'index'])->name('expensesBoard.index');
     // «Мои расходы» — личная страница сотрудника: свои заявки и свои выплаты.
-    Route::get('my-expenses', [\App\Http\Controllers\MyExpensesController::class, 'index'])->name('myExpenses.index');
+    Route::get('my-expenses', [MyExpensesController::class, 'index'])->name('myExpenses.index');
 
     // Documents
     Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
@@ -191,47 +217,47 @@ Route::middleware('auth')->group(function () {
     Route::patch('locale', [LocaleController::class, 'update'])->name('locale.update');
 
     // Каталог сайта ведётся здесь: витрина читает эти же products.
-    Route::get('catalog', [\App\Http\Controllers\CatalogController::class, 'index'])->name('catalog.index');
-    Route::post('catalog', [\App\Http\Controllers\CatalogController::class, 'store'])->name('catalog.store');
-    Route::put('catalog/{product:id}', [\App\Http\Controllers\CatalogController::class, 'update'])->name('catalog.update');
-    Route::delete('catalog/{product:id}', [\App\Http\Controllers\CatalogController::class, 'destroy'])->name('catalog.destroy');
+    Route::get('catalog', [CatalogController::class, 'index'])->name('catalog.index');
+    Route::post('catalog', [CatalogController::class, 'store'])->name('catalog.store');
+    Route::put('catalog/{product:id}', [CatalogController::class, 'update'])->name('catalog.update');
+    Route::delete('catalog/{product:id}', [CatalogController::class, 'destroy'])->name('catalog.destroy');
     // Медиа карточки: фото, текстура для 3D, GLB-модель, документы.
-    Route::post('catalog/{product:id}/images', [\App\Http\Controllers\CatalogMediaController::class, 'storeImages'])->name('catalogMedia.images');
-    Route::delete('catalog/{product:id}/images', [\App\Http\Controllers\CatalogMediaController::class, 'destroyImage'])->name('catalogMedia.imageDestroy');
-    Route::post('catalog/{product:id}/images/main', [\App\Http\Controllers\CatalogMediaController::class, 'makeMainImage'])->name('catalogMedia.imageMain');
-    Route::post('catalog/{product:id}/images/color', [\App\Http\Controllers\CatalogMediaController::class, 'setImageColor'])->name('catalogMedia.imageColor');
-    Route::post('catalog/{product:id}/texture', [\App\Http\Controllers\CatalogMediaController::class, 'setTexture'])->name('catalogMedia.texture');
-    Route::post('catalog/{product:id}/model', [\App\Http\Controllers\CatalogMediaController::class, 'storeModel'])->name('catalogMedia.model');
-    Route::delete('catalog/{product:id}/model', [\App\Http\Controllers\CatalogMediaController::class, 'destroyModel'])->name('catalogMedia.modelDestroy');
-    Route::post('catalog/{product:id}/documents', [\App\Http\Controllers\CatalogMediaController::class, 'storeDocument'])->name('catalogMedia.document');
-    Route::delete('catalog/{product:id}/documents', [\App\Http\Controllers\CatalogMediaController::class, 'destroyDocument'])->name('catalogMedia.documentDestroy');
+    Route::post('catalog/{product:id}/images', [CatalogMediaController::class, 'storeImages'])->name('catalogMedia.images');
+    Route::delete('catalog/{product:id}/images', [CatalogMediaController::class, 'destroyImage'])->name('catalogMedia.imageDestroy');
+    Route::post('catalog/{product:id}/images/main', [CatalogMediaController::class, 'makeMainImage'])->name('catalogMedia.imageMain');
+    Route::post('catalog/{product:id}/images/color', [CatalogMediaController::class, 'setImageColor'])->name('catalogMedia.imageColor');
+    Route::post('catalog/{product:id}/texture', [CatalogMediaController::class, 'setTexture'])->name('catalogMedia.texture');
+    Route::post('catalog/{product:id}/model', [CatalogMediaController::class, 'storeModel'])->name('catalogMedia.model');
+    Route::delete('catalog/{product:id}/model', [CatalogMediaController::class, 'destroyModel'])->name('catalogMedia.modelDestroy');
+    Route::post('catalog/{product:id}/documents', [CatalogMediaController::class, 'storeDocument'])->name('catalogMedia.document');
+    Route::delete('catalog/{product:id}/documents', [CatalogMediaController::class, 'destroyDocument'])->name('catalogMedia.documentDestroy');
 
-    Route::get('catalog-categories', [\App\Http\Controllers\CategoryController::class, 'categories'])->name('catalogCategories.index');
-    Route::post('catalog-categories/{category:id}/image', [\App\Http\Controllers\CategoryController::class, 'storeCategoryImage'])->name('catalogCategories.image');
-    Route::delete('catalog-categories/{category:id}/image', [\App\Http\Controllers\CategoryController::class, 'destroyCategoryImage'])->name('catalogCategories.imageDestroy');
-    Route::post('catalog-categories', [\App\Http\Controllers\CategoryController::class, 'storeCategory'])->name('catalogCategories.store');
-    Route::put('catalog-categories/{category:id}', [\App\Http\Controllers\CategoryController::class, 'updateCategory'])->name('catalogCategories.update');
-    Route::delete('catalog-categories/{category:id}', [\App\Http\Controllers\CategoryController::class, 'destroyCategory'])->name('catalogCategories.destroy');
+    Route::get('catalog-categories', [CategoryController::class, 'categories'])->name('catalogCategories.index');
+    Route::post('catalog-categories/{category:id}/image', [CategoryController::class, 'storeCategoryImage'])->name('catalogCategories.image');
+    Route::delete('catalog-categories/{category:id}/image', [CategoryController::class, 'destroyCategoryImage'])->name('catalogCategories.imageDestroy');
+    Route::post('catalog-categories', [CategoryController::class, 'storeCategory'])->name('catalogCategories.store');
+    Route::put('catalog-categories/{category:id}', [CategoryController::class, 'updateCategory'])->name('catalogCategories.update');
+    Route::delete('catalog-categories/{category:id}', [CategoryController::class, 'destroyCategory'])->name('catalogCategories.destroy');
 
     // Объекты сайта: реализованные проекты с фото для главной и «Проектов».
-    Route::get('site-projects', [\App\Http\Controllers\SiteProjectController::class, 'index'])->name('siteProjects.index');
-    Route::post('site-projects', [\App\Http\Controllers\SiteProjectController::class, 'store'])->name('siteProjects.store');
-    Route::put('site-projects/{project}', [\App\Http\Controllers\SiteProjectController::class, 'update'])->name('siteProjects.update');
-    Route::delete('site-projects/{project}', [\App\Http\Controllers\SiteProjectController::class, 'destroy'])->name('siteProjects.destroy');
-    Route::post('site-projects/{project}/image', [\App\Http\Controllers\SiteProjectController::class, 'uploadImage'])->name('siteProjects.image');
+    Route::get('site-projects', [SiteProjectController::class, 'index'])->name('siteProjects.index');
+    Route::post('site-projects', [SiteProjectController::class, 'store'])->name('siteProjects.store');
+    Route::put('site-projects/{project}', [SiteProjectController::class, 'update'])->name('siteProjects.update');
+    Route::delete('site-projects/{project}', [SiteProjectController::class, 'destroy'])->name('siteProjects.destroy');
+    Route::post('site-projects/{project}/image', [SiteProjectController::class, 'uploadImage'])->name('siteProjects.image');
 
     // Заказы с сайта → одной кнопкой превращаются в сделку.
-    Route::get('site-orders', [\App\Http\Controllers\SiteOrderController::class, 'index'])->name('siteOrders.index');
-    Route::patch('site-orders/{order}', [\App\Http\Controllers\SiteOrderController::class, 'update'])->name('siteOrders.update');
-    Route::post('site-orders/{order}/deal', [\App\Http\Controllers\SiteOrderController::class, 'convert'])->name('siteOrders.convert');
-    Route::delete('site-orders/{order}', [\App\Http\Controllers\SiteOrderController::class, 'destroy'])->name('siteOrders.destroy');
+    Route::get('site-orders', [SiteOrderController::class, 'index'])->name('siteOrders.index');
+    Route::patch('site-orders/{order}', [SiteOrderController::class, 'update'])->name('siteOrders.update');
+    Route::post('site-orders/{order}/deal', [SiteOrderController::class, 'convert'])->name('siteOrders.convert');
+    Route::delete('site-orders/{order}', [SiteOrderController::class, 'destroy'])->name('siteOrders.destroy');
 
     // Settings
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
     // Контент витрины: контакты, филиалы, тарифы доставки, FAQ.
-    Route::get('settings/site', [\App\Http\Controllers\SiteSettingsController::class, 'index'])->name('siteSettings.index');
-    Route::put('settings/site', [\App\Http\Controllers\SiteSettingsController::class, 'update'])->name('siteSettings.update');
+    Route::get('settings/site', [SiteSettingsController::class, 'index'])->name('siteSettings.index');
+    Route::put('settings/site', [SiteSettingsController::class, 'update'])->name('siteSettings.update');
     Route::get('settings/stages', [StageController::class, 'index'])->name('stages.index');
     Route::post('settings/stages', [StageController::class, 'store'])->name('stages.store');
     Route::put('settings/stages/{kind}/{id}', [StageController::class, 'update'])->name('stages.update');
@@ -241,10 +267,10 @@ Route::middleware('auth')->group(function () {
 
     // Custom fields
     // UI translations editor
-    Route::get('settings/translations', [\App\Http\Controllers\TranslationController::class, 'index'])->name('translations.index');
-    Route::put('settings/translations', [\App\Http\Controllers\TranslationController::class, 'update'])->name('translations.update');
-    Route::post('settings/translations', [\App\Http\Controllers\TranslationController::class, 'store'])->name('translations.store');
-    Route::delete('settings/translations/{translation}', [\App\Http\Controllers\TranslationController::class, 'destroy'])->name('translations.destroy');
+    Route::get('settings/translations', [TranslationController::class, 'index'])->name('translations.index');
+    Route::put('settings/translations', [TranslationController::class, 'update'])->name('translations.update');
+    Route::post('settings/translations', [TranslationController::class, 'store'])->name('translations.store');
+    Route::delete('settings/translations/{translation}', [TranslationController::class, 'destroy'])->name('translations.destroy');
 
     Route::get('settings/custom-fields', [CustomFieldController::class, 'index'])->name('custom-fields.index');
     Route::post('settings/custom-fields', [CustomFieldController::class, 'store'])->name('custom-fields.store');
@@ -253,8 +279,8 @@ Route::middleware('auth')->group(function () {
     Route::post('custom-field-values', [CustomFieldValueController::class, 'sync'])->name('custom-field-values.sync');
 
     // Web Push подписка браузера (уведомления чата при закрытой вкладке)
-    Route::post('push/subscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('push.subscribe');
-    Route::post('push/unsubscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'destroy'])->middleware('throttle:20,1')->name('push.unsubscribe');
+    Route::post('push/subscribe', [PushSubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('push.subscribe');
+    Route::post('push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->middleware('throttle:20,1')->name('push.unsubscribe');
 
     // Chat
     Route::get('chat', [ChatController::class, 'index'])->name('chat.index');
@@ -285,7 +311,7 @@ Route::middleware('auth')->group(function () {
     Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
     // Реестр сделок (Excel-подобный отчёт, только admin/director)
-    Route::get('reports/deals', [\App\Http\Controllers\ReportController::class, 'deals'])->name('reports.deals');
+    Route::get('reports/deals', [ReportController::class, 'deals'])->name('reports.deals');
 
     // Audit log
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index');

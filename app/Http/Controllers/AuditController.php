@@ -19,104 +19,15 @@ use App\Models\Project;
 use App\Models\ProjectStage;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\AuditDictionary;
 use App\Support\AuditFormatter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AuditController extends Controller
 {
-    /** Русские названия таблиц журнала. */
-    private const TABLE_LABELS = [
-        'deals' => 'Сделки', 'projects' => 'Заказы цеха', 'tasks' => 'Задачи',
-        'invoices' => 'Счета', 'payments' => 'Платежи', 'expenses' => 'Расходы',
-        'cash_receipts' => 'Поступления денег', 'debts' => 'Задолженности',
-        'payroll_adjustments' => 'Корректировки ЗП', 'dds_entries' => 'ДДС',
-        'users' => 'Сотрудники', 'departments' => 'Отделы', 'clients' => 'Клиенты',
-        'documents' => 'Документы', 'materials' => 'Склад', 'material_receipts' => 'Приход склада',
-        'pre_deals' => 'Предв. сделки', 'chats' => 'Чаты', 'chat_messages' => 'Сообщения чата',
-        'comments' => 'Комментарии', 'settings' => 'Настройки', 'deal_stages' => 'Этапы сделок',
-        'project_stages' => 'Этапы цеха', 'expense_categories' => 'Категории расходов',
-        'workshop_screens' => 'ТВ-экраны',
-        'work_orders' => 'Наряды бригад', 'work_order_lines' => 'Строки наряда',
-        'brigades' => 'Бригады', 'bonus_payouts' => 'Выплаты бонусов',
-        'employee_debts' => 'Долги сотрудников', 'employee_debt_payments' => 'Погашение долгов',
-        'deal_items' => 'Товары сделки', 'pre_deal_items' => 'Товары заявки',
-    ];
-
-    /** Русские названия полей. */
-    private const FIELD_LABELS = [
-        'status' => 'Статус', 'deal_stage_id' => 'Этап', 'project_stage_id' => 'Этап цеха',
-        'amount' => 'Сумма', 'budget' => 'Сумма договора', 'payment_method' => 'Способ оплаты',
-        'bonus_rate_override' => 'Ручной % бонуса', 'responsible_user_id' => 'Ответственный',
-        'assignee_id' => 'Исполнитель', 'department_id' => 'Отдел', 'client_id' => 'Клиент',
-        'category_id' => 'Категория', 'material_id' => 'Материал', 'qty' => 'Количество',
-        'name' => 'Название', 'title' => 'Заголовок', 'description' => 'Описание', 'note' => 'Заметка',
-        'number' => 'Номер', 'bin' => '№ договора / БИН', 'address' => 'Адрес',
-        'company_name' => 'Заказчик', 'client_name' => 'Товар', 'lot_number' => 'Количество',
-        'unit' => 'Ед. изм.', 'source' => 'Источник', 'deadline' => 'Срок',
-        'contract_date' => 'Дата договора', 'issue_date' => 'Дата счёта', 'due_date' => 'Срок оплаты',
-        'date' => 'Дата', 'closed_at' => 'Закрыта', 'completed_at' => 'Завершена',
-        'confirmed_at' => 'Подтверждён', 'started_at' => 'Начат',
-        'salary' => 'Оклад', 'phone' => 'Телефон', 'email' => 'Email',
-        'birth_date' => 'День рождения', 'hired_at' => 'Дата приёма', 'head_user_id' => 'Руководитель',
-        'is_active' => 'Активен', 'is_completed' => 'Завершающий', 'is_won' => 'Успешный этап',
-        'type' => 'Тип', 'kind' => 'Вид', 'priority' => 'Приоритет', 'days' => 'Дней',
-        'balance' => 'Фактический остаток', 'receivable' => 'Дебиторский', 'bank' => 'Банк',
-        'workshop' => 'Цех', 'avatar' => 'Фото', 'language' => 'Язык', 'order' => 'Порядок',
-        'color' => 'Цвет', 'pinned_message_id' => 'Закреплённое сообщение', 'expense_id' => 'Расход',
-        'price' => 'Цена', 'quantity' => 'Остаток', 'message' => 'Сообщение',
-        'file_path' => 'Файл', 'contract_path' => 'Договор (файл)', 'company_id' => 'Фирма',
-        'stage_type' => 'Тип этапа',
-        // Производство и бонусы: то, что вводят в модальных окнах.
-        'brigade_id' => 'Бригада', 'foreman_id' => 'Бригадир', 'user_id' => 'Сотрудник',
-        'employee_id' => 'Сотрудник', 'created_by' => 'Внёс', 'confirmed_by' => 'Подтвердил',
-        'paid_by' => 'Выдал', 'product' => 'Изделие', 'qty_pcs' => 'Штук', 'qty_m2' => 'Метров²',
-        'rate_pcs' => 'Ставка за штуку', 'rate_m2' => 'Ставка за м²', 'role' => 'Роль в наряде',
-        'month' => 'За месяц', 'monthly_payment' => 'Платёж в месяц', 'employee_payout' => 'Вид выплаты',
-        'sale_amount' => 'Цена продажи', 'markup_pct' => 'Наценка, %', 'bonus_percent' => 'Личный % бонуса',
-        'partner_pct' => 'Доля партнёра, %', 'deal_type' => 'Тип сделки', 'project_id' => 'Заказ цеха',
-        'deal_id' => 'Сделка', 'invoice_id' => 'Счёт', 'expenseable_id' => 'Запись-хозяин',
-        'expenseable_type' => 'Тип хозяина', 'invoiceable_id' => 'Запись-хозяин', 'invoiceable_type' => 'Тип хозяина',
-        'payment_date' => 'Дата оплаты', 'method' => 'Способ', 'branch' => 'Филиал', 'area_m2' => 'Площадь, м²',
-    ];
-
-    /** Русские значения (по полю). */
-    private const VALUE_MAPS = [
-        'status' => [
-            'draft' => 'Черновик', 'sent' => 'Выставлен', 'partial' => 'Частично оплачен',
-            'paid' => 'Оплачен', 'cancelled' => 'Отменён', 'active' => 'Активна',
-            'closed' => 'Закрыта', 'new' => 'Новая', 'todo' => 'К выполнению',
-            'in_progress' => 'В работе', 'review' => 'Проверка', 'done' => 'Готово',
-            'pending' => 'Ожидает', 'confirmed' => 'Подтверждён', 'completed' => 'Завершён',
-        ],
-        'payment_method' => ['cash' => 'Наличные', 'bank' => 'Банк'],
-        'method' => ['cash' => 'Наличные', 'bank' => 'Банк'],
-        'role' => ['worker' => 'Рабочий', 'foreman' => 'Бригадир'],
-        'deal_type' => ['production' => 'Своё производство', 'resale' => 'Перепродажа'],
-        'employee_payout' => ['bonus' => 'Бонус', 'debt' => 'Выдача долга', 'advance' => 'Аванс', 'salary' => 'Зарплата'],
-        'expenseable_type' => ['deal' => 'Сделка', 'project' => 'Заказ цеха'],
-        'invoiceable_type' => ['deal' => 'Сделка', 'project' => 'Заказ цеха'],
-        'type' => [
-            'absence' => 'Отгул', 'sick' => 'Больничный', 'fine' => 'Штраф',
-            'advance' => 'Аванс', 'bonus' => 'Премия', 'direct' => 'Прямой',
-            'material' => 'Материальный', 'other' => 'Прочий',
-            'personal' => 'Личный', 'group' => 'Группа', 'global' => 'Общий',
-            'receivable' => 'Дебиторка', 'payable' => 'Кредиторка',
-        ],
-        'kind' => ['account' => 'Счёт компании', 'debt' => 'Долг', 'workshop' => 'Цех', 'office' => 'Офис'],
-        'priority' => ['low' => 'Низкий', 'medium' => 'Средний', 'high' => 'Высокий', 'urgent' => 'Срочный'],
-        'is_active' => ['1' => 'Да', '0' => 'Нет', 'true' => 'Да', 'false' => 'Нет'],
-        'is_completed' => ['1' => 'Да', '0' => 'Нет'],
-        'is_won' => ['1' => 'Да', '0' => 'Нет'],
-    ];
-
-    /** Денежные поля — форматируем с разрядами. */
-    private const MONEY_FIELDS = ['amount', 'budget', 'salary', 'balance', 'receivable', 'price',
-        'monthly_payment', 'sale_amount', 'rate_pcs', 'rate_m2', 'unit_price'];
-
     public function index(Request $request): Response
     {
         // Только админ: журнал — generic-таблица (diff всех сущностей обеих
@@ -196,7 +107,7 @@ class AuditController extends Controller
                 'created_at' => $log->created_at?->toIso8601String(),
                 'user' => $log->user?->name,
                 'ip' => $log->ip,
-                'table' => self::TABLE_LABELS[$log->table_name] ?? $log->table_name,
+                'table' => AuditDictionary::table($log->table_name),
                 'record_id' => $log->record_id,
                 // Кликабельная запись — там, где есть своя страница.
                 'link' => $log->record_id ? match ($log->table_name) {
@@ -207,12 +118,12 @@ class AuditController extends Controller
                 } : null,
                 'action' => $log->action,
                 'field' => $log->field_name && $log->field_name !== AuditLog::SNAPSHOT
-                    ? (self::FIELD_LABELS[$log->field_name] ?? $log->field_name)
+                    ? AuditDictionary::field($log->field_name)
                     : null,
                 'old' => $log->field_name === AuditLog::SNAPSHOT
-                    ? null : $this->formatValue($log->field_name, $log->old_value),
+                    ? null : AuditDictionary::value($log->field_name, $log->old_value),
                 'new' => $log->field_name === AuditLog::SNAPSHOT
-                    ? null : $this->formatValue($log->field_name, $log->new_value),
+                    ? null : AuditDictionary::value($log->field_name, $log->new_value),
                 // Снимок записи: что именно ввели в модальном окне (или что
                 // унесли с собой при удалении).
                 'snapshot' => $log->field_name === AuditLog::SNAPSHOT
@@ -225,7 +136,7 @@ class AuditController extends Controller
             'logs' => $logs,
             'filters' => $request->only('table', 'action', 'user', 'from', 'to'),
             'tables' => AuditLog::query()->distinct()->orderBy('table_name')->pluck('table_name')
-                ->map(fn ($t) => ['value' => $t, 'label' => self::TABLE_LABELS[$t] ?? $t])->values(),
+                ->map(fn ($t) => ['value' => $t, 'label' => AuditDictionary::table($t)])->values(),
             'users' => User::whereIn('id', AuditLog::distinct()->pluck('user_id')->filter())
                 ->orderBy('name')->get(['id', 'name']),
         ]);
@@ -256,39 +167,11 @@ class AuditController extends Controller
             $value = isset($maps[$field]) ? ($maps[$field][$value] ?? $value) : $value;
 
             $rows[] = [
-                'label' => self::FIELD_LABELS[$field] ?? $field,
-                'value' => (string) ($this->formatValue($field, (string) $value) ?? '—'),
+                'label' => AuditDictionary::field($field),
+                'value' => (string) (AuditDictionary::value($field, (string) $value) ?? '—'),
             ];
         }
 
         return $rows;
-    }
-
-    /** Значение по-русски: словарь, дата — d.m.Y, деньги — с разрядами. */
-    private function formatValue(?string $field, ?string $v): ?string
-    {
-        if ($v === null || $v === '') {
-            return null;
-        }
-        if ($field && isset(self::VALUE_MAPS[$field][$v])) {
-            return self::VALUE_MAPS[$field][$v];
-        }
-        if (preg_match('/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/', $v)) {
-            $moment = Carbon::parse($v);
-
-            // Дата без времени хранится как 00:00:00 — «21.08.2026 00:00»
-            // читается как «ночью», хотя времени там просто нет.
-            return $moment->format('H:i:s') === '00:00:00'
-                ? $moment->format('d.m.Y')
-                : $moment->format('d.m.Y H:i');
-        }
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) {
-            return Carbon::parse($v)->format('d.m.Y');
-        }
-        if ($field && in_array($field, self::MONEY_FIELDS, true) && is_numeric($v)) {
-            return number_format((float) $v, 0, ',', ' ').' ₸';
-        }
-
-        return $v;
     }
 }

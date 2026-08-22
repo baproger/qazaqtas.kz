@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import FinanceLayout from '@/Layouts/FinanceLayout.vue';
 import Modal from '@/Components/Modal.vue';
+import ExpenseFields from '@/Components/ExpenseFields.vue';
 import FinanceTile from '@/Components/FinanceTile.vue';
 import { formatDate, money } from '@/utils/format';
 import { useE } from '@/composables/useTranslations';
@@ -133,37 +134,7 @@ const submit = () => form.post(route('expenses.store'), {
             <div class="p-6">
                 <h2 class="mb-1 text-lg font-semibold text-slate-900">{{ $e('Заявка на расход') }}</h2>
                 <p class="mb-4 text-xs text-slate-400">{{ $e('Счёт бухгалтеру на оплату: он проверит и оплатит.') }}</p>
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Категория *') }}</label>
-                        <select v-model="form.category_id" class="w-full rounded-lg border-slate-300 text-sm shadow-sm">
-                            <option value="">{{ $e('— выберите —') }}</option>
-                            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                        </select>
-                        <div v-if="form.errors.category_id" class="mt-1 text-xs text-red-600">{{ form.errors.category_id }}</div>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Сумма, ₸ *') }}</label>
-                        <input v-model="form.amount" type="number" min="0.01" step="0.01" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" />
-                        <div v-if="form.errors.amount" class="mt-1 text-xs text-red-600">{{ form.errors.amount }}</div>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Дата *') }}</label>
-                        <input v-model="form.date" type="date" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" />
-                        <div v-if="form.errors.date" class="mt-1 text-xs text-red-600">{{ form.errors.date }}</div>
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('За что') }}</label>
-                        <input v-model="form.description" type="text" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" :placeholder="$e('Бензин, канцтовары, ремонт…')" />
-                        <div v-if="form.errors.description" class="mt-1 text-xs text-red-600">{{ form.errors.description }}</div>
-                    </div>
-                    <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Чек (фото или PDF)') }}</label>
-                        <input type="file" accept="image/*,application/pdf" @input="form.file = $event.target.files[0]"
-                            class="w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-600" />
-                        <div v-if="form.errors.file" class="mt-1 text-xs text-red-600">{{ form.errors.file }}</div>
-                    </div>
-                </div>
+                <ExpenseFields :form="form" :categories="categories" :file-hint="$e('Чек (фото или PDF)')" />
                 <div class="mt-6 flex justify-end gap-2">
                     <button type="button" @click="showForm = false"
                         class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors duration-150 hover:bg-slate-50">{{ $e('Отмена') }}</button>
