@@ -7,6 +7,7 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\User;
 use App\Support\CurrentCompany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -56,7 +57,7 @@ class BonusPayoutService
     /**
      * Годовая картина по сотрудникам: 12 месяцев начислений, выплаты и остаток.
      *
-     * @param  \Illuminate\Support\Collection<int, User>  $users
+     * @param  Collection<int, User>  $users
      * @return array<int, array<string, mixed>>
      */
     public function yearFor($users, int $year): array
@@ -103,6 +104,11 @@ class BonusPayoutService
                 'accrued' => round($yearAccrued, 2),
                 'paid' => round($yearPaid, 2),
                 'left' => round(max($yearAccrued - $yearPaid, 0), 2),
+                // Выдали больше, чем начислено: так бывает, когда наряд
+                // удалили или расходы по сделке выросли уже ПОСЛЕ выплаты.
+                // Прятать это под max(...,0) нельзя — переплата остаётся
+                // деньгами компании, и бухгалтер должен её видеть.
+                'overpaid' => round(max($yearPaid - $yearAccrued, 0), 2),
             ];
         }
 
@@ -121,16 +127,23 @@ class BonusPayoutService
     public function pay(User $employee, array $months, string $method, ?User $actor = null, ?string $note = null): array
     {
         $months = array_values(array_unique($months));
-        $accrued = $this->accrualsByMonths([$employee->id], $months);
-        $alreadyPaid = BonusPayout::where('user_id', $employee->id)
-            ->whereIn('month', $months)->get()->groupBy('month')
-            ->map(fn ($g) => round((float) $g->sum('amount'), 2));
-
         $companyId = CurrentCompany::id() ?: $employee->companies()->value('companies.id');
         $paidTotal = 0.0;
         $paidMonths = 0;
 
-        DB::transaction(function () use ($employee, $months, $method, $actor, $note, $accrued, $alreadyPaid, $companyId, &$paidTotal, &$paidMonths) {
+        DB::transaction(function () use ($employee, $months, $method, $actor, $note, $companyId, &$paidTotal, &$paidMonths) {
+            // Строка сотрудника блокируется на время выплаты, а «сколько уже
+            // выдали» читается ВНУТРИ транзакции. Иначе двойной клик по
+            // «Выплатить» успевал прочитать нули дважды и выдавал бонус два
+            // раза: unique(сотрудник, месяц) здесь не спасает — доплата за тот
+            // же месяц законна, когда начисление выросло позже.
+            User::whereKey($employee->id)->lockForUpdate()->first();
+
+            $accrued = $this->accrualsByMonths([$employee->id], $months);
+            $alreadyPaid = BonusPayout::where('user_id', $employee->id)
+                ->whereIn('month', $months)->lockForUpdate()->get()->groupBy('month')
+                ->map(fn ($g) => round((float) $g->sum('amount'), 2));
+
             $category = ExpenseCategory::firstOrCreate(
                 ['code' => ExpenseCategory::EMPLOYEE],
                 ['name' => 'Расходы по сотрудникам', 'is_active' => true]
@@ -181,7 +194,7 @@ class BonusPayoutService
     }
 
     /** Сколько бонуса выплачено сотрудникам за всё время (для ведомости ЗП). */
-    public function paidTotals($userIds): \Illuminate\Support\Collection
+    public function paidTotals($userIds): Collection
     {
         return BonusPayout::whereIn('user_id', collect($userIds))
             ->groupBy('user_id')

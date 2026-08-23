@@ -427,7 +427,11 @@ class PayrollService
         $salaryUids = $includeAllActive
             ? User::where('is_active', true)->pluck('id')
             : User::where('is_active', true)->where('salary', '>', 0)->pluck('id');
-        $uids = $perDeal->keys()->merge($totalByUser->keys())->merge($salaryUids)->unique()->filter()->values();
+        // …и те, кто заработал только объёмом: рабочий без оклада и без сделок
+        // иначе выпадал из ведомости вместе со своим бонусом за смены.
+        $productionUids = $this->production->earnerIds();
+        $uids = $perDeal->keys()->merge($totalByUser->keys())->merge($salaryUids)
+            ->merge($productionUids)->unique()->filter()->values();
 
         $people = User::whereIn('id', $uids)->get(['id', 'name', 'avatar', 'salary'])->keyBy('id');
         // Бонус за выработку цеха: он такой же заработок, как процент со

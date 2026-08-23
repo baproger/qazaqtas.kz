@@ -2,13 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\BonusPayout;
 use App\Models\Brigade;
 use App\Models\Company;
 use App\Models\EmployeeDebt;
+use App\Models\Expense;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Services\BonusPayoutService;
+use App\Services\PayrollService;
 use App\Services\ProductionBonusService;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StageSeeder;
@@ -224,6 +227,104 @@ class ProductionBonusTest extends TestCase
         $this->artisan('debts:charge', ['--month' => '2026-08'])->assertSuccessful();
 
         $this->assertSame(round(20000 - 3000, 2), $debt->fresh()->balance());
+    }
+
+    /**
+     * Двойной клик по «Выплатить» не выдаёт бонус дважды.
+     *
+     * Раньше «сколько уже выплачено» читалось ДО транзакции: два запроса
+     * успевали увидеть нули и создавали два расхода на одну и ту же сумму —
+     * деньги уходили из кассы дважды.
+     */
+    public function test_paying_the_same_month_twice_pays_only_once(): void
+    {
+        $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 10, 'qty_pcs' => 0]]);
+        $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id));
+
+        $payouts = app(BonusPayoutService::class);
+        $first = $payouts->pay($this->foreman, ['2026-08'], 'cash', $this->director);
+        $second = $payouts->pay($this->foreman, ['2026-08'], 'cash', $this->director);
+
+        $this->assertSame(4500.0, $first['paid']);
+        $this->assertSame(0.0, $second['paid'], 'Второй раз платить нечего — бонус уже выдан.');
+        $this->assertSame(4500.0, round((float) BonusPayout::sum('amount'), 2));
+        $this->assertSame(1, Expense::where('employee_payout', 'bonus')->count());
+    }
+
+    /**
+     * Рабочий без оклада и без сделок остаётся в ведомости.
+     *
+     * Его заработок — только объём. Пока строк ведомости не было, бонус за
+     * смены не попадал ни в «К выплате», ни в ЗП компании.
+     */
+    public function test_a_worker_without_salary_stays_in_the_payroll(): void
+    {
+        $this->worker->update(['salary' => 0]);
+        Setting::set('worker_rate_m2', 300);
+
+        $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 10, 'qty_pcs' => 0]]);
+        $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id));
+
+        $row = app(PayrollService::class)->perUser()
+            ->firstWhere('uid', $this->worker->id);
+
+        $this->assertNotNull($row, 'Заработавший объёмом обязан быть в ведомости.');
+        $this->assertSame(3000.0, round((float) $row['bonus_production'], 2));
+        $this->assertSame(3000.0, round((float) $row['payout'], 2));
+    }
+
+    /**
+     * Переплата видна, а не спрятана.
+     *
+     * Наряд удалили уже после выплаты — начисление упало ниже выплаченного.
+     * Раньше остаток обрезался до нуля, и деньги, выданные сверх, исчезали
+     * со страницы вместе с вопросом «кто кому должен».
+     */
+    public function test_an_overpayment_stays_visible(): void
+    {
+        $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 10, 'qty_pcs' => 0]]);
+        $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id));
+        app(BonusPayoutService::class)->pay($this->foreman, ['2026-08'], 'cash', $this->director);
+
+        $this->actingAs($this->director)->delete(route('production.orders.destroy', $order->id))
+            ->assertSessionHasNoErrors();
+
+        $row = collect(app(BonusPayoutService::class)
+            ->yearFor(User::whereKey($this->foreman->id)->get(), 2026))->first();
+
+        $this->assertSame(0.0, round((float) $row['accrued'], 2));
+        $this->assertSame(4500.0, round((float) $row['paid'], 2));
+        $this->assertSame(0.0, round((float) $row['left'], 2));
+        $this->assertSame(4500.0, round((float) $row['overpaid'], 2), 'Переплату обязано быть видно.');
+    }
+
+    /** Повторная отправка формы не создаёт второй наряд за ту же смену. */
+    public function test_the_same_shift_is_not_filed_twice(): void
+    {
+        $lines = [['user_id' => $this->worker->id, 'qty_m2' => 10, 'qty_pcs' => 0]];
+        $this->createOrder($lines);
+
+        $this->actingAs($this->foreman)->post(route('production.orders.store'), [
+            'brigade_id' => $this->brigade->id,
+            'date' => '2026-08-10',
+            'product' => 'Брусчатка',
+            'lines' => $lines,
+        ])->assertSessionHasErrors('lines');
+
+        $this->assertSame(1, WorkOrder::count());
+    }
+
+    /** Наряд чужой фирмы не подтвердить: бонус ушёл бы из чужой кассы. */
+    public function test_an_order_of_another_company_cannot_be_confirmed(): void
+    {
+        $other = Company::create(['name' => 'Вторая фирма', 'code' => 'XX']);
+        $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 5, 'qty_pcs' => 0]]);
+        $order->update(['company_id' => $other->id]);
+
+        $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id))
+            ->assertForbidden();
+
+        $this->assertSame('draft', $order->fresh()->status);
     }
 
     /** Страница производства показывает, кто сколько сделал. */

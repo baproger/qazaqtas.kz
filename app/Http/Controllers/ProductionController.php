@@ -10,6 +10,7 @@ use App\Support\CurrentCompany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,6 +32,19 @@ class ProductionController extends Controller
     private function canConfirm(Request $request): bool
     {
         return $request->user()->hasAnyRole(['admin', 'director']);
+    }
+
+    /**
+     * Наряд чужой фирмы не трогаем: выработка превращается в бонус, а бонус —
+     * в расход из кассы конкретной фирмы.
+     */
+    private function assertOwnCompany(Request $request, WorkOrder $order): void
+    {
+        abort_unless(
+            $order->company_id === null || $request->user()->worksInCompany((int) $order->company_id),
+            403,
+            'Наряд другой фирмы.'
+        );
     }
 
     /** Состав бригад — дело руководства: бригадир себе людей не дописывает. */
@@ -167,6 +181,20 @@ class ProductionController extends Controller
             'Наряд заводит бригадир своей бригады.'
         );
 
+        // Анти-дубль: та же бригада, дата и изделие младше минуты — это
+        // повторная отправка формы, а не вторая смена. Подтверждённый дубль
+        // удвоил бы объём, а с ним и бонус.
+        $duplicate = WorkOrder::where('brigade_id', $brigade->id)
+            ->whereDate('date', $data['date'])
+            ->where('product', $data['product'] ?? null)
+            ->where('created_at', '>=', now()->subMinute())
+            ->exists();
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'lines' => 'Похоже на повторную отправку — такой наряд уже создан минуту назад.',
+            ]);
+        }
+
         $order = WorkOrder::create([
             'company_id' => $brigade->company_id ?: CurrentCompany::id(),
             'brigade_id' => $brigade->id,
@@ -187,6 +215,7 @@ class ProductionController extends Controller
     public function confirm(Request $request, WorkOrder $order): RedirectResponse
     {
         abort_unless($this->canConfirm($request), 403, 'Наряд подтверждает мастер или руководство.');
+        $this->assertOwnCompany($request, $order);
 
         if ($order->isConfirmed()) {
             return back()->with('error', 'Наряд уже подтверждён.');
@@ -207,6 +236,7 @@ class ProductionController extends Controller
      */
     public function destroy(Request $request, WorkOrder $order): RedirectResponse
     {
+        $this->assertOwnCompany($request, $order);
         $mine = $order->brigade?->foreman_id === $request->user()->id;
         abort_unless(
             $this->canConfirm($request) || ($mine && ! $order->isConfirmed()),

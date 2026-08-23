@@ -148,7 +148,14 @@ const cellClass = (cell) => {
                                 <span v-else>—</span>
                             </td>
                             <td class="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-800">{{ money(r.accrued) }}</td>
-                            <td class="px-4 py-2.5 text-right tabular-nums text-emerald-600">{{ money(r.paid) }}</td>
+                            <td class="px-4 py-2.5 text-right tabular-nums text-emerald-600">
+                                {{ money(r.paid) }}
+                                <!-- Переплата: выдали больше, чем начислено -->
+                                <div v-if="r.overpaid > 0" class="text-[10px] font-semibold text-rose-600"
+                                    :title="$e('Начисление уменьшилось уже после выплаты — удалили наряд или выросли расходы по сделке.')">
+                                    {{ $e('переплата') }} {{ money(r.overpaid) }}
+                                </div>
+                            </td>
                             <!-- Кнопка выплаты живёт в этой же ячейке: отдельным
                                  столбцом она оказывалась правее прилипшей
                                  колонки и закрывала сумму при прокрутке. -->

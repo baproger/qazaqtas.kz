@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Setting;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderLine;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -153,6 +154,20 @@ class ProductionBonusService
             ->pluck('total', 'user_id')
             ->map(fn ($v) => round((float) $v, 2))
             ->all();
+    }
+
+    /**
+     * Кто вообще что-то заработал на выработке — чтобы ведомость ЗП не
+     * потеряла человека без оклада и без сделок.
+     *
+     * @return Collection<int, int>
+     */
+    public function earnerIds(): Collection
+    {
+        return WorkOrderLine::query()
+            ->whereNotNull('user_id')
+            ->whereHas('order', fn ($q) => $q->where('status', 'confirmed'))
+            ->distinct()->pluck('user_id')->map(fn ($id) => (int) $id);
     }
 
     /**
