@@ -2,12 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\Deal;
+use App\Models\DealStage;
 use App\Models\Expense;
 use App\Models\Payment;
+use App\Models\Project;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\PayrollService;
+use App\Support\CurrentCompany;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,6 +25,12 @@ use Inertia\Response;
  */
 class ReportController extends Controller
 {
+    /** Сколько строк отчёта отдаём на страницу. */
+    private const PER_PAGE = 100;
+
+    /** Размер пачки при подсчёте итогов по всей выборке. */
+    private const TOTALS_CHUNK = 500;
+
     public function deals(Request $request): Response
     {
         abort_unless($request->user()->hasAnyRole(['admin', 'director']), 403);
@@ -31,7 +43,7 @@ class ReportController extends Controller
         $managerId = $request->integer('manager') ?: null;
         $stageId = $request->integer('stage') ?: null;
 
-        $deals = Deal::forCurrentCompany()
+        $dealQuery = Deal::forCurrentCompany()
             ->where('status', '!=', 'cancelled')
             ->with(['responsible:id,name', 'stage:id,name,color,is_won,stage_type'])
             ->when($search, fn ($q, $s) => $q->where(fn ($w) => $w
@@ -49,9 +61,70 @@ class ReportController extends Controller
                 ->orWhere(fn ($c) => $c->whereNull('contract_date')
                     ->when($from, fn ($q2, $d) => $q2->whereDate('created_at', '>=', $d))
                     ->when($to, fn ($q2, $d) => $q2->whereDate('created_at', '<=', $d)))))
-            ->latest()
-            ->get(['id', 'number', 'bin', 'company_name', 'address', 'client_name', 'lot_number', 'unit',
-                'budget', 'partner_pct', 'bonus_rate_override', 'deadline', 'deal_stage_id', 'responsible_user_id', 'status', 'created_at', 'contract_date']);
+            ->latest();
+
+        // Страница таблицы. Раньше в браузер уезжали ВСЕ сделки выборки: на
+        // тысяче договоров это мегабайты JSON и повисший отчёт. Итоги при
+        // этом считаются по всей выборке, а не по видимой странице —
+        // руководителю нужен итог периода, а не итог экрана.
+        $page = (clone $dealQuery)->paginate(self::PER_PAGE)->withQueryString();
+        $deals = $page->getCollection();
+
+        $rows = $this->buildRows($deals, $taxRate);
+
+        // Итоги — по ВСЕЙ выборке, а не по видимой странице: руководителю
+        // нужен итог периода. Считаем пачками, чтобы память не зависела от
+        // числа сделок.
+        $totals = $this->totalsFor(clone $dealQuery, $taxRate);
+
+        // Опции фильтров: активные менеджеры и этапы воронки текущей компании
+        // (в режиме «Все компании» — обе воронки с пометкой фирмы).
+        $companyId = CurrentCompany::id() ?: null;
+        $companyNames = Company::pluck('name', 'id');
+        $stageOptions = DealStage::with('translations')->where('is_active', true)
+            ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w->where('company_id', $c)->orWhereNull('company_id')))
+            ->orderBy('order')->get()
+            ->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName().(! $companyId && $s->company_id ? ' · '.($companyNames[$s->company_id] ?? '') : '')])
+            ->values();
+
+        return Inertia::render('Reports/Deals', [
+            'rows' => $rows,
+            // Ссылки страниц: сама таблица показывает сотню строк, итоги под
+            // ней — по всему периоду.
+            'links' => $page->linkCollection(),
+            'shown' => $page->count(),
+            'totals' => $totals,
+            'taxRate' => $taxRate * 100,
+            'filters' => ['search' => $search, 'from' => $from, 'to' => $to, 'manager' => $managerId, 'stage' => $stageId],
+            // Для фильтра: менеджеры отдельно, остальные — по отделам (сворачиваются).
+            'managers' => User::where('is_active', true)
+                ->with(['roles:id,name', 'department:id,name'])
+                ->orderBy('name')->get(['id', 'name', 'department_id'])
+                ->map(fn ($u) => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'is_manager' => $u->roles->contains('name', 'manager'),
+                    'department' => $u->department?->name,
+                ])->values(),
+            'stageOptions' => $stageOptions,
+        ]);
+    }
+
+    /**
+     * Строки отчёта по набору сделок.
+     *
+     * Одна формула на страницу таблицы и на итоги: итоги считаются по всей
+     * выборке пачками, и второй расчёт «покороче» рано или поздно разошёлся
+     * бы со строками — спорить пришлось бы о том, какая цифра врёт.
+     *
+     * @param  Collection<int, Deal>  $deals
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function buildRows($deals, float $taxRate)
+    {
+        if ($deals->isEmpty()) {
+            return collect();
+        }
 
         // Оплачено по сделке — платежи по её счетам (одним запросом на всех).
         $paidByDeal = Payment::join('invoices', 'payments.invoice_id', '=', 'invoices.id')
@@ -76,13 +149,13 @@ class ReportController extends Controller
 
         // Активный заказ цеха по сделке: этап цеха показывается прямо в общей
         // таблице (вторым бейджем в колонке «Этап») — цех и сделки вместе.
-        $workshopByDeal = \App\Models\Project::query()
+        $workshopByDeal = Project::query()
             ->with('stage:id,name,color')
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->whereIn('deal_id', $deals->pluck('id'))
             ->get()->keyBy('deal_id');
 
-        $rows = $deals->map(function ($d) use ($paidByDeal, $expByDeal, $workshopByDeal, $taxRate) {
+        return $deals->map(function ($d) use ($paidByDeal, $expByDeal, $workshopByDeal, $taxRate) {
             $budget = (float) $d->budget;
             $material = (float) ($expByDeal[$d->id]->material ?? 0);
             $delivery = (float) ($expByDeal[$d->id]->delivery ?? 0);
@@ -137,52 +210,35 @@ class ReportController extends Controller
                 'is_logistics' => in_array($d->stage?->stage_type, ['logistics', 'assembly'], true),
             ];
         })->values();
+    }
 
-        $budgetSum = $rows->sum('budget');
-        $companySum = $rows->sum('company');
-        $totals = [
-            'budget' => $budgetSum,
-            'paid' => $rows->sum('paid'),
-            'material' => $rows->sum('material'),
-            'delivery' => $rows->sum('delivery'),
-            'purchase' => $rows->sum('purchase'),
-            'assembly' => $rows->sum('assembly'),
-            'other' => $rows->sum('other'),
-            'partner' => $rows->sum('partner'),
-            'tax' => $rows->sum('tax'),
-            'remainder' => $rows->sum('remainder'),
-            'bonus' => $rows->sum('bonus'),
-            'company' => $companySum,
-            'margin' => $budgetSum > 0 ? round($companySum / $budgetSum * 100, 1) : 0,
-            'count' => $rows->count(),
-        ];
+    /**
+     * Итоги по всей выборке — пачками по TOTALS_CHUNK сделок.
+     *
+     * @return array<string, float|int>
+     */
+    private function totalsFor($query, float $taxRate): array
+    {
+        $keys = ['budget', 'paid', 'material', 'delivery', 'purchase', 'assembly',
+            'other', 'partner', 'tax', 'remainder', 'bonus', 'company'];
+        $sums = array_fill_keys($keys, 0.0);
+        $count = 0;
 
-        // Опции фильтров: активные менеджеры и этапы воронки текущей компании
-        // (в режиме «Все компании» — обе воронки с пометкой фирмы).
-        $companyId = \App\Support\CurrentCompany::id() ?: null;
-        $companyNames = \App\Models\Company::pluck('name', 'id');
-        $stageOptions = \App\Models\DealStage::with('translations')->where('is_active', true)
-            ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w->where('company_id', $c)->orWhereNull('company_id')))
-            ->orderBy('order')->get()
-            ->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName().(! $companyId && $s->company_id ? ' · '.($companyNames[$s->company_id] ?? '') : '')])
-            ->values();
+        // reorder(): chunkById требует сортировки по id, а запрос отсортирован
+        // по дате создания для таблицы.
+        $query->reorder()->chunkById(self::TOTALS_CHUNK, function ($chunk) use (&$sums, &$count, $taxRate, $keys) {
+            foreach ($this->buildRows($chunk, $taxRate) as $row) {
+                foreach ($keys as $key) {
+                    $sums[$key] += (float) $row[$key];
+                }
+                $count++;
+            }
+        });
 
-        return Inertia::render('Reports/Deals', [
-            'rows' => $rows,
-            'totals' => $totals,
-            'taxRate' => $taxRate * 100,
-            'filters' => ['search' => $search, 'from' => $from, 'to' => $to, 'manager' => $managerId, 'stage' => $stageId],
-            // Для фильтра: менеджеры отдельно, остальные — по отделам (сворачиваются).
-            'managers' => \App\Models\User::where('is_active', true)
-                ->with(['roles:id,name', 'department:id,name'])
-                ->orderBy('name')->get(['id', 'name', 'department_id'])
-                ->map(fn ($u) => [
-                    'id' => $u->id,
-                    'name' => $u->name,
-                    'is_manager' => $u->roles->contains('name', 'manager'),
-                    'department' => $u->department?->name,
-                ])->values(),
-            'stageOptions' => $stageOptions,
-        ]);
+        $sums = array_map(fn ($v) => round($v, 2), $sums);
+        $sums['margin'] = $sums['budget'] > 0 ? round($sums['company'] / $sums['budget'] * 100, 1) : 0;
+        $sums['count'] = $count;
+
+        return $sums;
     }
 }

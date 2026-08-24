@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashReceipt;
+use App\Models\Company;
 use App\Models\Deal;
 use App\Models\DealStage;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Invoice;
 use App\Models\Material;
 use App\Models\Payment;
@@ -12,7 +15,9 @@ use App\Models\Project;
 use App\Models\Setting;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\FinanceService;
 use App\Services\PayrollService;
+use App\Support\CurrentCompany;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -54,11 +59,11 @@ class AnalyticsController extends Controller
         // Deals by stage (funnel) — этапы ТЕКУЩЕЙ компании (иначе одинаковые
         // одноимённые этапы разных фирм выглядят как дубли); в режиме «Все
         // компании» показываем обе воронки с пометкой фирмы.
-        $companyId = \App\Support\CurrentCompany::id() ?: null;
+        $companyId = CurrentCompany::id() ?: null;
         $stages = DealStage::with('translations')->where('is_active', true)
             ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w->where('company_id', $c)->orWhereNull('company_id')))
             ->orderBy('order')->get();
-        $companyNames = \App\Models\Company::pluck('name', 'id');
+        $companyNames = Company::pluck('name', 'id');
         // Воронка — АКТИВНЫЕ сделки по этапам (перенесено с Дашборда: где затор),
         // учитывает фильтры менеджер/этап/поиск.
         $dealsByStage = Deal::query()->forCurrentCompany()
@@ -81,11 +86,21 @@ class AnalyticsController extends Controller
         // Monthly income (payments) and expenses — grouped in PHP for DB portability.
         $monthsCount = in_array((int) $request->integer('months', 6), [3, 6, 12], true) ? (int) $request->integer('months', 6) : 6;
         $months = collect(range($monthsCount - 1, 0))->map(fn ($i) => now()->subMonths($i)->format('Y-m'));
-        $payments = Payment::whereHas('invoice', fn ($q) => $q->where('invoiceable_type', 'deal')->whereIn('invoiceable_id', $wonIds))->get(['amount', 'payment_date']);
+        // Берём только окно графика: раньше поднималась ВСЯ история платежей
+        // и расходов, чтобы показать шесть столбиков. На тысячах сделок это
+        // десятки тысяч строк в памяти ради двенадцати чисел.
+        $windowFrom = now()->subMonths($monthsCount - 1)->startOfMonth()->toDateString();
+        $windowTo = now()->endOfMonth()->toDateString();
+
+        $payments = Payment::whereHas('invoice', fn ($q) => $q->where('invoiceable_type', 'deal')->whereIn('invoiceable_id', $wonIds))
+            ->whereDate('payment_date', '>=', $windowFrom)->whereDate('payment_date', '<=', $windowTo)
+            ->get(['amount', 'payment_date']);
         // Расходы по месяцам — по ВСЕМ сделкам компании (не только won): затрата
         // видна в месяце, когда потрачена, а не когда сделка станет успешной.
         $expenses = Expense::where('status', 'confirmed')->where('expenseable_type', 'deal')
-            ->whereIn('expenseable_id', Deal::forCurrentCompany()->select('id'))->get(['amount', 'date']);
+            ->whereIn('expenseable_id', Deal::forCurrentCompany()->select('id'))
+            ->whereDate('date', '>=', $windowFrom)->whereDate('date', '<=', $windowTo)
+            ->get(['amount', 'date']);
 
         $monthly = $months->map(function ($m) use ($payments, $expenses) {
             $income = $payments->filter(fn ($p) => optional($p->payment_date)->format('Y-m') === $m)->sum('amount');
@@ -221,24 +236,24 @@ class AnalyticsController extends Controller
         // Скоупы берём из FinanceService: своя копия здесь уже разошлась с
         // Финансами — она не видела расходов КОМПАНИИ (аренда, бензин), и
         // счётчик «заявки ждут проверки» занижал их число.
-        $finance = app(\App\Services\FinanceService::class);
+        $finance = app(FinanceService::class);
         $invBase = $finance->scopeCompanyInvoices(Invoice::query(), $companyId ?: null);
         $invoiced = (float) (clone $invBase)->sum('amount');
         $invoicePaid = (float) Payment::whereIn('invoice_id', (clone $invBase)->select('id'))->sum('amount');
 
         // ---- Деньги компании (как на Финансах): касса/банк, все расходы с разбивкой ----
-        $balances = app(\App\Services\FinanceService::class)->companyBalances($companyId ?: null);
+        $balances = app(FinanceService::class)->companyBalances($companyId ?: null);
         $expFull = $finance->scopeCompanyExpenses(
             Expense::where('status', 'confirmed'),
             $companyId ?: null,
         );
         $byCat = (clone $expFull)->whereNotNull('category_id')
             ->groupBy('category_id')->selectRaw('category_id, sum(amount) s')->pluck('s', 'category_id');
-        $catNames = \App\Models\ExpenseCategory::whereIn('id', $byCat->keys())->pluck('name', 'id');
+        $catNames = ExpenseCategory::whereIn('id', $byCat->keys())->pluck('name', 'id');
         // Категория «Расходы по сотрудникам» — это выплаты ЗП, аванса и долга.
         // В итоге они уже стоят строкой «Зарплата», поэтому здесь помечены и
         // из суммы исключены (иначе ЗП считалась бы дважды).
-        $employeeCategoryId = \App\Models\ExpenseCategory::findByCode(\App\Models\ExpenseCategory::EMPLOYEE)?->id;
+        $employeeCategoryId = ExpenseCategory::findByCode(ExpenseCategory::EMPLOYEE)?->id;
         $categoryRows = $byCat->map(fn ($s, $id) => [
             'name' => $catNames[$id] ?? '—',
             'sum' => (float) $s,
@@ -265,7 +280,7 @@ class AnalyticsController extends Controller
             'purchase' => (float) ($dealSplitRow->purchase ?? 0),
             'other' => (float) ($dealSplitRow->other ?? 0),
         ];
-        $incomeManual = (float) \App\Models\CashReceipt::query()
+        $incomeManual = (float) CashReceipt::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))->sum('amount');
         $payrollTotal = round((float) $salaryRows->sum('payout'), 2);
         // Все расходы компании: категории + по сделкам/цеху + ЗП (оклады+бонусы) + налог.
@@ -298,7 +313,7 @@ class AnalyticsController extends Controller
                 ->orWhere(fn ($m) => $this->morphCompanyScope($m, 'taskable_type', 'taskable_id', $c))))
             ->count();
 
-        $expBase = app(\App\Services\FinanceService::class)
+        $expBase = app(FinanceService::class)
             ->scopeCompanyExpenses(Expense::query(), $companyId ?: null);
         $pendingExpenses = [
             'count' => (clone $expBase)->where('status', 'pending')->count(),

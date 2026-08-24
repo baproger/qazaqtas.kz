@@ -3,13 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\Deal;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Material;
 use App\Models\MaterialReceipt;
+use App\Models\Setting;
 use App\Support\CurrentCompany;
+use App\Support\FinanceAudit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,6 +24,9 @@ use Inertia\Response;
  */
 class WarehouseController extends Controller
 {
+    /** Сколько последних списаний показывать в раскрытии по позиции. */
+    private const WRITEOFF_DETAILS = 300;
+
     /** Управление складом (приход, правка, удаление) — только бухгалтер и админ. */
     private function canManage(Request $request): bool
     {
@@ -49,13 +57,22 @@ class WarehouseController extends Controller
 
         // Списание = материальные расходы со склада (qty), только confirmed.
         // Детали (какая сделка/заказ) — для клика по колонке «Списание».
-        $writeoffExpenses = \App\Models\Expense::whereIn('material_id', $ids)
+        $writeoffQuery = fn () => Expense::whereIn('material_id', $ids)
             ->where('status', 'confirmed')
             ->when($from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
-            ->with('expenseable')
-            ->latest('date')->get();
-        $writtenOff = $writeoffExpenses->groupBy('material_id')->map(fn ($g) => (float) $g->sum('qty'));
+            ->when($to, fn ($q, $d) => $q->whereDate('date', '<=', $d));
+
+        // Сколько списано — считает БД. Раньше ради этих сумм в память
+        // поднималась вся история списаний со всеми сделками в придачу.
+        $writtenOff = $writeoffQuery()
+            ->groupBy('material_id')->selectRaw('material_id, SUM(qty) as qty')
+            ->pluck('qty', 'material_id')->map(fn ($q) => (float) $q);
+
+        // Детали (какая сделка/заказ) нужны для клика по колонке «Списание» —
+        // берём последние: раскрытый список за все годы никто не читает, а
+        // грузить его приходилось бы при каждом открытии страницы.
+        $writeoffExpenses = $writeoffQuery()->with('expenseable')
+            ->latest('date')->limit(self::WRITEOFF_DETAILS)->get();
         $writeoffs = $writeoffExpenses->map(fn ($e) => [
             'material_id' => $e->material_id,
             'qty' => (float) ($e->qty ?? 0),
@@ -95,7 +112,7 @@ class WarehouseController extends Controller
             'units' => Deal::UNITS,
             'canManage' => $this->canManage($request),
             // Общая наценка из настроек — подсказка в форме («как у всех»).
-            'defaultMarkup' => (float) \App\Models\Setting::get('material_markup_percent', 0),
+            'defaultMarkup' => (float) Setting::get('material_markup_percent', 0),
             'allMode' => $allMode,
             'companyName' => $allMode ? 'Все компании' : (CurrentCompany::get()?->name ?? ''),
             'filters' => ['from' => $from, 'to' => $to],
@@ -172,12 +189,12 @@ class WarehouseController extends Controller
      * прихода. Категория служебная (`materials_purchase`) и ищется по коду:
      * имя владелец правит из админки.
      */
-    private function purchaseExpense(MaterialReceipt $receipt, Material $material, int $userId, string $method): \App\Models\Expense
+    private function purchaseExpense(MaterialReceipt $receipt, Material $material, int $userId, string $method): Expense
     {
-        return \App\Models\Expense::create([
+        return Expense::create([
             'company_id' => $material->company_id,
-            'category_id' => \App\Models\ExpenseCategory::firstOrCreate(
-                ['code' => \App\Models\ExpenseCategory::MATERIALS_PURCHASE],
+            'category_id' => ExpenseCategory::firstOrCreate(
+                ['code' => ExpenseCategory::MATERIALS_PURCHASE],
                 ['name' => 'Закуп материалов', 'is_active' => true]
             )->id,
             'type' => 'purchase',
@@ -216,7 +233,7 @@ class WarehouseController extends Controller
             // защита от гонки с параллельным списанием расхода по материалу.
             $material = Material::whereKey($receipt->material_id)->lockForUpdate()->first();
             if ((float) $material->quantity + $delta < 0) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'quantity' => 'Так остаток уйдёт в минус: на складе '.number_format((float) $material->quantity, 2, '.', ' ').' '.$material->unit.' (часть уже списана в расходы).',
                 ]);
             }
@@ -266,7 +283,7 @@ class WarehouseController extends Controller
                 if ($receipt->expense) {
                     $paid = (float) $receipt->expense->amount;
                     $receipt->expense->delete();
-                    \App\Support\FinanceAudit::notifyDeleted(
+                    FinanceAudit::notifyDeleted(
                         'Оплата закупа на '.number_format($paid, 0, '.', ' ').' ₸ ('.$material->name.')'
                     );
                 }

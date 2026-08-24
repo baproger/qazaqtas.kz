@@ -1,12 +1,13 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import Pagination from '@/Components/Pagination.vue';
 import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 
-const props = defineProps({ rows: Array, totals: Object, taxRate: Number, filters: Object, managers: Array, stageOptions: Array });
+const props = defineProps({ rows: Array, links: { type: Array, default: () => [] }, shown: { type: Number, default: 0 }, totals: Object, taxRate: Number, filters: Object, managers: Array, stageOptions: Array });
 
 const money = (v) => new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v ?? 0));
 const money0 = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v ?? 0)) + ' ₸';
@@ -271,6 +272,15 @@ const share = (v) => props.totals.budget > 0 ? (v / props.totals.budget * 100).t
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+
+            <!-- Таблица идёт страницами, итог под ней — по всему периоду. -->
+            <div v-if="links.length > 3" class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+                <div class="text-xs text-slate-400">
+                    {{ $e('Показано') }} {{ shown }} {{ $e('из') }} {{ totals.count }} {{ $e('сделок') }} ·
+                    {{ $e('итог внизу — за весь период') }}
+                </div>
+                <Pagination :links="links" />
             </div>
         </div>
 
