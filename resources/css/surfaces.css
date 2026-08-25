@@ -227,14 +227,22 @@
            выглядеть таблеткой из другого набора. Иерархию держит заливка —
            главная кнопка литая, второстепенная и «в корзину» прозрачные. */
         @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3
-               text-sm font-semibold text-ink-900 focus:outline-none
-               focus-visible:ring-2 focus-visible:ring-sand-300/60;
+               text-sm font-semibold focus:outline-none
+               focus-visible:ring-2 focus-visible:ring-emerald-500/50;
+        color: rgb(252 253 252);
         /* Тон глубже прежнего: бледный беж на тёмном читался как выцветший,
            а не как латунь. Верхняя кромка светлая, тело — насыщенное. */
-        background-image: linear-gradient(180deg, rgb(var(--sand-200)) 0%, rgb(var(--sand-400)) 52%, rgb(var(--sand-500)) 100%);
-        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3),
-                    inset 0 -1px 0 rgb(0 0 0 / 0.08),
-                    0 10px 24px -14px rgb(var(--glow-warm) / 0.55);
+        background-image: linear-gradient(180deg,
+            rgb(var(--act-top) / var(--act-alpha-top)) 0%,
+            rgb(var(--act-mid) / var(--act-alpha-mid)) 52%,
+            rgb(var(--act-bottom) / var(--act-alpha-bottom)) 100%);
+        /* Стекло, а не заливка: фон просвечивает, поэтому кнопка живёт на
+           любой подложке — на бумаге, на фото объекта, на тёмном полотне. */
+        backdrop-filter: blur(10px) saturate(1.1);
+        -webkit-backdrop-filter: blur(10px) saturate(1.1);
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22),
+                    inset 0 -1px 0 rgb(0 0 0 / 0.12),
+                    0 10px 24px -14px rgb(var(--act-bottom) / 0.6);
         transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
                     box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
                     filter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -242,9 +250,9 @@
     .btn-sand:hover {
         transform: translateY(-2px);
         filter: brightness(1.06);
-        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35),
-                    0 0 25px rgb(var(--glow-warm) / 0.3),
-                    0 14px 30px -16px rgb(var(--glow-warm) / 0.6);
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28),
+                    0 0 25px rgb(var(--act-top) / 0.35),
+                    0 14px 30px -16px rgb(var(--act-bottom) / 0.65);
     }
     /* Нажатие: кнопка чуть проседает — тактильный отклик без задержки. */
     .btn-sand:active {
@@ -462,8 +470,15 @@
     /* Днём токены sand-* другие: sand-200 там серо-синий, и градиент кнопки
        начинался с серого, отчего латунь выглядела грязной. Держим весь
        переход внутри бронзовой части палитры. */
-    .site[data-theme='light'] .btn-sand {
-        background-image: linear-gradient(180deg, rgb(166 132 74) 0%, rgb(var(--sand-300)) 45%, rgb(var(--sand-400)) 100%);
+    /* Вторая кнопка тоже была бледной: тон sand-300 на белом — 4,8:1.
+       Берём на ступень глубже, контур заметнее. */
+    .site[data-theme='light'] .btn-cart {
+        color: rgb(var(--sand-400));
+        border-color: rgb(var(--sand-400) / 0.5);
+    }
+    .site[data-theme='light'] .btn-cart:hover {
+        border-color: rgb(var(--sand-400) / 0.85);
+        background-color: rgb(var(--sand-400) / 0.12);
     }
 
     .site[data-theme='light'] .btn-ghost {

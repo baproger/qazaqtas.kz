@@ -35,8 +35,11 @@
     top: 0.375rem;
     bottom: 0.375rem;
     transform-origin: left center;
-    background-image: linear-gradient(180deg, rgb(var(--sand-200)), rgb(var(--sand-300)) 55%, rgb(var(--sand-400)));
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 6px 18px -8px rgb(var(--glow-warm) / 0.55);
+    background-image: linear-gradient(180deg,
+        rgb(var(--act-top) / var(--act-alpha-top)),
+        rgb(var(--act-mid) / var(--act-alpha-mid)) 55%,
+        rgb(var(--act-bottom) / var(--act-alpha-bottom)));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 6px 18px -8px rgb(var(--act-bottom) / 0.5);
     transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
                 border-radius 0.5s cubic-bezier(0.16, 1, 0.3, 1),
                 opacity 0.3s ease;
@@ -63,7 +66,9 @@
 }
 .segmented-item.is-active,
 .segmented-item.is-active:hover {
-    color: rgb(var(--ink-900));
+    /* Плашка стала тёмно-зелёной в обеих темах, поэтому надпись на ней
+       белая всегда: ночью ink-900 почти чёрный и на зелени пропадал. */
+    color: rgb(252 253 252);
     font-weight: 600;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -287,26 +292,31 @@
     width: 3.5rem;
     height: 3.5rem;
     border-radius: 9999px;
-    color: rgb(var(--ink-900));
-    background-image: linear-gradient(180deg, rgb(var(--sand-200)) 0%, rgb(var(--sand-300)) 55%, rgb(var(--sand-400)) 100%);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35),
-                0 14px 34px -12px rgb(var(--glow-warm) / 0.6),
+    color: rgb(252 253 252);
+    background-image: linear-gradient(180deg,
+        rgb(var(--act-top) / var(--act-alpha-top)) 0%,
+        rgb(var(--act-mid) / var(--act-alpha-mid)) 55%,
+        rgb(var(--act-bottom) / var(--act-alpha-bottom)) 100%);
+    backdrop-filter: blur(10px) saturate(1.1);
+    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22),
+                0 14px 34px -12px rgb(var(--act-bottom) / 0.55),
                 0 0 0 1px rgb(var(--card-border) / 0.08);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
                 box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .socialbtn-trigger:hover {
     transform: translateY(-2px) scale(1.04);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4),
-                0 0 28px rgb(var(--glow-warm) / 0.35),
-                0 18px 40px -14px rgb(var(--glow-warm) / 0.65);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28),
+                0 0 28px rgb(var(--act-top) / 0.4),
+                0 18px 40px -14px rgb(var(--act-bottom) / 0.6);
 }
 .socialbtn-trigger:active {
     transform: scale(0.95);
     transition-duration: 0.12s;
 }
 .socialbtn-trigger:focus-visible {
-    outline: 2px solid rgb(var(--sand-300));
+    outline: 2px solid rgb(var(--act-top));
     outline-offset: 3px;
 }
 .socialbtn-trigger.is-open {
@@ -318,7 +328,7 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: rgb(var(--sand-300) / 0.5);
+    background: rgb(var(--act-mid) / 0.45);
     /* Четыре прохода и тишина. Бесконечная волна привлекала внимание ровно
        столько же, но жгла батарею всё время, пока страница открыта. Показ
        повторяется, когда посетитель закрывает меню связи. */
