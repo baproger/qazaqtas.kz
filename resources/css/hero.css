@@ -126,6 +126,11 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    /* Ограничение ширины живёт здесь, а не на самой плашке. У плашки
+       max-width считался в процентах от её же ширины по содержимому —
+       рамка обрывалась на 62% надписи, а текст вылезал наружу. Здесь
+       процент считается от визуала, как и задумано. */
+    max-width: 62%;
     animation: hero-spec-in 380ms var(--ease) var(--d, 0ms) both;
 }
 @keyframes hero-spec-in {
@@ -200,9 +205,11 @@
 .hero-spec-pill {
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
-    max-width: 62%;
-    white-space: nowrap;
+    /* Плашка сжимается вместе с меткой и переносит длинную надпись на две
+       строки: обрезать её нельзя — это характеристика изделия. */
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
     border-radius: 14px;
     padding: 0.5rem 0.9rem;
     background-color: rgb(var(--card-bg) / var(--card-alpha));
