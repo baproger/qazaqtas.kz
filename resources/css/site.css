@@ -35,10 +35,12 @@
     top: 0.375rem;
     bottom: 0.375rem;
     transform-origin: left center;
-    background-image: linear-gradient(180deg,
-        rgb(var(--act-top) / var(--act-alpha-top)),
-        rgb(var(--act-mid) / var(--act-alpha-mid)) 55%,
-        rgb(var(--act-bottom) / var(--act-alpha-bottom)));
+    background-image:
+        linear-gradient(180deg, rgb(255 255 255 / 0.2) 0%, rgb(255 255 255 / 0) 45%),
+        linear-gradient(168deg,
+            rgb(var(--act-top) / var(--act-alpha-top)),
+            rgb(var(--act-mid) / var(--act-alpha-mid)) 32%,
+            rgb(var(--act-bottom) / var(--act-alpha-bottom)));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 6px 18px -8px rgb(var(--act-bottom) / 0.5);
     transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
                 border-radius 0.5s cubic-bezier(0.16, 1, 0.3, 1),
@@ -293,12 +295,14 @@
     height: 3.5rem;
     border-radius: 9999px;
     color: rgb(252 253 252);
-    background-image: linear-gradient(180deg,
-        rgb(var(--act-top) / var(--act-alpha-top)) 0%,
-        rgb(var(--act-mid) / var(--act-alpha-mid)) 55%,
-        rgb(var(--act-bottom) / var(--act-alpha-bottom)) 100%);
-    backdrop-filter: blur(10px) saturate(1.1);
-    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+    background-image:
+        linear-gradient(180deg, rgb(255 255 255 / 0.24) 0%, rgb(255 255 255 / 0) 45%),
+        linear-gradient(168deg,
+            rgb(var(--act-top) / var(--act-alpha-top)) 0%,
+            rgb(var(--act-mid) / var(--act-alpha-mid)) 32%,
+            rgb(var(--act-bottom) / var(--act-alpha-bottom)) 100%);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22),
                 0 14px 34px -12px rgb(var(--act-bottom) / 0.55),
                 0 0 0 1px rgb(var(--card-border) / 0.08);
