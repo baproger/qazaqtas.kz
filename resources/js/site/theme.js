@@ -17,33 +17,34 @@ export const applyTheme = (value) => {
     }
 };
 
+let animTimer = null;
+
 /**
- * Переключение с развёрткой от самой кнопки: новая тема «наливается» на
- * страницу мягким фронтом, а не подменяется мгновенно (растушёвку края
- * задаёт маска в site.css). Там, где View Transitions нет, тема меняется
- * сразу, а общий тон полотна перетекает переходом CSS.
+ * Переключение темы — перелив цвета, без остановки страницы.
+ *
+ * Раньше здесь была View Transitions: браузер снимал кадр всей страницы и
+ * проявлял поверх новый. Выглядело это как перезагрузка — на время перехода
+ * сайт замирал, 3D-двор и карусель стояли, а потом резко оживали.
+ *
+ * Теперь тема меняется мгновенно, а плавность даёт CSS: полотно
+ * кроссфейдится слоем .theme-canvas, остальные цвета перетекают, пока на
+ * корне висит класс theme-anim. Ничего не замирает: сцена крутится,
+ * карусель едет, видео играет.
  */
-export const toggleTheme = (origin) => {
+export const toggleTheme = () => {
     const next = theme.value === 'dark' ? 'light' : 'dark';
+    const root = document.querySelector('.site');
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-    if (!document.startViewTransition || reduced || !origin) {
-        applyTheme(next);
-        return;
+    if (root && !reduced) {
+        root.classList.add('theme-anim');
+        clearTimeout(animTimer);
+        // Класс снимается сразу после перехода: держать transition на всех
+        // элементах постоянно — значит платить за него на каждом ховере.
+        animTimer = setTimeout(() => root.classList.remove('theme-anim'), 650);
     }
 
-    // Клик с клавиатуры приходит без координат: развёртка тогда идёт от
-    // самой кнопки, а не из левого верхнего угла экрана.
-    const box = origin.currentTarget?.getBoundingClientRect?.();
-    const x = origin.clientX || (box ? box.left + box.width / 2 : window.innerWidth);
-    const y = origin.clientY || (box ? box.top + box.height / 2 : 0);
-    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
-
-    document.documentElement.style.setProperty('--vt-x', `${x}px`);
-    document.documentElement.style.setProperty('--vt-y', `${y}px`);
-    document.documentElement.style.setProperty('--vt-r', `${radius}px`);
-
-    document.startViewTransition(() => applyTheme(next));
+    applyTheme(next);
 };
 
 /** Сохранённый выбор, иначе системная настройка. */

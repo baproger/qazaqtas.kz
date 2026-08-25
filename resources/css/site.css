@@ -226,83 +226,47 @@
     transform: none;
 }
 
-/* Развёртка новой темы от кнопки. Старый кадр остаётся снизу, новый
-   наливается сверху — переход читается как заливка светом.
+/* Смена темы — перелив, а не подмена кадра.
 
-   Фронт волны РАСТУШЁВАН: жёсткая кромка круга резала страницу пополам, и
-   в момент перехода было видно шов между днём и ночью. Теперь край — это
-   градиент шириной в четверть экрана, и фон перетекает, а не переключается.
-   Ширину растушёвки держим в vmax: на телефоне и на мониторе полоса
-   перехода занимает одну и ту же долю экрана. */
-::view-transition-old(root) {
-    animation: none;
-    mix-blend-mode: normal;
-}
-::view-transition-new(root) {
-    animation: theme-reveal 0.9s cubic-bezier(0.33, 0, 0.2, 1);
-    mix-blend-mode: normal;
-}
+   Раньше здесь работали View Transitions: браузер снимал всю страницу и
+   проявлял поверх новый кадр. На время перехода сайт замирал — 3D-двор и
+   карусель стояли, — и это читалось как перезагрузка.
 
-/* Радиус фронта — анимируемое свойство: обычные переменные CSS не
-   интерполирует, и без @property волна прыгала бы одним кадром. */
-@property --vt-progress {
-    syntax: '<length>';
-    inherits: true;
-    initial-value: 0px;
+   Теперь тема меняется мгновенно, а плавность даёт этот слой: дневное
+   полотно лежит поверх ночного и проявляется по прозрачности. Страница при
+   этом живёт: сцена крутится, карусель едет. */
+.theme-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    opacity: 0;
+    background-image:
+        linear-gradient(175deg,
+            rgb(252 253 254) 0%,
+            rgb(248 249 250) 30%,
+            rgb(247 245 240) 58%,
+            rgb(242 239 232) 100%);
+    transition: opacity 0.55s cubic-bezier(0.33, 0, 0.2, 1);
+    will-change: opacity;
 }
-
-@supports (mask-image: radial-gradient(#000, transparent)) {
-    ::view-transition-new(root) {
-        mask-image: radial-gradient(circle at var(--vt-x, 50%) var(--vt-y, 0),
-            #000 calc(var(--vt-progress) - 26vmax),
-            rgb(0 0 0 / 0.55) calc(var(--vt-progress) - 12vmax),
-            transparent var(--vt-progress));
-        -webkit-mask-image: radial-gradient(circle at var(--vt-x, 50%) var(--vt-y, 0),
-            #000 calc(var(--vt-progress) - 26vmax),
-            rgb(0 0 0 / 0.55) calc(var(--vt-progress) - 12vmax),
-            transparent var(--vt-progress));
-        animation: theme-wash 0.9s cubic-bezier(0.33, 0, 0.2, 1);
-    }
+.site[data-theme='light'] .theme-canvas {
+    opacity: 1;
 }
 
-/* Запасной путь для браузеров без масок: та же развёртка кругом. */
-@keyframes theme-reveal {
-    from {
-        clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 0));
-    }
-    to {
-        clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 0));
-    }
-}
-
-@keyframes theme-wash {
-    from {
-        --vt-progress: 0px;
-    }
-    to {
-        /* +26vmax — чтобы растушёванный хвост успел уйти за край экрана,
-           иначе в углу остаётся полупрозрачное пятно старой темы. */
-        --vt-progress: calc(var(--vt-r, 150vmax) + 26vmax);
-    }
-}
-
-/* Без View Transitions (Safari до 18) тема менялась мгновенно. Класс живёт
-   доли секунды и плавно перекрашивает хотя бы общий тон полотна. */
-.site {
-    transition: background-color 0.5s cubic-bezier(0.33, 0, 0.2, 1);
+/* Остальные цвета перетекают, пока класс висит на корне. Список свойств
+   узкий и только цветовой: transform и прочая механика остаётся своей,
+   иначе на полсекунды сломались бы наведения и сдвиги. */
+.site.theme-anim,
+.site.theme-anim *:not(.theme-canvas) {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
+    transition-duration: 0.55s;
+    transition-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .theme-icon svg {
+    .theme-icon svg,
+    .theme-canvas {
         transition: none;
-    }
-    .site {
-        transition: none;
-    }
-    ::view-transition-new(root) {
-        animation: none;
-        mask-image: none;
-        -webkit-mask-image: none;
     }
 }
 

@@ -77,6 +77,9 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
     <div ref="siteRoot" class="site min-h-screen" :data-theme="theme">
         <!-- Свет за содержимым: три слоя перетекают друг в друга при прокрутке -->
         <div class="site-ambience" aria-hidden="true">
+            <!-- Дневное полотно поверх ночного: при смене темы оно
+                 проявляется, и фон перетекает вместо мгновенной подмены. -->
+            <i class="theme-canvas" />
             <i class="amb amb-warm" />
             <i class="amb amb-cool" />
             <i class="amb amb-deep" />
