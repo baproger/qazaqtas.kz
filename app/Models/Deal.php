@@ -3,10 +3,11 @@
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-
+use App\Support\CurrentCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -23,7 +24,7 @@ class Deal extends Model
     public const SOURCES = ['Сайт', 'Instagram', 'WhatsApp', 'Входящий звонок', 'Рекомендация', 'Повторный клиент', 'Выставка', 'Дилер / партнёр', 'Госзакуп', 'Другое'];
 
     protected $fillable = [
-        'company_id', 'branch', 'number', 'name', 'client_name', 'product_id', 'company_name', 'address', 'bin', 'contract_date', 'lot_number', 'unit', 'area_m2', 'source', 'client_id', 'responsible_user_id', 'department_id',
+        'company_id', 'branch', 'number', 'name', 'client_name', 'product_id', 'company_name', 'address', 'bin', 'contract_date', 'lot_number', 'unit', 'area_m2', 'source', 'client_id', 'responsible_user_id', 'foreman_id', 'department_id',
         'deal_type', 'deal_stage_id', 'budget', 'partner_pct', 'bonus_rate_override', 'deadline', 'description', 'note', 'status', 'closed_at',
     ];
 
@@ -96,13 +97,22 @@ class Deal extends Model
         return $this->belongsTo(User::class, 'responsible_user_id');
     }
 
+    /**
+     * Бригадир, ведущий сделку в цехе. Отдельно от ответственного менеджера:
+     * менеджер отвечает за клиента и деньги, бригадир — за работу.
+     */
+    public function foreman(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'foreman_id');
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
     }
 
     /** Позиции сделки: товар, количество, цена. Сумма сделки = их сумма. */
-    public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function items(): HasMany
     {
         return $this->hasMany(DealItem::class)->orderBy('sort')->orderBy('id');
     }
@@ -124,22 +134,22 @@ class Deal extends Model
         return $this->morphMany(Task::class, 'taskable');
     }
 
-    public function invoices(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    public function invoices(): MorphMany
     {
         return $this->morphMany(Invoice::class, 'invoiceable');
     }
 
-    public function expenses(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    public function expenses(): MorphMany
     {
         return $this->morphMany(Expense::class, 'expenseable');
     }
 
-    public function documents(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
     }
 
-    public function comments(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, 'commentable');
     }
@@ -151,8 +161,8 @@ class Deal extends Model
      */
     public function scopeWon($query)
     {
-        return $query->where("status", "!=", "cancelled")
-            ->whereHas("stage", fn ($s) => $s->where("is_won", true));
+        return $query->where('status', '!=', 'cancelled')
+            ->whereHas('stage', fn ($s) => $s->where('is_won', true));
     }
 
     /**
@@ -161,6 +171,6 @@ class Deal extends Model
      */
     public function scopeForCurrentCompany($query)
     {
-        return $query->when(\App\Support\CurrentCompany::id(), fn ($q, $c) => $q->where('company_id', $c));
+        return $query->when(CurrentCompany::id(), fn ($q, $c) => $q->where('company_id', $c));
     }
 }

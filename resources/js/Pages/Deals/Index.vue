@@ -280,7 +280,8 @@ const applyBinMatch = () => {
                                     <span v-if="deal.overdue_count" class="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">{{ $e('ПРОСРОЧЕНА') }}</span>
                                 </span>
                             </div>
-                            <div class="text-base font-bold leading-tight text-indigo-600">{{ money(deal.budget) }}</div>
+                            <!-- Бригадиру сервер бюджет не присылает: строки суммы нет вовсе. -->
+                            <div v-if="deal.budget != null" class="text-base font-bold leading-tight text-indigo-600">{{ money(deal.budget) }}</div>
                             <!-- Куда и что -->
                             <div class="mt-1.5 space-y-0.5 text-[11px] leading-4 text-slate-500">
                                 <div v-if="deal.address" class="truncate">📍 {{ deal.address }}</div>
@@ -353,7 +354,7 @@ const applyBinMatch = () => {
                         <td class="px-4 py-3 text-slate-500">{{ deal.branch || '—' }}</td>
                         <td class="px-4 py-3"><div class="max-w-40 truncate text-slate-500" :title="deal.client_name || deal.client?.name">{{ deal.client_name || deal.client?.name || '—' }}</div></td>
                         <td class="px-4 py-3"><StatusBadge :status="deal.stage?.name" :color="deal.stage?.color" /></td>
-                        <td class="px-4 py-3">{{ money(deal.budget) }}</td>
+                        <td class="px-4 py-3">{{ deal.budget != null ? money(deal.budget) : '—' }}</td>
                         <td class="px-4 py-3" :class="deadlineClass(deal.deadline, deal.status==='closed')">{{ formatDate(deal.deadline) }}</td>
                         <td class="px-4 py-3 text-slate-500">{{ deal.responsible?.name ?? '—' }}</td>
                     </tr>

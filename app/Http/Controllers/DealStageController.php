@@ -55,9 +55,15 @@ class DealStageController extends Controller
         return back()->with('success', 'Галочка поставлена — сделку можно переводить дальше.');
     }
 
+    /**
+     * Перенос на выбранный этап — право `moveStage`, а не `advance`: «Далее»
+     * есть и у технолога, но таскать сделку по воронке он не должен, а
+     * назначенный бригадир — должен. Запреты этапов (Акт, ЭСФ и «Оплата
+     * успешно» — только бухгалтеру) остаются в StageTransitionService.
+     */
     public function updateStage(Request $request, Deal $deal, StageTransitionService $transitions): RedirectResponse
     {
-        $this->authorize('update', $deal);
+        $this->authorize('moveStage', $deal);
 
         $validated = $request->validate(['deal_stage_id' => ['required', 'exists:deal_stages,id']]);
         $target = DealStage::findOrFail($validated['deal_stage_id']);

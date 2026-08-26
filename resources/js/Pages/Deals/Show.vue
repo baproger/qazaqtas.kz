@@ -24,7 +24,7 @@ import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 
-const props = defineProps({ deal: Object, stages: Array, branches: { type: Array, default: () => [] }, users: Array, finance: Object, profit: Object, customFields: Array, history: Array, chatId: Number, can: Object, stageTask: Object, materials: { type: Array, default: () => [] }, balances: { type: Object, default: null }, workshops: { type: Array, default: () => [] }, stageLogs: { type: Array, default: () => [] } });
+const props = defineProps({ deal: Object, stages: Array, branches: { type: Array, default: () => [] }, users: Array, foremen: { type: Array, default: () => [] }, finance: { type: Object, default: null }, profit: { type: Object, default: null }, customFields: Array, history: Array, chatId: Number, can: Object, stageTask: Object, materials: { type: Array, default: () => [] }, balances: { type: Object, default: null }, workshops: { type: Array, default: () => [] }, stageLogs: { type: Array, default: () => [] } });
 
 const tab = ref('finance');
 const visibleFields = computed(() => (props.customFields ?? []).filter((f) => f.is_visible && f.value));
@@ -90,11 +90,16 @@ const sendToWorkshop = (w = null) => {
         { preserveScroll: true, onSuccess: () => (showWorkshopPick.value = false) });
 };
 const setResponsible = (e) => router.patch(route('deals.responsible', props.deal.id), { responsible_user_id: e.target.value || null }, { preserveScroll: true });
+// Бригадир сделки: кто ведёт её в цехе. Ставит директор или админ.
+const setForeman = (e) => router.patch(route('deals.foreman', props.deal.id), { foreman_id: e.target.value || null }, { preserveScroll: true });
 // Ручной % бонуса менеджера по сделке — меняет финансист/админ.
 const editBonusRate = ref(false);
 const bonusRateInput = ref(null);
 const openBonusEdit = () => {
-    bonusRateInput.value = props.deal.bonus_rate_override !== null ? Number(props.deal.bonus_rate_override) : Number(props.profit.bonusRate);
+    // profit приходит только тем, кто видит деньги; у остальных этой кнопки нет.
+    bonusRateInput.value = props.deal.bonus_rate_override != null
+        ? Number(props.deal.bonus_rate_override)
+        : Number(props.profit?.bonusRate ?? 0);
     editBonusRate.value = true;
 };
 const saveBonusRate = (auto = false) => {
@@ -256,6 +261,16 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                                 <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
                             </select>
                         </div>
+                        <!-- Бригадир: назначает директор, остальные видят имя -->
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бригадир') }}</div>
+                            <select v-if="can.setForeman" :value="deal.foreman_id ?? ''" @change="setForeman"
+                                class="mt-1 w-full rounded-lg border-slate-200 py-1.5 text-sm shadow-sm transition duration-150 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20">
+                                <option value="">{{ $e('— не назначен —') }}</option>
+                                <option v-for="u in foremen" :key="u.id" :value="u.id">{{ u.name }}</option>
+                            </select>
+                            <div v-else class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.foreman?.name || '—' }}</div>
+                        </div>
                         <div v-for="f in visibleFields" :key="f.id">
                             <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ f.name }}</div>
                             <div class="mt-1 text-[15px] font-medium text-slate-900">{{ f.value }}</div>
@@ -304,12 +319,12 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 <!-- Второстепенное: Финансы / Документы (управление) / Доп. поля / История -->
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
                     <div class="mb-6 flex flex-wrap gap-6 border-b border-slate-200 text-sm">
-                        <button :class="tab==='finance' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='finance'">{{ $e('Финансы') }}</button>
+                        <button v-if="can.money" :class="tab==='finance' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='finance'">{{ $e('Финансы') }}</button>
                         <button :class="tab==='docs' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='docs'">{{ $e('Документы') }}</button>
                         <button :class="tab==='custom' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='custom'">{{ $e('Доп. поля') }}</button>
                         <button :class="tab==='history' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='history'">{{ $e('История') }}</button>
                     </div>
-                    <FinancePanel v-if="tab==='finance'" :entity-type="'deal'" :entity-id="deal.id" :client-id="deal.client_id" :invoices="deal.invoices" :expenses="deal.expenses" :finance="finance" :materials="materials" :balances="balances" />
+                    <FinancePanel v-if="can.money && tab==='finance'" :entity-type="'deal'" :entity-id="deal.id" :client-id="deal.client_id" :invoices="deal.invoices" :expenses="deal.expenses" :finance="finance" :materials="materials" :balances="balances" />
                     <DocumentPanel v-else-if="tab==='docs'" :documents="deal.documents" entity-type="deal" :entity-id="deal.id" />
                     <CustomFieldsPanel v-else-if="tab==='custom'" :fields="customFields" entity-type="deal" :entity-id="deal.id" />
                     <div v-else>
@@ -337,7 +352,9 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
             </div>
 
             <div class="space-y-6">
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+                <!-- Деньги сделки. Бригадир их не видит: сервер не присылает
+                     profit, и блок не рисуется вовсе. -->
+                <div v-if="profit" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
                     <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Сумма договора') }}</div>
                     <div class="mt-1 text-[28px] font-bold leading-tight tracking-tight text-indigo-600">{{ money(deal.budget) }}</div>
                     <div class="mt-4 space-y-2 text-sm">

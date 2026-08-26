@@ -40,9 +40,23 @@ class DealController extends Controller
     public const NO_BRANCH = '__none';
 
     /**
+     * Видит ли этот человек деньги сделки.
+     *
+     * Бригадир ведёт работу в цехе и должен зайти внутрь сделки: адрес,
+     * товары, сроки, задачи, этапы. Суммы — не его: ни договор, ни расходы,
+     * ни бонус. Проверка одна на список и на карточку — разойдись они, сумма
+     * утекла бы через ту страницу, где забыли.
+     */
+    private function seesMoney(User $user): bool
+    {
+        return ! $user->hasRole('foreman') || $user->hasAnyRole(['admin', 'director', 'financist']);
+    }
+
+    /**
      * Видимость сделок в списках по роли: руководство — все; технолог —
      * только сделки на этапе «Дизайн и расчет», снабженец — на «Закупе»
-     * (их гейт-этапы, чтобы не путались в чужих сделках); менеджер — свои.
+     * (их гейт-этапы, чтобы не путались в чужих сделках); бригадир — те, на
+     * которые его назначили; менеджер — свои.
      * Прямые ссылки (из уведомлений/задач) шире — их решает DealPolicy.
      */
     private function scopeForViewer($query, User $user): void
@@ -62,6 +76,14 @@ class DealController extends Controller
 
             return;
         }
+
+        // Бригадир — только сделки, на которые его назначил директор.
+        if ($user->hasRole('foreman')) {
+            $query->where('foreman_id', $user->id);
+
+            return;
+        }
+
         $query->where('responsible_user_id', $user->id);
     }
 
@@ -103,6 +125,11 @@ class DealController extends Controller
         $deals = $view === 'list'
             ? (clone $base)->latest()->paginate(20)->withQueryString()
             : (clone $base)->latest()->get();
+
+        // Бригадиру сумм не показываем — ни в карточке канбана, ни в списке.
+        if (! $this->seesMoney($request->user())) {
+            $deals->each(fn ($d) => $d->makeHidden(['budget', 'partner_pct', 'bonus_rate_override']));
+        }
 
         return Inertia::render('Deals/Index', [
             'deals' => $deals,
@@ -251,16 +278,26 @@ class DealController extends Controller
     {
         $this->authorize('view', $deal);
 
-        $deal->load([
-            'client', 'responsible:id,name,avatar', 'department:id,name',
-            'stage', 'project:id,number,name,status',
+        $money = $this->seesMoney(request()->user());
+
+        $deal->load(array_filter([
+            'client', 'responsible:id,name,avatar', 'foreman:id,name,avatar', 'department:id,name',
+            'stage', 'project:id,number,name,status', 'items',
             'tasks' => fn ($q) => $q->with('assignee:id,name')->latest(),
-            'invoices' => fn ($q) => $q->withSum('payments as payments_sum_amount', 'amount')
-                ->with('payments')->latest(),
-            'expenses' => fn ($q) => $q->with(['responsible:id,name,avatar', 'material:id,name,unit'])->latest(),
+            // Счета и расходы — это деньги: бригадиру их не грузим вовсе,
+            // чтобы суммы не уехали в браузер «на всякий случай».
+            'invoices' => $money ? fn ($q) => $q->withSum('payments as payments_sum_amount', 'amount')
+                ->with('payments')->latest() : null,
+            'expenses' => $money ? fn ($q) => $q->with(['responsible:id,name,avatar', 'material:id,name,unit'])->latest() : null,
             'documents' => fn ($q) => $q->where('is_active', true)->with('user:id,name')->latest(),
             'comments' => fn ($q) => $q->with('user:id,name')->latest(),
-        ]);
+        ]));
+
+        // Суммы прячем и в самой модели: бюджет, доля партнёра и ручной %
+        // бонуса уезжали во фронт вместе со сделкой.
+        if (! $money) {
+            $deal->makeHidden(['budget', 'partner_pct', 'bonus_rate_override']);
+        }
 
         $dealChat = Chat::firstOrCreate(
             ['deal_id' => $deal->id],
@@ -268,7 +305,7 @@ class DealController extends Controller
         );
 
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
-        $confirmedExpense = (float) $deal->expenses->where('status', 'confirmed')->sum('amount');
+        $confirmedExpense = (float) ($money ? $deal->expenses->where('status', 'confirmed')->sum('amount') : 0);
         $dealBudget = (float) $deal->budget;
         $dealTax = round($dealBudget * $taxRate, 2);
         // Доля партнёра: только % (partner_pct), сумма = % × сумма договора, минусуется из остатка.
@@ -332,7 +369,8 @@ class DealController extends Controller
             'materials' => Material::query()
                 ->when($deal->company_id, fn ($q, $c) => $q->where('company_id', $c))
                 ->orderBy('name')->get(['id', 'name', 'unit', 'quantity', 'price']),
-            'profit' => [
+            // Раскладка денег — только тем, кто их видит.
+            'profit' => ! $money ? null : [
                 'budget' => $dealBudget,
                 'tax' => $dealTax, 'taxRate' => $taxRate * 100,
                 'expense' => $confirmedExpense,
@@ -351,14 +389,22 @@ class DealController extends Controller
                 ->orderBy('order')->get()
                 ->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName(), 'color' => $s->color, 'order' => $s->order,
                     'is_won' => $s->is_won, 'stage_type' => $s->stage_type, 'checklist' => $s->checklist]),
-            'finance' => $finance->summaryFor($deal),
+            'finance' => $money ? $finance->summaryFor($deal) : null,
             'history' => AuditFormatter::humanize(AuditLog::where('table_name', 'deals')->where('record_id', $deal->id)->with('user:id,name')->latest()->limit(100)->get(), ['deal_stage_id' => DealStage::pluck('name', 'id'), 'responsible_user_id' => User::pluck('name', 'id')]),
             'customFields' => app(CustomFieldService::class)->forEntity('deal', $deal->id),
             'can' => [
                 'update' => request()->user()->can('update', $deal),
                 'advance' => request()->user()->can('advance', $deal),
                 'delete' => request()->user()->can('delete', $deal),
+                'money' => $money,
+                // Бригадира на сделку ставит директор (и админ) — он решает,
+                // чья бригада едет на объект.
+                'setForeman' => request()->user()->hasAnyRole(['admin', 'director']),
             ],
+            // Кандидаты в бригадиры — только люди с этой ролью.
+            'foremen' => request()->user()->hasAnyRole(['admin', 'director'])
+                ? User::role('foreman')->where('is_active', true)->orderBy('name')->get(['id', 'name'])
+                : [],
         ]);
     }
 

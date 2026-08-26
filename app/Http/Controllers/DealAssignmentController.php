@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\DealGuards;
 use App\Models\Deal;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -42,5 +43,33 @@ class DealAssignmentController extends Controller
         $deal->update(['responsible_user_id' => $validated['responsible_user_id'] ?: null]);
 
         return back()->with('success', 'Ответственный изменён.');
+    }
+
+    /**
+     * Бригадир сделки — кто ведёт её в цехе. Ставит директор (и админ): он
+     * решает, чья бригада едет на объект.
+     *
+     * Назначить можно только человека с ролью «бригадир»: иначе поле
+     * заполнялось бы кем угодно, а вместе с ним уезжали бы и права —
+     * назначенный видит сделку и двигает её по этапам.
+     */
+    public function updateForeman(Request $request, Deal $deal): RedirectResponse
+    {
+        abort_unless($request->user()->hasAnyRole(['admin', 'director']), 403,
+            'Бригадира назначает директор или администратор.');
+
+        $data = $request->validate(['foreman_id' => ['nullable', 'exists:users,id']]);
+        $foremanId = $data['foreman_id'] ?: null;
+
+        if ($foremanId !== null) {
+            $foreman = User::findOrFail($foremanId);
+            abort_unless($foreman->hasRole('foreman'), 422, 'Этот сотрудник не бригадир.');
+        }
+
+        $deal->update(['foreman_id' => $foremanId]);
+
+        return back()->with('success', $foremanId
+            ? 'Бригадир назначен.'
+            : 'Бригадир снят со сделки.');
     }
 }

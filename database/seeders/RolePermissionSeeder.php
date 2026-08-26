@@ -84,8 +84,10 @@ class RolePermissionSeeder extends Seeder
                 'expense.create',
             ];
             // Технолог и снабженец подтверждают гейт-этапы («Замер и расчёт»,
-            // «Закуп сырья») — им нужен просмотр сделок.
-            if (in_array($job, ['designer', 'supplier'], true)) {
+            // «Закуп сырья»), бригадир ведёт сделку в цехе — всем троим нужен
+            // просмотр сделок. Что именно они увидят, решает DealPolicy:
+            // бригадиру — только назначенные ему, и без сумм.
+            if (in_array($job, ['designer', 'supplier', 'foreman'], true)) {
                 $perms = array_merge($perms, ['deal.viewAny', 'deal.view']);
             }
             Role::findOrCreate($job, 'web')->syncPermissions($perms);
