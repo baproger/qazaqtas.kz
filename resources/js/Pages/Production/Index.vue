@@ -133,10 +133,10 @@ const removeOrder = async (order) => {
 
         <div class="mx-auto max-w-7xl">
             <!-- Два вида одной страницы: план месяца и журнал смен. -->
-            <div class="mb-5 flex gap-5 border-b border-slate-200 text-sm">
+            <div class="tab-rail mb-5">
                 <Link :href="route('production.plans.index', { month })"
-                    class="-mb-px border-b-2 border-transparent pb-2.5 font-medium text-slate-500 transition-colors duration-150 hover:text-slate-700">{{ $e('План — факт') }}</Link>
-                <span class="-mb-px border-b-2 border-indigo-600 pb-2.5 font-semibold text-indigo-600">{{ $e('Все наряды') }}</span>
+                    class="tab-soft">{{ $e('План — факт') }}</Link>
+                <span class="tab-soft tab-soft-active">{{ $e('Все наряды') }}</span>
             </div>
 
             <div class="mb-4 flex flex-wrap items-end justify-between gap-3">

@@ -147,10 +147,10 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
         <div class="mx-auto max-w-6xl">
             <!-- Два вида одной страницы: план месяца и журнал смен. Раньше это
                  были два пункта меню, и «Наряды» дублировали «План — факт». -->
-            <div class="mb-5 flex gap-5 border-b border-slate-200 text-sm">
-                <span class="-mb-px border-b-2 border-indigo-600 pb-2.5 font-semibold text-indigo-600">{{ $e('План — факт') }}</span>
+            <div class="tab-rail mb-5">
+                <span class="tab-soft tab-soft-active">{{ $e('План — факт') }}</span>
                 <Link :href="route('production.index', { month })"
-                    class="-mb-px border-b-2 border-transparent pb-2.5 font-medium text-slate-500 transition-colors duration-150 hover:text-slate-700">{{ $e('Все наряды') }}</Link>
+                    class="tab-soft">{{ $e('Все наряды') }}</Link>
             </div>
 
             <!-- Шапка: месяц и одно действие. Больше на этой странице делать нечего. -->

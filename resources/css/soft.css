@@ -160,3 +160,39 @@
     }
     .card-soft-hover:hover { transform: none; }
 }
+
+/*
+ * Вкладки раздела — тем же приёмом, что активный пункт меню.
+ *
+ * В окне не должно быть двух разных языков «где я»: слева белая карточка,
+ * сверху подчёркивание — глаз ищет активное дважды. Один приём на оба места.
+ */
+.tab-soft {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    border-radius: .625rem;
+    padding: .375rem .75rem;
+    font-size: .875rem;
+    font-weight: 500;
+    color: #64748B;
+    transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.tab-soft:hover { color: #1E293B; background: rgba(255, 255, 255, .7); }
+
+.tab-soft-active {
+    background: #FFFFFF;
+    color: #1E293B;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 6px 16px -10px rgba(15, 23, 42, .25);
+}
+
+/* Ряд вкладок: подложка, на которой карточка активного читается как поднятая. */
+.tab-rail {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: .125rem;
+    border-radius: .875rem;
+    background: rgba(241, 244, 249, .8);
+    padding: .25rem;
+}

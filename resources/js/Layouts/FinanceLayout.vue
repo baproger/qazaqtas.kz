@@ -56,12 +56,13 @@ const isActive = (name) => route().current(name);
         <div class="mx-auto" :class="width">
             <!-- Вкладки раздела: горизонтальная прокрутка на телефоне, чтобы
                  длинный ряд не ломал страницу. -->
-            <nav class="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 pb-px">
+            <!-- Вкладки — тем же приёмом, что активный пункт меню: белая
+                 приподнятая карточка. Два разных языка «где я» в одном окне
+                 заставляли глаз искать активное дважды. -->
+            <nav class="tab-rail mb-4 max-w-full overflow-x-auto">
                 <Link v-for="t in tabs" :key="t.route" :href="route(t.route)"
-                    class="whitespace-nowrap rounded-t-lg px-3 py-2 text-sm font-medium transition-colors duration-150"
-                    :class="isActive(t.route)
-                        ? 'border-b-2 border-indigo-600 text-indigo-700'
-                        : 'border-b-2 border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-700'">
+                    class="tab-soft whitespace-nowrap"
+                    :class="isActive(t.route) ? 'tab-soft-active' : ''">
                     {{ t.name }}
                 </Link>
             </nav>

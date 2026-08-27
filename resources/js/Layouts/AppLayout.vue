@@ -109,6 +109,20 @@ const visible = (i) => (!i.perm || perms.value.includes(i.perm))
     && (!i.leadershipOnly || isLeadership.value)
     && (!i.roles || i.roles.some((r) => roles.value.includes(r)));
 // Группа остаётся в меню, только если внутри есть что открыть.
+/**
+ * Заголовки секций меню.
+ *
+ * Порядок пунктов не трогаем — он настроен владельцем; только надписываем,
+ * где кончается одно и начинается другое. Двадцать шесть строк подряд без
+ * заголовков глаз не делит.
+ */
+const NAV_SECTIONS = {
+    'nav.analytics': 'Главное',
+    'nav.sales': 'Работа',
+    'nav.site': 'Система',
+};
+const sectionFor = (item) => NAV_SECTIONS[item.key] ?? null;
+
 const nav = computed(() => allNav
     .map((i) => (i.children ? { ...i, children: i.children.filter(visible) } : i))
     .filter((i) => (i.children ? i.children.length > 0 : visible(i))));
@@ -138,10 +152,39 @@ const navIcons = {
     'translations.index': '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
 };
 
-const isActive = (name) => {
-    const base = name.split('.')[0];
-    return route().current(base + '.*') || route().current(base);
-};
+/**
+ * Текущий пункт меню — тот, чьё имя маршрута совпадает с открытой страницей
+ * ТОЧНЕЕ остальных.
+ *
+ * Раньше сравнивался только первый сегмент имени, и на «Финансы → Счета»
+ * подсвечивались разом Обзор, Счета, Поступления и Задолженности: у них общий
+ * префикс `finance`. Пока подсветка была бледной, этого не замечали.
+ *
+ * `.index` из имени отбрасывается намеренно: «Сделки» должны оставаться
+ * активными на карточке сделки (`deals.show`). Но если у раздела есть пункт с
+ * более длинным совпадением, выигрывает он.
+ */
+const navRoutes = computed(() => nav.value.flatMap((i) => (i.children ? i.children.map((c) => c.route) : [i.route])).filter(Boolean));
+
+const activeRoute = computed(() => {
+    const current = route().current();
+    if (! current) {
+        return null;
+    }
+
+    let best = null;
+    for (const name of navRoutes.value) {
+        const stem = name.replace(/\.index$/, '');
+        const hit = current === name || current.startsWith(stem + '.');
+        if (hit && (best === null || name.length > best.length)) {
+            best = name;
+        }
+    }
+
+    return best;
+});
+
+const isActive = (name) => activeRoute.value === name;
 const go = () => { mobileOpen.value = false; };
 
 // Раскрытие группы меню («Финансы») переживает переходы между страницами:
@@ -244,8 +287,8 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 collapsed ? 'lg:w-16' : 'lg:w-60',
                 mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
             ]"
-            class="glass-dark sidebar-floating fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden text-slate-300 transition-all duration-300 ease-in-out lg:inset-y-3 lg:left-3">
-            <div class="flex h-16 items-center px-4">
+            class="sidebar-soft sidebar-floating fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden transition-all duration-300 ease-in-out lg:inset-y-3 lg:left-3">
+            <div class="flex h-14 items-center gap-2 border-b border-white/60 px-4">
                 <!-- Свёрнутое меню (64 px) — только знак; развёрнутое — логотип с подписью. -->
                 <img
                     v-if="collapsed && !mobileOpen"
@@ -253,13 +296,24 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                     alt="QAZAQ TAS"
                     class="mx-auto h-9 w-9 flex-shrink-0"
                 />
-                <div v-if="!collapsed || mobileOpen" class="leading-none">
-                    <img src="/logo-qazaqtas.png" alt="QAZAQ TAS" width="696" height="141" class="h-8 w-auto" />
-                    <div class="mt-1.5 text-[10px] font-medium uppercase tracking-widest text-slate-500">ERP · CRM</div>
-                </div>
+                <!-- Тёмный вариант надписи: исходный логотип белый и на
+                     светлой панели пропадал. Знак в обоих одинаковый. -->
+                <img v-if="!collapsed || mobileOpen" src="/logo-qazaqtas-dark.png" alt="QAZAQ TAS"
+                    width="696" height="141" class="h-7 w-auto" />
+                <!-- Свернуть — здесь, у края панели: рука уже у меню, и не надо
+                     вести её вниз через весь список. -->
+                <button v-if="!collapsed || mobileOpen" type="button" @click="collapsed = !collapsed"
+                    :title="t('header.collapse', 'Свернуть')"
+                    class="ml-auto hidden rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-white/70 hover:text-slate-700 lg:block">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
             </div>
-            <nav class="flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
+            <nav class="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3">
                 <template v-for="item in nav" :key="item.key ?? item.route">
+                    <div v-if="sectionFor(item) && (!collapsed || mobileOpen)" class="nav-section">{{ $e(sectionFor(item)) }}</div>
+                    <!-- В свёрнутом рельсе вместо надписи — черта: место
+                         разрыва видно, а читать там нечего. -->
+                    <div v-else-if="sectionFor(item) && item.key !== 'nav.analytics'" class="mx-3 my-2 h-px bg-slate-300/50"></div>
                     <!-- ===== Группа («Финансы»): свои пункты по своим правам ===== -->
                     <template v-if="item.children">
                         <!-- Узкое меню: раздел — один значок. Раньше сюда
@@ -268,10 +322,10 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                              меню и открывает сам раздел. -->
                         <template v-if="collapsed && !mobileOpen">
                             <button type="button" @click="openFromRail(item)" :title="t(item.key, item.name)"
-                                :class="groupActive(item) ? 'nav-pill' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                                class="group relative flex w-full items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                                :class="groupActive(item) ? 'nav-group-open' : ''"
+                                class="nav-item group relative">
                                                                 <svg v-if="navIcons[item.key]" class="h-5 w-5 shrink-0 transition-colors duration-200"
-                                    :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
+                                    
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                                     v-html="navIcons[item.key]"></svg>
                                 <span v-else class="text-lg leading-none">{{ item.icon }}</span>
@@ -280,27 +334,31 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                         </template>
                         <div v-else>
                             <button type="button" @click="toggleGroup(item)"
-                                :class="groupActive(item) ? 'nav-pill' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                                class="group relative flex w-full items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                                :class="groupActive(item) ? 'nav-group-open' : ''"
+                                class="nav-item group relative">
                                                                 <svg v-if="navIcons[item.key]" class="h-5 w-5 shrink-0 transition-colors duration-200"
-                                    :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
+                                    
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                                     v-html="navIcons[item.key]"></svg>
                                 <span v-else class="text-lg leading-none transition-colors duration-200"
-                                    :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ item.icon }}</span>
+                                    >{{ item.icon }}</span>
                                 <span class="truncate">{{ t(item.key, item.name) }}</span>
-                                <span class="ml-auto text-xs text-slate-500 transition-transform duration-200"
-                                    :class="groupOpen[item.key] ? 'rotate-90' : ''">›</span>
+                                <svg class="ml-auto h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform duration-200"
+                                    :class="groupOpen[item.key] ? 'rotate-90' : ''"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                             </button>
                             <Transition
                                 enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 -translate-y-1"
                                 leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0 -translate-y-1">
-                                <div v-show="groupOpen[item.key]" class="mt-1 space-y-1 pl-5">
+                                <!-- Дочерние пункты БЕЗ иконок: раздел уже назван
+                                     значком выше, а два десятка мелких символов
+                                     рядом друг с другом читались как рябь. Их
+                                     место обозначает направляющая слева. -->
+                                <div v-show="groupOpen[item.key]" class="nav-children mt-1 space-y-0.5">
                                     <Link v-for="child in item.children" :key="child.route" :href="route(child.route)" @click="go"
-                                        :class="isActive(child.route) ? 'nav-pill' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                                        class="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors duration-200 ease-out">
-                                        <span class="text-base leading-none" :class="isActive(child.route) ? 'text-indigo-400' : 'text-slate-500'">{{ child.icon }}</span>
-                                        <span class="truncate">{{ t(child.key, child.name) }}</span>
+                                        :class="isActive(child.route) ? 'nav-child-active' : 'text-slate-400 hover:text-white'"
+                                        class="nav-child block truncate rounded-lg py-1.5 pl-4 pr-3 text-[13px] transition-colors duration-150">
+                                        {{ t(child.key, child.name) }}
                                     </Link>
                                 </div>
                             </Transition>
@@ -309,38 +367,44 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
 
                     <Link v-else :href="route(item.route)" @click="go"
                         :title="collapsed ? t(item.key, item.name) : ''"
-                        :class="isActive(item.route) ? 'nav-pill' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                        class="group relative flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                        :class="isActive(item.route) ? 'nav-current' : ''"
+                        class="nav-item group relative">
                         <svg v-if="navIcons[item.route]" class="h-5 w-5 shrink-0 transition-colors duration-200"
-                            :class="isActive(item.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
+                            
                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                             v-html="navIcons[item.route]"></svg>
-                        <span v-else class="text-lg leading-none transition-colors duration-200" :class="isActive(item.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ item.icon }}</span>
+                        <span v-else class="text-lg leading-none transition-colors duration-200" >{{ item.icon }}</span>
                         <span v-if="!collapsed || mobileOpen" class="truncate">{{ t(item.key, item.name) }}</span>
                         <span v-else class="nav-tip">{{ t(item.key, item.name) }}</span>
                         <span v-if="item.route === 'chat.index' && chatUnread > 0 && (!collapsed || mobileOpen)"
-                            class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
+                            class="nav-badge">{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
                         <span v-else-if="item.route === 'chat.index' && chatUnread > 0"
-                            class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-slate-900"></span>
+                            class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-indigo-600 ring-2 ring-white"></span>
                     </Link>
                 </template>
             </nav>
             <!-- Низ панели: профиль и сворачивание. Наверху — работа, внизу
                  системное; так их не ищут глазами каждый раз заново. -->
-            <Link :href="route('profile.edit')" @click="go"
-                class="mt-auto flex items-center gap-2.5 border-t border-white/5 px-3 py-3 transition-colors hover:bg-white/5">
-                <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-bold text-white">
-                    <img v-if="user?.avatar" :src="user.avatar" class="h-full w-full object-cover" alt="" />
-                    <template v-else>{{ user?.name?.charAt(0) ?? '?' }}</template>
-                </span>
-                <div v-if="!collapsed || mobileOpen" class="min-w-0 leading-tight">
-                    <div class="truncate text-xs font-semibold text-white">{{ user?.name }}</div>
-                    <div class="truncate text-[10px] text-slate-500">{{ roleLabel }}</div>
-                </div>
-            </Link>
-            <button class="hidden items-center gap-2 border-t border-white/5 px-4 py-2.5 text-left text-xs font-medium text-slate-500 transition-colors hover:text-white lg:flex" @click="collapsed = !collapsed">
-                <span>{{ collapsed ? '»' : '«' }}</span><span v-if="!collapsed">{{ t('header.collapse', 'Свернуть') }}</span>
-            </button>
+            <!-- Карточка профиля: прижата к низу, отделена от списка. Имя и
+                 почта — чтобы в общей базе было видно, под кем сидишь. -->
+            <div class="mt-auto p-2.5">
+                <Link :href="route('profile.edit')" @click="go" class="nav-profile">
+                    <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-bold text-white">
+                        <img v-if="user?.avatar" :src="user.avatar" class="h-full w-full object-cover" alt="" />
+                        <template v-else>{{ user?.name?.charAt(0) ?? '?' }}</template>
+                    </span>
+                    <div v-if="!collapsed || mobileOpen" class="min-w-0 leading-tight">
+                        <div class="truncate text-xs font-semibold text-slate-800">{{ user?.name }}</div>
+                        <div class="truncate text-[11px] text-slate-500">{{ user?.email ?? roleLabel }}</div>
+                    </div>
+                </Link>
+                <!-- Развернуть: в свёрнутом рельсе кнопка из шапки не помещается. -->
+                <button v-if="collapsed && !mobileOpen" type="button" @click="collapsed = false"
+                    :title="t('header.collapse', 'Свернуть')"
+                    class="mt-2 hidden w-full justify-center rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-white/70 hover:text-slate-700 lg:flex">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+            </div>
         </aside>
 
         <!-- Main -->

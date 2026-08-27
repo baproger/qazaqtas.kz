@@ -12,7 +12,7 @@
  */
 
 :root {
-    --glass-bg: rgba(255, 255, 255, .72);
+    --glass-bg: rgba(250, 251, 255, .78);
     --glass-bg-strong: rgba(255, 255, 255, .86);
     --glass-line: rgba(15, 23, 42, .08);
     --glass-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px -20px rgba(15, 23, 42, .28);
@@ -33,9 +33,11 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
+    /* Тот же ход цвета, что у боковой панели: индиго сверху, зелёный снизу.
+       Панель и полотно должны читаться одним материалом, а не соседями. */
     background:
-        radial-gradient(46rem 30rem at 12% -8%, rgba(99, 102, 241, .14), transparent 60%),
-        radial-gradient(38rem 26rem at 96% 4%, rgba(16, 185, 129, .10), transparent 62%);
+        radial-gradient(52rem 34rem at 6% -10%, rgba(99, 102, 241, .12), transparent 62%),
+        radial-gradient(44rem 30rem at 98% 100%, rgba(16, 185, 129, .10), transparent 64%);
 }
 
 /* Светлое стекло: шапка, выпадающие панели, модалка. */
@@ -113,21 +115,155 @@
 }
 
 /*
- * Активный пункт — капсула, а не подсветка строки.
+ * Боковое меню: светлая панель с мягким градиентом.
  *
- * Капсула читается как «здесь я сейчас» с одного взгляда: у неё есть форма,
- * а у подсветки только цвет. Свёрнутое меню тем более просит форму — там от
- * пункта остаётся один значок.
+ * Тёмное меню было контрастным пятном слева, и любая подсветка внутри него
+ * приходилась «цветом по чёрному». На светлом фоне активный пункт можно
+ * поднять белой карточкой — приём, который читается мгновенно и не спорит с
+ * содержимым страницы.
+ *
+ * Градиент едва заметный: он даёт панели объём, но не превращается в фон, с
+ * которым текст пунктов начинает бороться.
  */
-.nav-pill {
+.sidebar-soft {
+    background:
+        linear-gradient(180deg, rgba(238, 240, 254, .92) 0%, rgba(248, 250, 252, .92) 46%, rgba(240, 253, 248, .92) 100%);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid rgba(255, 255, 255, .8);
+    color: #475569;
+}
+
+/* Заголовок секции: мелко, вразрядку, без линий — линии дробили бы список.
+   Сверху воздуха ровно столько, чтобы отделить, но не разорвать список. */
+.nav-section:first-child { padding-top: .25rem; }
+.nav-section {
+    padding: .875rem .75rem .25rem;
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: #94A3B8;
+}
+
+/* Обычный пункт. */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: .625rem;
+    width: 100%;
+    height: 2.25rem;
+    border-radius: .75rem;
+    padding: 0 .75rem;
+    font-size: .875rem;
+    font-weight: 500;
+    color: #475569;
+    transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.nav-item:hover { background: rgba(255, 255, 255, .7); color: #1E293B; }
+.nav-item svg { color: #94A3B8; flex: none; }
+.nav-item:hover svg { color: #64748B; }
+
+/*
+ * Текущая страница — приподнятая белая карточка.
+ *
+ * Не заливка цветом, а высота: карточка выглядит ближе к читателю, и «где я»
+ * считывается формой, а не оттенком. Значок при этом красится акцентом.
+ */
+.nav-current {
+    background: #FFFFFF;
+    color: #1E293B;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 8px 20px -12px rgba(15, 23, 42, .25);
+}
+.nav-current svg { color: #4F46E5; }
+
+/* Открытый раздел: чуть светлее фона, но БЕЗ высоты — приподнят только
+   текущий пункт, иначе непонятно, который из двух открыт. */
+.nav-group-open { background: rgba(255, 255, 255, .55); color: #1E293B; }
+
+/* Вложенный список: направляющая вместо иконок. */
+.nav-children {
+    position: relative;
+    margin: .125rem 0 .25rem 1.4rem;
+    padding-left: .75rem;
+}
+.nav-children::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: .25rem;
+    bottom: .25rem;
+    width: 1px;
+    background: rgba(100, 116, 139, .2);
+}
+.nav-child {
+    position: relative;
+    display: block;
+    display: flex;
+    align-items: center;
+    height: 1.875rem;
+    border-radius: .625rem;
+    padding: 0 .75rem;
+    font-size: .8125rem;
+    color: #64748B;
+    transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.nav-child:hover { background: rgba(255, 255, 255, .7); color: #1E293B; }
+.nav-child-active {
+    background: #FFFFFF;
+    color: #1E293B;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 6px 16px -10px rgba(15, 23, 42, .25);
+}
+.nav-child-active::before {
+    content: '';
+    position: absolute;
+    left: -.8125rem;
+    top: 50%;
+    height: .375rem;
+    width: .375rem;
+    transform: translateY(-50%);
     border-radius: 9999px;
-    background: linear-gradient(135deg, #4F46E5, #6366F1);
-    box-shadow: 0 6px 16px -8px rgba(79, 70, 229, .9);
+    background: #4F46E5;
+}
+
+/* Капсула со счётчиком: непрочитанное в чате, ждущее подтверждения. */
+.nav-badge {
+    margin-left: auto;
+    display: inline-flex;
+    height: 1.25rem;
+    min-width: 1.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: #4F46E5;
+    padding: 0 .375rem;
+    font-size: .6875rem;
+    font-weight: 700;
     color: #FFFFFF;
 }
-.nav-pill svg { color: #FFFFFF; }
 
-/* Всплывающая подпись для свёрнутого меню: значок без слова — загадка. */
+/* Карточка профиля, прижатая к низу панели. */
+.nav-profile {
+    display: flex;
+    align-items: center;
+    gap: .625rem;
+    border-radius: .875rem;
+    background: rgba(255, 255, 255, .72);
+    padding: .625rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+    transition: background-color .15s ease, box-shadow .15s ease;
+}
+.nav-profile:hover {
+    background: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 8px 20px -12px rgba(15, 23, 42, .25);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .sidebar-soft { background: #F4F6FB; }
+}
+
 .nav-tip {
     position: absolute;
     left: calc(100% + .625rem);
