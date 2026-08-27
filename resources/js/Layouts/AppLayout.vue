@@ -53,8 +53,8 @@ const allNav = [
     { key: 'nav.analytics', name: tr('Аналитика'), route: 'analytics.index', icon: '◊', leadershipOnly: true },
     {
         key: 'nav.sales', name: tr('Продажи'), icon: '◈', children: [
-            { key: 'nav.deals', name: tr('Сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny' },
-            { key: 'nav.overdue', name: tr('Просроченные'), route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny' },
+            { key: 'nav.deals', name: tr('Сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny', notRoles: ['foreman'] },
+            { key: 'nav.overdue', name: tr('Просроченные'), route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny', notRoles: ['foreman'] },
             { key: 'nav.predeals', name: tr('Заявки'), route: 'preDeals.index', icon: '◧', roles: ['admin', 'director', 'financist', 'manager'] },
             // Заказы, оформленные на сайте: менеджер превращает их в сделки.
             { key: 'nav.siteOrders', name: tr('Заказы с сайта'), route: 'siteOrders.index', icon: '🛒', roles: ['admin', 'director', 'financist', 'manager'] },
@@ -64,6 +64,9 @@ const allNav = [
     {
         key: 'nav.factory', name: tr('Производство'), icon: '⚒', children: [
             { key: 'nav.workshop', name: tr('Цех'), route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
+            // Сделки бригадира лежат здесь, а не в «Продажах»: он их не
+            // продаёт, а ведёт в цехе, и видит только назначенные ему.
+            { key: 'nav.myDeals', name: tr('Мои сделки'), route: 'deals.index', icon: '◈', onlyRoles: ['foreman'] },
             // Выработка бригад по сменам (бригадир видит только свои бригады).
             { key: 'nav.production', name: tr('Производство'), route: 'production.plans.index', icon: '⚒', roles: ['admin', 'director', 'financist', 'foreman'] },
             { key: 'nav.warehouse', name: tr('Склад'), route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
@@ -105,9 +108,19 @@ const allNav = [
     },
     // «Профиль» отдельным пунктом не нужен: в него ведёт карточка внизу меню.
 ];
+/**
+ * Виден ли пункт меню этой роли.
+ *
+ * `notRoles` прячет пункт у перечисленных ролей, `onlyRoles` — наоборот,
+ * показывает лишь им. Оба нужны, чтобы один и тот же маршрут стоял в разных
+ * разделах у разных людей: бригадир ведёт сделки в цехе, а не продаёт их, и
+ * его «Мои сделки» живут в «Производстве».
+ */
 const visible = (i) => (!i.perm || perms.value.includes(i.perm))
     && (!i.leadershipOnly || isLeadership.value)
-    && (!i.roles || i.roles.some((r) => roles.value.includes(r)));
+    && (!i.roles || i.roles.some((r) => roles.value.includes(r)))
+    && (!i.notRoles || ! i.notRoles.some((r) => roles.value.includes(r)))
+    && (!i.onlyRoles || i.onlyRoles.some((r) => roles.value.includes(r)));
 // Группа остаётся в меню, только если внутри есть что открыть.
 /**
  * Заголовки секций меню.
@@ -284,18 +297,26 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
         <!-- Sidebar -->
         <aside
             :class="[
-                collapsed ? 'lg:w-16' : 'lg:w-60',
+                collapsed ? 'lg:w-20' : 'lg:w-60',
                 mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
             ]"
+            :data-rail="collapsed && !mobileOpen ? '' : null"
             class="sidebar-soft fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden transition-all duration-300 ease-in-out ">
-            <div class="flex h-16 items-center gap-2 px-4">
-                <!-- Свёрнутое меню (64 px) — только знак; развёрнутое — логотип с подписью. -->
+            <!-- Шапка: знак, под ним кнопка сворачивания. В рельсе оба по
+                 центру — иначе колонка значков смотрится сдвинутой вбок. -->
+            <div class="flex items-center gap-2 px-4"
+                :class="collapsed && !mobileOpen ? 'flex-col pt-4' : 'h-16'">
                 <img
                     v-if="collapsed && !mobileOpen"
                     src="/logo-mark.png"
                     alt="QAZAQ TAS"
-                    class="mx-auto h-9 w-9 flex-shrink-0"
+                    class="h-8 w-8 flex-shrink-0"
                 />
+                <button v-if="collapsed && !mobileOpen" type="button" @click="collapsed = false"
+                    :title="t('header.collapse', 'Свернуть')"
+                    class="hidden h-8 w-8 items-center justify-center rounded-lg bg-slate-100/80 text-slate-500 transition-colors duration-150 hover:bg-slate-200 hover:text-slate-700 lg:flex">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
                 <!-- Тёмный вариант надписи: исходный логотип белый и на
                      светлой панели пропадал. Знак в обоих одинаковый. -->
                 <img v-if="!collapsed || mobileOpen" src="/logo-qazaqtas-dark.png" alt="QAZAQ TAS"
@@ -304,7 +325,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                      вести её вниз через весь список. -->
                 <button v-if="!collapsed || mobileOpen" type="button" @click="collapsed = !collapsed"
                     :title="t('header.collapse', 'Свернуть')"
-                    class="ml-auto hidden rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-white/70 hover:text-slate-700 lg:block">
+                    class="ml-auto hidden h-8 w-8 items-center justify-center rounded-lg bg-slate-100/80 text-slate-500 transition-colors duration-150 hover:bg-slate-200 hover:text-slate-700 lg:flex">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
             </div>
@@ -389,7 +410,8 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                  почта — чтобы в общей базе было видно, под кем сидишь. -->
             <div class="mt-auto px-4 pb-6 pt-2">
                 <Link :href="route('profile.edit')" @click="go" class="nav-profile">
-                    <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-bold text-white">
+                    <span class="flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-bold text-white"
+                        :class="collapsed && !mobileOpen ? 'h-10 w-10' : 'h-9 w-9'">
                         <img v-if="user?.avatar" :src="user.avatar" class="h-full w-full object-cover" alt="" />
                         <template v-else>{{ user?.name?.charAt(0) ?? '?' }}</template>
                     </span>
@@ -398,17 +420,11 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                         <div class="truncate text-[11px] text-slate-500">{{ user?.email ?? roleLabel }}</div>
                     </div>
                 </Link>
-                <!-- Развернуть: в свёрнутом рельсе кнопка из шапки не помещается. -->
-                <button v-if="collapsed && !mobileOpen" type="button" @click="collapsed = false"
-                    :title="t('header.collapse', 'Свернуть')"
-                    class="mt-2 hidden w-full justify-center rounded-lg p-1.5 text-slate-400 transition-colors duration-150 hover:bg-white/70 hover:text-slate-700 lg:flex">
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                </button>
             </div>
         </aside>
 
         <!-- Main -->
-        <div :class="collapsed ? 'lg:ml-16' : 'lg:ml-60'" class="flex-1 transition-all duration-300">
+        <div :class="collapsed ? 'lg:ml-20' : 'lg:ml-60'" class="flex-1 transition-all duration-300">
             <header class="glass sticky top-0 z-20 flex h-16 items-center justify-between border-b px-4 sm:px-6">
                 <div class="flex min-w-0 flex-1 items-center gap-3">
                     <button class="flex-shrink-0 rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" @click="mobileOpen = true">☰</button>

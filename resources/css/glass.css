@@ -233,6 +233,44 @@
     .sidebar-soft { background: #F4F6FB; }
 }
 
+/*
+ * Свёрнутый рельс: всё по центру и симметрично.
+ *
+ * Пункт в рельсе — квадрат 48×48, а не сжатая строка: растянутая на всю
+ * ширину карточка упиралась правым краем в границу, и симметрии не было.
+ */
+[data-rail] .nav-item {
+    height: 3rem;
+    width: 3rem;
+    margin: 0 auto;
+    justify-content: center;
+    padding: 0;
+    border-radius: .75rem;
+}
+[data-rail] .nav-item svg { margin: 0; }
+
+/* Счётчик в рельсе — точкой в углу значка: подписи рядом нет. */
+[data-rail] .nav-badge {
+    position: absolute;
+    top: .125rem;
+    right: .125rem;
+    margin: 0;
+    height: 1rem;
+    min-width: 1rem;
+    padding: 0 .25rem;
+    font-size: .625rem;
+}
+
+/* Профиль в рельсе — только кружок аватара, без имени и почты. */
+[data-rail] .nav-profile {
+    height: 2.5rem;
+    width: 2.5rem;
+    margin: 0 auto;
+    justify-content: center;
+    padding: 0;
+    border-radius: 9999px;
+}
+
 .nav-tip {
     position: absolute;
     left: calc(100% + .625rem);

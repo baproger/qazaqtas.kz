@@ -511,6 +511,13 @@ class DealController extends Controller
                 return $d;
             });
 
+        // Бригадир видит, ЧТО горит, но не на сколько: та же проверка, что в
+        // списке сделок и в карточке. Разойдись они, сумма утекла бы через ту
+        // страницу, где забыли.
+        if (! $this->seesMoney($request->user())) {
+            $deals->each(fn ($d) => $d->makeHidden(['budget', 'partner_pct', 'bonus_rate_override']));
+        }
+
         // Просроченные заказы цеха: у заказа свой дедлайн (унаследован от
         // сделки) — горящий цех виден на той же странице.
         $projects = Project::query()
@@ -519,7 +526,7 @@ class DealController extends Controller
             ->whereNotNull('deadline')
             ->whereDate('deadline', '<', $today)
             ->when(CurrentCompany::id(), fn ($q, $c) => $q->whereHas('deal', fn ($d) => $d->where('company_id', $c)))
-            ->tap(fn ($q) => $this->scopeForViewer($q, $request->user()))
+            ->whereHas('deal', fn ($d) => $this->scopeForViewer($d, $request->user()))
             ->orderBy('deadline')
             ->get()
             ->map(function ($p) use ($today) {
@@ -527,6 +534,10 @@ class DealController extends Controller
 
                 return $p;
             });
+
+        if (! $this->seesMoney($request->user())) {
+            $projects->each(fn ($p) => $p->makeHidden('budget'));
+        }
 
         return Inertia::render('Deals/Overdue', ['deals' => $deals, 'projects' => $projects]);
     }
