@@ -287,8 +287,8 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 collapsed ? 'lg:w-16' : 'lg:w-60',
                 mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
             ]"
-            class="sidebar-soft sidebar-floating fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden transition-all duration-300 ease-in-out lg:inset-y-4 lg:left-4">
-            <div class="flex h-14 items-center gap-2 px-4">
+            class="sidebar-soft fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden transition-all duration-300 ease-in-out ">
+            <div class="flex h-16 items-center gap-2 px-4">
                 <!-- Свёрнутое меню (64 px) — только знак; развёрнутое — логотип с подписью. -->
                 <img
                     v-if="collapsed && !mobileOpen"
@@ -308,7 +308,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
             </div>
-            <nav class="flex-1 space-y-0.5 overflow-y-auto px-2.5 py-3">
+            <nav class="flex-1 space-y-0.5 overflow-y-auto px-4 py-6">
                 <template v-for="item in nav" :key="item.key ?? item.route">
                     <div v-if="sectionFor(item) && (!collapsed || mobileOpen)" class="nav-section">{{ $e(sectionFor(item)) }}</div>
                     <!-- В свёрнутом рельсе вместо надписи — черта: место
@@ -387,7 +387,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                  системное; так их не ищут глазами каждый раз заново. -->
             <!-- Карточка профиля: прижата к низу, отделена от списка. Имя и
                  почта — чтобы в общей базе было видно, под кем сидишь. -->
-            <div class="mt-auto p-2.5">
+            <div class="mt-auto px-4 pb-6 pt-2">
                 <Link :href="route('profile.edit')" @click="go" class="nav-profile">
                     <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-bold text-white">
                         <img v-if="user?.avatar" :src="user.avatar" class="h-full w-full object-cover" alt="" />
@@ -408,7 +408,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
         </aside>
 
         <!-- Main -->
-        <div :class="collapsed ? 'lg:ml-[5.25rem]' : 'lg:ml-[16.25rem]'" class="flex-1 transition-all duration-300">
+        <div :class="collapsed ? 'lg:ml-16' : 'lg:ml-60'" class="flex-1 transition-all duration-300">
             <header class="glass sticky top-0 z-20 flex h-16 items-center justify-between border-b px-4 sm:px-6">
                 <div class="flex min-w-0 flex-1 items-center gap-3">
                     <button class="flex-shrink-0 rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" @click="mobileOpen = true">☰</button>
