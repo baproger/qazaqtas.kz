@@ -35,8 +35,10 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PreDealController;
 use App\Http\Controllers\ProductionController;
+use App\Http\Controllers\ProductionPlanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
@@ -122,7 +124,18 @@ Route::middleware('auth')->group(function () {
     Route::get('production', [ProductionController::class, 'index'])->name('production.index');
     Route::post('production/orders', [ProductionController::class, 'store'])->name('production.orders.store');
     Route::patch('production/orders/{order}/confirm', [ProductionController::class, 'confirm'])->name('production.orders.confirm');
+    Route::patch('production/orders/{order}/reject', [ProductionController::class, 'reject'])->name('production.orders.reject');
     Route::delete('production/orders/{order}', [ProductionController::class, 'destroy'])->name('production.orders.destroy');
+
+    // «План — факт»: задание цеху на месяц и его выполнение.
+    Route::get('production/plans', [ProductionPlanController::class, 'index'])->name('production.plans.index');
+    Route::post('production/plans', [ProductionPlanController::class, 'store'])->name('production.plans.store');
+    Route::patch('production/plans/{plan}', [ProductionPlanController::class, 'update'])->name('production.plans.update');
+    Route::delete('production/plans/{plan}', [ProductionPlanController::class, 'destroy'])->name('production.plans.destroy');
+    // Карточка бригады: состав, планы, наряды, начисления за месяц.
+    Route::get('production/brigades/{brigade}', [ProductionPlanController::class, 'brigade'])->name('production.brigade');
+    Route::post('production/plans/{plan}/output', [ProductionPlanController::class, 'output'])
+        ->middleware('throttle:60,1')->name('production.plans.output');
     Route::post('production/brigades', [ProductionController::class, 'storeBrigade'])->name('production.brigades.store');
     Route::patch('production/brigades/{brigade}', [ProductionController::class, 'updateBrigade'])->name('production.brigades.update');
     Route::delete('production/brigades/{brigade}', [ProductionController::class, 'destroyBrigade'])->name('production.brigades.destroy');
@@ -130,6 +143,9 @@ Route::middleware('auth')->group(function () {
     // Склад (приход товара + остатки, у каждой компании свой)
     Route::get('warehouse', [WarehouseController::class, 'index'])->name('warehouse.index');
     Route::post('warehouse/receipt', [WarehouseController::class, 'receipt'])->name('warehouse.receipt');
+    // Лента движений готовой продукции: откуда взялся и куда ушёл каждый метр.
+    Route::get('warehouse/products/{product}/movements', [WarehouseController::class, 'productMovements'])
+        ->middleware('throttle:120,1')->name('warehouse.productMovements');
     Route::put('warehouse/materials/{material}', [WarehouseController::class, 'updateMaterial'])->name('warehouse.materials.update');
     Route::delete('warehouse/materials/{material}', [WarehouseController::class, 'destroyMaterial'])->name('warehouse.materials.destroy');
     Route::put('warehouse/receipts/{receipt}', [WarehouseController::class, 'updateReceipt'])->name('warehouse.receipts.update');
@@ -140,6 +156,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('projects/{project}/stage', [ProjectController::class, 'updateStage'])->name('projects.stage');
     Route::patch('projects/{project}/advance', [ProjectController::class, 'advance'])->name('projects.advance');
     Route::post('projects/{project}/to-act', [ProjectController::class, 'sendToAct'])->name('projects.toAct');
+    // Работа по позиции прямо из карточки цеха: «сделал N» и «товар закончен».
+    Route::post('projects/{project}/items/{item}/output', [ProjectItemController::class, 'output'])
+        ->middleware('throttle:60,1')->name('projects.items.output');
+    Route::post('projects/{project}/items/{item}/finish', [ProjectItemController::class, 'finish'])
+        ->middleware('throttle:60,1')->name('projects.items.finish');
 
     // Tasks (managed inline inside deal/project cards — no standalone board)
     Route::post('tasks', [TaskController::class, 'store'])->name('tasks.store');
@@ -208,6 +229,8 @@ Route::middleware('auth')->group(function () {
     // Documents
     Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
     Route::get('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+    // Показ картинки в карточке (inline). Только картинки — см. контроллер.
+    Route::get('documents/{document}/preview', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     // Notifications

@@ -79,6 +79,7 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
                         <div class="text-sm font-bold leading-snug text-slate-900">{{ p.deal?.client_name || p.deal?.company_name || p.name }}</div>
                         <div class="mt-0.5 text-xs font-semibold tracking-wide text-indigo-500">{{ p.deal?.number || p.number }}</div>
                         <div v-if="p.deal?.address" class="mt-1 text-xs leading-snug text-slate-500">📍 {{ p.deal.address }}</div>
+                        <div v-if="p.deal?.foreman" class="mt-1 truncate text-xs text-slate-500" :title="$e('Бригадир')">👷 {{ p.deal.foreman.name }}</div>
                         <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-indigo-50 px-2.5 py-2" :title="$e('Сколько заказ находится в цехе')">
                             <span class="text-[10px] font-semibold uppercase tracking-wide text-indigo-400">{{ $e('⏱ в цехе') }}</span>
                             <span class="text-xl font-bold leading-none tabular-nums text-indigo-700">{{ inWorkshop(p) ?? '—' }}</span>

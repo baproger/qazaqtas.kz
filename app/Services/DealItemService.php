@@ -98,13 +98,57 @@ class DealItemService
         $items = $this->normalize($rows);
 
         DB::transaction(function () use ($deal, $items) {
-            $deal->items()->delete();
-            $deal->items()->createMany($items);
+            $this->reconcile($deal, $items);
 
             if ($items !== []) {
                 $deal->forceFill(['budget' => $this->total($items)])->save();
             }
         });
+    }
+
+    /**
+     * Обновить позиции сделки НА МЕСТЕ, а не переписать заново.
+     *
+     * Раньше здесь стояло delete + createMany, и каждое сохранение сделки
+     * выдавало строкам новые id. К позиции привязаны фото — «вот эта плитка
+     * выглядит так», — и правка количества молча осиротила бы все снимки.
+     * Позиция обязана пережить правку сделки.
+     *
+     * Сопоставляем по товару каталога, а строки без него — по названию:
+     * это то, чем позиция отличается от соседней. Совпадений может быть
+     * несколько (две строки одного товара), поэтому подбираем из пула по
+     * одной: первой строке — первый кандидат.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function reconcile(Deal $deal, array $items): void
+    {
+        $existing = $deal->items()->get();
+
+        $keep = [];
+        foreach ($items as $item) {
+            $key = $item['product_id'] ?? null;
+            $match = $existing->first(fn ($row) => ! in_array($row->id, $keep, true)
+                && ($key !== null
+                    ? (int) $row->product_id === (int) $key
+                    : $row->product_id === null && $row->name === $item['name']));
+
+            if ($match) {
+                $match->update($item);
+                $keep[] = $match->id;
+
+                continue;
+            }
+
+            $keep[] = $deal->items()->create($item)->id;
+        }
+
+        // Позиции, которых в заказе больше нет. По одной, а не массово:
+        // массовое удаление не поднимает событий модели, а на них висит
+        // уборка фото этой позиции (DealItem::booted).
+        foreach ($deal->items()->whereNotIn('id', $keep ?: [0])->get() as $stale) {
+            $stale->delete();
+        }
     }
 
     /**

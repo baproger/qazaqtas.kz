@@ -15,6 +15,10 @@ import DocumentPanel from '@/Components/DocumentPanel.vue';
 import CommentPanel from '@/Components/CommentPanel.vue';
 import CustomFieldsPanel from '@/Components/CustomFieldsPanel.vue';
 import HistoryPanel from '@/Components/HistoryPanel.vue';
+import PhotoPanel from '@/Components/PhotoPanel.vue';
+import OrderItems from '@/Components/OrderItems.vue';
+import Accordion from '@/Components/Accordion.vue';
+import { isImage } from '@/utils/image';
 import DealChat from '@/Components/DealChat.vue';
 import { deadlineClass, isPastDue } from '@/utils/deadline';
 import { UNITS, SOURCES } from '@/utils/dealOptions';
@@ -24,9 +28,18 @@ import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 
-const props = defineProps({ deal: Object, stages: Array, branches: { type: Array, default: () => [] }, users: Array, foremen: { type: Array, default: () => [] }, finance: { type: Object, default: null }, profit: { type: Object, default: null }, customFields: Array, history: Array, chatId: Number, can: Object, stageTask: Object, materials: { type: Array, default: () => [] }, balances: { type: Object, default: null }, workshops: { type: Array, default: () => [] }, stageLogs: { type: Array, default: () => [] } });
+const props = defineProps({ deal: Object, stages: Array, branches: { type: Array, default: () => [] }, users: Array, foremen: { type: Array, default: () => [] }, finance: { type: Object, default: null }, profit: { type: Object, default: null }, customFields: Array, itemProgress: { type: Object, default: () => ({}) }, history: Array, chatId: Number, can: Object, stageTask: Object, materials: { type: Array, default: () => [] }, balances: { type: Object, default: null }, workshops: { type: Array, default: () => [] }, stageLogs: { type: Array, default: () => [] } });
 
-const tab = ref('finance');
+const tab = ref(props.can?.money ? 'finance' : 'custom');
+// Фото и документы — одна таблица, разводим их по типу файла: снимок объекта
+// смотрят картинкой, договор скачивают файлом. Снимки берём и у сделки, и у
+// заказа цеха: объект снимает менеджер, отливку — цех, а смотреть их нужно
+// вместе.
+const attachments = computed(() => [...(props.deal.documents ?? []), ...(props.deal.project?.documents ?? [])]);
+const photos = computed(() => attachments.value.filter((d) => isImage(d.mime_type)));
+const files = computed(() => (props.deal.documents ?? []).filter((d) => !isImage(d.mime_type)));
+const items = computed(() => props.deal.items ?? []);
+const qty = (v) => Number(v ?? 0).toLocaleString('ru-RU');
 const visibleFields = computed(() => (props.customFields ?? []).filter((f) => f.is_visible && f.value));
 const lastStage = computed(() => props.stages[props.stages.length - 1]);
 const isLastStage = computed(() => props.deal.deal_stage_id === lastStage.value?.id);
@@ -158,7 +171,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
             </div>
         </template>
 
-        <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+        <div class="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
             <div class="flex items-center gap-2 overflow-x-auto pb-1">
                 <button v-for="(stage, idx) in stages" :key="stage.id" @click="moveStage(stage.id)" :disabled="!can.update || stageLocked(stage)"
                     :title="stageLocked(stage) ? lockHint(stage) : ''"
@@ -217,11 +230,11 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div class="lg:col-span-2 space-y-6">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div class="lg:col-span-2 space-y-4">
                 <!-- Информация — компактная сетка -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-                    <div class="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+                    <div class="grid grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-3">
                         <div>
                             <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Компания') }}</div>
                             <div class="mt-1 text-[15px] font-semibold text-slate-900">{{ deal.company_name || '—' }}</div>
@@ -276,7 +289,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                             <div class="mt-1 text-[15px] font-medium text-slate-900">{{ f.value }}</div>
                         </div>
                     </div>
-                    <div v-if="deal.note" class="mt-6 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-inset ring-amber-100">
+                    <div v-if="deal.note" class="mt-5 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-inset ring-amber-100">
                         <div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
                             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 10.8V5a3 3 0 0 1 6 0v5.8l2.7 1.6a2 2 0 0 1 1 1.7V15H5.3v-.9a2 2 0 0 1 1-1.7z"/></svg>
                             {{ $e('Заметка') }}
@@ -289,43 +302,60 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                     </div>
                 </div>
 
-                <!-- Задачи -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-                    <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                        <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m4 16 2 2 4-4M11 6h10M11 11h10M11 18h10"/></svg>
-                        {{ $e('Задачи') }} <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">{{ deal.tasks.length }}</span>
-                    </h3>
+                <!-- Слева товар, справа его фото. Снимок принадлежит позиции:
+                     в цехе по нему сверяют отливку именно этой плитки. Цены
+                     приходят только тем, кто видит деньги. -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+                    <div class="mb-3 flex items-baseline gap-2">
+                        <h3 class="text-sm font-semibold text-slate-900">{{ $e('Товары заказа') }}</h3>
+                        <span v-if="items.length" class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">{{ items.length }}</span>
+                    </div>
+                    <OrderItems :items="items" :progress="itemProgress" :show-money="!!can.money"
+                        :fallback-name="deal.client_name" :fallback-quantity="deal.lot_number" :fallback-unit="deal.unit" />
+                </div>
+
+                <!-- Общие снимки заказа: объект, площадка, отгрузка — то, что
+                     не относится к одному товару. -->
+                <Accordion v-if="attachments.length || can.update" :title="$e('Общие фото и файлы')" :count="attachments.length">
+                    <template #icon>
+                        <svg class="h-4 w-4 shrink-0 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                    </template>
+                    <PhotoPanel :documents="attachments" entity-type="deal" :entity-id="deal.id" />
+                </Accordion>
+
+                <!-- Задачи, документы, комментарии — аккордеонами: карточка
+                     держится в один экран, а счётчик в заголовке говорит, есть
+                     ли внутри что-то. Открыты по умолчанию только задачи:
+                     невыполненная задача — единственное, что требует действия. -->
+                <Accordion :title="$e('Задачи')" :count="deal.tasks.length" :open="deal.tasks.length > 0">
+                    <template #icon>
+                        <svg class="h-4 w-4 shrink-0 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m4 16 2 2 4-4M11 6h10M11 11h10M11 18h10"/></svg>
+                    </template>
                     <TaskPanel :tasks="deal.tasks" taskable-type="deal" :taskable-id="deal.id" :users="users" />
-                </div>
+                </Accordion>
 
-                <!-- Документы (только если прикреплены) -->
-                <div v-if="deal.documents.length" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-                    <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                        <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                        {{ $e('Документы') }} <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">{{ deal.documents.length }}</span>
-                    </h3>
-                    <DocumentPanel :documents="deal.documents" entity-type="deal" :entity-id="deal.id" />
-                </div>
+                <Accordion :title="$e('Документы')" :count="files.length">
+                    <template #icon>
+                        <svg class="h-4 w-4 shrink-0 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    </template>
+                    <DocumentPanel :documents="files" entity-type="deal" :entity-id="deal.id" />
+                </Accordion>
 
-                <!-- Комментарии -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-                    <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                        <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        {{ $e('Комментарии') }} <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">{{ deal.comments.length }}</span>
-                    </h3>
+                <Accordion :title="$e('Комментарии')" :count="deal.comments.length">
+                    <template #icon>
+                        <svg class="h-4 w-4 shrink-0 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </template>
                     <CommentPanel :comments="deal.comments" entity-type="deal" :entity-id="deal.id" />
-                </div>
+                </Accordion>
 
-                <!-- Второстепенное: Финансы / Документы (управление) / Доп. поля / История -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-                    <div class="mb-6 flex flex-wrap gap-6 border-b border-slate-200 text-sm">
+                <!-- Второстепенное: Финансы / Доп. поля / История -->
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+                    <div class="mb-4 flex flex-wrap gap-5 border-b border-slate-200 text-sm">
                         <button v-if="can.money" :class="tab==='finance' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='finance'">{{ $e('Финансы') }}</button>
-                        <button :class="tab==='docs' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='docs'">{{ $e('Документы') }}</button>
                         <button :class="tab==='custom' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='custom'">{{ $e('Доп. поля') }}</button>
                         <button :class="tab==='history' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='history'">{{ $e('История') }}</button>
                     </div>
                     <FinancePanel v-if="can.money && tab==='finance'" :entity-type="'deal'" :entity-id="deal.id" :client-id="deal.client_id" :invoices="deal.invoices" :expenses="deal.expenses" :finance="finance" :materials="materials" :balances="balances" />
-                    <DocumentPanel v-else-if="tab==='docs'" :documents="deal.documents" entity-type="deal" :entity-id="deal.id" />
                     <CustomFieldsPanel v-else-if="tab==='custom'" :fields="customFields" entity-type="deal" :entity-id="deal.id" />
                     <div v-else>
                         <!-- Тайминг этапов сделки: каждый шаг — когда, сколько заняло и кто перевёл -->
@@ -351,7 +381,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 </div>
             </div>
 
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <!-- Деньги сделки. Бригадир их не видит: сервер не присылает
                      profit, и блок не рисуется вовсе. -->
                 <div v-if="profit" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">

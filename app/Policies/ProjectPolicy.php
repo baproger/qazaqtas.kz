@@ -19,7 +19,11 @@ class ProjectPolicy
             return false;
         }
         // Leadership and workshop staff (observers) see the whole Цех; a manager only their own.
-        if ($user->hasAnyRole(['admin', 'director', 'financist', 'employee'])) {
+        // Бригадир — цеховая роль: он ведёт бригаду на этом же заказе и должен
+        // открыть карточку, чтобы увидеть, что и к какому сроку делать. Город
+        // ограничивает assertWorkshopAccess (users.workshops), деньги —
+        // canSeeMoney: сумм в карточке ему не приходит.
+        if ($user->hasAnyRole(['admin', 'director', 'financist', 'employee', 'foreman'])) {
             return true;
         }
 

@@ -65,7 +65,7 @@ const allNav = [
         key: 'nav.factory', name: tr('Производство'), icon: '⚒', children: [
             { key: 'nav.workshop', name: tr('Цех'), route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
             // Выработка бригад по сменам (бригадир видит только свои бригады).
-            { key: 'nav.production', name: tr('Наряды бригад'), route: 'production.index', icon: '⚒', roles: ['admin', 'director', 'financist', 'foreman'] },
+            { key: 'nav.production', name: tr('Производство'), route: 'production.plans.index', icon: '⚒', roles: ['admin', 'director', 'financist', 'foreman'] },
             { key: 'nav.warehouse', name: tr('Склад'), route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
         ],
     },

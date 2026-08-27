@@ -157,6 +157,28 @@ class DealForemanTest extends TestCase
                 ->etc());
     }
 
+    /**
+     * Товары сделки бригадир видит, а их цены — нет.
+     *
+     * Что и сколько лить — это его работа; по цене позиции считается вся
+     * сумма сделки, поэтому цены сервер даже не выбирает из БД.
+     */
+    public function test_foreman_sees_items_without_prices(): void
+    {
+        $deal = $this->deal(['foreman_id' => $this->foreman->id]);
+        $deal->items()->create([
+            'name' => 'Плитка «Ромб» 190×330×60', 'unit' => 'м²',
+            'quantity' => 210, 'price' => 8500, 'amount' => 1785000, 'sort' => 0,
+        ]);
+
+        $this->actingAs($this->foreman)->get(route('deals.show', $deal->id))
+            ->assertInertia(fn ($page) => $page
+                ->where('deal.items.0.name', 'Плитка «Ромб» 190×330×60')
+                ->where('deal.items.0.quantity', '210.00')
+                ->where('deal.items.0', fn ($item) => ! $item->has('price') && ! $item->has('amount'))
+                ->etc());
+    }
+
     /** В списке сумм тоже нет. */
     public function test_deal_list_hides_money_from_the_foreman(): void
     {

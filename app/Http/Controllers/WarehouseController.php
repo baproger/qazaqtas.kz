@@ -106,6 +106,7 @@ class WarehouseController extends Controller
             ->latest()->limit(30)->get();
 
         return Inertia::render('Warehouse/Index', [
+            'products' => $this->finishedGoods(),
             'materials' => $materials,
             'writeoffs' => $writeoffs,
             'receipts' => $receipts,
@@ -117,6 +118,81 @@ class WarehouseController extends Controller
             'companyName' => $allMode ? 'Все компании' : (CurrentCompany::get()?->name ?? ''),
             'filters' => ['from' => $from, 'to' => $to],
         ]);
+    }
+
+    /**
+     * Склад ГОТОВОЙ ПРОДУКЦИИ: что произвели и что осталось.
+     *
+     * Отдельно от сырья: крошку и цемент закупают, а вазоны делает цех.
+     * Остаток берётся из движений (`stock_movements`) — числом его никто не
+     * правит, поэтому по каждой строке видно, откуда она взялась.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function finishedGoods()
+    {
+        $companyId = CurrentCompany::id() ?: null;
+
+        $stocks = \App\Models\ProductStock::query()
+            ->where('company_id', $companyId)
+            ->with('product:id,name,unit,min_stock')
+            ->get()
+            ->filter(fn ($row) => $row->product !== null);
+
+        // Движения этого месяца — «произведено» и «ушло в сделки» колонками.
+        $since = now()->startOfMonth();
+        $moves = \App\Models\StockMovement::query()
+            ->where('company_id', $companyId)
+            ->whereIn('product_id', $stocks->pluck('product_id'))
+            ->where('created_at', '>=', $since)
+            ->groupBy('product_id', 'type')
+            ->selectRaw('product_id, type, sum(qty) as total')
+            ->get();
+
+        return $stocks->map(function ($row) use ($moves) {
+            $mine = $moves->where('product_id', $row->product_id);
+            $min = $row->product->min_stock !== null ? (float) $row->product->min_stock : null;
+            $qty = round((float) $row->qty, 2);
+
+            return [
+                'id' => $row->product_id,
+                'name' => $row->product->name,
+                'unit' => $row->product->unit,
+                'qty' => $qty,
+                'min_stock' => $min,
+                // Серый — пусто, жёлтый — ниже минимума, зелёный — есть.
+                'level' => $qty <= 0 ? 'empty' : ($min !== null && $qty <= $min ? 'low' : 'ok'),
+                'produced' => round((float) $mine->where('type', \App\Models\StockMovement::PRODUCTION_IN)->sum('total'), 2),
+                'shipped' => round(abs((float) $mine->where('type', \App\Models\StockMovement::DEAL_OUT)->sum('total')), 2),
+            ];
+        })->sortBy('name')->values();
+    }
+
+    /**
+     * Лента движений одного товара: откуда взялся и куда ушёл каждый метр.
+     *
+     * Ради этой ленты остаток и хранится движениями: «почему 800, а не 1000»
+     * должно отвечаться построчно, а не догадками.
+     */
+    public function productMovements(Request $request, \App\Models\Product $product): \Illuminate\Http\JsonResponse
+    {
+        abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist', 'manager']), 403);
+
+        $rows = \App\Models\StockMovement::query()
+            ->where('product_id', $product->id)
+            ->where('company_id', CurrentCompany::id() ?: null)
+            ->with('author:id,name')
+            ->latest('id')->limit(100)->get();
+
+        return response()->json($rows->map(fn ($m) => [
+            'id' => $m->id,
+            'date' => $m->created_at?->format('d.m.Y H:i'),
+            'qty' => round((float) $m->qty, 2),
+            'type' => $m->type,
+            'label' => $m->label(),
+            'note' => $m->note,
+            'author' => $m->author?->name,
+        ]));
     }
 
     /** Приход товара: существующий материал или новая позиция. */

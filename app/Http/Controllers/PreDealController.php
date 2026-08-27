@@ -246,7 +246,50 @@ class PreDealController extends Controller
             app(\App\Services\DealItemService::class)->syncPreDeal($preDeal, $items);
         }
 
-        return back()->with('success', 'Заявка добавлена — маржа рассчитана.');
+        $short = $this->warnAboutShortage($preDeal, $items);
+
+        return back()->with('success', $short
+            ? 'Заявка добавлена. На складе не хватает: '.$short.' — начальник производства уведомлён.'
+            : 'Заявка добавлена — маржа рассчитана.');
+    }
+
+    /**
+     * Предупредить производство, если под заявку не хватает товара.
+     *
+     * Заявку НЕ блокируем: это запрос КП, а не обязательство, — менеджер
+     * должен уметь посчитать клиенту то, чего сейчас нет. Но если он обещает
+     * 1000 м², а на складе 200, начальник производства должен узнать об этом
+     * в тот же день, а не когда придёт время грузить.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return string  чего не хватает — для сообщения менеджеру, или пусто
+     */
+    private function warnAboutShortage(PreDeal $preDeal, array $items): string
+    {
+        $rows = app(\App\Services\StockService::class)
+            ->shortages($items, $preDeal->company_id ? (int) $preDeal->company_id : null);
+
+        if ($rows->isEmpty()) {
+            return '';
+        }
+
+        $payload = $rows->map(fn ($r) => [
+            'name' => $r['product']->name,
+            'unit' => $r['product']->unit,
+            'need' => $r['need'],
+            'have' => $r['have'],
+            'short' => $r['short'],
+        ])->all();
+
+        // Начальник производства — это директор; админ видит всё в любом случае.
+        User::role(['admin', 'director'])->where('is_active', true)->get()
+            ->each->notify(new \App\Notifications\ProductShortage(
+                $payload, $preDeal->request_number, $preDeal->id
+            ));
+
+        return collect($payload)
+            ->map(fn ($r) => $r['name'].' '.rtrim(rtrim(number_format($r['short'], 2, '.', ' '), '0'), '.').' '.($r['unit'] ?: ''))
+            ->implode(', ');
     }
 
     public function update(Request $request, PreDeal $preDeal): RedirectResponse
@@ -287,6 +330,64 @@ class PreDealController extends Controller
     }
 
     /** «В работу»: маржа ≥ порога → создаётся настоящая сделка. */
+    /**
+     * «Количество» сделки из заявки.
+     *
+     * Объём вводят либо одной строкой (изделие + объём), либо позициями — во
+     * втором случае поле заявки пустое, и количество складываем из позиций.
+     * Складываем только когда единица у всех одна: 10 штук + 5 м² в одно
+     * число не сходятся, и там честнее пустое поле — детали видно в позициях.
+     */
+    private function dealQuantity(PreDeal $preDeal): ?string
+    {
+        if ((float) $preDeal->quantity > 0) {
+            return (string) $preDeal->quantity;
+        }
+
+        $items = $preDeal->items;
+        if ($items->isEmpty() || $items->pluck('unit')->unique()->count() > 1) {
+            return null;
+        }
+
+        $sum = (float) $items->sum('quantity');
+
+        return $sum > 0 ? (string) $sum : null;
+    }
+
+    /** Единица измерения к этому количеству — заявки или общая у позиций. */
+    private function dealUnit(PreDeal $preDeal): ?string
+    {
+        if ((float) $preDeal->quantity > 0) {
+            return $preDeal->unit;
+        }
+
+        $units = $preDeal->items->pluck('unit')->unique();
+
+        return $units->count() === 1 ? $units->first() : null;
+    }
+
+    /**
+     * Заметка сделки: контакт заказчика и его БИН.
+     *
+     * Отдельных полей под них в сделке нет, а терять нельзя — по этому
+     * телефону звонят из цеха, когда машина не может заехать на объект.
+     */
+    private function dealNote(PreDeal $preDeal): ?string
+    {
+        $lines = [];
+        if ($preDeal->client_name || $preDeal->client_phone) {
+            $lines[] = 'Контакт: '.trim(($preDeal->client_name ?: '').' '.($preDeal->client_phone ?: ''));
+        }
+        if ($preDeal->bin) {
+            $lines[] = 'БИН / ИИН заказчика: '.$preDeal->bin;
+        }
+        if ($preDeal->valid_until) {
+            $lines[] = 'КП действует до '.$preDeal->valid_until->format('d.m.Y');
+        }
+
+        return $lines ? implode("\n", $lines) : null;
+    }
+
     public function confirm(Request $request, PreDeal $preDeal, DealNumberService $numbers): RedirectResponse
     {
         $this->guardOwner($request, $preDeal);
@@ -313,12 +414,29 @@ class PreDealController extends Controller
             ]);
         }
 
+        // Сопоставление полей заявки и сделки. Раньше переносились только
+        // заказчик, БИН и сумма, а изделие, объём, объект и срок оставались
+        // строкой в «Описании» — менеджер вбивал их в сделку второй раз, а
+        // цех читал их из абзаца текста. Подписи полей сделки другие, чем в
+        // заявке, поэтому переносим по СМЫСЛУ, а не по имени колонки:
+        //   объект (адрес доставки/монтажа) → Адрес
+        //   изделие                          → Наименование товара
+        //   объём + единица                  → Количество
+        // «Номер договора», «Дата договора» и «Срок» намеренно пустые:
+        // договора на этом шаге ещё нет, он появится на этапе «Договор». БИН
+        // заказчика в «Номер договора» класть нельзя — это разные вещи, он
+        // уходит в заметку. Срок действия КП — тоже не срок сделки: КП живёт
+        // неделю, и сделка приезжала бы в воронку сразу просроченной.
+        $locked->load('items');
+
         $deal = Deal::create([
             'number' => $numbers->generate($company),
             'name' => $customer,
             'company_name' => $customer,
-            'client_name' => $preDeal->client_name ?: ($preDeal->customer ?: '—'),
-            'bin' => $preDeal->bin,
+            'client_name' => $preDeal->product ?: ($preDeal->customer ?: '—'),
+            'address' => $preDeal->object_address,
+            'lot_number' => $this->dealQuantity($locked),
+            'unit' => $this->dealUnit($locked),
             'budget' => $preDeal->contract_sum,
             // Доля партнёра заявки переносится в сделку (только %, сумма — от суммы договора).
             'partner_pct' => $preDeal->partner_pct !== null && (float) $preDeal->partner_pct > 0
@@ -330,12 +448,13 @@ class PreDealController extends Controller
             'company_id' => $companyId,
             'deal_stage_id' => DealStage::funnel($companyId)->first()?->id,
             'responsible_user_id' => $preDeal->user_id,
-            'description' => 'Из заявки: изделие — '.$preDeal->product
-                .($preDeal->quantity > 0 ? '; объём '.rtrim(rtrim(number_format((float) $preDeal->quantity, 2, '.', ' '), '0'), '.').' '.($preDeal->unit ?: '') : '')
-                .($preDeal->request_number ? '; заявка №'.$preDeal->request_number : '')
-                .($preDeal->client_phone ? '; контакт '.($preDeal->client_name ?: '').' '.$preDeal->client_phone : '')
-                .'; закуп '.number_format((float) $preDeal->purchase_price, 0, '.', ' ')
-                .'; расчётная маржа '.$preDeal->margin.'%',
+            // Описание и заметка БЕЗ денег: закуп и маржа отсюда убраны.
+            // Их читает цех — бригадир открывает карточку заказа, а описание
+            // сделки видно в ней. Себестоимость и маржа живут в заявке и в
+            // финансах сделки, где их видят только те, кому положено.
+            'description' => 'Из заявки'.($preDeal->request_number ? ' №'.$preDeal->request_number : '')
+                .': изделие — '.$preDeal->product,
+            'note' => $this->dealNote($locked),
         ]);
         // Доставка и монтаж из заявки → сразу расходы сделки (🚚/🔧, confirmed),
         // чтобы не вносить их в сделку второй раз. БЕЗ нал/банк (payment_method
@@ -362,7 +481,7 @@ class PreDealController extends Controller
 
         // Товары заявки становятся позициями сделки: вводить их второй раз
         // менеджеру не нужно.
-        app(\App\Services\DealItemService::class)->copyToDeal($locked->load('items'), $deal);
+        app(\App\Services\DealItemService::class)->copyToDeal($locked, $deal);
 
         $locked->update(['status' => 'confirmed', 'deal_id' => $deal->id]);
 

@@ -12,11 +12,11 @@ class DocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'documentable_type' => ['required', Rule::in(['deal', 'project'])],
+            'documentable_type' => ['required', Rule::in(['deal', 'project', 'deal_item'])],
             'documentable_id' => ['required', 'integer'],
             'name' => ['nullable', 'string', 'max:255'],
             'file' => ['required', 'file', 'max:20480', // 20MB
-                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,png,jpg,jpeg,gif,zip,rar,txt,csv'],
+                'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,png,jpg,jpeg,gif,webp,zip,rar,txt,csv'],
         ];
     }
 }

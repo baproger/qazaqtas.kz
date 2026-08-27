@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Models\ProjectStage;
 use App\Models\User;
 use App\Services\FinanceService;
+use App\Services\ProductionProgressService;
 use App\Support\AuditFormatter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,25 @@ class ProjectController extends Controller
     {
         abort_unless(auth()->user()->worksInWorkshop($project->workshop), 403,
             'Заказ другого цеха: у вас доступ только к своему цеху.');
+    }
+
+    /**
+     * Может ли этот человек записывать выработку по позиции заказа.
+     *
+     * Бригадир пишет от имени СВОЕЙ бригады этого цеха: чужую выработку он
+     * себе не припишет. Руководство пишет за любую.
+     */
+    private function canReport(Request $request, Project $project): bool
+    {
+        $user = $request->user();
+        if (! $user->worksInWorkshop($project->workshop)) {
+            return false;
+        }
+        if ($user->hasAnyRole(['admin', 'director'])) {
+            return true;
+        }
+
+        return \App\Models\Brigade::where('foreman_id', $user->id)->where('is_active', true)->exists();
     }
 
     private function scope($query, Request $request)
@@ -59,7 +79,8 @@ class ProjectController extends Controller
             // Цех тоже разделён по фирмам: заказ принадлежит компании исходной сделки.
             ->when(\App\Support\CurrentCompany::id(), fn ($q, $c) => $q->whereHas('deal', fn ($d) => $d->where('company_id', $c)))
             // Цеху на карточке нужны срок, описание, заметка и адрес (город) из сделки.
-            ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order', 'deal:id,number,company_name,client_name,address,deadline,description,note'])
+            // foreman_id + deal.foreman: на доске видно, чья бригада ведёт заказ.
+            ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order', 'deal:id,number,company_name,client_name,address,deadline,description,note,foreman_id', 'deal.foreman:id,name'])
             ->withCount(['tasks as overdue_count' => fn ($q) => $q->where('status', '!=', 'done')->whereNotNull('due_date')->where('due_date', '<', now())])
             // Тайминг: когда заказ вошёл на текущий этап (открытый лог).
             ->addSelect(['stage_entered_at' => \App\Models\ProjectStageLog::select('entered_at')
@@ -116,22 +137,43 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function show(Project $project, FinanceService $finance, Request $request): Response
+    public function show(Project $project, FinanceService $finance, Request $request, ProductionProgressService $progress): Response
     {
         $this->authorize('view', $project);
         $this->assertWorkshopAccess($project);
+
+        $canSeeMoney = $this->canSeeMoney($request);
+
+        // Цены позиций — это деньги: цеху их не выбираем вовсе. Что делать и
+        // сколько — выбираем всегда: без этого карточка бесполезна.
+        $itemColumns = ['id', 'deal_id', 'name', 'unit', 'quantity', 'sort'];
+        if ($canSeeMoney) {
+            $itemColumns[] = 'price';
+            $itemColumns[] = 'amount';
+        }
 
         $project->load([
             'client', 'responsible:id,name,avatar', 'department:id,name',
             // company_id ОБЯЗАТЕЛЕН в select: по нему фильтруется воронка цеха
             // ниже — без него грузились обе фирмы (Формовка+Формовка в степпере).
-            'stage', 'deal:id,number,name,company_name,company_id',
+            // Остальные поля сделки — то, ради чего цех открывает карточку:
+            // что делать, для кого, куда везти, к какому сроку и кто ведёт.
+            // budget в select не входит: суммы сделки в цехе нет ни у кого.
+            'stage', 'deal:id,number,name,company_name,company_id,client_name,address,lot_number,unit,contract_date,deadline,description,note,responsible_user_id,foreman_id',
+            'deal.responsible:id,name,avatar',
+            'deal.foreman:id,name,avatar',
+            'deal.items' => fn ($q) => $q->select(array_merge($itemColumns, ['finished_at', 'finished_by']))
+                ->with('finisher:id,name')
+                // Фото каждой позиции: по ним в цехе сверяют отливку.
+                ->with(['documents' => fn ($d) => $d->where('is_active', true)->with('user:id,name')->latest()]),
+            // Фото объекта менеджер снимает в сделке, а нужны они в цехе.
+            // Одна карточка — все снимки заказа, чьи бы они ни были.
+            'deal.documents' => fn ($q) => $q->where('is_active', true)->with('user:id,name')->latest(),
             'tasks' => fn ($q) => $q->with('assignee:id,name')->latest(),
             'documents' => fn ($q) => $q->where('is_active', true)->with('user:id,name')->latest(),
             'comments' => fn ($q) => $q->with('user:id,name')->latest(),
         ]);
 
-        $canSeeMoney = $this->canSeeMoney($request);
         if (! $canSeeMoney) {
             $project->makeHidden('budget');
         }
@@ -189,6 +231,20 @@ class ProjectController extends Controller
             'financeInvoices' => $canSeeMoney ? $source->invoices : [],
             'financeExpenses' => $canSeeMoney ? $source->expenses : [],
             'canSeeMoney' => $canSeeMoney,
+            // Переход в саму сделку — только тем, кого туда пустит DealPolicy:
+            // назначенному бригадиру да, стороннему цеховому работнику нет.
+            // Ссылка, ведущая в 403, хуже отсутствующей.
+            'canOpenDeal' => $project->deal !== null && $request->user()->can('view', $project->deal),
+            // Сколько по каждой позиции сделано: тот же счёт, что в сделке и
+            // на производстве. Бригадир видит остаток, не уходя со страницы.
+            'itemProgress' => $progress->forItems($project->deal?->items ?? []),
+            // Кто может записывать работу по позиции: бригадир своей бригады
+            // в этом цехе и руководство. Кнопки, которые отобьёт сервер,
+            // рисовать нельзя — они учат не доверять интерфейсу.
+            'canReport' => $this->canReport($request, $project),
+            // Незакрытые позиции держат заказ в цехе — кнопку «Готово»
+            // показываем, но говорим, чего не хватает.
+            'unfinishedItems' => (int) ($project->deal?->items()->whereNull('finished_at')->count() ?? 0),
             'history' => $history,
             // Тайминг этапов: сколько заказ провёл на каждом (открытый — тикает).
             'stageLogs' => $project->stageLogs()->orderBy('entered_at')->orderBy('id')->get()

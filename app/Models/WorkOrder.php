@@ -18,8 +18,8 @@ class WorkOrder extends Model
     use Auditable;
 
     protected $fillable = [
-        'company_id', 'brigade_id', 'project_id', 'date', 'product',
-        'status', 'created_by', 'confirmed_by', 'confirmed_at', 'note',
+        'company_id', 'brigade_id', 'project_id', 'deal_item_id', 'production_plan_id', 'date', 'product',
+        'status', 'created_by', 'confirmed_by', 'confirmed_at', 'reject_reason', 'note',
     ];
 
     protected $casts = ['date' => 'date', 'confirmed_at' => 'datetime'];
@@ -32,6 +32,24 @@ class WorkOrder extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Позиция сделки, которую закрывает наряд: по ней считается, сколько из
+     * заказа сделано и сколько осталось.
+     */
+    public function dealItem(): BelongsTo
+    {
+        return $this->belongsTo(DealItem::class);
+    }
+
+    /**
+     * План, по которому идёт работа. У наряда ровно один источник задания:
+     * либо позиция сделки (под заказ клиента), либо план (работа на склад).
+     */
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(ProductionPlan::class, 'production_plan_id');
     }
 
     public function creator(): BelongsTo

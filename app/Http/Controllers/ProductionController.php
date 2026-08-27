@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brigade;
+use App\Models\DealItem;
+use App\Models\Project;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Services\ProductionBonusService;
+use App\Services\ProductionProgressService;
+use App\Services\StockService;
 use App\Support\CurrentCompany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,9 +33,15 @@ class ProductionController extends Controller
         return $request->user()->hasAnyRole(['admin', 'director', 'financist', 'foreman']);
     }
 
+    /**
+     * Подтверждает директор ИЛИ финансист — достаточно одного.
+     *
+     * Двойная подпись останавливала бы цех, пока директор в отъезде, а сам
+     * бригадир свою выработку не подтверждает ни в каком случае.
+     */
     private function canConfirm(Request $request): bool
     {
-        return $request->user()->hasAnyRole(['admin', 'director']);
+        return $request->user()->hasAnyRole(['admin', 'director', 'financist']);
     }
 
     /**
@@ -53,7 +63,7 @@ class ProductionController extends Controller
         return $request->user()->hasAnyRole(['admin', 'director']);
     }
 
-    public function index(Request $request, ProductionBonusService $bonuses): Response
+    public function index(Request $request, ProductionBonusService $bonuses, ProductionProgressService $progress): Response
     {
         abort_unless($this->canView($request), 403, 'Страница производства — для бригадиров и руководства.');
 
@@ -77,6 +87,7 @@ class ProductionController extends Controller
             // цифрами стоят чужие деньги, и автор должен быть виден без
             // похода в журнал.
             ->with(['brigade:id,name,workshop,foreman_id', 'lines.user:id,name', 'project:id,number',
+                'dealItem:id,deal_id,name,unit,quantity', 'dealItem.deal:id,number,company_name',
                 'creator:id,name', 'confirmer:id,name'])
             ->orderByDesc('date')->orderByDesc('id')
             ->get()
@@ -87,6 +98,14 @@ class ProductionController extends Controller
                 'workshop' => $o->brigade?->workshop,
                 'product' => $o->product,
                 'project' => $o->project?->number,
+                // Какую позицию сделки закрывает наряд. Позицию могли убрать
+                // из заказа — наряд остаётся, привязка обнуляется.
+                'item' => $o->dealItem ? [
+                    'id' => $o->dealItem->id,
+                    'name' => $o->dealItem->name,
+                    'unit' => $o->dealItem->unit,
+                    'deal' => $o->dealItem->deal?->number,
+                ] : null,
                 'status' => $o->status,
                 'note' => $o->note,
                 'created_by' => $o->creator?->name,
@@ -114,10 +133,62 @@ class ProductionController extends Controller
                 'amount' => round((float) $lines->sum('amount'), 2),
             ])->sortByDesc('amount')->values();
 
+        // Позиции сделок, которые сейчас в работе: план из заказа и факт из
+        // нарядов. Берём те, что в цехе, и те, по которым уже есть наряды —
+        // иначе закрытая позиция пропала бы вместе со своей историей.
+        $itemsInWork = DealItem::query()
+            ->whereHas('deal', fn ($d) => $d
+                ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
+                ->where('status', '!=', 'cancelled')
+                ->where(fn ($w) => $w
+                    ->whereHas('project', fn ($p) => $p->whereNotIn('status', ['cancelled']))
+                    ->orWhereHas('items.workOrders')))
+            // Бригадир — только то, над чем работали ЕГО бригады: чужой объём
+            // не его дело, а на его странице он выглядел бы как его план.
+            ->when($isForeman, fn ($q) => $q->whereHas('workOrders', fn ($w) => $w
+                ->whereIn('brigade_id', Brigade::where('foreman_id', $request->user()->id)->select('id'))))
+            ->with(['deal:id,number,company_name,foreman_id'])
+            ->get(['id', 'deal_id', 'name', 'unit', 'quantity', 'sort']);
+
+        $stats = $progress->forItems($itemsInWork);
+        $byBrigade = $progress->byBrigade($itemsInWork->pluck('id')->all());
+
+        $plan = $itemsInWork
+            ->map(fn (DealItem $i) => array_merge($stats[$i->id], [
+                'id' => $i->id,
+                'name' => $i->name,
+                'deal' => $i->deal?->number,
+                'client' => $i->deal?->company_name,
+                'brigades' => array_values($byBrigade[$i->id] ?? []),
+            ]))
+            // Сначала незакрытые и те, где работа идёт: закрытые уходят вниз.
+            ->sortBy(fn ($row) => [$row['left'] <= 0 ? 1 : 0, -$row['done']])
+            ->values();
+
+        // Сводка «сколько из сделок взято и сколько проделано» — в м² и в
+        // штуках раздельно: складывать метры с штуками нельзя.
+        $summary = [];
+        foreach (['m2', 'pcs'] as $measure) {
+            $rows = $plan->where('measure', $measure);
+            $summary[$measure] = [
+                'plan' => round((float) $rows->sum('plan'), 2),
+                'done' => round((float) $rows->sum('done'), 2),
+                'pending' => round((float) $rows->sum('pending'), 2),
+                'left' => round((float) $rows->sum('left'), 2),
+                'items' => $rows->count(),
+            ];
+        }
+
         return Inertia::render('Production/Index', [
             'month' => $month,
             'orders' => $orders,
             'byPerson' => $byPerson,
+            'plan' => $plan,
+            'planSummary' => $summary,
+            // Что можно выбрать в новом наряде: позиции сделок, которые
+            // сейчас в цехе. Список шире, чем «план» выше: наряд заводят и по
+            // позиции, за которую бригада ещё не бралась.
+            'itemOptions' => $this->itemOptions($request, $companyId, $progress),
             'totals' => [
                 'pcs' => round((float) $orders->where('status', 'confirmed')->sum(fn ($o) => $o['totals']['pcs']), 2),
                 'm2' => round((float) $orders->where('status', 'confirmed')->sum(fn ($o) => $o['totals']['m2']), 2),
@@ -153,6 +224,38 @@ class ProductionController extends Controller
         ]);
     }
 
+    /**
+     * Позиции сделок, по которым сейчас можно завести наряд.
+     *
+     * Это заказы, доехавшие до цеха и оттуда не ушедшие. Цех ограничен теми
+     * городами, куда человека пускают (`users.workshops`) — иначе бригадир
+     * Шымкента списывал бы объём на заказ Алматы.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function itemOptions(Request $request, ?int $companyId, ProductionProgressService $progress)
+    {
+        $items = DealItem::query()
+            ->whereHas('deal.project', fn ($p) => $p->whereNotIn('status', ['completed', 'cancelled']))
+            ->whereHas('deal', fn ($d) => $d
+                ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
+                ->where('status', '!=', 'cancelled'))
+            ->with(['deal:id,number,company_name', 'deal.project'])
+            ->orderBy('deal_id')->orderBy('sort')
+            ->get(['id', 'deal_id', 'name', 'unit', 'quantity', 'sort'])
+            ->filter(fn (DealItem $i) => $request->user()->worksInWorkshop($i->deal?->project?->workshop))
+            ->values();
+
+        $stats = $progress->forItems($items);
+
+        return $items->map(fn (DealItem $i) => array_merge($stats[$i->id], [
+            'id' => $i->id,
+            'name' => $i->name,
+            'deal' => $i->deal?->number,
+            'client' => $i->deal?->company_name,
+        ]));
+    }
+
     /** Новый наряд: дата, бригада, изделие и строки выработки. */
     public function store(Request $request, ProductionBonusService $bonuses): RedirectResponse
     {
@@ -163,6 +266,7 @@ class ProductionController extends Controller
             'date' => ['required', 'date'],
             'product' => ['nullable', 'string', 'max:255'],
             'project_id' => ['nullable', 'exists:projects,id'],
+            'deal_item_id' => ['nullable', 'exists:deal_items,id'],
             'note' => ['nullable', 'string', 'max:255'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.user_id' => ['nullable', 'exists:users,id'],
@@ -180,6 +284,25 @@ class ProductionController extends Controller
             403,
             'Наряд заводит бригадир своей бригады.'
         );
+
+        // Позиция сделки, которую закрывает наряд. Чужая фирма недопустима:
+        // выработка превращается в бонус, а бонус — в расход из её кассы.
+        // Заодно подставляем изделие и заказ цеха: набирать их руками, когда
+        // позиция уже выбрана, значит заводить второй источник правды.
+        $item = null;
+        if (! empty($data['deal_item_id'])) {
+            $item = DealItem::with('deal:id,company_id,number')->findOrFail($data['deal_item_id']);
+            abort_unless(
+                $item->deal?->company_id === null
+                    || $request->user()->worksInCompany((int) $item->deal->company_id),
+                403,
+                'Позиция сделки другой фирмы.'
+            );
+            $data['product'] = ($data['product'] ?? null) ?: $item->name;
+            $data['project_id'] = $data['project_id']
+                ?? Project::where('deal_id', $item->deal_id)
+                    ->whereNotIn('status', ['cancelled'])->latest('id')->value('id');
+        }
 
         // Анти-дубль: та же бригада, дата и изделие младше минуты — это
         // повторная отправка формы, а не вторая смена. Подтверждённый дубль
@@ -199,6 +322,7 @@ class ProductionController extends Controller
             'company_id' => $brigade->company_id ?: CurrentCompany::id(),
             'brigade_id' => $brigade->id,
             'project_id' => $data['project_id'] ?? null,
+            'deal_item_id' => $item?->id,
             'date' => $data['date'],
             'product' => $data['product'] ?? null,
             'note' => $data['note'] ?? null,
@@ -212,13 +336,16 @@ class ProductionController extends Controller
     }
 
     /** Подтверждение наряда: только после него выработка становится бонусом. */
-    public function confirm(Request $request, WorkOrder $order): RedirectResponse
+    public function confirm(Request $request, WorkOrder $order, StockService $stock): RedirectResponse
     {
         abort_unless($this->canConfirm($request), 403, 'Наряд подтверждает мастер или руководство.');
         $this->assertOwnCompany($request, $order);
 
         if ($order->isConfirmed()) {
             return back()->with('error', 'Наряд уже подтверждён.');
+        }
+        if ($order->status === 'rejected') {
+            return back()->with('error', 'Наряд отклонён — сначала бригадир исправляет запись.');
         }
 
         $order->update([
@@ -227,14 +354,45 @@ class ProductionController extends Controller
             'confirmed_at' => now(),
         ]);
 
-        return back()->with('success', 'Наряд подтверждён — выработка пошла в бонус.');
+        // Работа по плану — это производство НА СКЛАД: подтверждённый объём
+        // тут же становится остатком. Наряд под позицию сделки прихода не
+        // даёт — тот товар делается под конкретный заказ и уже продан.
+        $movement = $stock->receiveFromWorkOrder($order->load('plan.product', 'brigade'), $request->user()->id);
+
+        return back()->with('success', $movement
+            ? 'Наряд подтверждён — бонус начислен, товар на складе.'
+            : 'Наряд подтверждён — выработка пошла в бонус.');
+    }
+
+    /**
+     * Отклонить наряд с причиной: объём не сходится, нет фото партии.
+     *
+     * Наряд не удаляем — бригадир должен видеть, что именно исправить, и
+     * поправить ту же запись, а не заводить новую.
+     */
+    public function reject(Request $request, WorkOrder $order): RedirectResponse
+    {
+        abort_unless($this->canConfirm($request), 403, 'Наряд отклоняет мастер или руководство.');
+        $this->assertOwnCompany($request, $order);
+
+        if ($order->isConfirmed()) {
+            return back()->with('error', 'Наряд уже подтверждён — отклонить его нельзя.');
+        }
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ], ['reason.required' => 'Напишите, что исправить.']);
+
+        $order->update(['status' => 'rejected', 'reject_reason' => $data['reason']]);
+
+        return back()->with('success', 'Наряд отклонён — бригадир увидит причину.');
     }
 
     /**
      * Удаление наряда. Подтверждённый убирает только руководство: он уже
      * посчитан в бонусах, и его исчезновение меняет чужие деньги.
      */
-    public function destroy(Request $request, WorkOrder $order): RedirectResponse
+    public function destroy(Request $request, WorkOrder $order, StockService $stock): RedirectResponse
     {
         $this->assertOwnCompany($request, $order);
         $mine = $order->brigade?->foreman_id === $request->user()->id;
@@ -244,9 +402,18 @@ class ProductionController extends Controller
             'Подтверждённый наряд убирает только руководство.'
         );
 
+        // Подтверждённый наряд уже положил товар на склад. Приход не стираем
+        // — он был, и его видели; пишем обратное движение, чтобы остаток
+        // сошёлся, а история осталась читаемой.
+        $reversed = $order->isConfirmed()
+            ? $stock->reverseWorkOrder($order->load('plan.product'), $request->user()->id)
+            : null;
+
         $order->delete();
 
-        return back()->with('success', 'Наряд удалён.');
+        return back()->with('success', $reversed
+            ? 'Наряд удалён — приход на складе сторнирован.'
+            : 'Наряд удалён.');
     }
 
     /** Создать бригаду: имя, цех, бригадир и состав. */

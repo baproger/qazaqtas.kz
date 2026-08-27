@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DocumentRequest;
 use App\Models\Deal;
+use App\Models\DealItem;
 use App\Models\Document;
 use App\Models\Project;
+use App\Services\ImageCompressor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -27,10 +29,16 @@ class DocumentController extends Controller
             return null;
         }
 
-        return $type === 'project' ? Project::find($id) : Deal::find($id);
+        return match ($type) {
+            'project' => Project::find($id),
+            // Позиция сделки: фото товара. Права ей даёт её сделка — см.
+            // DealItemPolicy, поэтому проверка доступа ниже общая.
+            'deal_item' => DealItem::with('deal')->find($id),
+            default => Deal::find($id),
+        };
     }
 
-    public function store(DocumentRequest $request): RedirectResponse
+    public function store(DocumentRequest $request, ImageCompressor $compressor): RedirectResponse
     {
         $this->authorize('create', Document::class);
 
@@ -40,10 +48,17 @@ class DocumentController extends Controller
         $id = (int) $request->input('documentable_id');
         $this->assertEntityAccess($this->resolve($type, $id));
 
+        // Фото жмём ДО сохранения: снимок с телефона весит мегабайты, а в
+        // цехе его открывают с мобильного интернета. Не картинку и уже
+        // маленькую компрессор вернёт нетронутой.
+        $mime = $file->getMimeType();
+        $compressor->compress($file);
+
         // Store with a random name outside the public root (storage/app/private).
         $path = $file->store('documents', 'local');
+        $size = Storage::disk('local')->size($path);
 
-        DB::transaction(function () use ($type, $id, $name, $path, $file) {
+        DB::transaction(function () use ($type, $id, $name, $path, $size, $mime) {
             // Versioning: deactivate previous versions of the same-named document.
             $prev = Document::where('documentable_type', $type)
                 ->where('documentable_id', $id)
@@ -59,14 +74,36 @@ class DocumentController extends Controller
                 'name' => $name,
                 'file_path' => $path,
                 'version' => ($version ?? 0) + 1,
-                'size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
+                'size' => $size,
+                'mime_type' => $mime,
                 'user_id' => request()->user()->id,
                 'is_active' => true,
             ]);
         });
 
         return back()->with('success', 'Документ загружен.');
+    }
+
+    /**
+     * Показать картинку в браузере, не скачивая.
+     *
+     * Отдельный маршрут, а не флаг у download: inline-показ разрешаем только
+     * картинкам. Отдать inline произвольный файл — это отдать браузеру то,
+     * что он может исполнить (svg со скриптом, html) с нашего домена.
+     */
+    public function preview(Document $document): StreamedResponse
+    {
+        $this->authorize('view', $document);
+        $this->assertEntityAccess($document->documentable);
+
+        abort_unless(in_array($document->mime_type, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true), 404);
+        abort_unless(Storage::disk('local')->exists($document->file_path), 404);
+
+        return Storage::disk('local')->response($document->file_path, $document->name, [
+            'Content-Type' => $document->mime_type,
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
     }
 
     public function download(Document $document): StreamedResponse

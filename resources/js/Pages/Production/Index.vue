@@ -7,7 +7,7 @@
  * можно приписать себе самому.
  */
 import { ref, computed } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import FinanceTile from '@/Components/FinanceTile.vue';
 import Modal from '@/Components/Modal.vue';
@@ -22,6 +22,9 @@ const tr = useE();
 const props = defineProps({
     month: { type: String, default: '' },
     orders: { type: Array, default: () => [] },
+    plan: { type: Array, default: () => [] },
+    planSummary: { type: Object, default: () => ({ m2: {}, pcs: {} }) },
+    itemOptions: { type: Array, default: () => [] },
     byPerson: { type: Array, default: () => [] },
     totals: { type: Object, default: () => ({ pcs: 0, m2: 0, amount: 0, waiting: 0 }) },
     brigades: { type: Array, default: () => [] },
@@ -30,6 +33,15 @@ const props = defineProps({
     canManage: { type: Boolean, default: false },
     employees: { type: Array, default: () => [] },
 });
+
+// Позиция, по которой заводят наряд: из неё берётся план и остаток. Пока
+// цифра остатка не на глазах, бригадир вводит объём «на память».
+const pickedItem = computed(() => props.itemOptions.find((i) => i.id === Number(form.deal_item_id)) ?? null);
+const measureLabel = (m) => (m === 'm2' ? tr('м²') : tr('штук'));
+const num = (v) => Number(v ?? 0).toLocaleString('ru-RU');
+
+// Какая смена раскрыта: состав нужен, когда сверяют начисление.
+const open = ref(null);
 
 const month = ref(props.month);
 const applyMonth = () => router.get(route('production.index'), { month: month.value || undefined },
@@ -40,7 +52,7 @@ const applyMonth = () => router.get(route('production.index'), { month: month.va
 const showForm = ref(false);
 const form = useForm({
     brigade_id: '', date: new Date().toISOString().slice(0, 10),
-    product: '', note: '', lines: [],
+    deal_item_id: '', product: '', note: '', lines: [],
 });
 const openForm = () => {
     form.reset();
@@ -120,6 +132,13 @@ const removeOrder = async (order) => {
         <template #header>{{ $e('Производство') }}</template>
 
         <div class="mx-auto max-w-7xl">
+            <!-- Два вида одной страницы: план месяца и журнал смен. -->
+            <div class="mb-5 flex gap-5 border-b border-slate-200 text-sm">
+                <Link :href="route('production.plans.index', { month })"
+                    class="-mb-px border-b-2 border-transparent pb-2.5 font-medium text-slate-500 transition-colors duration-150 hover:text-slate-700">{{ $e('План — факт') }}</Link>
+                <span class="-mb-px border-b-2 border-indigo-600 pb-2.5 font-semibold text-indigo-600">{{ $e('Все наряды') }}</span>
+            </div>
+
             <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">{{ $e('Выработка бригад') }}</h2>
@@ -145,26 +164,93 @@ const removeOrder = async (order) => {
                     :value="String(totals.waiting)" :hint="$e('без него бонус не начисляется')" />
             </div>
 
+            <!-- План и факт по сделкам: сколько заказано и сколько закрыто.
+                 План берётся из позиций сделки, факт — из подтверждённых
+                 нарядов по ним. Одно и то же число видят и цех, и продажи. -->
+            <div v-if="plan.length" class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
+                    <div>
+                        <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                            <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
+                            {{ $e('Сделки в работе: план и факт') }}
+                        </h3>
+                        <p class="mt-0.5 text-xs text-slate-400">{{ $e('план — из позиций сделки, факт — из подтверждённых нарядов') }}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-4 text-sm tabular-nums">
+                        <template v-for="m in ['m2', 'pcs']" :key="m">
+                            <div v-if="planSummary[m]?.items" class="flex items-baseline gap-1.5">
+                                <span class="text-xs text-slate-400">{{ measureLabel(m) }}:</span>
+                                <b class="text-slate-900">{{ num(planSummary[m].done) }}</b>
+                                <span class="text-slate-400">/ {{ num(planSummary[m].plan) }}</span>
+                                <span v-if="planSummary[m].left > 0" class="text-xs font-semibold text-amber-600">{{ $e('осталось') }} {{ num(planSummary[m].left) }}</span>
+                                <span v-else class="text-xs font-semibold text-emerald-600">{{ $e('закрыто ✓') }}</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="divide-y divide-slate-50">
+                    <div v-for="row in plan" :key="row.id" class="px-6 py-3">
+                        <div class="flex flex-wrap items-baseline justify-between gap-3">
+                            <div class="min-w-0">
+                                <span class="text-sm font-medium text-slate-800">🧱 {{ row.name }}</span>
+                                <span class="ml-2 text-xs text-slate-400">{{ row.deal }} · {{ row.client }}</span>
+                            </div>
+                            <div class="flex items-baseline gap-2 text-sm tabular-nums">
+                                <b :class="row.over ? 'text-amber-600' : 'text-slate-900'">{{ num(row.done) }}</b>
+                                <span class="text-slate-400">/ {{ num(row.plan) }} {{ row.unit }}</span>
+                                <span v-if="row.pending" class="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700"
+                                    :title="$e('внесено, но мастер ещё не подтвердил')">+{{ num(row.pending) }} {{ $e('ждёт') }}</span>
+                                <span v-if="row.over" class="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">{{ $e('перевыполнение') }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                            <div class="h-full rounded-full transition-all duration-500"
+                                :class="row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-emerald-500' : 'bg-indigo-500'"
+                                :style="{ width: Math.min(row.percent, 100) + '%' }"></div>
+                        </div>
+                        <!-- Чья это работа: на одном объекте смены ведут разные бригады. -->
+                        <div v-if="row.brigades.length" class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                            <span v-for="(b, i) in row.brigades" :key="i" class="tabular-nums">
+                                👷 {{ b.brigade || '—' }}: <b class="text-slate-700">{{ num(row.measure === 'm2' ? b.m2 : b.pcs) }} {{ row.unit }}</b>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Итог по людям: кто сколько сделал и заработал -->
             <div v-if="byPerson.length" class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-sm font-semibold text-slate-900">{{ $e('Кто сколько сделал за месяц') }}</h3>
+                <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
+                    <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+                        {{ $e('Кто сколько сделал за месяц') }}
+                    </h3>
+                    <!-- Рядом с людьми — откуда взялся объём: столько заказано
+                         в сделках, столько закрыто нарядами. -->
+                    <div class="flex flex-wrap gap-4 text-xs tabular-nums text-slate-500">
+                        <template v-for="m in ['m2', 'pcs']" :key="m">
+                            <span v-if="planSummary[m]?.items">
+                                {{ $e('из сделок') }} <b class="text-slate-700">{{ num(planSummary[m].plan) }}</b> {{ measureLabel(m) }} ·
+                                {{ $e('сделано') }} <b class="text-slate-700">{{ num(planSummary[m].done) }}</b>
+                            </span>
+                        </template>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                             <tr>
-                                <th class="px-6 py-2.5">{{ $e('Сотрудник') }}</th>
-                                <th class="px-4 py-2.5 text-right">{{ $e('м²') }}</th>
-                                <th class="px-4 py-2.5 text-right">{{ $e('штук') }}</th>
-                                <th class="px-4 py-2.5 text-right">{{ $e('Начислено') }}</th>
+                                <th class="px-6 py-2.5 font-medium">{{ $e('Сотрудник') }}</th>
+                                <th class="px-4 py-2.5 text-right font-medium">{{ $e('м²') }}</th>
+                                <th class="px-4 py-2.5 text-right font-medium">{{ $e('штук') }}</th>
+                                <th class="px-4 py-2.5 text-right font-medium">{{ $e('Начислено') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50">
                             <tr v-for="p in byPerson" :key="p.name" class="transition-colors duration-150 hover:bg-slate-50/60">
                                 <td class="px-6 py-2.5 font-medium text-slate-800">{{ p.name }}</td>
-                                <td class="px-4 py-2.5 text-right tabular-nums text-slate-600">{{ p.m2 || '—' }}</td>
-                                <td class="px-4 py-2.5 text-right tabular-nums text-slate-600">{{ p.pcs || '—' }}</td>
+                                <td class="px-4 py-2.5 text-right tabular-nums text-slate-600">{{ p.m2 ? num(p.m2) : '—' }}</td>
+                                <td class="px-4 py-2.5 text-right tabular-nums text-slate-600">{{ p.pcs ? num(p.pcs) : '—' }}</td>
                                 <td class="px-4 py-2.5 text-right font-semibold tabular-nums text-emerald-600">{{ money(p.amount) }}</td>
                             </tr>
                         </tbody>
@@ -188,63 +274,120 @@ const removeOrder = async (order) => {
                             <span v-if="b.workshop">· {{ b.workshop }}</span>
                         </div>
                         <div class="mt-1.5 flex gap-2">
-                            <button @click="openBrigade(b)" class="font-semibold text-indigo-600 hover:underline">{{ $e('Изменить') }}</button>
-                            <button @click="removeBrigade(b)" class="font-semibold text-slate-400 hover:underline">{{ $e('Убрать') }}</button>
+                            <Link :href="route('production.brigade', { brigade: b.id, month })" class="font-semibold text-indigo-600 hover:underline">{{ $e('Подробнее') }}</Link>
+                            <button v-if="canManage" @click="openBrigade(b)" class="font-semibold text-slate-500 hover:underline">{{ $e('Изменить') }}</button>
+                            <button v-if="canManage" @click="removeBrigade(b)" class="font-semibold text-slate-400 hover:underline">{{ $e('Убрать') }}</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Наряды по сменам -->
-            <div class="mt-6 space-y-3">
-                <div v-if="!orders.length" class="rounded-xl border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-400 shadow-sm">
+            <!-- Наряды по сменам — таблицей: одна смена = одна строка.
+                 Карточками список уезжал на несколько экранов, а глазами
+                 сравнить две смены было нельзя. Состав смены раскрывается по
+                 клику: он нужен, когда сверяют начисление, а не всегда. -->
+            <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
+                    <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                        <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+                        {{ $e('Наряды по сменам') }}
+                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">{{ orders.length }}</span>
+                    </h3>
+                    <span v-if="totals.waiting" class="text-xs font-semibold text-amber-600">⏳ {{ totals.waiting }} {{ $e('ждут подтверждения') }}</span>
+                </div>
+
+                <div v-if="!orders.length" class="px-6 py-10 text-center text-sm text-slate-400">
                     {{ $e('За этот месяц нарядов нет.') }}
                 </div>
 
-                <div v-for="o in orders" :key="o.id" class="rounded-xl border bg-white p-4 shadow-sm"
-                    :class="o.status === 'confirmed' ? 'border-slate-200' : 'border-amber-200'">
-                    <div class="flex flex-wrap items-start justify-between gap-2">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-semibold text-slate-900">{{ formatDate(o.date) }}</span>
-                                <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{{ o.brigade }}</span>
-                                <span v-if="o.workshop" class="text-xs text-slate-400">{{ o.workshop }}</span>
-                                <span class="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                                    :class="o.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
-                                    {{ o.status === 'confirmed' ? $e('подтверждён') : $e('ждёт мастера') }}
-                                </span>
-                            </div>
-                            <p class="mt-1 text-sm text-slate-500">
-                                {{ o.product || $e('без изделия') }}
-                                <span v-if="o.project" class="text-slate-400">· {{ o.project }}</span>
-                            </p>
-                        </div>
-                        <div class="text-right text-xs text-slate-400">
-                            <div class="tabular-nums">{{ o.totals.m2 }} {{ $e('м²') }} · {{ o.totals.pcs }} {{ $e('штук') }}</div>
-                            <div class="font-semibold text-slate-700">{{ money(o.totals.workers + o.totals.foreman) }}</div>
-                            <!-- Кто внёс и кто подтвердил: за нарядом стоят чужие деньги. -->
-                            <div v-if="o.created_by" class="mt-0.5">{{ $e('внёс') }}: {{ o.created_by }}</div>
-                            <div v-if="o.confirmed_by">{{ $e('подтвердил') }}: {{ o.confirmed_by }} · {{ o.confirmed_at }}</div>
-                        </div>
-                    </div>
+                <div v-else class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                            <tr>
+                                <th class="px-6 py-2.5 font-medium">{{ $e('Дата') }}</th>
+                                <th class="px-3 py-2.5 font-medium">{{ $e('Изделие') }}</th>
+                                <th class="px-3 py-2.5 font-medium">{{ $e('Бригада') }}</th>
+                                <th class="px-3 py-2.5 text-right font-medium">{{ $e('Объём') }}</th>
+                                <th class="px-3 py-2.5 text-right font-medium">{{ $e('Начислено') }}</th>
+                                <th class="px-3 py-2.5 font-medium">{{ $e('Статус') }}</th>
+                                <th class="px-6 py-2.5"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <template v-for="o in orders" :key="o.id">
+                                <tr class="cursor-pointer align-top transition-colors duration-150 hover:bg-slate-50/60"
+                                    :class="open === o.id ? 'bg-slate-50/60' : ''" @click="open = open === o.id ? null : o.id">
+                                    <td class="whitespace-nowrap px-6 py-3 font-medium tabular-nums text-slate-800">
+                                        <svg class="mr-1 inline h-3 w-3 text-slate-300 transition-transform duration-200" :class="open === o.id ? 'rotate-90' : ''"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                        {{ formatDate(o.date) }}
+                                    </td>
+                                    <td class="px-3 py-3">
+                                        <div class="text-slate-800">{{ o.item?.name || o.product || $e('без изделия') }}</div>
+                                        <div v-if="o.item || o.project" class="text-xs text-slate-400">
+                                            <span v-if="o.item">🧾 {{ o.item.deal }}</span>
+                                            <span v-if="o.project" class="ml-1.5">🏭 {{ o.project }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-3 py-3 text-slate-600">
+                                        <div>👷 {{ o.brigade }}</div>
+                                        <div v-if="o.workshop" class="text-xs text-slate-400">{{ o.workshop }}</div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-3 text-right tabular-nums text-slate-700">
+                                        <span v-if="o.totals.m2">{{ num(o.totals.m2) }} {{ $e('м²') }}</span>
+                                        <span v-if="o.totals.m2 && o.totals.pcs" class="text-slate-300"> · </span>
+                                        <span v-if="o.totals.pcs">{{ num(o.totals.pcs) }} {{ $e('штук') }}</span>
+                                        <span v-if="!o.totals.m2 && !o.totals.pcs" class="text-slate-300">—</span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums text-emerald-600">{{ money(o.totals.workers + o.totals.foreman) }}</td>
+                                    <td class="whitespace-nowrap px-3 py-3">
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                                            :class="o.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'">
+                                            {{ o.status === 'confirmed' ? '✓' : '⏳' }}
+                                            {{ o.status === 'confirmed' ? $e('подтверждён') : $e('ждёт мастера') }}
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-6 py-3 text-right" @click.stop>
+                                        <button v-if="canConfirm && o.status !== 'confirmed'" @click="confirmOrder(o)"
+                                            class="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('Подтвердить') }}</button>
+                                        <button @click="removeOrder(o)" :title="$e('Удалить')"
+                                            class="ml-1 rounded-lg p-1.5 text-slate-300 transition-colors duration-150 hover:bg-rose-50 hover:text-rose-600">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
 
-                    <div class="mt-3 flex flex-wrap gap-1.5">
-                        <span v-for="l in o.lines" :key="l.id"
-                            class="rounded-lg border px-2.5 py-1 text-xs"
-                            :class="l.role === 'foreman' ? 'border-indigo-200 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600'">
-                            {{ l.user || '—' }}<template v-if="l.role === 'foreman'"> · {{ $e('бригадир') }}</template>:
-                            <template v-if="l.qty_m2">{{ l.qty_m2 }} {{ $e('м²') }} </template>
-                            <template v-if="l.qty_pcs">{{ l.qty_pcs }} {{ $e('штук') }}</template>
-                            <b class="ml-1 tabular-nums">{{ money(l.amount) }}</b>
-                        </span>
-                    </div>
-
-                    <div class="mt-3 flex justify-end gap-2">
-                        <button v-if="canConfirm && o.status !== 'confirmed'" @click="confirmOrder(o)"
-                            class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('Подтвердить') }}</button>
-                        <button @click="removeOrder(o)"
-                            class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors duration-150 hover:bg-slate-50">{{ $e('Удалить') }}</button>
-                    </div>
+                                <!-- Состав смены: кто сколько сделал и сколько ему начислено.
+                                     Строка бригадира — весь объём смены, это его бонус, а не
+                                     второй раз посчитанная выработка. -->
+                                <tr v-if="open === o.id" class="bg-slate-50/60">
+                                    <td colspan="7" class="px-6 pb-4 pt-0">
+                                        <table class="min-w-full text-xs">
+                                            <tbody class="divide-y divide-slate-100">
+                                                <tr v-for="l in o.lines" :key="l.id">
+                                                    <td class="py-1.5 pr-4 text-slate-700">
+                                                        {{ l.user || '—' }}
+                                                        <span v-if="l.role === 'foreman'" class="ml-1 rounded bg-indigo-50 px-1.5 py-px text-[10px] font-semibold text-indigo-700">{{ $e('бригадир · вся смена') }}</span>
+                                                    </td>
+                                                    <td class="py-1.5 pr-4 text-right tabular-nums text-slate-500">
+                                                        <span v-if="l.qty_m2">{{ num(l.qty_m2) }} {{ $e('м²') }}</span>
+                                                        <span v-if="l.qty_m2 && l.qty_pcs" class="text-slate-300"> · </span>
+                                                        <span v-if="l.qty_pcs">{{ num(l.qty_pcs) }} {{ $e('штук') }}</span>
+                                                    </td>
+                                                    <td class="py-1.5 text-right font-semibold tabular-nums text-slate-700">{{ money(l.amount) }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div class="mt-2 text-[11px] text-slate-400">
+                                            <span v-if="o.created_by">{{ $e('внёс') }}: {{ o.created_by }}</span>
+                                            <span v-if="o.confirmed_by" class="ml-3">{{ $e('подтвердил') }}: {{ o.confirmed_by }} · {{ o.confirmed_at }}</span>
+                                            <span v-if="o.note" class="ml-3">📝 {{ o.note }}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -268,8 +411,29 @@ const removeOrder = async (order) => {
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Изделие') }}</label>
-                        <input v-model="form.product" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm" :placeholder="$e('Плитка 300×300…')" />
+                        <input v-model="form.product" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm"
+                            :placeholder="pickedItem ? pickedItem.name : $e('Плитка 300×300…')" />
                     </div>
+                </div>
+
+                <!-- По какой позиции сделки работает смена. Отсюда берётся
+                     план и остаток — без него объём вводили «на память», и
+                     сложить его с заказом было нельзя. -->
+                <div class="mt-4">
+                    <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Позиция сделки') }}</label>
+                    <select v-model="form.deal_item_id" class="w-full rounded-md border-slate-300 text-sm shadow-sm">
+                        <option value="">{{ $e('— без привязки к сделке —') }}</option>
+                        <option v-for="i in itemOptions" :key="i.id" :value="i.id">
+                            {{ i.deal }} · {{ i.name }} — {{ $e('осталось') }} {{ num(i.left) }} {{ i.unit }}
+                        </option>
+                    </select>
+                    <div v-if="pickedItem" class="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg bg-indigo-50 px-3 py-2 text-xs tabular-nums text-indigo-800">
+                        <span>{{ $e('План:') }} <b>{{ num(pickedItem.plan) }} {{ pickedItem.unit }}</b></span>
+                        <span>{{ $e('Сделано:') }} <b>{{ num(pickedItem.done) }}</b></span>
+                        <span v-if="pickedItem.pending">{{ $e('ждёт подтверждения:') }} <b>{{ num(pickedItem.pending) }}</b></span>
+                        <span class="font-semibold">{{ $e('Осталось:') }} {{ num(pickedItem.left) }} {{ pickedItem.unit }}</span>
+                    </div>
+                    <p v-else class="mt-1 text-[11px] text-slate-400">{{ $e('Без позиции наряд в план по сделке не попадёт') }}</p>
                 </div>
 
                 <div class="mt-4 space-y-2">

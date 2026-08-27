@@ -32,7 +32,10 @@ class AppServiceProvider extends ServiceProvider
         // Stable polymorphic aliases used across tasks/documents/comments/etc.
         Relation::enforceMorphMap([
             'deal' => Deal::class,
+            'deal_item' => \App\Models\DealItem::class,
             'project' => Project::class,
+            // Наряд — источник движения склада: подтверждённая выработка.
+            'work_order' => \App\Models\WorkOrder::class,
             'user' => User::class,
         ]);
     }

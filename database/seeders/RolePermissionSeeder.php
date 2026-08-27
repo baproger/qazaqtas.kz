@@ -65,6 +65,9 @@ class RolePermissionSeeder extends Seeder
             'project.viewAny', 'project.view',
             'task.viewAny', 'task.view', 'task.update',
             'payroll.view',
+            // Фото отливки и упаковки снимают в цехе — значит, и прикрепляют
+            // там же. Удаление не даём: договор из сделки цех не стирает.
+            'document.viewAny', 'document.view', 'document.create',
             // Заявка «Расход компании» — счёт бухгалтеру на оплату. Право
             // только на создание: подтверждает и удаляет бухгалтер.
             'expense.create',
@@ -80,6 +83,7 @@ class RolePermissionSeeder extends Seeder
                 'project.viewAny', 'project.view',
                 'task.viewAny', 'task.view', 'task.update',
                 'payroll.view',
+                'document.viewAny', 'document.view', 'document.create',
                 // Заявку на расход компании подаёт любой сотрудник.
                 'expense.create',
             ];

@@ -21,6 +21,7 @@ use App\Services\CustomFieldService;
 use App\Services\DealItemService;
 use App\Services\DealNumberService;
 use App\Services\FinanceService;
+use App\Services\ProductionProgressService;
 use App\Services\PayrollService;
 use App\Support\AuditFormatter;
 use App\Support\CurrentCompany;
@@ -274,15 +275,29 @@ class DealController extends Controller
         return back()->with('success', 'Сделка создана.');
     }
 
-    public function show(Deal $deal, FinanceService $finance): Response
+    public function show(Deal $deal, FinanceService $finance, ProductionProgressService $progress): Response
     {
         $this->authorize('view', $deal);
 
         $money = $this->seesMoney(request()->user());
 
+        // Цены позиций — деньги: бригадиру их не выбираем из БД вовсе. Что
+        // делать и сколько — выбираем всегда: без этого сделка нечитаема.
+        $itemColumns = ['id', 'deal_id', 'product_id', 'name', 'unit', 'quantity', 'sort'];
+        if ($money) {
+            $itemColumns[] = 'price';
+            $itemColumns[] = 'amount';
+        }
+
         $deal->load(array_filter([
             'client', 'responsible:id,name,avatar', 'foreman:id,name,avatar', 'department:id,name',
-            'stage', 'project:id,number,name,status', 'items',
+            'stage', 'project:id,number,name,status',
+            // Снимки, сделанные в цехе, нужны менеджеру в сделке — иначе он
+            // не видит, что отлили, пока не откроет карточку заказа.
+            'project.documents' => fn ($q) => $q->where('is_active', true)->with('user:id,name')->latest(),
+            'items' => fn ($q) => $q->select($itemColumns)
+                // Фото каждой позиции: «вот эта плитка выглядит так».
+                ->with(['documents' => fn ($d) => $d->where('is_active', true)->with('user:id,name')->latest()]),
             'tasks' => fn ($q) => $q->with('assignee:id,name')->latest(),
             // Счета и расходы — это деньги: бригадиру их не грузим вовсе,
             // чтобы суммы не уехали в браузер «на всякий случай».
@@ -392,6 +407,10 @@ class DealController extends Controller
             'finance' => $money ? $finance->summaryFor($deal) : null,
             'history' => AuditFormatter::humanize(AuditLog::where('table_name', 'deals')->where('record_id', $deal->id)->with('user:id,name')->latest()->limit(100)->get(), ['deal_stage_id' => DealStage::pluck('name', 'id'), 'responsible_user_id' => User::pluck('name', 'id')]),
             'customFields' => app(CustomFieldService::class)->forEntity('deal', $deal->id),
+            // Сколько по каждой позиции уже сделано в цехе. Считает один
+            // сервис — и здесь, и в цехе, и на производстве: разойдись счёт,
+            // менеджер и бригадир видели бы разный остаток по одному заказу.
+            'itemProgress' => $progress->forItems($deal->items),
             'can' => [
                 'update' => request()->user()->can('update', $deal),
                 'advance' => request()->user()->can('advance', $deal),

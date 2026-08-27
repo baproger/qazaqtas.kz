@@ -62,6 +62,25 @@ const requestGroups = computed(() => {
 });
 
 const showForm = ref(false);
+
+// Заявка в три шага: клиент → товары → сводка. Одним окном на двадцать полей
+// менеджер терял место, а ошибку видел уже после сохранения. Последний шаг —
+// контрольный: всё введённое на одном экране перед записью.
+const step = ref(1);
+const STEPS = [
+    { n: 1, title: 'Клиент и объект' },
+    { n: 2, title: 'Товары и расчёт' },
+    { n: 3, title: 'Проверка' },
+];
+// Дальше пускаем, только когда шаг заполнен: на сводке нечего проверять, если
+// заказчика ещё нет.
+const stepReady = computed(() => (step.value === 1
+    ? !!String(form.customer || '').trim()
+    : step.value === 2
+        ? (form.items.length > 0 || !!String(form.product || '').trim()) && Number(form.contract_sum || autoSum || 0) > 0
+        : true));
+const goNext = () => { if (stepReady.value && step.value < 3) step.value += 1; };
+const goBack = () => { if (step.value > 1) step.value -= 1; };
 const editingId = ref(null);
 const form = useForm({ request_number: '', valid_until: '', bin: '', customer: '', object_address: '', client_name: '', client_phone: '', product: '', quantity: '', unit: tr('м²'), unit_price: '', contract_sum: '', purchase_price: '', partner_pct: '', delivery: '', assembly: '', commission: '', items: [] });
 
@@ -105,9 +124,12 @@ const checkNumber = async () => {
     numberChecking.value = false;
 };
 
-const openCreate = () => { editingId.value = null; form.reset(); form.clearErrors(); numberCheck.value = null; showForm.value = true; };
+const openCreate = () => { editingId.value = null; form.reset(); form.clearErrors(); numberCheck.value = null; step.value = 1; showForm.value = true; };
 const openEdit = (p) => {
     editingId.value = p.id;
+    // Правка — одним экраном: шаги нужны, когда заполняешь с нуля, а не
+    // когда правишь одно поле в готовой заявке.
+    step.value = 3;
     form.clearErrors();
     numberCheck.value = null;
     Object.assign(form, {
@@ -327,8 +349,27 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
         <!-- Модалка заявки: живой расчёт -->
         <Modal :show="showForm" max-width="2xl" @close="showForm = false">
             <div class="p-6">
-                <h3 class="mb-4 text-base font-semibold text-slate-900">{{ editingId ? $e('Изменить заявку') : $e('Новая заявка') }}</h3>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <h3 class="mb-1 text-base font-semibold text-slate-900">{{ editingId ? $e('Изменить заявку') : $e('Новая заявка') }}</h3>
+
+                <!-- Шаги: где мы и что осталось. Нумерация здесь настоящая —
+                     на сводке нечего проверять, пока не введены товары. -->
+                <div v-if="!editingId" class="mb-5 mt-3 flex items-center gap-2">
+                    <template v-for="(sp, i) in STEPS" :key="sp.n">
+                        <button type="button" @click="sp.n < step && (step = sp.n)"
+                            class="flex items-center gap-2 text-sm transition-colors duration-150"
+                            :class="sp.n === step ? 'font-semibold text-indigo-600' : sp.n < step ? 'text-slate-600 hover:text-indigo-600' : 'text-slate-300'">
+                            <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
+                                :class="sp.n === step ? 'bg-indigo-600 text-white' : sp.n < step ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'">
+                                {{ sp.n < step ? '✓' : sp.n }}
+                            </span>
+                            {{ $e(sp.title) }}
+                        </button>
+                        <span v-if="i < STEPS.length - 1" class="h-px flex-1" :class="sp.n < step ? 'bg-emerald-200' : 'bg-slate-200'"></span>
+                    </template>
+                </div>
+
+                <!-- ШАГ 1: кто заказчик и куда везти. -->
+                <div v-show="step === 1 || editingId" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <InputLabel :value="$e('№ заявки / КП')" />
                         <div class="mt-1 flex gap-2">
@@ -353,6 +394,12 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                     <div><InputLabel :value="$e('Заказчик (компания или частное лицо)')" /><TextInput v-model="form.customer" class="mt-1 w-full" /></div>
                     <div><InputLabel :value="$e('БИН / ИИН заказчика')" /><TextInput v-model="form.bin" class="mt-1 w-full" /></div>
                     <div class="sm:col-span-2"><InputLabel :value="$e('Объект (адрес доставки / монтажа)')" /><TextInput v-model="form.object_address" class="mt-1 w-full" :placeholder="$e('г. Астана, ЖК …')" /></div>
+                    <div><InputLabel :value="$e('Имя клиента (контакт)')" /><TextInput v-model="form.client_name" class="mt-1 w-full" /></div>
+                    <div><InputLabel :value="$e('Телефон клиента')" /><TextInput v-model="form.client_phone" class="mt-1 w-full" placeholder="+7 ___ ___ __ __" /></div>
+                </div>
+
+                <!-- ШАГ 2: что продаём и почём. Здесь же живой расчёт маржи. -->
+                <div v-show="step === 2 || editingId" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div class="sm:col-span-2">
                         <InputLabel :value="$e('Товары заказа')" />
                         <p class="mb-1.5 text-[11px] text-slate-400">{{ $e('Выберите категории, затем товары. Единица подставится из каталога, закуп по строке нужен для маржи.') }}</p>
@@ -376,8 +423,6 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                         <p v-if="autoSum !== null" class="mt-1 text-[11px] text-emerald-600">{{ $e('Считается автоматически:') }} {{ money(autoSum) }}</p>
                         <div v-if="form.errors.contract_sum" class="mt-1 text-xs text-rose-600">{{ form.errors.contract_sum }}</div>
                     </div>
-                    <div><InputLabel :value="$e('Имя клиента (контакт)')" /><TextInput v-model="form.client_name" class="mt-1 w-full" /></div>
-                    <div><InputLabel :value="$e('Телефон клиента')" /><TextInput v-model="form.client_phone" class="mt-1 w-full" placeholder="+7 ___ ___ __ __" /></div>
                     <div>
                         <InputLabel :value="$e('Себестоимость (сырьё, производство)')" />
                         <TextInput v-model="form.purchase_price" type="number" min="0" class="mt-1 w-full"
@@ -390,8 +435,59 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                     <div><InputLabel :value="$e('Комиссия (площадка, агент)')" /><TextInput v-model="form.commission" type="number" min="0" class="mt-1 w-full" /></div>
                 </div>
 
-                <!-- Живой расчёт -->
-                <div class="mt-4 rounded-xl border p-4" :class="calc.pass ? 'border-emerald-200 bg-emerald-50/60' : 'border-rose-200 bg-rose-50/60'">
+                <!-- ШАГ 3: контрольный экран. Всё введённое на одном месте —
+                     ошибку видно ДО записи, а не после «В работу ✓». -->
+                <div v-show="step === 3 && !editingId" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-sm sm:grid-cols-3">
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Заказчик') }}</div>
+                            <div class="mt-0.5 font-semibold text-slate-900">{{ form.customer || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('№ заявки / КП') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">{{ form.request_number || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('КП действительно до') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">{{ form.valid_until ? formatDate(form.valid_until) : '—' }}</div>
+                        </div>
+                        <div class="col-span-2">
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Объект') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">📍 {{ form.object_address || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Контакт') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">{{ [form.client_name, form.client_phone].filter(Boolean).join(' · ') || '—' }}</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="mb-1.5 text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Товары заказа') }}</div>
+                        <div v-if="form.items.length" class="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                            <div v-for="(it, i) in form.items" :key="i" class="flex flex-wrap items-baseline justify-between gap-3 px-4 py-2 text-sm">
+                                <span class="text-slate-700">🧱 {{ it.name }}</span>
+                                <span class="flex items-baseline gap-3 tabular-nums">
+                                    <b class="text-slate-900">{{ Number(it.quantity || 0).toLocaleString('ru-RU') }} {{ it.unit }}</b>
+                                    <span class="text-slate-400">{{ money(Number(it.quantity || 0) * Number(it.price || 0)) }}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div v-else class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700">
+                            🧱 {{ form.product || '—' }}
+                            <template v-if="form.quantity"> · {{ Number(form.quantity).toLocaleString('ru-RU') }} {{ form.unit }}</template>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+                        <div><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Сумма КП') }}</div><div class="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{{ money(Number(form.contract_sum || autoSum || 0)) }}</div></div>
+                        <div><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Себестоимость') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ money(Number(form.purchase_price || itemsPurchase || 0)) }}</div></div>
+                        <div v-if="Number(form.delivery || 0) || Number(form.assembly || 0)"><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Доставка / монтаж') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ money(Number(form.delivery || 0) + Number(form.assembly || 0)) }}</div></div>
+                        <div v-if="Number(form.partner_pct || 0)"><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Доля партнёра') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ form.partner_pct }}%</div></div>
+                    </div>
+                </div>
+
+                <!-- Живой расчёт: на первом шаге считать ещё нечего. -->
+                <div v-show="step > 1 || editingId" class="mt-4 rounded-xl border p-4" :class="calc.pass ? 'border-emerald-200 bg-emerald-50/60' : 'border-rose-200 bg-rose-50/60'">
                     <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
                         <span class="text-slate-500">{{ $e('Партнёр:') }} <b class="tabular-nums text-slate-700">{{ money(calc.partner) }}</b></span>
                         <span class="text-slate-500">{{ $e('Налог') }} {{ taxPercent }}%: <b class="tabular-nums text-slate-700">{{ money(calc.tax) }}</b></span>
@@ -403,9 +499,12 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
                     </div>
                 </div>
 
-                <div class="mt-4 flex justify-end gap-2">
+                <div class="mt-4 flex items-center justify-end gap-2">
+                    <button v-if="!editingId && step > 1" type="button" @click="goBack"
+                        class="mr-auto rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition-colors duration-150 hover:text-slate-700">← {{ $e('Назад') }}</button>
                     <SecondaryButton @click="showForm = false">{{ $e('Отмена') }}</SecondaryButton>
-                    <PrimaryButton :disabled="form.processing" @click="submit">{{ editingId ? $e('Сохранить') : $e('Добавить') }}</PrimaryButton>
+                    <PrimaryButton v-if="!editingId && step < 3" :disabled="!stepReady" @click="goNext">{{ $e('Далее →') }}</PrimaryButton>
+                    <PrimaryButton v-else :disabled="form.processing" @click="submit">{{ editingId ? $e('Сохранить') : $e('Создать заявку') }}</PrimaryButton>
                 </div>
             </div>
         </Modal>

@@ -37,6 +37,32 @@ class ProductionBonusService
             ];
     }
 
+    /**
+     * Ставки бригадира для этого наряда.
+     *
+     * План месяца может назначить свою цену за единицу — брусчатка и вазон
+     * стоят цеху разного труда. Ставка плана бьёт общую настройку и, как и
+     * общая, КОПИРУЕТСЯ в строку: подняли цену в плане — прошлые смены
+     * пересчитываться не должны.
+     *
+     * @return array{pcs: float, m2: float}
+     */
+    private function foremanRatesFor(WorkOrder $order): array
+    {
+        $rates = $this->rates('foreman');
+        $planRate = $order->plan?->bonus_rate;
+        if ($planRate === null) {
+            return $rates;
+        }
+
+        // Ставка плана — за единицу его товара. Кладём её в ту метрику, в
+        // которой этот товар считается; вторая для такого наряда не заполнена.
+        $measure = app(ProductionProgressService::class)
+            ->measure($order->plan->unit ?: $order->plan->product?->unit);
+
+        return [...$rates, $measure => (float) $planRate];
+    }
+
     private function lineAmount(float $pcs, float $m2, array $rates): float
     {
         return round($pcs * $rates['pcs'] + $m2 * $rates['m2'], 2);
@@ -51,7 +77,7 @@ class ProductionBonusService
     public function syncLines(WorkOrder $order, array $rows): void
     {
         $workerRates = $this->rates('worker');
-        $foremanRates = $this->rates('foreman');
+        $foremanRates = $this->foremanRatesFor($order);
 
         DB::transaction(function () use ($order, $rows, $workerRates, $foremanRates) {
             $order->lines()->delete();

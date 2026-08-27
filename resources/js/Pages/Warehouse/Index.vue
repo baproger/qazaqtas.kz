@@ -15,6 +15,7 @@ import { useE } from '@/composables/useTranslations';
 const tr = useE();
 
 const props = defineProps({
+    products: { type: Array, default: () => [] },
     materials: Array, writeoffs: Object, receipts: Array, units: Array, defaultMarkup: { type: Number, default: 0 },
     canManage: Boolean, allMode: Boolean, companyName: String, filters: Object,
 });
@@ -26,6 +27,29 @@ const writeoffLink = (w) => w.type === 'deal' ? route('deals.show', w.target_id)
 
 const qty = (v) => new Intl.NumberFormat('ru-RU').format(Number(v ?? 0));
 const money = (v) => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Number(v ?? 0)) + ' ₸';
+
+// Два склада на одной странице: готовая продукция (её делает цех) и сырьё
+// (его закупают). Экономика разная, поэтому и таблицы разные.
+const tab = ref('goods');
+const num = (v) => Number(v ?? 0).toLocaleString('ru-RU');
+
+// Лента движений товара: откуда взялся и куда ушёл каждый метр. Грузится по
+// клику — на странице их сотни, вперёд тянуть незачем.
+const openedProduct = ref(null);
+const movements = ref([]);
+const loadingMoves = ref(false);
+const openMovements = async (product) => {
+    if (openedProduct.value?.id === product.id) { openedProduct.value = null; return; }
+    openedProduct.value = product;
+    loadingMoves.value = true;
+    movements.value = [];
+    try {
+        const res = await fetch(route('warehouse.productMovements', product.id), { headers: { Accept: 'application/json' } });
+        movements.value = res.ok ? await res.json() : [];
+    } finally {
+        loadingMoves.value = false;
+    }
+};
 
 // Приход: существующий материал или новая позиция.
 const showModal = ref(false);
@@ -125,6 +149,74 @@ const lowStock = (m) => Number(m.quantity) <= 0;
             </div>
         </template>
 
+        <!-- Переключатель складов: готовая продукция и сырьё. -->
+        <div class="mb-4 flex flex-wrap items-center gap-2 border-b border-slate-200">
+            <button v-for="t in [{ k: 'goods', n: $e('Готовая продукция') }, { k: 'materials', n: $e('Сырьё') }]"
+                :key="t.k" @click="tab = t.k"
+                class="-mb-px border-b-2 px-1 pb-2.5 text-sm transition-colors duration-150"
+                :class="tab === t.k ? 'border-indigo-600 font-semibold text-indigo-600' : 'border-transparent font-medium text-slate-500 hover:text-slate-700'">
+                {{ t.n }}
+            </button>
+        </div>
+
+        <!-- ===== Готовая продукция ===== -->
+        <div v-if="tab === 'goods'" class="mb-6">
+            <div v-if="!products.length" class="rounded-xl border border-dashed border-slate-200 px-6 py-14 text-center text-sm text-slate-500">
+                {{ $e('Склад пуст. Товар появится здесь, когда подтвердят выработку по плану.') }}
+            </div>
+            <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                <table class="min-w-full text-sm">
+                    <thead class="border-b border-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-400">
+                        <tr>
+                            <th class="px-5 py-3 font-medium">{{ $e('Товар') }}</th>
+                            <th class="px-3 py-3 text-right font-medium">{{ $e('Остаток') }}</th>
+                            <th class="px-3 py-3 text-right font-medium">{{ $e('Произведено за месяц') }}</th>
+                            <th class="px-3 py-3 text-right font-medium">{{ $e('Ушло в сделки') }}</th>
+                            <th class="px-5 py-3 text-right font-medium">{{ $e('Минимум') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <template v-for="p in products" :key="p.id">
+                            <tr class="cursor-pointer transition-colors duration-150 hover:bg-slate-50/60" @click="openMovements(p)">
+                                <td class="px-5 py-3">
+                                    <span class="font-medium text-slate-800">{{ p.name }}</span>
+                                    <span v-if="p.level === 'empty'" class="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">{{ $e('нет в наличии') }}</span>
+                                    <span v-else-if="p.level === 'low'" class="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">{{ $e('мало') }}</span>
+                                </td>
+                                <td class="px-3 py-3 text-right tabular-nums">
+                                    <b :class="p.level === 'empty' ? 'text-slate-400' : p.level === 'low' ? 'text-amber-600' : 'text-slate-900'">{{ num(p.qty) }}</b>
+                                    <span class="ml-1 text-xs text-slate-400">{{ p.unit }}</span>
+                                </td>
+                                <td class="px-3 py-3 text-right tabular-nums text-emerald-600">{{ p.produced ? '+' + num(p.produced) : '—' }}</td>
+                                <td class="px-3 py-3 text-right tabular-nums text-slate-500">{{ p.shipped ? '−' + num(p.shipped) : '—' }}</td>
+                                <td class="px-5 py-3 text-right tabular-nums text-slate-400">{{ p.min_stock !== null ? num(p.min_stock) : '—' }}</td>
+                            </tr>
+                            <tr v-if="openedProduct?.id === p.id" class="bg-slate-50/60">
+                                <td colspan="5" class="px-5 pb-4 pt-0">
+                                    <div v-if="loadingMoves" class="py-3 text-xs text-slate-400">{{ $e('Загрузка…') }}</div>
+                                    <div v-else-if="!movements.length" class="py-3 text-xs text-slate-400">{{ $e('Движений пока нет') }}</div>
+                                    <table v-else class="min-w-full text-xs">
+                                        <tbody class="divide-y divide-slate-100">
+                                            <tr v-for="m in movements" :key="m.id">
+                                                <td class="py-1.5 pr-4 tabular-nums text-slate-400">{{ m.date }}</td>
+                                                <td class="py-1.5 pr-4 text-slate-600">{{ m.label }}</td>
+                                                <td class="py-1.5 pr-4 tabular-nums" :class="m.qty >= 0 ? 'text-emerald-600' : 'text-slate-500'">
+                                                    {{ m.qty >= 0 ? '+' : '' }}{{ num(m.qty) }} {{ p.unit }}
+                                                </td>
+                                                <td class="py-1.5 pr-4 text-slate-400">{{ m.note }}</td>
+                                                <td class="py-1.5 text-right text-slate-400">{{ m.author }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div v-show="tab === 'materials'">
         <div class="mb-4 flex justify-end">
             <PrimaryButton v-if="canManage" @click="openReceipt">{{ $e('+ Приход товара') }}</PrimaryButton>
         </div>
@@ -316,6 +408,8 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                     </div>
                 </div>
             </div>
+        </div>
+
         </div>
 
         <!-- Модалка прихода -->
