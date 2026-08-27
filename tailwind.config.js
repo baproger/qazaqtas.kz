@@ -48,6 +48,21 @@ export default {
             boxShadow: {
                 card: '0 1px 3px rgba(0, 0, 0, 0.06)',
                 glass: '0 24px 80px -32px rgba(0, 0, 0, 0.9)',
+                // Soft UI: три ступени высоты. Значения держим здесь и в
+                // resources/css/soft.css одинаковыми — тень должна быть одна
+                // и та же, каким бы способом её ни поставили.
+                soft: '0 1px 2px rgba(15, 23, 42, .04), 0 1px 3px rgba(15, 23, 42, .05)',
+                'soft-md': '0 1px 2px rgba(15, 23, 42, .04), 0 8px 20px -12px rgba(15, 23, 42, .18)',
+                'soft-lg': '0 2px 4px rgba(15, 23, 42, .04), 0 18px 40px -20px rgba(15, 23, 42, .24)',
+            },
+            // Пастельные подложки под смысл: каждая — светлейшая ступень
+            // своего семантического цвета, чтобы значение читалось без текста.
+            backgroundColor: {
+                'pastel-accent': '#EEF0FE',
+                'pastel-good': '#E8F6F0',
+                'pastel-warn': '#FDF3E3',
+                'pastel-bad': '#FDECEF',
+                'pastel-calm': '#F1F4F9',
             },
             letterSpacing: {
                 display: '-0.035em',

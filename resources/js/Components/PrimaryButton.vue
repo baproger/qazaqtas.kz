@@ -14,7 +14,7 @@ const onClick = (e) => {
 <template>
     <button
         @click="onClick"
-        class="relative inline-flex items-center overflow-hidden rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-sm transition-all duration-150 ease-in-out hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:scale-95"
+        class="relative inline-flex items-center overflow-hidden rounded-full bg-indigo-600 px-5 py-2.5 text-xs font-semibold uppercase tracking-widest text-white shadow-soft-md transition-all duration-150 ease-in-out hover:bg-indigo-700 hover:shadow-soft-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:scale-95 disabled:opacity-40 disabled:shadow-soft"
     >
         <span v-for="r in ripples" :key="r.id" class="rp" :style="{ left: r.x + 'px', top: r.y + 'px', width: r.size + 'px', height: r.size + 'px' }"></span>
         <span class="relative"><slot /></span>

@@ -83,7 +83,7 @@ const remove = async (d) => {
                     class="h-full w-full cursor-zoom-in object-cover transition-transform duration-200 group-hover:scale-105"
                     @click="zoomed = p" />
                 <span v-if="p.user?.name && !compact" class="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-slate-900/70 to-transparent px-1.5 pb-1 pt-4 text-[10px] text-white">{{ p.user.name }}</span>
-                <button v-if="canDelete(p)" class="absolute right-1 top-1 rounded-md bg-white/85 p-1 text-slate-500 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-rose-600"
+                <button v-if="canDelete(p)" class="chip chip-glass absolute right-1 top-1 !px-1.5 !py-1 text-slate-500 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-rose-600"
                     :title="$e('Удалить')" @click.stop="remove(p)">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
@@ -92,7 +92,7 @@ const remove = async (d) => {
 
         <div class="flex items-center gap-3" :class="photos.length ? 'mt-1.5' : ''">
             <button v-if="canUpload" :disabled="form.processing" @click="pick"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-200 disabled:opacity-50">
+                class="chip chip-action disabled:opacity-50">
                 <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
                 <template v-if="queue.total > 1">{{ queue.done + 1 }} / {{ queue.total }}…</template>
                 <template v-else>{{ form.processing ? $e('Загрузка…') : $e('+ Фото') }}</template>

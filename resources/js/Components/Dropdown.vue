@@ -67,7 +67,7 @@ const open = ref(false);
         >
             <div
                 v-show="open"
-                class="absolute z-50 mt-2 overflow-hidden rounded-xl shadow-xl"
+                class="absolute z-50 mt-2 overflow-hidden rounded-2xl shadow-soft-lg"
                 :class="[widthClass, alignmentClasses]"
                 style="display: none"
                 @click="open = false"

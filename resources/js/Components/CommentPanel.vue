@@ -2,7 +2,6 @@
 import { usePage, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { confirmDialog } from '@/composables/useConfirm';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
@@ -23,12 +22,8 @@ const fmt = (t) => new Date(t).toLocaleString('ru-RU');
 
 <template>
     <div class="space-y-4">
-        <div class="flex gap-2">
-            <textarea v-model="form.body" rows="2" :placeholder="$e('Написать комментарий…')"
-                class="w-full rounded-lg border-slate-300 text-sm shadow-sm transition duration-150 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"></textarea>
-        </div>
-        <div><PrimaryButton :disabled="form.processing || !form.body" @click="add">{{ $e('Отправить') }}</PrimaryButton></div>
-
+        <!-- Лента сверху, поле ввода снизу: читают в порядке появления, а
+             пишут в конце — как в любом разговоре. -->
         <div class="space-y-3">
             <div v-for="c in comments" :key="c.id" class="rounded-xl bg-slate-50 p-4 text-sm">
                 <div class="flex items-center justify-between">
@@ -46,6 +41,18 @@ const fmt = (t) => new Date(t).toLocaleString('ru-RU');
                 <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M9 9h6M9 12h4"/></svg>
                 <span class="text-sm text-slate-400">{{ $e('Комментариев нет') }}</span>
             </div>
+        </div>
+
+        <!-- Плавающая панель ввода: лента длинная, и поле не должно уезжать
+             вниз вместе с ней. Enter отправляет, Shift+Enter — новая строка:
+             в комментарии к сделке чаще пишут одну фразу, а не абзац. -->
+        <div class="floating-bar">
+            <textarea v-model="form.body" rows="1" :placeholder="$e('Написать комментарий…')"
+                @keydown.enter.exact.prevent="add"></textarea>
+            <button class="floating-send" :disabled="form.processing || !form.body"
+                :title="$e('Отправить')" @click="add">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 14-7-7 14-2-5z"/></svg>
+            </button>
         </div>
     </div>
 </template>

@@ -114,14 +114,14 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
                         <button class="text-xs text-slate-400 hover:text-slate-600" @click="reporting = null">{{ $e('Отмена') }}</button>
                     </template>
                     <button v-else-if="!it.finished_at" @click="openReport(it)"
-                        class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors duration-150 hover:bg-slate-200">
+                        class="chip chip-action">
                         <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                         {{ $e('Сделал') }}
                     </button>
 
                     <button @click="toggleFinished(it)"
-                        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors duration-150"
-                        :class="it.finished_at ? 'text-slate-400 hover:bg-slate-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'">
+                        class="chip"
+                        :class="it.finished_at ? 'chip-action text-slate-400' : 'pastel-good text-emerald-700 hover:brightness-95'">
                         {{ it.finished_at ? $e('Вернуть в работу') : $e('Товар закончен') }}
                     </button>
                 </div>

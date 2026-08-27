@@ -2,7 +2,7 @@
 /**
  * Плитка-итог денежных страниц.
  *
- * До неё каждая страница рисовала плитки сама: где-то rounded-xl и text-xl,
+ * До неё каждая страница рисовала плитки сама: где-то rounded-2xl и text-xl,
  * где-то rounded-2xl и text-2xl. Рядом это читалось как разные разделы разных
  * систем — теперь цифра, подпись и рамка везде одни.
  */
@@ -39,7 +39,7 @@ const LABEL = {
 </script>
 
 <template>
-    <div class="rounded-xl p-4 shadow-sm" :class="BOX[tone]" :style="tone === 'dark' ? 'background-color: #1A3B5C' : ''">
+    <div class="rounded-2xl p-4 shadow-soft-md" :class="BOX[tone]" :style="tone === 'dark' ? 'background-color: #1A3B5C' : ''">
         <div class="text-[11px] uppercase tracking-wide" :class="LABEL[tone]">{{ label }}</div>
         <div class="mt-1 whitespace-nowrap text-xl font-bold tabular-nums" :class="VALUE[tone]">{{ value }}</div>
         <div v-if="hint" class="mt-0.5 text-[11px]" :class="LABEL[tone]">{{ hint }}</div>

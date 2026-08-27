@@ -1,0 +1,162 @@
+/*
+ * Soft UI для ERP: мягкие тени, пастельные подложки, крупные скругления.
+ *
+ * Всё живёт классами, а не россыпью утилит по страницам: поменять радиус или
+ * тень во всей системе нужно уметь одной правкой. Классы дополняют Tailwind,
+ * а не заменяют его — точечные отступы по-прежнему пишутся утилитами.
+ *
+ * Мера: тень мягкая, но НЕ размытая до тумана. В ERP по карточкам ведут
+ * глазом весь день, и тень здесь — граница, а не украшение.
+ */
+
+:root {
+    /* Тени: три ступени высоты. Ниже, чем в дизайн-дриблах, — на плотных
+       таблицах глубокая тень читается как грязь. */
+    --soft-1: 0 1px 2px rgba(15, 23, 42, .04), 0 1px 3px rgba(15, 23, 42, .05);
+    --soft-2: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 20px -12px rgba(15, 23, 42, .18);
+    --soft-3: 0 2px 4px rgba(15, 23, 42, .04), 0 18px 40px -20px rgba(15, 23, 42, .24);
+
+    /* Пастель: подложки под смысл, а не под настроение. Каждая — светлейшая
+       ступень своего семантического цвета, чтобы значение читалось без текста. */
+    --pastel-accent: #EEF0FE;
+    --pastel-good: #E8F6F0;
+    --pastel-warn: #FDF3E3;
+    --pastel-bad: #FDECEF;
+    --pastel-calm: #F1F4F9;
+
+    --radius-card: 1rem;      /* rounded-2xl */
+    --radius-field: .75rem;
+    --radius-chip: 9999px;
+}
+
+/* ---- Карточка: основной контейнер интерфейса ---- */
+.card-soft {
+    background: #FFFFFF;
+    border: 1px solid rgba(15, 23, 42, .06);
+    border-radius: var(--radius-card);
+    box-shadow: var(--soft-2);
+}
+
+/* Карточка, по которой кликают: приподнимается, но не прыгает. */
+.card-soft-hover {
+    transition: box-shadow .18s ease, transform .18s ease;
+}
+.card-soft-hover:hover {
+    box-shadow: var(--soft-3);
+    transform: translateY(-1px);
+}
+
+/* Пастельная подложка внутри карточки — итоги, сводки, подсказки. */
+.pastel-accent { background: var(--pastel-accent); }
+.pastel-good   { background: var(--pastel-good); }
+.pastel-warn   { background: var(--pastel-warn); }
+.pastel-bad    { background: var(--pastel-bad); }
+.pastel-calm   { background: var(--pastel-calm); }
+
+/* ---- Капсулы: фильтры, статусы, быстрые действия ---- */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    border-radius: var(--radius-chip);
+    padding: .3125rem .75rem;
+    font-size: .8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+/* Стеклянная капсула — та, что лежит НА содержимом: над фото, над шапкой,
+   в плавающей панели. На белой карточке стекло размывать нечего. */
+.chip-glass {
+    background: rgba(255, 255, 255, .62);
+    border-color: rgba(255, 255, 255, .7);
+    box-shadow: var(--soft-1);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+}
+.chip-glass:hover { background: rgba(255, 255, 255, .82); }
+
+/* Капсула-кнопка на светлом: нажимается, поэтому у неё есть состояние. */
+.chip-action {
+    background: var(--pastel-calm);
+    color: #334155;
+    cursor: pointer;
+}
+.chip-action:hover { background: #E6EBF2; }
+.chip-action[aria-pressed='true'],
+.chip-action.is-active {
+    background: var(--pastel-accent);
+    color: #4338CA;
+    border-color: rgba(79, 70, 229, .22);
+}
+
+/* ---- Плавающая панель ввода ---- */
+/*
+ * Нижняя панель для потоков, куда пишут: чат сделки, комментарии. Держится
+ * над содержимым, чтобы поле ввода не уезжало вниз вместе с лентой, — но
+ * ставим её ТОЛЬКО там, где действительно печатают: над таблицей она
+ * закрывала бы данные ради красоты.
+ */
+.floating-bar {
+    position: sticky;
+    bottom: 1rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .5rem .5rem .5rem .875rem;
+    border-radius: var(--radius-chip);
+    background: rgba(255, 255, 255, .78);
+    border: 1px solid rgba(255, 255, 255, .7);
+    box-shadow: var(--soft-3);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(180%) blur(16px);
+}
+
+.floating-bar input,
+.floating-bar textarea {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: .375rem 0;
+    font-size: .875rem;
+    resize: none;
+}
+.floating-bar input:focus,
+.floating-bar textarea:focus { outline: none; box-shadow: none; }
+
+/* Круглая кнопка действия справа в панели. */
+.floating-send {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.25rem;
+    width: 2.25rem;
+    flex: none;
+    border-radius: var(--radius-chip);
+    background: #4F46E5;
+    color: #FFFFFF;
+    box-shadow: var(--soft-2);
+    transition: background-color .15s ease, transform .12s ease;
+}
+.floating-send:hover:not(:disabled) { background: #4338CA; }
+.floating-send:active:not(:disabled) { transform: scale(.94); }
+.floating-send:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Размытие — дорогая операция и не везде поддерживается. Запасной вариант
+   честно непрозрачный: полупрозрачная панель без размытия нечитаема. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .chip-glass, .floating-bar { background: #FFFFFF; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chip-glass, .floating-bar {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background: #FFFFFF;
+    }
+    .card-soft-hover:hover { transform: none; }
+}
