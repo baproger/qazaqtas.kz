@@ -190,7 +190,7 @@ const delAdj = async (a) => {
             </div>
 
             <!-- Корректировки за месяц -->
-            <div v-if="me?.adjustments?.length" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div v-if="me?.adjustments?.length" class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $e('Корректировки ·') }} {{ monthLabel }}</div>
                 <div class="divide-y divide-slate-50 text-sm">
                     <div v-for="a in me.adjustments" :key="a.id" class="flex items-center justify-between gap-2 py-2">
@@ -203,7 +203,7 @@ const delAdj = async (a) => {
                 </div>
             </div>
 
-            <div v-if="me?.dealsList?.length" class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div v-if="me?.dealsList?.length" class="overflow-x-auto rounded-xl border border-slate-100 bg-white shadow-sm">
                 <table class="min-w-full divide-y divide-slate-100 text-xs">
                     <thead class="bg-slate-50 text-left uppercase tracking-wide text-slate-400">
                         <tr><th class="px-3 py-2">{{ $e('Сделка') }}</th><th class="px-3 py-2">{{ $e('Этап') }}</th><th class="px-3 py-2 text-right">{{ $e('Сумма') }}</th><th class="px-3 py-2 text-right">{{ $e('Оплачено') }}</th><th class="px-3 py-2 text-right text-emerald-600">{{ $e('Бонус') }}</th></tr>
@@ -225,7 +225,7 @@ const delAdj = async (a) => {
             </div>
 
             <!-- Правая колонка: система бонусов — только отдел продаж/финансист/админ -->
-            <div v-if="seesBonusScale" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-4">
+            <div v-if="seesBonusScale" class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm lg:sticky lg:top-4">
                 <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $e('Система бонусов — ставка от остатка') }}</div>
                 <div class="mt-3 space-y-1.5 text-sm">
                     <div class="flex items-center justify-between rounded-lg bg-emerald-50/50 px-3 py-1.5">
@@ -276,16 +276,16 @@ const delAdj = async (a) => {
             <!-- Ведомость — только про ЗП: 4 плитки. Деньги сделок — на Финансах и в Сводном
                  отчёте; здесь по сотруднику они видны при раскрытии строки. -->
             <div class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                     <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Оклады (начислено)') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-slate-800 xl:text-xl">{{ money(totals.base) }}</div>
                     <div v-if="totals.base !== totals.salary" class="truncate text-[10px] text-slate-400">{{ $e('по карточкам') }} {{ money(totals.salary) }}</div>
                 </div>
-                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                     <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бонусы') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums text-emerald-600 xl:text-xl">{{ money(totals.bonus) }}</div>
                 </div>
-                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                     <div class="truncate text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Удержания / премии') }}</div>
                     <div class="mt-1 whitespace-nowrap text-lg font-semibold tabular-nums xl:text-xl" :class="totals.deductions > 0 ? 'text-rose-600' : 'text-slate-300'">
                         <template v-if="totals.deductions > 0">−{{ money(totals.deductions) }}</template>
@@ -308,7 +308,7 @@ const delAdj = async (a) => {
                 <span v-if="isFiltering" class="text-xs text-slate-400">{{ $e('найдено') }} {{ filtered.length }} {{ $e('· суммы — по найденным') }}</span>
             </div>
 
-            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="overflow-x-auto rounded-xl border border-slate-100 bg-white shadow-sm">
                 <table class="min-w-full divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>

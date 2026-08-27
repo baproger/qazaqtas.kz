@@ -99,7 +99,7 @@ const cellClass = (cell) => {
                 :hint="$e('накопленный бонус, который ещё не забрали')" />
         </div>
 
-        <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                 <h3 class="text-sm font-semibold text-slate-900">{{ $e('Бонусы по месяцам') }}</h3>
                 <span class="text-xs text-slate-400">{{ $e('месяц бонуса — когда пришли деньги от клиента') }}</span>
@@ -176,7 +176,7 @@ const cellClass = (cell) => {
         </div>
 
         <!-- История выплат: когда бонус реально забрали -->
-        <div v-if="payouts.length" class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div v-if="payouts.length" class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-6 py-4">
                 <h3 class="text-sm font-semibold text-slate-900">{{ $e('Выплаты бонусов') }}</h3>
             </div>

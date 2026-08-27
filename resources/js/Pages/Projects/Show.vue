@@ -48,7 +48,7 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
         </template>
 
         <!-- Process bar: the main thing workshop staff need -->
-        <div class="mb-4 rounded-2xl bg-white p-5 border border-slate-200 shadow-sm">
+        <div class="mb-4 rounded-2xl bg-white p-5 border border-slate-100 shadow-sm">
             <div class="flex items-center gap-2 overflow-x-auto pb-1">
                 <template v-for="(stage, i) in stages" :key="stage.id">
                     <button @click="moveStage(stage.id)"
@@ -109,7 +109,7 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
                      слева товар, справа фото. Ради этих двух вещей цех и
                      открывает карточку. Цен в позициях нет: сервер их цеху
                      не присылает. -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                     <div class="mb-3 flex items-baseline gap-2">
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Что делать') }}</h3>
                         <span v-if="items.length" class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">{{ items.length }}</span>
@@ -121,7 +121,7 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
 
                 <!-- Общие снимки заказа: площадка, упаковка, отгрузка — то,
                      что не относится к одному товару. -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                     <div class="mb-3 flex items-baseline gap-2">
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Общие фото заказа') }}</h3>
                         <span v-if="photos.length" class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">{{ photos.length }}</span>
@@ -129,7 +129,7 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
                     <PhotoPanel :documents="attachments" entity-type="project" :entity-id="project.id" />
                 </div>
 
-                <div class="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm">
+                <div class="rounded-2xl bg-white p-5 border border-slate-100 shadow-sm">
                     <div class="mb-4 flex flex-wrap gap-4 border-b text-sm">
                         <button :class="tab==='info' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='info'">{{ $e('Информация') }}</button>
                         <button :class="tab==='tasks' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-500'" class="pb-2 transition-colors" @click="tab='tasks'">{{ $e('Задачи (') }}{{ project.tasks.length }})</button>
@@ -190,7 +190,7 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
             </div>
 
             <!-- Budget aside — only for privileged roles -->
-            <div v-if="canSeeMoney && finance" class="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm self-start">
+            <div v-if="canSeeMoney && finance" class="rounded-2xl bg-white p-5 border border-slate-100 shadow-sm self-start">
                 <div class="text-xs uppercase text-slate-400">{{ $e('Бюджет (сумма)') }}</div>
                 <div class="mt-1 text-2xl font-bold text-indigo-600">{{ money(finance.budget) }}</div>
                 <div class="mt-4 space-y-2 text-sm">

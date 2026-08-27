@@ -64,7 +64,7 @@ const submit = () => form.post(route('expenses.store'), {
             </div>
 
             <!-- ================= Мои заявки ================= -->
-            <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                     <h3 class="text-sm font-semibold text-slate-900">{{ $e('Мои заявки') }}</h3>
                     <span v-if="pending.length" class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
@@ -94,7 +94,7 @@ const submit = () => form.post(route('expenses.store'), {
             </div>
 
             <!-- ================= Мне выдано (аванс, долг) ================= -->
-            <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="border-b border-slate-100 px-6 py-4">
                     <h3 class="text-sm font-semibold text-slate-900">{{ $e('Мне выдано') }}</h3>
                     <p class="mt-0.5 text-xs text-slate-400">{{ $e('Авансы и долги, выданные бухгалтерией за выбранный месяц.') }}</p>

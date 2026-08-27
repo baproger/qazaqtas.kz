@@ -52,7 +52,7 @@ const monthLabel = computed(() => monthActive.value
         <!-- Верхний ряд: договоры · дебиторка · касса · банк.
              «Кредиторка (мы должны)» скрыта по просьбе владельца (24.07.2026). -->
         <div class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Общая сумма договоров') }}</div>
                 <div class="mt-1 text-xl font-bold tabular-nums text-slate-800">{{ money(summary.contracts) }}</div>
             </div>
@@ -61,7 +61,7 @@ const monthLabel = computed(() => monthActive.value
                 <div class="mt-1 text-xl font-bold tabular-nums" :class="summary.receivablesTotal > 0 ? 'text-rose-600' : 'text-slate-800'">{{ money(summary.receivablesTotal) }}</div>
                 <div class="mt-0.5 text-[11px]" :class="summary.receivablesTotal > 0 ? 'text-rose-400' : 'text-slate-400'">{{ $e('счета') }} {{ money(summary.receivables) }} {{ $e('· вручную') }} {{ money(summary.receivablesManual) }}</div>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Остаток в кассе') }}</div>
                     <button v-if="isAdmin" @click="openCashFix" :title="$e('Корректировка кассы (инвентаризация): задать фактический остаток')"
@@ -79,7 +79,7 @@ const monthLabel = computed(() => monthActive.value
                     <button @click="cashFixOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
                 </div>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Остаток в банке') }}</div>
                 <div class="mt-1 text-xl font-bold tabular-nums" :class="summary.bank >= 0 ? 'text-slate-800' : 'text-rose-600'">{{ money(summary.bank) }}</div>
                 <div class="mt-0.5 text-[11px] text-slate-400">{{ $e('безнал своей компании: поступило − потрачено') }}</div>
@@ -99,7 +99,7 @@ const monthLabel = computed(() => monthActive.value
             </div>
         </div>
         <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Доход') }} <span class="normal-case text-slate-300">{{ $e('— итог Сводного отчёта') }}</span></div>
                 <div class="mt-1 text-2xl font-bold tabular-nums text-emerald-600">{{ money(summary.dealsIncome) }}</div>
                 <div class="mt-0.5 text-[11px] text-slate-400">{{ $e('по сделкам: остаток − бонус (как в отчёте)') }}{{ monthActive ? $e(' · сделки за ') + monthLabel + $e(' (по дате договора)') : '' }}</div>
@@ -108,7 +108,7 @@ const monthLabel = computed(() => monthActive.value
                     {{ $e('· счета') }} {{ money(summary.incomeInvoices) }} {{ $e('· поступления') }} {{ money(summary.incomeManual) }}
                 </div>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="flex items-baseline justify-between">
                     <span class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Расходы —') }} {{ monthActive ? monthLabel : $e('всего') }}</span>
                     <span class="text-xl font-bold tabular-nums text-rose-600">−{{ money(summary.expensesTotal) }}</span>
@@ -145,22 +145,22 @@ const monthLabel = computed(() => monthActive.value
         <!-- Разделы Финансов — отдельными страницами. Раньше всё это жило
              на одной, и она прокручивалась на четыре экрана. -->
         <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Link :href="route('finance.invoices')" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <Link :href="route('finance.invoices')" class="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                 <div class="text-sm font-semibold text-slate-900">{{ $e('Счета') }} →</div>
                 <div class="mt-1 text-xs text-slate-400">{{ $e('выставлено, оплачено, остаток') }}</div>
                 <div class="mt-2 text-lg font-bold tabular-nums text-slate-700">{{ money(invoiceTotals.invoiced) }}</div>
             </Link>
-            <Link :href="route('finance.receipts')" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <Link :href="route('finance.receipts')" class="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                 <div class="text-sm font-semibold text-slate-900">{{ $e('Поступления денег') }} →</div>
                 <div class="mt-1 text-xs text-slate-400">{{ $e('нал и банк, откуда пришли') }}</div>
                 <div class="mt-2 text-lg font-bold tabular-nums text-emerald-600">{{ money(summary.incomeManual) }}</div>
             </Link>
-            <Link :href="route('expensesBoard.index')" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <Link :href="route('expensesBoard.index')" class="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                 <div class="text-sm font-semibold text-slate-900">{{ $e('Расходы') }} →</div>
                 <div class="mt-1 text-xs text-slate-400">{{ $e('очередь на проверку и оплаченные') }}</div>
                 <div class="mt-2 text-lg font-bold tabular-nums text-rose-600">{{ money(summary.expensesTotal) }}</div>
             </Link>
-            <Link :href="route('finance.debts')" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+            <Link :href="route('finance.debts')" class="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                 <div class="text-sm font-semibold text-slate-900">{{ $e('Задолженности') }} →</div>
                 <div class="mt-1 text-xs text-slate-400">{{ $e('кто нам должен') }}</div>
                 <div class="mt-2 text-lg font-bold tabular-nums" :class="summary.receivablesTotal > 0 ? 'text-rose-600' : 'text-slate-700'">{{ money(summary.receivablesTotal) }}</div>

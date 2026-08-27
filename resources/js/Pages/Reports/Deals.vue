@@ -80,7 +80,7 @@ const share = (v) => props.totals.budget > 0 ? (v / props.totals.budget * 100).t
         </template>
 
         <!-- Фильтры: поиск, период, менеджер, этап (серверные) -->
-        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
             <div class="relative w-full sm:w-60">
                 <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
                 <input v-model="search" @input="onSearch" type="text" :placeholder="$e('Поиск: №, компания, договор, адрес…')"
@@ -99,7 +99,7 @@ const share = (v) => props.totals.budget > 0 ? (v / props.totals.budget * 100).t
                     <span class="truncate">{{ selectedManagerName }}</span>
                     <span class="text-slate-400">{{ pickerOpen ? '▲' : '▼' }}</span>
                 </button>
-                <div v-if="pickerOpen" class="absolute z-30 mt-1 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                <div v-if="pickerOpen" class="absolute z-30 mt-1 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-100 bg-white py-1 shadow-lg">
                     <button type="button" @click="pickManager('')"
                         class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50" :class="!manager ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ $e('Все менеджеры') }}</button>
                     <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ $e('Менеджеры (отдел продаж)') }}</div>
@@ -132,27 +132,27 @@ const share = (v) => props.totals.budget > 0 ? (v / props.totals.budget * 100).t
 
         <!-- Итоги: те же плитки, что на Аналитике/Дашборде -->
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
-            <div class="rise rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" style="animation-delay: 0ms">
+            <div class="rise rounded-2xl border border-slate-100 bg-white p-4 shadow-sm" style="animation-delay: 0ms">
                 <div class="text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $e('Сумма договоров') }}</div>
                 <div class="mt-1.5 text-xl font-semibold tracking-tight tabular-nums text-slate-900">{{ money0(totals.budget) }}</div>
                 <div class="mt-0.5 text-[11px] text-slate-400">{{ totals.count }} {{ $e('сделок · 100%') }}</div>
             </div>
-            <div class="rise rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" style="animation-delay: 40ms">
+            <div class="rise rounded-2xl border border-slate-100 bg-white p-4 shadow-sm" style="animation-delay: 40ms">
                 <div class="text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $e('Оплачено') }}</div>
                 <div class="mt-1.5 text-xl font-semibold tracking-tight tabular-nums text-emerald-600">{{ money0(totals.paid) }}</div>
                 <div class="mt-0.5 text-[11px] text-slate-400">{{ share(totals.paid) }} {{ $e('от договоров') }}</div>
             </div>
-            <div class="rise rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" style="animation-delay: 80ms">
+            <div class="rise rounded-2xl border border-slate-100 bg-white p-4 shadow-sm" style="animation-delay: 80ms">
                 <div class="text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $e('Расходы') }}</div>
                 <div class="mt-1.5 text-xl font-semibold tracking-tight tabular-nums text-rose-600">−{{ money0(totals.material + (totals.delivery ?? 0) + (totals.purchase ?? 0) + (totals.assembly ?? 0) + totals.other) }}</div>
                 <div class="mt-0.5 text-[11px] text-slate-400">{{ $e('склад') }} {{ money0(totals.material) }} · 🚚 {{ money0(totals.delivery ?? 0) }} · 📦 {{ money0(totals.purchase ?? 0) }} · 🔧 {{ money0(totals.assembly ?? 0) }} {{ $e('· прочие') }} {{ money0(totals.other) }}</div>
             </div>
-            <div class="rise rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" style="animation-delay: 120ms">
+            <div class="rise rounded-2xl border border-slate-100 bg-white p-4 shadow-sm" style="animation-delay: 120ms">
                 <div class="text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $e('Налог') }} {{ taxRate }}%</div>
                 <div class="mt-1.5 text-xl font-semibold tracking-tight tabular-nums text-rose-500">−{{ money0(totals.tax) }}</div>
                 <div class="mt-0.5 text-[11px] text-slate-400">{{ share(totals.tax) }} {{ $e('от договоров') }}</div>
             </div>
-            <div class="rise rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" style="animation-delay: 160ms">
+            <div class="rise rounded-2xl border border-slate-100 bg-white p-4 shadow-sm" style="animation-delay: 160ms">
                 <div class="text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $e('Бонусы менеджеров') }}</div>
                 <div class="mt-1.5 text-xl font-semibold tracking-tight tabular-nums text-emerald-600">{{ money0(totals.bonus) }}</div>
                 <div class="mt-0.5 text-[11px] text-slate-400">{{ share(totals.bonus) }} {{ $e('от договоров') }}</div>
@@ -172,7 +172,7 @@ const share = (v) => props.totals.budget > 0 ? (v / props.totals.budget * 100).t
         </div>
 
         <!-- Таблица -->
-        <div class="rise mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" style="animation-delay: 240ms">
+        <div class="rise mt-2 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm" style="animation-delay: 240ms">
             <div class="max-h-[70vh] overflow-auto">
                 <table class="min-w-full whitespace-nowrap text-xs">
                     <thead class="text-left uppercase tracking-wide text-slate-400">

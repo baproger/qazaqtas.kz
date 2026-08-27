@@ -196,11 +196,11 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
                 <!-- Своя бригада: состав, смены и начисления. Без этой ссылки
                      бригадир не мог попасть в карточку своей бригады вовсе. -->
                 <Link v-for="b in myBrigades" :key="'b' + b.id" :href="route('production.brigade', { brigade: b.id, month })"
-                    class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm transition-colors duration-150 hover:bg-slate-50">
+                    class="flex items-center gap-2 rounded-xl border border-slate-100 bg-white px-5 py-3 text-sm transition-colors duration-150 hover:bg-slate-50">
                     <span class="font-medium text-slate-800">👷 {{ b.name }}</span>
                     <span class="ml-auto text-xs font-semibold text-indigo-600">{{ $e('моя бригада') }} →</span>
                 </Link>
-                <div v-for="p in plans" :key="p.id" class="rounded-xl border border-slate-200 bg-white p-5">
+                <div v-for="p in plans" :key="p.id" class="rounded-xl border border-slate-100 bg-white p-5">
                     <div class="flex flex-wrap items-baseline justify-between gap-3">
                         <div class="text-[15px] font-medium text-slate-900">{{ p.product }}</div>
                         <div class="text-sm tabular-nums">
@@ -254,7 +254,7 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
 
             <!-- ===== Руководство: блок на каждую бригаду ===== -->
             <div v-else class="space-y-4">
-                <div v-for="b in byBrigade" :key="b.id" class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div v-for="b in byBrigade" :key="b.id" class="overflow-hidden rounded-xl border border-slate-100 bg-white">
                     <Link :href="route('production.brigade', { brigade: b.id, month })"
                         class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-5 py-3.5 transition-colors duration-150 hover:bg-slate-50">
                         <div>

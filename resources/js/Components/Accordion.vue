@@ -21,7 +21,7 @@ const isOpen = ref(props.open);
 </script>
 
 <template>
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+    <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-card">
         <button type="button" class="flex w-full items-center gap-2 px-5 py-3 text-left transition-colors duration-150 hover:bg-slate-50"
             :aria-expanded="isOpen" @click="isOpen = !isOpen">
             <slot name="icon" />

@@ -53,15 +53,15 @@ const remove = async (order) => {
         <template #header>{{ $e('Заказы с сайта') }}</template>
 
         <div class="mb-4 grid gap-3 sm:grid-cols-3">
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <p class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Новых') }}</p>
                 <p class="mt-1 text-2xl font-bold text-emerald-600">{{ stats.new }}</p>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <p class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Заказов за месяц') }}</p>
                 <p class="mt-1 text-2xl font-bold text-slate-900">{{ stats.month }}</p>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <p class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Сумма за месяц') }}</p>
                 <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(stats.monthSum) }}</p>
             </div>
@@ -76,7 +76,7 @@ const remove = async (order) => {
             <span class="ml-auto text-xs text-slate-400">{{ $e('Всего:') }} {{ orders.total }}</span>
         </div>
 
-        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">

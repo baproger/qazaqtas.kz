@@ -66,7 +66,7 @@ const stats = computed(() => ({
         </template>
 
         <!-- Шапка профиля -->
-        <div class="mb-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="mb-5 rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
             <div class="flex flex-wrap items-start gap-4">
                 <Avatar :name="person.name" :src="person.avatar" :size="72" />
                 <div class="min-w-0 flex-1">
@@ -93,26 +93,26 @@ const stats = computed(() => ({
 
         <!-- Показатели -->
         <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
                 <p class="text-2xl font-bold text-slate-900">{{ stats.deals }}</p>
                 <p class="text-xs text-slate-500">{{ $e('Сделок') }}</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
                 <p class="text-2xl font-bold text-emerald-600">{{ stats.won }}</p>
                 <p class="text-xs text-slate-500">{{ $e('Успешных') }}</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
                 <p class="text-2xl font-bold text-indigo-600">{{ stats.projects }}</p>
                 <p class="text-xs text-slate-500">{{ $e('Заказов в цехе') }}</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
                 <p class="text-2xl font-bold" :class="tasks.some((t) => t.overdue) ? 'text-red-500' : 'text-slate-900'">{{ stats.tasks }}</p>
                 <p class="text-xs text-slate-500">{{ $e('Открытых задач') }}</p>
             </div>
         </div>
 
         <!-- ЗП (только руководство и сам сотрудник) -->
-        <div v-if="payrollRow" class="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div v-if="payrollRow" class="mb-5 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
             <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ $e('Зарплата (текущий расчёт)') }}</h3>
                 <input :value="month" @change="setMonth($event.target.value)" type="month"
@@ -172,7 +172,7 @@ const stats = computed(() => ({
 
         <div class="grid gap-5 lg:grid-cols-2">
             <!-- Сделки -->
-            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                 <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">{{ $e('Сделки (') }}{{ deals.length }})</h3>
                 <div class="divide-y divide-slate-100">
                     <Link v-for="d in deals" :key="d.id" :href="route('deals.show', d.id)"
@@ -191,7 +191,7 @@ const stats = computed(() => ({
             </div>
 
             <!-- Заказы цеха -->
-            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                 <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">{{ $e('Заказы цеха (') }}{{ projects.length }})</h3>
                 <div class="divide-y divide-slate-100">
                     <Link v-for="p in projects" :key="p.id" :href="route('projects.show', p.id)"
@@ -210,7 +210,7 @@ const stats = computed(() => ({
         </div>
 
         <!-- Задачи -->
-        <div class="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="mt-5 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
             <h3 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">{{ $e('Задачи (') }}{{ tasks.length }})</h3>
             <div class="divide-y divide-slate-100">
                 <div v-for="t in tasks" :key="t.id" class="flex items-center justify-between gap-3 py-2">

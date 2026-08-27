@@ -225,7 +225,7 @@ const applyBinMatch = () => {
         </div>
 
         <!-- Единый фильтр-бар: поиск, менеджер (руководству), этап, срок с—по -->
-        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
             <div class="relative w-full sm:w-60">
                 <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
                 <input v-model="search" @input="onSearch" type="text" :placeholder="$e('Поиск: компания, №, изделие, договор…')"

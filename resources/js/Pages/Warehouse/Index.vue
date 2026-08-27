@@ -164,7 +164,7 @@ const lowStock = (m) => Number(m.quantity) <= 0;
             <div v-if="!products.length" class="rounded-xl border border-dashed border-slate-200 px-6 py-14 text-center text-sm text-slate-500">
                 {{ $e('Склад пуст. Товар появится здесь, когда подтвердят выработку по плану.') }}
             </div>
-            <div v-else class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <div v-else class="overflow-x-auto rounded-xl border border-slate-100 bg-white">
                 <table class="min-w-full text-sm">
                     <thead class="border-b border-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-400">
                         <tr>
@@ -222,7 +222,7 @@ const lowStock = (m) => Number(m.quantity) <= 0;
         </div>
 
         <!-- Фильтры: поиск, ед.изм, остаток, период поступления -->
-        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
             <div class="relative w-full sm:w-56">
                 <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
                 <input v-model="search" type="text" :placeholder="$e('Поиск материала…')"
@@ -249,7 +249,7 @@ const lowStock = (m) => Number(m.quantity) <= 0;
         </div>
 
         <!-- Остатки -->
-        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
+        <div class="overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-card">
             <table class="min-w-full divide-y divide-slate-100 text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                     <tr>
@@ -361,7 +361,7 @@ const lowStock = (m) => Number(m.quantity) <= 0;
         </div>
 
         <!-- История прихода -->
-        <div v-if="receipts.length" class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+        <div v-if="receipts.length" class="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
             <h3 class="mb-4 text-sm font-semibold text-slate-700">{{ $e('Последние приходы') }}</h3>
             <div class="divide-y divide-slate-50">
                 <div v-for="r in receipts" :key="r.id" class="py-2.5 text-sm">

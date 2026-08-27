@@ -102,7 +102,7 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
             </p>
 
             <!-- Строки словаря -->
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <table class="min-w-full text-sm">
                     <thead class="border-b border-slate-100 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>

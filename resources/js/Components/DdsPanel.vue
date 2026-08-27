@@ -61,7 +61,7 @@ const fmt = (v) => (v === null || v === undefined || v === '' ? '—' : money(Nu
 </script>
 
 <template>
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-sm font-semibold text-slate-800">
                 {{ $e('ДДС — сводка по счетам и долгам') }}

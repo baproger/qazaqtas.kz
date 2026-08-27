@@ -158,15 +158,15 @@ const deactivate = async (u) => {
 
         <!-- Мини-статистика -->
         <div class="mb-4 grid grid-cols-3 gap-3 sm:max-w-md">
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
                 <p class="text-2xl font-bold text-slate-900">{{ stats.total }}</p>
                 <p class="text-xs text-slate-500">{{ $e('Всего') }}</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
                 <p class="text-2xl font-bold text-emerald-600">{{ stats.active }}</p>
                 <p class="text-xs text-slate-500">{{ $e('Активных') }}</p>
             </div>
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
                 <p class="text-2xl font-bold text-indigo-600">{{ stats.departments }}</p>
                 <p class="text-xs text-slate-500">{{ $e('Отделов') }}</p>
             </div>
@@ -207,7 +207,7 @@ const deactivate = async (u) => {
              Отделы раньше были секциями с карточками; на десятке сотрудников
              карточки занимали три экрана, и сравнить людей глазами было
              нельзя. Отдел остался колонкой и фильтром-чипом выше. -->
-        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm">
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
                     <tr>

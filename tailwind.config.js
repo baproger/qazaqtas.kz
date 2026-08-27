@@ -14,7 +14,7 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Plus Jakarta Sans', 'Figtree', ...defaultTheme.fontFamily.sans],
             },
             // Design tokens: single accent + semantic aliases (see UI spec).
             colors: {
@@ -47,7 +47,6 @@ export default {
             },
             boxShadow: {
                 card: '0 1px 3px rgba(0, 0, 0, 0.06)',
-                glass: '0 24px 80px -32px rgba(0, 0, 0, 0.9)',
                 // Soft UI: три ступени высоты. Значения держим здесь и в
                 // resources/css/soft.css одинаковыми — тень должна быть одна
                 // и та же, каким бы способом её ни поставили.

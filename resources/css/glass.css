@@ -16,8 +16,6 @@
     --glass-bg-strong: rgba(255, 255, 255, .86);
     --glass-line: rgba(15, 23, 42, .08);
     --glass-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px -20px rgba(15, 23, 42, .28);
-    --glass-dark-bg: rgba(15, 23, 42, .82);
-    --glass-dark-line: rgba(255, 255, 255, .08);
 }
 
 /* Полотно приложения: подсвет, ради которого размытие вообще читается. */
@@ -56,13 +54,6 @@
     box-shadow: var(--glass-shadow);
 }
 
-/* Тёмное стекло: боковое меню. */
-.glass-dark {
-    background-color: var(--glass-dark-bg);
-    -webkit-backdrop-filter: saturate(140%) blur(18px);
-    backdrop-filter: saturate(140%) blur(18px);
-    border-right: 1px solid var(--glass-dark-line);
-}
 
 /* Затемнение под модалкой — тоже размытое: иначе стеклянная панель стоит на
    плоском сером прямоугольнике и стеклом быть перестаёт. */
@@ -79,17 +70,15 @@
  */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass, .glass-strong { background-color: #FFFFFF; }
-    .glass-dark { background-color: #0F172A; }
     .glass-backdrop { background-color: rgba(15, 23, 42, .55); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .glass, .glass-strong, .glass-dark, .glass-backdrop {
+    .glass, .glass-strong, .glass-backdrop {
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
     }
     .glass, .glass-strong { background-color: #FFFFFF; }
-    .glass-dark { background-color: #0F172A; }
 }
 
 /*
@@ -106,8 +95,10 @@
 .sidebar-floating {
     --r: 1.5rem;
     border-radius: var(--r);
-    border: 1px solid var(--glass-dark-line);
-    box-shadow: 0 2px 6px rgba(15, 23, 42, .18), 0 24px 60px -28px rgba(15, 23, 42, .7);
+    /* Рамки нет намеренно: панель держится тенью и размытием. Обводка рисует
+       вокруг неё жёсткий контур, и «парение» пропадает — объект становится
+       вырезанным из бумаги прямоугольником. */
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 30px rgba(15, 23, 42, .06);
 }
 
 @supports (corner-shape: squircle) {
@@ -127,10 +118,9 @@
  */
 .sidebar-soft {
     background:
-        linear-gradient(180deg, rgba(238, 240, 254, .92) 0%, rgba(248, 250, 252, .92) 46%, rgba(240, 253, 248, .92) 100%);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    backdrop-filter: saturate(180%) blur(20px);
-    border: 1px solid rgba(255, 255, 255, .8);
+        linear-gradient(180deg, rgba(238, 240, 254, .9) 0%, rgba(248, 250, 252, .9) 46%, rgba(240, 253, 248, .9) 100%);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    backdrop-filter: saturate(180%) blur(16px);
     color: #475569;
 }
 
@@ -174,7 +164,7 @@
     background: #FFFFFF;
     color: #1E293B;
     font-weight: 600;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 8px 20px -12px rgba(15, 23, 42, .25);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 6px 16px -10px rgba(15, 23, 42, .18);
 }
 .nav-current svg { color: #4F46E5; }
 
@@ -195,7 +185,7 @@
     top: .25rem;
     bottom: .25rem;
     width: 1px;
-    background: rgba(100, 116, 139, .2);
+    background: rgba(148, 163, 184, .35);
 }
 .nav-child {
     position: relative;
@@ -214,7 +204,7 @@
     background: #FFFFFF;
     color: #1E293B;
     font-weight: 600;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 6px 16px -10px rgba(15, 23, 42, .25);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 5px 14px -10px rgba(15, 23, 42, .18);
 }
 .nav-child-active::before {
     content: '';

@@ -111,12 +111,12 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
                 </div>
             </div>
 
-            <div v-if="!pending.length" class="rounded-xl border border-slate-200 bg-white px-6 py-8 text-center text-sm text-slate-400 shadow-sm">
+            <div v-if="!pending.length" class="rounded-xl border border-slate-100 bg-white px-6 py-8 text-center text-sm text-slate-400 shadow-sm">
                 {{ $e('Очередь пуста ✓') }}
             </div>
 
             <TransitionGroup v-else name="card" tag="div" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <div v-for="e in pending" :key="e.id" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div v-for="e in pending" :key="e.id" class="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
                     <div class="flex flex-wrap items-start justify-between gap-2">
                         <div class="min-w-0">
                             <div class="text-xl font-bold tabular-nums text-slate-900">{{ money(e.amount) }}</div>
@@ -157,7 +157,7 @@ const submit = () => form.post(route('expenses.confirm', confirming.value.id), {
             </TransitionGroup>
 
             <!-- ================= Оплаченные за месяц ================= -->
-            <div class="mt-8 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="mt-8 rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
                     <div class="flex items-center gap-3">
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Оплаченные за месяц') }}</h3>

@@ -167,7 +167,7 @@ const removeOrder = async (order) => {
             <!-- План и факт по сделкам: сколько заказано и сколько закрыто.
                  План берётся из позиций сделки, факт — из подтверждённых
                  нарядов по ним. Одно и то же число видят и цех, и продажи. -->
-            <div v-if="plan.length" class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div v-if="plan.length" class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
                     <div>
                         <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -219,7 +219,7 @@ const removeOrder = async (order) => {
             </div>
 
             <!-- Итог по людям: кто сколько сделал и заработал -->
-            <div v-if="byPerson.length" class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div v-if="byPerson.length" class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
                     <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
                         <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
@@ -259,7 +259,7 @@ const removeOrder = async (order) => {
             </div>
 
             <!-- Бригады -->
-            <div v-if="canManage && brigades.length" class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div v-if="canManage && brigades.length" class="mt-6 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                 <h3 class="mb-3 text-sm font-semibold text-slate-900">{{ $e('Бригады') }}</h3>
                 <div class="flex flex-wrap gap-2">
                     <div v-for="b in brigades" :key="b.id"
@@ -286,7 +286,7 @@ const removeOrder = async (order) => {
                  Карточками список уезжал на несколько экранов, а глазами
                  сравнить две смены было нельзя. Состав смены раскрывается по
                  клику: он нужен, когда сверяют начисление, а не всегда. -->
-            <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
                     <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
                         <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>

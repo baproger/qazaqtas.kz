@@ -34,7 +34,7 @@ const dayLabel = (n) => {
         <!-- Две колонки: слева сделки, справа заказы цеха -->
         <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
             <!-- Сделки -->
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5">
                     <h3 class="text-sm font-semibold text-slate-900">{{ $e('Сделки') }}</h3>
                     <span class="rounded-full px-2 py-0.5 text-xs font-bold" :class="deals.length ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-400'">{{ deals.length }}</span>
@@ -64,7 +64,7 @@ const dayLabel = (n) => {
             </div>
 
             <!-- Цех -->
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5">
                     <h3 class="text-sm font-semibold text-slate-900">{{ $e('Цех — заказы') }}</h3>
                     <span class="rounded-full px-2 py-0.5 text-xs font-bold" :class="projects.length ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-400'">{{ projects.length }}</span>

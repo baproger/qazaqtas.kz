@@ -37,7 +37,7 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
             <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Сайт') }}</Link>
         </div>
 
-        <div class="max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div class="max-w-xl rounded-xl border border-slate-100 bg-white p-6 shadow-sm space-y-4">
             <div>
                 <InputLabel :value="$e('Название компании')" />
                 <TextInput v-model="form.company_name" class="mt-1 w-full" />

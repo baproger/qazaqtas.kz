@@ -9,7 +9,7 @@ const submit = () => form.post(route('screen.enter'), { onError: () => form.rese
     <Head :title="$e('Экран цеха')" />
     <div class="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div class="w-full max-w-sm">
-            <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <div class="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
                 <h1 class="text-2xl font-bold text-slate-900">{{ $e('Экран цеха') }}</h1>
                 <p class="mt-2 text-sm text-slate-500">{{ $e('Введите код экрана — его выдаёт администратор в Настройки → Экраны') }}</p>
                 <form @submit.prevent="submit" class="mt-6">

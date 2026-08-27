@@ -60,7 +60,7 @@ const delDebt = async (d) => {
         <div class="grid grid-cols-1 items-start gap-4">
             <div v-for="acc in [
                     { type: 'receivable', title: $e('Дебиторская задолженность — кто нам должен'), list: debts.receivables, total: totals.receivablesTotal, color: 'rose' },
-                ]" :key="acc.type" class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                ]" :key="acc.type" class="rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <!-- Шапка-аккордеон: клик сворачивает/разворачивает -->
                 <button type="button" @click="debtOpen[acc.type] = !debtOpen[acc.type]"
                     class="flex w-full items-center justify-between gap-3 px-5 py-4 text-left">

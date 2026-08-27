@@ -196,7 +196,7 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
         <template #header>{{ $e('Заявки / запросы КП') }}</template>
 
         <!-- Рейтинг менеджеров (руководству) -->
-        <div v-if="leadership && stats?.length" class="mb-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div v-if="leadership && stats?.length" class="mb-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-900">{{ $e('Рейтинг менеджеров') }} <span class="font-normal text-slate-400">{{ $e('— по заявкам, ставшим сделками') }}</span></div>
             <div class="flex gap-3 overflow-x-auto px-5 py-3">
                 <div v-for="(m, i) in stats" :key="m.name" class="flex min-w-56 flex-shrink-0 items-center gap-3 rounded-xl border p-3"
@@ -235,7 +235,7 @@ const marginClass = (m) => Number(m) >= (props.minMargin ?? 15)
         </div>
 
         <!-- Таблица как Excel -->
-        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="overflow-x-auto">
                 <table class="min-w-full whitespace-nowrap divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">

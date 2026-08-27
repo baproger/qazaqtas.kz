@@ -52,14 +52,14 @@ const onAvatar = (e) => {
         <template #header>{{ $t('page.profile', 'Профиль') }}</template>
 
         <div class="mx-auto max-w-3xl space-y-6">
-            <div v-if="isAdmin" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div v-if="isAdmin" class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                 <label class="mb-1 block text-[11px] font-medium uppercase tracking-wide text-slate-400">{{ $e('Сотрудник') }}</label>
                 <select v-model="selectedId" @change="loadUser" class="w-full rounded-lg border-slate-200 py-2 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400">
                     <option v-for="e in employees" :key="e.id" :value="e.id">{{ e.name }}</option>
                 </select>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div class="flex items-center gap-4">
                     <div class="relative flex-shrink-0">
                         <span class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-2xl font-bold text-white shadow-lg shadow-indigo-600/30">
@@ -145,7 +145,7 @@ const onAvatar = (e) => {
 
             <!-- Security: password & account deletion — admins/directors only, own account -->
             <template v-if="isSelf && isAdmin">
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                     <UpdatePasswordForm class="max-w-xl" />
                 </div>
                 <div class="rounded-2xl border border-rose-200 bg-white p-6 shadow-sm">

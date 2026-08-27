@@ -58,7 +58,7 @@ const hasFilters = () => fTable.value || fAction.value || fUser.value || fFrom.v
             <span class="ml-auto text-xs text-slate-400">{{ $e('записей:') }} {{ logs.total ?? logs.data.length }}</span>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
             <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-100 text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">

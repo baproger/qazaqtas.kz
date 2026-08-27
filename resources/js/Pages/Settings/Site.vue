@@ -80,7 +80,7 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
 
         <div class="space-y-4">
             <!-- Первый экран -->
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
                 <h3 class="text-sm font-semibold text-slate-900">{{ $e('Первый экран сайта') }}</h3>
                 <p class="mt-1 text-xs text-slate-400">{{ $e('Что видит посетитель до прокрутки. Переключается мгновенно.') }}</p>
 
@@ -106,7 +106,7 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </section>
 
             <!-- Контакты -->
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
                 <h3 class="text-sm font-semibold text-slate-900">{{ $e('Контакты') }}</h3>
                 <p class="mt-1 text-xs text-slate-400">{{ $e('Показываются в шапке, подвале и на странице «Контакты».') }}</p>
 
@@ -136,7 +136,7 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </section>
 
             <!-- Язык списков ниже: площадки, тарифы, вопросы -->
-            <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
+            <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 bg-white px-5 py-3 shadow-sm">
                 <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Язык списков') }}</span>
                 <div class="flex items-center rounded-lg bg-slate-100 p-0.5 text-xs">
                     <button
@@ -159,7 +159,7 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </div>
 
             <!-- Филиалы -->
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Производственные площадки') }}</h3>
@@ -178,7 +178,7 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </section>
 
             <!-- Доставка -->
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Тарифы доставки') }}</h3>
@@ -200,7 +200,7 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </section>
 
             <!-- FAQ -->
-            <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Частые вопросы') }}</h3>

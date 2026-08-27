@@ -489,7 +489,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
     <AppLayout>
         <template #header>{{ $t('page.chat', 'Чат') }}</template>
 
-        <div class="relative flex h-[calc(100vh-8.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="relative flex h-[calc(100vh-8.5rem)] overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <!-- ============ LEFT: chat list ============ -->
             <aside :class="listOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
                 class="absolute inset-y-0 left-0 z-20 flex w-72 flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50 transition-transform duration-300 lg:static lg:z-0">
@@ -747,7 +747,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                     <div v-if="form.progress" class="mb-2 h-1 overflow-hidden rounded-full bg-slate-100">
                         <div class="h-1 bg-indigo-500 transition-all" :style="{ width: form.progress.percentage + '%' }"></div>
                     </div>
-                    <div class="relative flex items-end gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-sm focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100">
+                    <div class="relative flex items-end gap-2 rounded-2xl border border-slate-100 bg-white px-2 py-1.5 shadow-sm focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100">
                         <button @click="showEmoji = !showEmoji" :title="$e('Эмодзи')" class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-lg text-slate-400 hover:bg-slate-100">😊</button>
                         <input ref="fileInput" type="file" class="hidden" @change="onFilePicked" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.zip,.rar,.txt,.csv" />
                         <button :title="$e('Прикрепить файл')" class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100" @click="pickFile">
@@ -770,7 +770,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
 
                         <!-- Emoji panel -->
                         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 translate-y-2" leave-active-class="transition duration-100" leave-to-class="opacity-0">
-                            <div v-if="showEmoji" class="absolute bottom-14 left-0 grid grid-cols-8 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                            <div v-if="showEmoji" class="absolute bottom-14 left-0 grid grid-cols-8 gap-1 rounded-xl border border-slate-100 bg-white p-2 shadow-lg">
                                 <button v-for="e in emojis" :key="e" @click="addEmoji(e)" class="flex h-8 w-8 items-center justify-center rounded-lg text-lg hover:bg-slate-100">{{ e }}</button>
                             </div>
                         </transition>

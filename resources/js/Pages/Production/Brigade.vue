@@ -68,7 +68,7 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
             <div v-if="!plans.length" class="mb-6 rounded-xl border border-dashed border-slate-200 px-5 py-8 text-center text-sm text-slate-500">
                 {{ $e('На этот месяц плана нет.') }}
             </div>
-            <div v-else class="mb-6 divide-y divide-slate-50 rounded-xl border border-slate-200 bg-white">
+            <div v-else class="mb-6 divide-y divide-slate-50 rounded-xl border border-slate-100 bg-white">
                 <div v-for="p in plans" :key="p.id" class="px-5 py-3">
                     <div class="flex flex-wrap items-baseline justify-between gap-3">
                         <span class="text-sm font-medium text-slate-800">{{ p.product }}</span>
@@ -90,7 +90,7 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
             <!-- Кто сколько заработал: только по подтверждённым сменам. -->
             <template v-if="byPerson.length">
                 <h3 class="mb-2 text-sm font-semibold text-slate-900">{{ $e('Заработали за месяц') }}</h3>
-                <div class="mb-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                <div class="mb-6 overflow-x-auto rounded-xl border border-slate-100 bg-white">
                     <table class="min-w-full text-sm">
                         <thead class="border-b border-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-400">
                             <tr>
@@ -123,7 +123,7 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
             <div v-if="!orders.length" class="rounded-xl border border-dashed border-slate-200 px-5 py-8 text-center text-sm text-slate-500">
                 {{ $e('Смен в этом месяце не было.') }}
             </div>
-            <div v-else class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div v-else class="overflow-hidden rounded-xl border border-slate-100 bg-white">
                 <div v-for="o in orders" :key="o.id" class="border-b border-slate-50 last:border-0">
                     <div class="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-1 px-5 py-3 text-sm transition-colors duration-150 hover:bg-slate-50/60"
                         @click="open = open === o.id ? null : o.id">

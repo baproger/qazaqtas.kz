@@ -99,7 +99,7 @@ const remove = async (p) => {
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <article v-for="p in projects" :key="p.id" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <article v-for="p in projects" :key="p.id" class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="relative">
                     <img v-if="p.thumb || p.image" :src="p.thumb ?? p.image" :alt="p.title" loading="lazy" class="aspect-[16/10] w-full object-cover" />
                     <div v-else class="grid aspect-[16/10] w-full place-items-center bg-slate-100 text-xs text-slate-400">

@@ -171,7 +171,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
             </div>
         </template>
 
-        <div class="mb-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+        <div class="mb-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
             <div class="flex items-center gap-2 overflow-x-auto pb-1">
                 <button v-for="(stage, idx) in stages" :key="stage.id" @click="moveStage(stage.id)" :disabled="!can.update || stageLocked(stage)"
                     :title="stageLocked(stage) ? lockHint(stage) : ''"
@@ -233,7 +233,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div class="lg:col-span-2 space-y-4">
                 <!-- Информация — компактная сетка -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+                <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
                     <div class="grid grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-3">
                         <div>
                             <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Компания') }}</div>
@@ -305,7 +305,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 <!-- Слева товар, справа его фото. Снимок принадлежит позиции:
                      в цехе по нему сверяют отливку именно этой плитки. Цены
                      приходят только тем, кто видит деньги. -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+                <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
                     <div class="mb-3 flex items-baseline gap-2">
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Товары заказа') }}</h3>
                         <span v-if="items.length" class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">{{ items.length }}</span>
@@ -349,7 +349,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 </Accordion>
 
                 <!-- Второстепенное: Финансы / Доп. поля / История -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+                <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
                     <div class="mb-4 flex flex-wrap gap-5 border-b border-slate-200 text-sm">
                         <button v-if="can.money" :class="tab==='finance' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='finance'">{{ $e('Финансы') }}</button>
                         <button :class="tab==='custom' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='custom'">{{ $e('Доп. поля') }}</button>
@@ -384,7 +384,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
             <div class="space-y-4">
                 <!-- Деньги сделки. Бригадир их не видит: сервер не присылает
                      profit, и блок не рисуется вовсе. -->
-                <div v-if="profit" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+                <div v-if="profit" class="rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
                     <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Сумма договора') }}</div>
                     <div class="mt-1 text-[28px] font-bold leading-tight tracking-tight text-indigo-600">{{ money(deal.budget) }}</div>
                     <div class="mt-4 space-y-2 text-sm">
@@ -424,7 +424,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 </div>
 
                 <!-- Чат сделки — сразу на виду -->
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+                <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
                     <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                         <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
                         {{ $e('Чат сделки') }}

@@ -157,7 +157,7 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
             <article
                 v-for="c in categories"
                 :key="c.id"
-                class="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                class="flex flex-wrap items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
             >
                 <!-- Снимок на клетчатой подложке: прозрачность видно сразу -->
                 <div class="checkerboard grid h-20 w-20 shrink-0 place-items-center rounded-lg border border-slate-200">

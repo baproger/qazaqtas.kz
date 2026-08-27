@@ -45,7 +45,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
             <svg class="h-4 w-4 flex-shrink-0 text-slate-400 transition-transform" :class="open ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
         </button>
 
-        <div v-if="open" class="absolute left-0 top-full z-30 mt-1 w-full min-w-52 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+        <div v-if="open" class="absolute left-0 top-full z-30 mt-1 w-full min-w-52 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-lg">
             <div class="border-b border-slate-100 p-1.5">
                 <input ref="searchInput" v-model="query" type="text" :placeholder="$e('Поиск…')" @click.stop @keydown.escape="open = false"
                     class="w-full rounded-md border-slate-200 px-2 py-1 text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400" />

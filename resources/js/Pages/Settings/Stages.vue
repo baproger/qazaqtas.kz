@@ -246,7 +246,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
             </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div>
                     <h3 class="font-semibold text-slate-900">{{ isWorkshop ? $e('Этапы — ') + (activeWs || $e('единый цех')) : $e('Воронка сделок') }}</h3>

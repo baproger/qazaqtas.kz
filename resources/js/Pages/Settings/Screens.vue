@@ -55,7 +55,7 @@ const copy = (code) => navigator.clipboard?.writeText(code);
 
         <!-- Компании и их цеха -->
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <div v-for="c in companies" :key="c.id" class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div v-for="c in companies" :key="c.id" class="rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="border-b border-slate-100 px-5 py-3.5 text-sm font-semibold text-slate-900">{{ c.name }}</div>
                 <div class="divide-y divide-slate-50">
                     <div v-for="r in c.rows" :key="r.label" class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">

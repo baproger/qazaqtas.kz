@@ -287,8 +287,8 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 collapsed ? 'lg:w-16' : 'lg:w-60',
                 mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
             ]"
-            class="sidebar-soft sidebar-floating fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden transition-all duration-300 ease-in-out lg:inset-y-3 lg:left-3">
-            <div class="flex h-14 items-center gap-2 border-b border-white/60 px-4">
+            class="sidebar-soft sidebar-floating fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden transition-all duration-300 ease-in-out lg:inset-y-4 lg:left-4">
+            <div class="flex h-14 items-center gap-2 px-4">
                 <!-- Свёрнутое меню (64 px) — только знак; развёрнутое — логотип с подписью. -->
                 <img
                     v-if="collapsed && !mobileOpen"
@@ -408,7 +408,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
         </aside>
 
         <!-- Main -->
-        <div :class="collapsed ? 'lg:ml-[4.75rem]' : 'lg:ml-[15.75rem]'" class="flex-1 transition-all duration-300">
+        <div :class="collapsed ? 'lg:ml-[5.25rem]' : 'lg:ml-[16.25rem]'" class="flex-1 transition-all duration-300">
             <header class="glass sticky top-0 z-20 flex h-16 items-center justify-between border-b px-4 sm:px-6">
                 <div class="flex min-w-0 flex-1 items-center gap-3">
                     <button class="flex-shrink-0 rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" @click="mobileOpen = true">☰</button>

@@ -153,7 +153,7 @@ const donut = computed(() => {
         <!-- ============ BENTO: ОБЗОР ============ -->
         <div v-show="tab==='general'" class="space-y-4">
             <!-- Фильтры: поиск, период, менеджер, этап (серверные) -->
-            <div class="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div class="flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
                 <div class="relative w-full sm:w-56">
                     <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
                     <input v-model="search" @input="onSearch" type="text" :placeholder="$e('Поиск: №, контрагент, договор…')"
@@ -304,7 +304,7 @@ const donut = computed(() => {
             <!-- Bento cells -->
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-6">
                 <!-- Monthly (wide) -->
-                <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4">
+                <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-4">
                     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Доходы и расходы по месяцам') }}</h3>
                         <div class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs">
@@ -361,7 +361,7 @@ const donut = computed(() => {
                 </div>
 
                 <!-- Deals by status -->
-                <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+                <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-2">
                     <h3 class="mb-3 text-sm font-semibold text-slate-900">{{ $e('Сделки по статусам') }}</h3>
                     <div class="flex items-center gap-4">
                         <svg viewBox="0 0 100 100" class="h-28 w-28 flex-shrink-0 -rotate-90">
@@ -382,7 +382,7 @@ const donut = computed(() => {
                 </div>
 
                 <!-- Funnel: активные сделки по этапам (перенесено с Дашборда) -->
-                <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-3">
+                <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-3">
                     <div class="mb-4 flex items-center justify-between">
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Воронка — активные сделки по этапам') }}</h3>
                         <Link :href="route('deals.index')" class="text-xs font-medium text-indigo-600 hover:text-indigo-700">{{ $e('Канбан →') }}</Link>
@@ -397,7 +397,7 @@ const donut = computed(() => {
                 </div>
 
                 <!-- Топ менеджеров за период (клик — сделки менеджера) -->
-                <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-3">
+                <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-3">
                     <h3 class="mb-3 text-sm font-semibold text-slate-900">{{ $e('Топ менеджеров') }} <span class="font-normal text-slate-400">{{ $e('за период') }}</span></h3>
                     <div class="space-y-2">
                         <Link v-for="(m, i) in topManagers" :key="m.uid" :href="route('deals.index', { responsible: m.uid })"
@@ -413,7 +413,7 @@ const donut = computed(() => {
                 </div>
 
                 <!-- ABC summary -->
-                <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-6">
+                <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-6">
                     <h3 class="mb-1 text-sm font-semibold text-slate-900">{{ $e('ABC-анализ') }}</h3>
                     <p class="mb-3 text-xs text-slate-400">{{ $e('По фактическому доходу: A ≈ 30%, B ≈ 20%, C ≈ 10%') }}</p>
                     <div class="grid grid-cols-3 gap-2">
@@ -425,7 +425,7 @@ const donut = computed(() => {
                 </div>
 
                 <!-- ABC table (full width) -->
-                <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:col-span-6">
+                <div class="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm lg:col-span-6">
                     <div class="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-900">{{ $e('Топ сделок по доходу') }}</div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
@@ -487,12 +487,12 @@ const donut = computed(() => {
                             :style="{ width: Math.max(3, Math.round((Number(e.bonus) || 0) / maxBonus * 100)) + '%' }"></div>
                     </div>
                 </button>
-                <div v-if="!filteredEmployees.length" class="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-400 shadow-sm">{{ byEmployee.length ? $e('Никто не найден') : $e('Нет данных') }}</div>
+                <div v-if="!filteredEmployees.length" class="rounded-2xl border border-slate-100 bg-white p-6 text-center text-sm text-slate-400 shadow-sm">{{ byEmployee.length ? $e('Никто не найден') : $e('Нет данных') }}</div>
             </div>
 
             <!-- Detail -->
             <div v-if="selected" class="space-y-4 lg:col-span-2">
-                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                     <!-- Герой-шапка: тёмный градиент, аватар с кольцом, место в рейтинге -->
                     <div class="flex items-center gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-5 py-4">
                         <div class="rounded-full p-0.5 ring-2 ring-indigo-400/70">

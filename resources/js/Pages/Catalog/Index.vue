@@ -162,7 +162,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
             </div>
         </div>
 
-        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-100 text-sm">
                     <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">

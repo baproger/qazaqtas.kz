@@ -49,7 +49,7 @@ const allTime = computed(() => Number(props.totals.cash || 0) + Number(props.tot
     <Head :title="$e('Поступления денег')" />
     <FinanceLayout :title="$e('Поступления денег')" :subtitle="$e('нал и банк: откуда пришли деньги')" width="max-w-7xl">
         <!-- ================= Поступления денег ================= -->
-        <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4">
                 <div class="flex items-center gap-3">
                     <h3 class="text-sm font-semibold text-slate-900">{{ $e('Поступления денег') }}</h3>

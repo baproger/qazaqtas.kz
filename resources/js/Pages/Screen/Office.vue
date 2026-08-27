@@ -40,7 +40,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
     <Head :title="title" />
     <div class="min-h-screen bg-slate-50 p-4 lg:p-6">
         <!-- Шапка -->
-        <div class="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
             <div>
                 <h1 class="text-2xl font-bold leading-tight text-slate-900 lg:text-3xl">{{ title }}</h1>
                 <div class="text-sm text-slate-400">{{ $e('рейтинг эффективности —') }} {{ monthLabel }}<span v-if="!isCurrent" class="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ $e('архив') }}</span></div>
@@ -58,7 +58,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
 
         <!-- ГЛАВНОЕ и единственное: рейтинг отдела продаж во всю ширину,
              без воронки-плиток, без карточки лидера, без автопрокрутки. -->
-        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
                     <span class="text-base font-bold text-slate-900">{{ $e('Отдел продаж — заявки за месяц') }}</span>
                     <span class="text-xs text-slate-400">{{ $e('добавил заявок · в работе · конверсия %') }}</span>
@@ -108,7 +108,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
         </div>
 
         <!-- Заявки месяца с чек-листами: видно, кто реально работает по заявкам -->
-        <div class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="mt-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
                 <span class="text-base font-bold text-slate-900">{{ $e('Заявки месяца — чек-листы') }}</span>
                 <span class="text-xs text-slate-400">{{ $e('☑ галочки заявки («Позвонил», «Замер», «КП», «Образец»…) — работа менеджера по заявке') }}</span>

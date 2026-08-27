@@ -54,7 +54,7 @@ const needsOptions = () => form.type === 'select' || form.type === 'radio';
         </div>
         <div class="mb-4 flex justify-end"><PrimaryButton @click="openCreate">{{ $e('+ Новое поле') }}</PrimaryButton></div>
 
-        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-slate-100 text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
                     <tr><th class="px-4 py-3">{{ $e('Сущность') }}</th><th class="px-4 py-3">{{ $e('Название') }}</th><th class="px-4 py-3">{{ $e('Тип') }}</th><th class="px-4 py-3">{{ $e('Обязательное') }}</th><th class="px-4 py-3 text-right">{{ $e('Действия') }}</th></tr>

@@ -55,7 +55,7 @@ const complete = (p) => {
     <Head :title="title" />
     <div class="min-h-screen bg-slate-50 p-4 lg:p-6">
         <!-- Шапка: цех, живые часы, счётчик заказов — единый светлый стиль -->
-        <div class="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div class="mb-5 flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white px-5 py-4 shadow-sm">
             <div class="flex items-center gap-3">
                 <div>
                     <h1 class="text-2xl font-bold leading-tight text-slate-900 lg:text-3xl">{{ title }}</h1>
@@ -83,7 +83,7 @@ const complete = (p) => {
                     <span class="rounded-full bg-white px-2.5 py-0.5 text-sm font-bold tabular-nums text-slate-500 shadow-sm">{{ byStage(stage.id).length }}</span>
                 </div>
                 <div class="flex-1 space-y-2.5 px-3 pb-3">
-                    <div v-for="p in byStage(stage.id)" :key="p.id" class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+                    <div v-for="p in byStage(stage.id)" :key="p.id" class="rounded-xl border border-slate-100 bg-white p-3.5 shadow-sm">
                         <div class="text-lg font-bold leading-snug text-slate-900">{{ p.name }}</div>
                         <div class="flex items-center justify-between">
                             <span class="text-xs text-slate-300">{{ p.number }}</span>
