@@ -89,3 +89,61 @@
     .glass, .glass-strong { background-color: #FFFFFF; }
     .glass-dark { background-color: #0F172A; }
 }
+
+/*
+ * Парящее боковое меню: отдельная панель, а не край экрана.
+ *
+ * Отступ по краям и крупное скругление превращают меню в объект — так видно,
+ * что оно лежит НАД полотном, и матовое стекло получает смысл: сквозь него
+ * просвечивает содержимое, а не пустота у границы окна.
+ *
+ * Скругление задано как squircle: `border-radius` рисует дугу окружности, и
+ * на радиусе в 24 px переход от прямой к дуге виден изломом. `--r` ниже —
+ * тот же радиус, но с плавным нарастанием кривизны, как у иконок iOS.
+ */
+.sidebar-floating {
+    --r: 1.5rem;
+    border-radius: var(--r);
+    border: 1px solid var(--glass-dark-line);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, .18), 0 24px 60px -28px rgba(15, 23, 42, .7);
+}
+
+@supports (corner-shape: squircle) {
+    .sidebar-floating { corner-shape: squircle; }
+}
+
+/*
+ * Активный пункт — капсула, а не подсветка строки.
+ *
+ * Капсула читается как «здесь я сейчас» с одного взгляда: у неё есть форма,
+ * а у подсветки только цвет. Свёрнутое меню тем более просит форму — там от
+ * пункта остаётся один значок.
+ */
+.nav-pill {
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #4F46E5, #6366F1);
+    box-shadow: 0 6px 16px -8px rgba(79, 70, 229, .9);
+    color: #FFFFFF;
+}
+.nav-pill svg { color: #FFFFFF; }
+
+/* Всплывающая подпись для свёрнутого меню: значок без слова — загадка. */
+.nav-tip {
+    position: absolute;
+    left: calc(100% + .625rem);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 50;
+    white-space: nowrap;
+    border-radius: .625rem;
+    padding: .3125rem .625rem;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #F8FAFC;
+    background: rgba(15, 23, 42, .92);
+    box-shadow: 0 8px 24px -12px rgba(0, 0, 0, .8);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .12s ease;
+}
+.group:hover > .nav-tip { opacity: 1; }

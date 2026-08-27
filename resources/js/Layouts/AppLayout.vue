@@ -244,7 +244,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 collapsed ? 'lg:w-16' : 'lg:w-60',
                 mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
             ]"
-            class="glass-dark fixed inset-y-0 left-0 z-40 flex w-60 flex-col text-slate-300 transition-all duration-300 ease-in-out">
+            class="glass-dark sidebar-floating fixed inset-y-0 left-0 z-40 flex w-60 flex-col overflow-hidden text-slate-300 transition-all duration-300 ease-in-out lg:inset-y-3 lg:left-3">
             <div class="flex h-16 items-center px-4">
                 <!-- Свёрнутое меню (64 px) — только знак; развёрнутое — логотип с подписью. -->
                 <img
@@ -268,22 +268,21 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                              меню и открывает сам раздел. -->
                         <template v-if="collapsed && !mobileOpen">
                             <button type="button" @click="openFromRail(item)" :title="t(item.key, item.name)"
-                                :class="groupActive(item) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                                class="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
-                                <span v-if="groupActive(item)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
-                                <svg v-if="navIcons[item.key]" class="h-5 w-5 shrink-0 transition-colors duration-200"
+                                :class="groupActive(item) ? 'nav-pill' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                                class="group relative flex w-full items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                                                                <svg v-if="navIcons[item.key]" class="h-5 w-5 shrink-0 transition-colors duration-200"
                                     :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                                     v-html="navIcons[item.key]"></svg>
                                 <span v-else class="text-lg leading-none">{{ item.icon }}</span>
+                                <span class="nav-tip">{{ t(item.key, item.name) }}</span>
                             </button>
                         </template>
                         <div v-else>
                             <button type="button" @click="toggleGroup(item)"
-                                :class="groupActive(item) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                                class="group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
-                                <span v-if="groupActive(item)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
-                                <svg v-if="navIcons[item.key]" class="h-5 w-5 shrink-0 transition-colors duration-200"
+                                :class="groupActive(item) ? 'nav-pill' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                                class="group relative flex w-full items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
+                                                                <svg v-if="navIcons[item.key]" class="h-5 w-5 shrink-0 transition-colors duration-200"
                                     :class="groupActive(item) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                                     v-html="navIcons[item.key]"></svg>
@@ -298,7 +297,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                 leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0 -translate-y-1">
                                 <div v-show="groupOpen[item.key]" class="mt-1 space-y-1 pl-5">
                                     <Link v-for="child in item.children" :key="child.route" :href="route(child.route)" @click="go"
-                                        :class="isActive(child.route) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                                        :class="isActive(child.route) ? 'nav-pill' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
                                         class="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors duration-200 ease-out">
                                         <span class="text-base leading-none" :class="isActive(child.route) ? 'text-indigo-400' : 'text-slate-500'">{{ child.icon }}</span>
                                         <span class="truncate">{{ t(child.key, child.name) }}</span>
@@ -310,15 +309,15 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
 
                     <Link v-else :href="route(item.route)" @click="go"
                         :title="collapsed ? t(item.key, item.name) : ''"
-                        :class="isActive(item.route) ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
-                        class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
-                        <span v-if="isActive(item.route)" class="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-indigo-500"></span>
+                        :class="isActive(item.route) ? 'nav-pill' : 'text-slate-400 hover:bg-white/5 hover:text-white'"
+                        class="group relative flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors duration-200 ease-out">
                         <svg v-if="navIcons[item.route]" class="h-5 w-5 shrink-0 transition-colors duration-200"
                             :class="isActive(item.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'"
                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                             v-html="navIcons[item.route]"></svg>
                         <span v-else class="text-lg leading-none transition-colors duration-200" :class="isActive(item.route) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'">{{ item.icon }}</span>
                         <span v-if="!collapsed || mobileOpen" class="truncate">{{ t(item.key, item.name) }}</span>
+                        <span v-else class="nav-tip">{{ t(item.key, item.name) }}</span>
                         <span v-if="item.route === 'chat.index' && chatUnread > 0 && (!collapsed || mobileOpen)"
                             class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
                         <span v-else-if="item.route === 'chat.index' && chatUnread > 0"
@@ -326,9 +325,10 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                     </Link>
                 </template>
             </nav>
-            <!-- User block -->
+            <!-- Низ панели: профиль и сворачивание. Наверху — работа, внизу
+                 системное; так их не ищут глазами каждый раз заново. -->
             <Link :href="route('profile.edit')" @click="go"
-                class="flex items-center gap-2.5 border-t border-white/5 px-3 py-3 transition-colors hover:bg-white/5">
+                class="mt-auto flex items-center gap-2.5 border-t border-white/5 px-3 py-3 transition-colors hover:bg-white/5">
                 <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-bold text-white">
                     <img v-if="user?.avatar" :src="user.avatar" class="h-full w-full object-cover" alt="" />
                     <template v-else>{{ user?.name?.charAt(0) ?? '?' }}</template>
@@ -344,7 +344,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
         </aside>
 
         <!-- Main -->
-        <div :class="collapsed ? 'lg:ml-16' : 'lg:ml-60'" class="flex-1 transition-all duration-300">
+        <div :class="collapsed ? 'lg:ml-[4.75rem]' : 'lg:ml-[15.75rem]'" class="flex-1 transition-all duration-300">
             <header class="glass sticky top-0 z-20 flex h-16 items-center justify-between border-b px-4 sm:px-6">
                 <div class="flex min-w-0 flex-1 items-center gap-3">
                     <button class="flex-shrink-0 rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" @click="mobileOpen = true">☰</button>
