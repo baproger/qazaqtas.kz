@@ -121,6 +121,8 @@ class CatalogController extends Controller
             'is_active' => ['boolean'],
             'is_featured' => ['boolean'],
             'in_stock' => ['boolean'],
+            // Ниже этого остатка склад помечает товар «мало» и предупреждает.
+            'min_stock' => ['nullable', 'numeric', 'min:0'],
             'order' => ['nullable', 'integer', 'min:0'],
             ...$this->translationRules(),
         ]);

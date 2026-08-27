@@ -6,6 +6,7 @@
  * их первым, и Tailwind получает уже собранный файл целиком.
  */
 @import './tokens.css';
+@import './glass.css';
 @import './surfaces.css';
 @import './site.css';
 @import './hero.css';

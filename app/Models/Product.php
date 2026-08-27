@@ -28,7 +28,7 @@ class Product extends Model
         'category_id', 'name', 'slug', 'code', 'unit', 'price', 'old_price', 'min_order',
         'description', 'short_description', 'specs', 'colors', 'images', 'documents',
         'texture_path', 'model_path',
-        'is_service', 'is_active', 'is_featured', 'in_stock', 'order',
+        'is_service', 'is_active', 'is_featured', 'in_stock', 'min_stock', 'order',
     ];
 
     /**
@@ -61,6 +61,7 @@ class Product extends Model
         'colors' => 'array',
         'images' => 'array',
         'documents' => 'array',
+        'min_stock' => 'decimal:2',
         'price' => 'decimal:2',
         'old_price' => 'decimal:2',
         'min_order' => 'decimal:2',

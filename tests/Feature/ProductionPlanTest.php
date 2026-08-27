@@ -303,6 +303,30 @@ class ProductionPlanTest extends TestCase
         $this->actingAs($this->foreman)->get(route('production.brigade', $this->brigade->id))->assertOk();
     }
 
+    /**
+     * Итог месяца не складывает метры со штуками.
+     *
+     * «План 2100» из 1000 м² плитки и 1100 штук вазонов — величина, которой
+     * не существует. Считаем раздельно по метрике.
+     */
+    public function test_the_month_total_keeps_units_apart(): void
+    {
+        $this->plan(['plan_qty' => 1000]);                       // м²
+        $vase = Product::create(['name' => 'Вазон «Чаша»', 'unit' => 'штук', 'price' => 60000, 'is_active' => true, 'is_service' => false]);
+        $this->plan(['product_id' => $vase->id, 'unit' => 'штук', 'plan_qty' => 100]);
+
+        $this->actingAs($this->director)->get(route('production.plans.index'))
+            ->assertInertia(fn ($page) => $page
+                ->where('summary.measures', function ($measures) {
+                    $rows = collect($measures)->keyBy('measure');
+
+                    return count($measures) === 2
+                        && (float) $rows['m2']['plan'] === 1000.0
+                        && (float) $rows['pcs']['plan'] === 100.0;
+                })
+                ->etc());
+    }
+
     /** По чужому плану бригадир выработку не пишет. */
     public function test_output_only_on_your_own_plan(): void
     {

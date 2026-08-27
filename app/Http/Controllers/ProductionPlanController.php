@@ -131,10 +131,19 @@ class ProductionPlanController extends Controller
             'month' => $month,
             'plans' => $rows,
             'orders' => $orders,
+            // Метры и штуки в одно число не складываются: «план 2100» из
+            // 1000 м² плитки и 1100 штук вазонов не значит ничего. Деньги —
+            // складываются, они одни на всё.
             'summary' => [
-                'plan' => round((float) $rows->sum('plan'), 2),
-                'done' => round((float) $rows->sum('done'), 2),
-                'pending' => round((float) $rows->sum('pending'), 2),
+                'measures' => collect(['m2', 'pcs'])
+                    ->map(fn ($measure) => [
+                        'measure' => $measure,
+                        'plan' => round((float) $rows->where('measure', $measure)->sum('plan'), 2),
+                        'done' => round((float) $rows->where('measure', $measure)->sum('done'), 2),
+                        'pending' => round((float) $rows->where('measure', $measure)->sum('pending'), 2),
+                        'items' => $rows->where('measure', $measure)->count(),
+                    ])
+                    ->filter(fn ($row) => $row['items'] > 0)->values(),
                 'bonus' => round((float) $rows->sum('bonus'), 2),
                 'waiting' => $orders->where('status', 'draft')->count(),
             ],

@@ -232,10 +232,10 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
 </script>
 
 <template>
-    <div class="min-h-screen bg-slate-50">
+    <div class="app-canvas min-h-screen">
         <!-- Mobile backdrop -->
         <transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0">
-            <div v-if="mobileOpen" class="fixed inset-0 z-30 bg-black/40 lg:hidden" @click="mobileOpen = false"></div>
+            <div v-if="mobileOpen" class="glass-backdrop fixed inset-0 z-30 lg:hidden" @click="mobileOpen = false"></div>
         </transition>
 
         <!-- Sidebar -->
@@ -244,7 +244,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 collapsed ? 'lg:w-16' : 'lg:w-60',
                 mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
             ]"
-            class="fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-slate-900 text-slate-300 transition-all duration-300 ease-in-out">
+            class="glass-dark fixed inset-y-0 left-0 z-40 flex w-60 flex-col text-slate-300 transition-all duration-300 ease-in-out">
             <div class="flex h-16 items-center px-4">
                 <!-- Свёрнутое меню (64 px) — только знак; развёрнутое — логотип с подписью. -->
                 <img
@@ -345,7 +345,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
 
         <!-- Main -->
         <div :class="collapsed ? 'lg:ml-16' : 'lg:ml-60'" class="flex-1 transition-all duration-300">
-            <header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-white/80 px-4 shadow-sm backdrop-blur-md sm:px-6">
+            <header class="glass sticky top-0 z-20 flex h-16 items-center justify-between border-b px-4 sm:px-6">
                 <div class="flex min-w-0 flex-1 items-center gap-3">
                     <button class="flex-shrink-0 rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" @click="mobileOpen = true">☰</button>
                     <h1 class="min-w-0 flex-1 text-base font-semibold text-slate-800 sm:text-lg"><slot name="header">{{ t('header.title', 'Панель управления') }}</slot></h1>

@@ -34,6 +34,9 @@ const props = defineProps({
 });
 
 const num = (v) => Number(v ?? 0).toLocaleString('ru-RU');
+// Подпись метрики: метры и штуки на этой странице никогда не складываются,
+// поэтому у каждого числа должна стоять своя единица.
+const measureLabel = (m) => (m === 'm2' ? tr('м²') : tr('штук'));
 
 const month = ref(props.month);
 const applyMonth = () => router.get(route('production.plans.index'), { month: month.value || undefined },
@@ -100,11 +103,29 @@ const byBrigade = computed(() => {
     }
     return [...map.values()].map((b) => ({
         ...b,
-        done: b.rows.reduce((s, r) => s + Number(r.done || 0), 0),
-        plan: b.rows.reduce((s, r) => s + Number(r.plan || 0), 0),
         bonus: b.rows.reduce((s, r) => s + Number(r.bonus || 0), 0),
-        pending: b.rows.reduce((s, r) => s + Number(r.pending || 0), 0),
+        // Раздельно по метрике: у бригады бывают планы и в м², и в штуках.
+        measures: ['m2', 'pcs']
+            .map((measure) => {
+                const rows = b.rows.filter((r) => r.measure === measure);
+                return {
+                    measure,
+                    rows: rows.length,
+                    done: rows.reduce((s, r) => s + Number(r.done || 0), 0),
+                    plan: rows.reduce((s, r) => s + Number(r.plan || 0), 0),
+                };
+            })
+            .filter((m) => m.rows > 0),
     }));
+});
+
+// Свои бригады: из планов месяца — других у бригадира на этой странице нет.
+const myBrigades = computed(() => {
+    const seen = new Map();
+    for (const p of props.plans) {
+        if (!seen.has(p.brigade_id)) seen.set(p.brigade_id, { id: p.brigade_id, name: p.brigade });
+    }
+    return [...seen.values()];
 });
 
 // Выбор товара по категориям: плоский список из двадцати позиций читать
@@ -146,19 +167,18 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
                 </div>
             </div>
 
-            <!-- Итог месяца: четыре числа, без плашек и рамок. -->
+            <!-- Итог месяца. Метры и штуки — раздельно: сложить их в одно
+                 число значит показать величину, которой не существует. -->
             <div v-if="plans.length" class="mb-6 flex flex-wrap gap-x-10 gap-y-4 border-b border-slate-100 pb-5">
-                <div>
-                    <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('План') }}</div>
-                    <div class="mt-0.5 text-2xl font-semibold tabular-nums text-slate-900">{{ num(summary.plan) }}</div>
-                </div>
-                <div>
-                    <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Выполнено') }}</div>
-                    <div class="mt-0.5 text-2xl font-semibold tabular-nums text-slate-900">{{ num(summary.done) }}</div>
-                </div>
-                <div v-if="summary.pending">
-                    <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Ждёт подтверждения') }}</div>
-                    <div class="mt-0.5 text-2xl font-semibold tabular-nums text-amber-600">{{ num(summary.pending) }}</div>
+                <div v-for="m in summary.measures" :key="m.measure">
+                    <div class="text-[11px] uppercase tracking-wide text-slate-400">
+                        {{ $e('Выполнено') }}, {{ measureLabel(m.measure) }}
+                    </div>
+                    <div class="mt-0.5 flex items-baseline gap-1.5">
+                        <span class="text-2xl font-semibold tabular-nums text-slate-900">{{ num(m.done) }}</span>
+                        <span class="text-sm tabular-nums text-slate-400">/ {{ num(m.plan) }}</span>
+                    </div>
+                    <div v-if="m.pending" class="text-xs tabular-nums text-amber-600">+{{ num(m.pending) }} {{ $e('ждёт') }}</div>
                 </div>
                 <div>
                     <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бонус за выполненное') }}</div>
@@ -173,6 +193,13 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
 
             <!-- ===== Бригадир: свои планы карточками ===== -->
             <div v-else-if="isForeman" class="space-y-3">
+                <!-- Своя бригада: состав, смены и начисления. Без этой ссылки
+                     бригадир не мог попасть в карточку своей бригады вовсе. -->
+                <Link v-for="b in myBrigades" :key="'b' + b.id" :href="route('production.brigade', { brigade: b.id, month })"
+                    class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm transition-colors duration-150 hover:bg-slate-50">
+                    <span class="font-medium text-slate-800">👷 {{ b.name }}</span>
+                    <span class="ml-auto text-xs font-semibold text-indigo-600">{{ $e('моя бригада') }} →</span>
+                </Link>
                 <div v-for="p in plans" :key="p.id" class="rounded-xl border border-slate-200 bg-white p-5">
                     <div class="flex flex-wrap items-baseline justify-between gap-3">
                         <div class="text-[15px] font-medium text-slate-900">{{ p.product }}</div>
@@ -235,8 +262,9 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
                             <span class="ml-2 text-xs text-slate-400">{{ b.foreman || $e('бригадир не назначен') }}<template v-if="b.workshop"> · {{ b.workshop }}</template></span>
                         </div>
                         <div class="flex items-baseline gap-4 text-sm tabular-nums">
-                            <span class="text-slate-500">{{ num(b.done) }} / {{ num(b.plan) }}</span>
-                            <span v-if="b.pending" class="text-xs text-amber-600">+{{ num(b.pending) }} {{ $e('ждёт') }}</span>
+                            <span v-for="m in b.measures" :key="m.measure" class="text-slate-500">
+                                {{ num(m.done) }} / {{ num(m.plan) }} <span class="text-xs">{{ measureLabel(m.measure) }}</span>
+                            </span>
                             <b class="text-emerald-600">{{ money(b.bonus) }}</b>
                             <span class="text-xs text-indigo-600">{{ $e('подробнее') }} →</span>
                         </div>

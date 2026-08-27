@@ -56,7 +56,7 @@ const form = useForm({
     category_id: '', name: '', slug: '', code: '', unit: 'м²', price: '', old_price: '',
     min_order: 1, short_description: '', description: '',
     specs: {}, colors: [], images: [], documents: [],
-    is_active: true, is_featured: false, in_stock: true, order: 0,
+    is_active: true, is_featured: false, in_stock: true, min_stock: '', order: 0,
     translations: {},
 });
 
@@ -90,7 +90,7 @@ const openEdit = (p) => {
         unit: p.unit, price: Number(p.price), old_price: p.old_price ? Number(p.old_price) : '',
         min_order: Number(p.min_order), short_description: p.short_description ?? '',
         description: p.description ?? '', images: p.images ?? [], documents: p.documents ?? [],
-        is_active: !!p.is_active, is_featured: !!p.is_featured, in_stock: !!p.in_stock, order: p.order ?? 0,
+        is_active: !!p.is_active, is_featured: !!p.is_featured, in_stock: !!p.in_stock, min_stock: p.min_stock ?? '', order: p.order ?? 0,
         translations: p.translations_map ?? {},
     });
     specsText.value = formatMap(p.specs);
@@ -257,6 +257,11 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                         <select v-model="form.unit" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm">
                             <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
                         </select>
+                    </div>
+                    <div>
+                        <InputLabel :value="$e('Минимальный остаток')" />
+                        <TextInput v-model="form.min_stock" type="number" min="0" step="any" class="mt-1 w-full" :placeholder="$e('не следим')" />
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Ниже этого остатка склад пометит товар «мало»') }}</p>
                     </div>
                     <div><InputLabel :value="$e('Цена, ₸ *')" /><TextInput v-model="form.price" type="number" min="0" class="mt-1 w-full" /><InputError :message="form.errors.price" class="mt-1" /></div>
                     <div><InputLabel :value="$e('Старая цена')" /><TextInput v-model="form.old_price" type="number" min="0" class="mt-1 w-full" /></div>

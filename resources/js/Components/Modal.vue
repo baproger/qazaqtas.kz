@@ -96,9 +96,9 @@ const maxWidthClass = computed(() => {
                     class="fixed inset-0 transform transition-all"
                     @click="close"
                 >
-                    <div
-                        class="absolute inset-0 bg-slate-500 opacity-75"
-                    />
+                    <!-- Подложка тоже размытая: на плоском сером прямоугольнике
+                         стеклянная панель перестаёт быть стеклом. -->
+                    <div class="glass-backdrop absolute inset-0" />
                 </div>
             </Transition>
 
@@ -112,7 +112,7 @@ const maxWidthClass = computed(() => {
             >
                 <div
                     v-show="show"
-                    class="mb-6 transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:mx-auto sm:w-full"
+                    class="glass-strong mb-6 transform overflow-hidden rounded-2xl border border-white/50 shadow-2xl transition-all sm:mx-auto sm:w-full"
                     :class="maxWidthClass"
                 >
                     <slot v-if="showSlot" />
