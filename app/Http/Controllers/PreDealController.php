@@ -134,9 +134,15 @@ class PreDealController extends Controller
         return $data;
     }
 
+    /** Денежные поля заявки: в базе NOT NULL со значением по умолчанию 0. */
+    private const MONEY_FIELDS = [
+        'quantity', 'unit_price', 'contract_sum', 'purchase_price',
+        'partner_pct', 'delivery', 'assembly', 'commission',
+    ];
+
     private function validated(Request $request, ?PreDeal $ignore = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             // Уникальный № заявки: менеджеры не заводят одну заявку дважды
             // (при правке — без ложного срабатывания на самого себя).
             'request_number' => ['nullable', 'string', 'max:100',
@@ -172,6 +178,19 @@ class PreDealController extends Controller
         ], [
             'request_number.unique' => 'Такой № заявки уже существует — эта заявка уже внесена.',
         ]);
+
+        // Пустое денежное поле значит НОЛЬ, а не «неизвестно». Браузер шлёт
+        // пустую строку, middleware превращает её в null, правило 'nullable'
+        // пропускает — и запись падает на NOT NULL. Приводим на входе, одним
+        // местом на создание и на правку: разойдись они, ошибка вернулась бы
+        // через ту форму, где забыли.
+        foreach (self::MONEY_FIELDS as $field) {
+            if (array_key_exists($field, $data) && $data[$field] === null) {
+                $data[$field] = 0;
+            }
+        }
+
+        return $data;
     }
 
     /**

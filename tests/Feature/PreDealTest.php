@@ -252,4 +252,44 @@ class PreDealTest extends TestCase
         $this->actingAs($mgr)->post(route('preDeals.check', [$lot->id, $item->id]))->assertRedirect();
         $this->assertTrue((bool) ($lot->fresh()->checks[(string) $item->id] ?? false));
     }
+
+    /**
+     * Пустое денежное поле значит НОЛЬ, а не «неизвестно».
+     *
+     * Браузер шлёт пустую строку, middleware превращает её в null, правило
+     * 'nullable' пропускает — и запись падала на NOT NULL: колонки заявки
+     * объявлены `NOT NULL DEFAULT 0`. Правка заявки с пустой доставкой
+     * отдавала 500.
+     */
+    public function test_empty_money_fields_become_zero(): void
+    {
+        $mgr = $this->user('manager');
+
+        $this->actingAs($mgr)->post(route('preDeals.store'), [
+            'product' => 'Плитка «Большой формат»',
+            'contract_sum' => 560000,
+            'purchase_price' => 300000,
+            'delivery' => null,
+            'assembly' => null,
+            'commission' => null,
+        ])->assertSessionHasNoErrors();
+
+        $preDeal = PreDeal::firstOrFail();
+        $this->assertSame(0.0, (float) $preDeal->delivery);
+        $this->assertSame(0.0, (float) $preDeal->assembly);
+
+        // И правка тоже: раньше именно она отдавала 500.
+        $this->actingAs($mgr)->put(route('preDeals.update', $preDeal->id), [
+            'product' => 'Плитка «Большой формат»',
+            'contract_sum' => 560000,
+            'purchase_price' => 300000,
+            'delivery' => null,
+            'assembly' => 10000,
+            'commission' => 17200,
+        ])->assertSessionHasNoErrors();
+
+        $preDeal->refresh();
+        $this->assertSame(0.0, (float) $preDeal->delivery);
+        $this->assertSame(10000.0, (float) $preDeal->assembly);
+    }
 }
