@@ -22,7 +22,7 @@
  * не помещается на экран — читать её приходилось бы прокруткой в обе стороны.
  * Крупный шаг остаётся там, где текст читают, а не сверяют глазами (§9.2).
  */
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Avatar from '@/Components/Avatar.vue';
@@ -51,36 +51,80 @@ const fallback = (role, permission) => {
     return role.traits.is_leadership ? 'all' : 'own';
 };
 
-const draft = reactive(Object.fromEntries(props.roles.map((role) => {
+/*
+ * Черновик галочек. ПЕРЕСОБИРАЕТСЯ при каждой смене списка ролей.
+ *
+ * Строился один раз при создании компонента — и после «+ Роль» страница
+ * белела: список приходил с новой ролью, шаблон брал `traits[r.name]`, а
+ * записи для неё не было. Правило простое: состояние, выведенное из пропа,
+ * обязано следовать за пропом.
+ *
+ * Несохранённые правки существующих ролей при этом остаются на месте: их
+ * потеря после создания соседней роли выглядела бы как потеря данных.
+ */
+const draft = reactive({});
+const traits = reactive({});
+const saved = reactive({});
+
+const rowFor = (role) => {
     const row = {};
     for (const m of props.modules) {
         for (const permission of Object.values(m.permissions)) {
             row[permission] = role.scopes[permission] ?? fallback(role, permission);
         }
     }
-    return [role.name, row];
-})));
-const traits = reactive(Object.fromEntries(props.roles.map((r) => [r.name, { ...r.traits }])));
+    return row;
+};
 
-const snapshot = (name) => JSON.stringify(draft[name]) + JSON.stringify(traits[name]);
-const saved = Object.fromEntries(props.roles.map((r) => [r.name, snapshot(r.name)]));
-const dirty = (name) => snapshot(name) !== saved[name];
+const snapshot = (name) => JSON.stringify(draft[name] ?? {}) + JSON.stringify(traits[name] ?? {});
+
+const syncRoles = (roles) => {
+    const names = new Set(roles.map((r) => r.name));
+
+    for (const role of roles) {
+        // Уже правим эту роль — не затираем незаписанное.
+        if (draft[role.name] && dirty(role.name)) continue;
+
+        draft[role.name] = rowFor(role);
+        traits[role.name] = { ...role.traits };
+        saved[role.name] = snapshot(role.name);
+    }
+
+    // Роль удалили — убираем и её черновик, иначе он копится в памяти и
+    // «не сохранено» показывает то, чего больше нет.
+    for (const name of Object.keys(draft)) {
+        if (! names.has(name)) {
+            delete draft[name];
+            delete traits[name];
+            delete saved[name];
+        }
+    }
+};
+
+const dirty = (name) => saved[name] !== undefined && snapshot(name) !== saved[name];
+
+syncRoles(props.roles);
+watch(() => props.roles, (roles) => syncRoles(roles), { deep: true });
 const changed = computed(() => props.roles.filter((r) => !r.locked && dirty(r.name)));
 
 const busy = ref(null);
 const save = (role) => {
     busy.value = role;
-    router.put(route('access.update'), { role, scopes: draft[role], traits: traits[role] },
+    router.put(route('access.update'), { role, scopes: draft[role] ?? {}, traits: traits[role] ?? {} },
         { preserveScroll: true, onFinish: () => (busy.value = null) });
 };
 
 // Раздел целиком: у четырнадцати разделов по пять действий иначе семьдесят
 // кликов на роль.
 const setModule = (roleName, module, scope) => {
+    if (! draft[roleName]) return;
     for (const permission of Object.values(module.permissions)) draft[roleName][permission] = scope;
 };
 const moduleScope = (roleName, module) => {
-    const values = [...new Set(Object.values(module.permissions).map((p) => draft[roleName][p]))];
+    const row = draft[roleName];
+    if (! row) return 'none';   // роль только что появилась — черновик ещё собирается
+
+    const values = [...new Set(Object.values(module.permissions).map((p) => row[p]))];
     return values.length === 1 ? values[0] : 'mixed';
 };
 
@@ -131,6 +175,7 @@ const toggleMenu = (role, event) => {
 // Открыть/закрыть всё разом. Меняем черновик и СРАЗУ сохраняем: пункт меню
 // обещает «откроется доступ», а не «подготовится к сохранению».
 const setAll = (role, scope) => {
+    if (! draft[role.name]) return;
     for (const m of props.modules) {
         for (const permission of Object.values(m.permissions)) draft[role.name][permission] = scope;
     }
@@ -306,7 +351,7 @@ const removeRole = async (role) => {
                             <tr v-for="(label, key) in traitLabels" :key="key" class="bg-bx-50">
                                 <td class="sticky left-0 z-10 bg-bx-50 px-4 py-1.5 text-[11px] font-medium text-slate-600 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e(label) }}</td>
                                 <td v-for="r in roles" :key="r.name" class="px-2.5 py-1 text-center">
-                                    <input v-if="!r.locked" type="checkbox" v-model="traits[r.name][key]"
+                                    <input v-if="!r.locked && traits[r.name]" type="checkbox" v-model="traits[r.name][key]"
                                         class="h-4 w-4 rounded border-slate-300 text-bx-500 focus:ring-bx-500" />
                                     <span v-else class="text-emerald-500/50">✓</span>
                                 </td>
@@ -344,7 +389,7 @@ const removeRole = async (role) => {
                                     class="group transition-colors duration-150 hover:bg-slate-50">
                                     <td class="sticky left-0 z-10 bg-white px-4 py-1.5 pl-9 text-slate-500 shadow-[1px_0_0_0_rgb(226_232_240)] transition-colors duration-150 group-hover:bg-slate-50">{{ $e(label) }}</td>
                                     <td v-for="r in roles" :key="r.name" class="px-2.5 py-1 text-center">
-                                        <select v-if="!r.locked && m.permissions[key]" v-model="draft[r.name][m.permissions[key]]"
+                                        <select v-if="!r.locked && m.permissions[key] && draft[r.name]" v-model="draft[r.name][m.permissions[key]]"
                                             class="w-full rounded-md border py-0.5 pl-1.5 pr-5 text-[11px] shadow-sm focus:border-bx-500 focus:ring-2 focus:ring-bx-500/20"
                                             :class="scopeClass(draft[r.name][m.permissions[key]])">
                                             <option v-for="s in scopeLevels" :key="s.value" :value="s.value">{{ $e(s.label) }}</option>

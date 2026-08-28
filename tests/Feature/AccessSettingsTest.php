@@ -465,4 +465,44 @@ class AccessSettingsTest extends TestCase
         $this->actingAs($this->admin)->get(route('users.index'))
             ->assertInertia(fn (Assert $p) => $p->where('roleLabels.foreman', 'Старший бригады')->etc());
     }
+
+    /**
+     * После создания роли страница остаётся рабочей.
+     *
+     * Была белая: черновик галочек строился один раз при создании компонента,
+     * а список ролей приходил новый — шаблон брал `traits[r.name]` у роли,
+     * которой в черновике ещё не было. Сервер обязан отдавать КАЖДУЮ роль
+     * полным набором ключей, на которые рассчитывает страница.
+     */
+    public function test_a_new_role_arrives_with_a_complete_payload(): void
+    {
+        $this->actingAs($this->admin)->post(route('access.roles.store'), [
+            'label' => 'РОП', 'name' => 'rop', 'copy_from' => 'manager',
+        ])->assertSessionHas('success');
+
+        $this->actingAs($this->admin)->get(route('access.index'))
+            ->assertOk()
+            ->assertInertia(function (Assert $page) {
+                $roles = collect($page->toArray()['props']['roles']);
+                $new = $roles->firstWhere('name', 'rop');
+
+                $this->assertNotNull($new, 'Новая роль обязана быть в списке.');
+
+                // Ключи, по которым страница индексирует состояние: нет любого —
+                // и шаблон падает на undefined, а пользователь видит белый экран.
+                foreach (['id', 'name', 'label', 'locked', 'system', 'traits', 'scopes', 'holders'] as $key) {
+                    $this->assertArrayHasKey($key, $new, "Роль без ключа «{$key}».");
+                }
+                foreach (['is_leadership', 'sees_money', 'is_workshop'] as $trait) {
+                    $this->assertArrayHasKey($trait, $new['traits'], "Признак «{$trait}» не пришёл.");
+                }
+
+                // И у ВСЕХ ролей набор одинаковый — иначе падение просто
+                // переедет на другую строку.
+                foreach ($roles as $role) {
+                    $this->assertArrayHasKey('traits', $role, "Роль «{$role['name']}» без признаков.");
+                    $this->assertArrayHasKey('scopes', $role, "Роль «{$role['name']}» без областей.");
+                }
+            });
+    }
 }
