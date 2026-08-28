@@ -488,6 +488,27 @@ class ProductionPlanTest extends TestCase
         Notification::assertSentTo($head, ProductionPlanQueued::class);
         Notification::assertNotSentTo($this->foreman, ProductionPlanQueued::class);
 
+        // Страница «План — факт» открывается: очередь грузит связь `deal`,
+        // и её отсутствие на модели роняло страницу пятисоткой.
+        $this->actingAs($this->director)->get(route('production.plans.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('queue.0.deal.number', 'QT-900')->etc());
+
+        // ВТОРОЕ нажатие ничего не добавляет: склад от заявки не меняется,
+        // нехватка остаётся видна, и кнопку легко нажать снова — задание
+        // цеху удвоилось бы.
+        $this->actingAs($manager)->post(route('deals.toProduction', $deal->id))
+            ->assertSessionHas('success');
+        $this->assertSame(300.0, (float) ProductionPlan::whereNull('brigade_id')->value('plan_qty'),
+            'Повторная отправка не должна удваивать план.');
+
+        // И карточка сделки говорит, что отправлять больше нечего.
+        $this->actingAs($manager)->get(route('deals.show', $deal->id))
+            ->assertInertia(fn ($page) => $page
+                ->where('stock.can_send', false)
+                ->where('stock.queued_any', true)
+                ->etc());
+
         // Вторая сделка на тот же товар СКЛАДЫВАЕТСЯ, а не создаёт вторую строку.
         $deal->items()->create([
             'product_id' => $this->tile->id, 'name' => $this->tile->name,
@@ -495,8 +516,10 @@ class ProductionPlanTest extends TestCase
         ]);
         $this->actingAs($manager)->post(route('deals.toProduction', $deal->fresh()->id));
 
+        // 300 ушло первым нажатием, дописали ещё 200 — уходит только разница,
+        // а не все 500 заново.
         $this->assertSame(1, ProductionPlan::whereNull('brigade_id')->count());
-        $this->assertSame(800.0, (float) ProductionPlan::whereNull('brigade_id')->value('plan_qty'));
+        $this->assertSame(500.0, (float) ProductionPlan::whereNull('brigade_id')->value('plan_qty'));
     }
 
     /** Бригаду очереди назначает начальник производства, не бригадир. */

@@ -13,6 +13,7 @@ use App\Models\DealStageLog;
 use App\Models\Department;
 use App\Models\Material;
 use App\Models\Product;
+use App\Models\ProductionPlan;
 use App\Models\Project;
 use App\Models\ProjectStage;
 use App\Models\Setting;
@@ -354,16 +355,38 @@ class DealController extends Controller
         $short = app(StockService::class)
             ->shortages($rows, $deal->company_id ? (int) $deal->company_id : null);
 
-        return [
-            'short' => $short->map(fn ($row) => [
+        // Что по этой сделке УЖЕ ушло в производство. Без этого числа кнопка
+        // «Добавить недостающее» удваивала бы план при втором нажатии: склад
+        // от заявки не меняется, и нехватка остаётся видна как была.
+        $queued = ProductionPlan::where('deal_id', $deal->id)
+            ->selectRaw('product_id, sum(plan_qty) as qty')
+            ->groupBy('product_id')
+            ->pluck('qty', 'product_id');
+
+        $rows = $short->map(function ($row) use ($queued) {
+            $already = round((float) ($queued[$row['product']->id] ?? 0), 2);
+
+            return [
                 'product_id' => $row['product']->id,
                 'name' => $row['product']->name,
                 'unit' => $row['product']->unit,
                 'need' => $row['need'],
                 'have' => $row['have'],
                 'short' => $row['short'],
-            ])->values(),
-            'has_shortage' => $short->isNotEmpty(),
+                'queued' => $already,
+                // Сколько ещё НЕ отправлено: менеджер дописал позиций после
+                // первой отправки — уходит только разница.
+                'left' => round(max($row['short'] - $already, 0), 2),
+            ];
+        })->values();
+
+        return [
+            'short' => $rows,
+            'has_shortage' => $rows->isNotEmpty(),
+            'queued_any' => $rows->contains(fn ($r) => $r['queued'] > 0),
+            // Есть ли что отправлять. Нечего — кнопка гаснет и говорит,
+            // что заявка уже в производстве.
+            'can_send' => $rows->contains(fn ($r) => $r['left'] > 0),
         ];
     }
 
@@ -396,11 +419,25 @@ class DealController extends Controller
             return back()->with('success', 'Склада хватает — в план ничего не добавлено.');
         }
 
-        $queued = $plans->addShortage($deal, $short->map(fn ($row) => [
+        // Вычитаем то, что по этой сделке уже отправлено: второе нажатие не
+        // должно удваивать задание цеху. Склад от заявки не меняется, поэтому
+        // нехватка остаётся видна и кнопку легко нажать снова.
+        $already = ProductionPlan::where('deal_id', $deal->id)
+            ->selectRaw('product_id, sum(plan_qty) as qty')
+            ->groupBy('product_id')
+            ->pluck('qty', 'product_id');
+
+        $toSend = $short->map(fn ($row) => [
             'product_id' => $row['product']->id,
-            'qty' => $row['short'],
+            'qty' => round(max($row['short'] - (float) ($already[$row['product']->id] ?? 0), 0), 2),
             'unit' => $row['product']->unit,
-        ])->all(), $request->user());
+        ])->filter(fn ($row) => $row['qty'] > 0)->values();
+
+        if ($toSend->isEmpty()) {
+            return back()->with('success', 'Заявка уже отправлена в производство — повторно не добавляем.');
+        }
+
+        $queued = $plans->addShortage($deal, $toSend->all(), $request->user());
 
         $what = collect($queued)
             ->map(fn ($p) => $p->product?->name.' '.rtrim(rtrim(number_format((float) $p->plan_qty, 2, '.', ' '), '0'), '.').' '.($p->unit ?: ''))

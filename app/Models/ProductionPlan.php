@@ -34,6 +34,17 @@ class ProductionPlan extends Model
         return $this->belongsTo(Brigade::class);
     }
 
+    /**
+     * Сделка, из которой пришёл объём.
+     *
+     * Пусто у планов, поставленных руководством вручную: там задание не под
+     * заказ клиента, а «работа между сделками» (§4 «Производство»).
+     */
+    public function deal(): BelongsTo
+    {
+        return $this->belongsTo(Deal::class);
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

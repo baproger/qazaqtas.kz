@@ -40,7 +40,9 @@ class CompanyStructureController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'avatar', 'department_id']);
 
-        $byDepartment = $people->groupBy('department_id');
+        // Ключ группы — строка, а не null: PHP 8.5 ругается на null в качестве
+        // индекса массива, а людей без отдела как раз группирует он.
+        $byDepartment = $people->groupBy(fn (User $u) => $u->department_id === null ? '' : (string) $u->department_id);
 
         $departments = Department::where('is_active', true)
             ->orderBy('sort')->orderBy('name')
@@ -56,7 +58,7 @@ class CompanyStructureController extends Controller
                 'head_user_id' => $d->head_user_id,
                 // Люди отдела: карточка должна отвечать «кто здесь», не
                 // открывая ещё одну страницу.
-                'people' => $byDepartment->get($d->id, collect())->map(fn (User $u) => [
+                'people' => $byDepartment->get((string) $d->id, collect())->map(fn (User $u) => [
                     'id' => $u->id,
                     'name' => $u->name,
                     'avatar' => $u->avatar,
@@ -65,7 +67,7 @@ class CompanyStructureController extends Controller
             ])->values(),
             // Люди без отдела: их не видно в дереве, и без этого списка они
             // тихо выпадают из структуры навсегда.
-            'unassigned' => $byDepartment->get(null, collect())
+            'unassigned' => $byDepartment->get('', collect())
                 ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name, 'avatar' => $u->avatar,
                     'role' => $u->roles->first()?->title()])->values(),
             // Для выбора людей: аватар и отдел, чтобы в списке было видно,

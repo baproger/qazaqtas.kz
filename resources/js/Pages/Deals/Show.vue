@@ -343,10 +343,18 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                     <div v-if="stock?.has_shortage" class="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
                         <div class="flex flex-wrap items-baseline justify-between gap-3">
                             <span class="text-sm font-semibold text-amber-900">{{ $e('На складе не хватает') }}</span>
-                            <button v-if="can.update" :disabled="toProductionBusy" @click="sendToProduction"
+
+                            <!-- Отправлять нечего — кнопка гаснет и говорит,
+                                 что заявка уже в цехе. Второе нажатие удвоило
+                                 бы задание: склад от заявки не меняется, и
+                                 нехватка остаётся видна как была. -->
+                            <button v-if="can.update && stock.can_send" :disabled="toProductionBusy" @click="sendToProduction"
                                 class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-amber-700 disabled:opacity-50">
                                 {{ toProductionBusy ? '…' : $e('Добавить недостающее в план производства') }}
                             </button>
+                            <span v-else-if="stock.queued_any" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                                ✓ {{ $e('Заявка отправлена в производство') }}
+                            </span>
                         </div>
                         <div class="mt-2.5 space-y-1">
                             <div v-for="row in stock.short" :key="row.product_id"
@@ -356,10 +364,17 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                                     {{ $e('нужно') }} <b class="text-slate-800">{{ num(row.need) }}</b> ·
                                     {{ $e('на складе') }} <b class="text-slate-800">{{ num(row.have) }}</b> ·
                                     {{ $e('не хватает') }} <b class="text-amber-700">{{ num(row.short) }} {{ row.unit }}</b>
+                                    <template v-if="row.queued">
+                                        · {{ $e('в производстве') }} <b class="text-emerald-700">{{ num(row.queued) }}</b>
+                                    </template>
                                 </span>
                             </div>
                         </div>
-                        <p class="mt-2 text-[11px] text-amber-700">{{ $e('Объём уйдёт в «План — факт»; бригаду назначит начальник производства.') }}</p>
+                        <p class="mt-2 text-[11px] text-amber-700">
+                            {{ stock.can_send
+                                ? $e('Объём уйдёт в «План — факт»; бригаду назначит начальник производства.')
+                                : $e('Объём уже в «Плане — факт»; бригаду назначает начальник производства.') }}
+                        </p>
                     </div>
                 </div>
 
