@@ -323,7 +323,7 @@ class DealController extends Controller
         ])->all();
 
         // Начальник производства — это директор; админ видит всё в любом случае.
-        User::role(['admin', 'director'])->where('is_active', true)->get()
+        RoleTraits::users(['admin', 'director'])->where('is_active', true)->get()
             ->each->notify(new ProductShortage($payload, $deal->number, $deal->id));
 
         return collect($payload)
@@ -563,7 +563,7 @@ class DealController extends Controller
             ],
             // Кандидаты в бригадиры — только люди с этой ролью.
             'foremen' => request()->user()->hasAnyRole(['admin', 'director'])
-                ? User::role('foreman')->where('is_active', true)->orderBy('name')->get(['id', 'name'])
+                ? RoleTraits::users('foreman')->where('is_active', true)->orderBy('name')->get(['id', 'name'])
                 : [],
         ]);
     }

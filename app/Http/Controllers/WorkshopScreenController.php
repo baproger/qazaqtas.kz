@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\WorkshopScreen;
 use App\Services\ProjectService;
+use App\Support\RoleTraits;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -159,7 +160,7 @@ class WorkshopScreenController extends Controller
             'won' => $isWon($d),
         ])->values();
 
-        $managers = User::role('manager')->where('is_active', true)->get(['id', 'name', 'avatar'])
+        $managers = RoleTraits::users('manager')->where('is_active', true)->get(['id', 'name', 'avatar'])
             ->map(function (User $u) use ($byUser, $plan, $isWon, $funnelFor, $emptyFunnel) {
                 $rows = $byUser[$u->id] ?? collect();
                 $total = $rows->count();

@@ -36,7 +36,10 @@ class RolePermissionSeeder extends Seeder
             ->where('name', 'like', '%.viewAny')->orWhere('name', 'like', '%.view'))
             ->whereNotIn('name', ['user.viewAny', 'user.view', 'role.viewAny', 'role.view'])
             ->pluck('name')
-            ->push('report.viewAny', 'payroll.view', 'user.viewAny', 'user.view')
+            // deal.create: директор заводит сделки наравне с менеджером
+            // (правило владельца от 28.08.2026). Наблюдателем он остаётся
+            // в деньгах: этапы Акт / ЭСФ / Оплата ему по-прежнему закрыты.
+            ->push('report.viewAny', 'payroll.view', 'user.viewAny', 'user.view', 'deal.create')
             ->all());
 
         $financist = Role::findOrCreate('financist', 'web');
@@ -109,7 +112,9 @@ class RolePermissionSeeder extends Seeder
             // двигает. Ему приходят уведомления о нехватке и о новых планах.
             if ($job === 'assistant') {
                 $perms = array_merge($perms, [
-                    'deal.viewAny', 'deal.view',
+                    // Сделку заводят четверо: админ, менеджер, директор и
+                    // ассистент (правило владельца от 28.08.2026).
+                    'deal.viewAny', 'deal.view', 'deal.create',
                     'product.viewAny', 'product.view',
                     'department.viewAny',
                 ]);
@@ -130,6 +135,21 @@ class RolePermissionSeeder extends Seeder
      *
      * [подпись, руководство, видит суммы, цеховая]
      */
+    /**
+     * Роли, которые заводит сама система.
+     *
+     * Список здесь, а не в команде восстановления: он один и тот же для
+     * чистой установки и для досева, и два списка разошлись бы.
+     *
+     * @return array<int, string>
+     */
+    public static function systemRoles(): array
+    {
+        return ['admin', 'director', 'financist', 'manager', 'employee',
+            'foreman', 'designer', 'supplier', 'lawyer', 'cook',
+            'production_head', 'assistant'];
+    }
+
     private function applyTraits(): void
     {
         $traits = [

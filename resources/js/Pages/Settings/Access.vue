@@ -192,9 +192,14 @@ const submitRole = () => roleForm.post(route('access.roles.store'), {
 const removeRole = async (role) => {
     // Подтверждение называет последствия числом: «удалить роль» и «оставить
     // шесть человек без доступа» — это два разных решения.
-    const message = role.holders.length
-        ? `«${role.label}»: удалятся все настроенные области. Сотрудников без роли останется ${role.holders.length} — назначьте им новую.`
-        : `«${role.label}»: удалятся все настроенные области роли.`;
+    // Системная роль упоминается в коде по ИМЕНИ: кому уходит весть о
+    // нехватке склада, кто закрывает гейт-этап. Удалить её можно, но человек
+    // должен понимать, что замолчит, — иначе узнаёт об этом по пропавшим
+    // письмам. Вернуть: php artisan roles:restore.
+    const parts = [`«${role.label}»: удалятся все настроенные области роли.`];
+    if (role.holders.length) parts.push(`Сотрудников без роли останется ${role.holders.length} — назначьте им новую.`);
+    if (role.system) parts.push('Это системная роль: на её имя ссылается код (уведомления, гейты этапов). Вернуть — командой roles:restore.');
+    const message = parts.join(' ');
 
     if (!(await confirmDialog({ title: tr('Удалить роль?'), message, confirmText: tr('Удалить'), danger: true }))) return;
 
@@ -415,8 +420,8 @@ const removeRole = async (role) => {
                     <span>
                         <span class="block text-[12px] font-semibold text-slate-900">{{ $e('Удалить') }}</span>
                         <span class="block text-[11px] font-normal text-slate-400">
-                            {{ menuFor.holders.length
-                                ? $e('Сотрудники останутся без роли:') + ' ' + menuFor.holders.length
+                            {{ menuFor.system ? $e('Системная роль — на её имя ссылается код')
+                                : menuFor.holders.length ? $e('Сотрудники останутся без роли:') + ' ' + menuFor.holders.length
                                 : $e('Роль удалится со всеми настроенными областями') }}
                         </span>
                     </span>

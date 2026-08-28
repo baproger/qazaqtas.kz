@@ -6,6 +6,7 @@ use App\Models\Deal;
 use App\Models\ProductionPlan;
 use App\Models\User;
 use App\Notifications\ProductionPlanQueued;
+use App\Support\RoleTraits;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -94,7 +95,7 @@ class ProductionPlanService
      */
     private function notify(Deal $deal, array $plans): void
     {
-        User::role(['admin', 'director', 'production_head', 'assistant'])
+        RoleTraits::users(['admin', 'director', 'production_head', 'assistant'])
             ->where('is_active', true)
             ->get()
             ->each->notify(new ProductionPlanQueued($deal, $plans));

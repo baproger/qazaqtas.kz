@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use App\Notifications\BirthdayUpcoming;
+use App\Support\RoleTraits;
 use Illuminate\Console\Command;
 
 /**
@@ -35,7 +36,7 @@ class NotifyBirthdays extends Command
         }
 
         $leadership = User::where('is_active', true)
-            ->role(['admin', 'director', 'financist'])->get();
+            ->whereIn('id', RoleTraits::users(['admin', 'director', 'financist'])->select('id'))->get();
 
         $sent = 0;
         foreach ($people as $person) {

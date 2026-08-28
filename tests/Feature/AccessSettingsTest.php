@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\Company;
+use App\Models\Deal;
+use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\AccessScope;
+use App\Support\RoleTraits;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\StageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Permission\Models\Permission;
@@ -349,5 +354,62 @@ class AccessSettingsTest extends TestCase
         $fresh = $role->fresh();
         $this->assertSame('Закупщик', $fresh->label);
         $this->assertSame('supplier', $fresh->name, 'Код роли неизменен.');
+    }
+
+    /**
+     * Удалённая роль не роняет систему.
+     *
+     * Роли удаляет владелец, а код спрашивает их по имени: кому уходит весть
+     * о нехватке склада, кто закрывает гейт-этап. `User::role('director')`
+     * бросает исключение, если роли нет, — и создание сделки отвечало
+     * пятисоткой. Спрашивать роль по имени можно, рассчитывать на её
+     * существование нельзя.
+     */
+    public function test_a_deleted_role_does_not_break_the_system(): void
+    {
+        $this->seed(StageSeeder::class);
+
+        $manager = User::factory()->create();
+        $manager->assignRole('manager');
+        $company = Company::where('code', 'QT')->value('id');
+        $manager->companies()->attach($company);
+
+        // Владелец удалил «Директора» — а на его имя ссылается рассылка
+        // о нехватке склада при создании сделки.
+        $this->actingAs($this->admin)
+            ->delete(route('access.roles.destroy', Role::findByName('director')->id))
+            ->assertSessionHas('success');
+
+        $product = Product::create([
+            'name' => 'Плитка', 'unit' => 'м²', 'price' => 12000, 'is_active' => true,
+        ]);
+
+        $this->actingAs($manager)->post(route('deals.store'), [
+            'company_name' => 'ТОО Тест',
+            'address' => 'Алматы',
+            'budget' => 120000,
+            'items' => [['product_id' => $product->id, 'quantity' => 10, 'price' => 12000]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(1, Deal::count(), 'Сделка создалась, несмотря на удалённую роль.');
+    }
+
+    /** Пустой список ролей — пустая рассылка, а не «всем подряд». */
+    public function test_missing_roles_notify_nobody_rather_than_everybody(): void
+    {
+        User::factory()->count(3)->create();
+
+        $this->assertSame(0, RoleTraits::users(['no_such_role'])->count());
+    }
+
+    /** Сделку заводят админ, менеджер, директор и ассистент. */
+    public function test_four_roles_can_create_a_deal(): void
+    {
+        foreach (['admin', 'manager', 'director', 'assistant'] as $name) {
+            $this->assertTrue(
+                Role::findByName($name)->hasPermissionTo('deal.create'),
+                "Роль «{$name}» обязана заводить сделки.",
+            );
+        }
     }
 }

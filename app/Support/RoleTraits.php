@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\Role;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Признаки роли — одна точка чтения на всё приложение.
@@ -50,6 +52,28 @@ final class RoleTraits
     public static function isWorkshop(?User $user): bool
     {
         return (bool) $user?->roles->contains(fn ($role) => (bool) $role->is_workshop);
+    }
+
+    /**
+     * Люди с этими ролями — БЕЗ падения, если роли нет.
+     *
+     * `User::role('director')` бросает RoleDoesNotExist, а роли теперь удаляет
+     * владелец через Настройки → Права доступа. Удалил «Директора» — и любая
+     * рассылка, которая его упоминает, роняла страницу пятисоткой. Спрашивать
+     * роль по имени можно, рассчитывать на её существование — нет.
+     *
+     * Нет ни одной из перечисленных — возвращаем заведомо пустой запрос, а не
+     * всех подряд: некому слать письмо это не то же самое, что слать всем.
+     *
+     * @param  array<int, string>|string  $roles
+     */
+    public static function users(array|string $roles): Builder
+    {
+        $existing = Role::whereIn('name', (array) $roles)->pluck('name')->all();
+
+        return $existing === []
+            ? User::query()->whereRaw('1 = 0')
+            : User::role($existing);
     }
 
     /** Руководство ИЛИ цех — кому открыт весь цех, а не только свои заказы. */

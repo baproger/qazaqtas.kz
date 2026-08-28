@@ -8,6 +8,7 @@ use App\Models\DealStage;
 use App\Models\Order;
 use App\Models\User;
 use App\Notifications\SiteOrderReceived;
+use App\Support\RoleTraits;
 use App\Support\SiteContent;
 use Illuminate\Support\Facades\DB;
 
@@ -138,7 +139,7 @@ class OrderService
     private function notifyManagers(Order $order): void
     {
         User::where('is_active', true)
-            ->role(['manager', 'financist', 'admin', 'director'])
+            ->whereIn('id', RoleTraits::users(['manager', 'financist', 'admin', 'director'])->select('id'))
             ->get()
             ->each->notify(new SiteOrderReceived($order));
     }
