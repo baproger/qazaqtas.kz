@@ -17,15 +17,15 @@ return [
         'payroll_adjustments' => 'Корректировки ЗП', 'dds_entries' => 'ДДС',
         'users' => 'Сотрудники', 'departments' => 'Отделы', 'clients' => 'Клиенты',
         'documents' => 'Документы', 'materials' => 'Склад', 'material_receipts' => 'Приход склада',
-        'pre_deals' => 'Предв. сделки', 'chats' => 'Чаты', 'chat_messages' => 'Сообщения чата',
+        'chats' => 'Чаты', 'chat_messages' => 'Сообщения чата',
         'comments' => 'Комментарии', 'settings' => 'Настройки', 'deal_stages' => 'Этапы сделок',
         'project_stages' => 'Этапы цеха', 'expense_categories' => 'Категории расходов',
         'workshop_screens' => 'ТВ-экраны',
         'work_orders' => 'Наряды бригад', 'work_order_lines' => 'Строки наряда',
         'brigades' => 'Бригады', 'bonus_payouts' => 'Выплаты бонусов',
         'employee_debts' => 'Долги сотрудников', 'employee_debt_payments' => 'Погашение долгов',
-        'deal_items' => 'Товары сделки', 'pre_deal_items' => 'Товары заявки',
-    
+        'deal_items' => 'Товары сделки',
+
     ],
 
     // Названия полей.
@@ -36,7 +36,9 @@ return [
         'assignee_id' => 'Исполнитель', 'department_id' => 'Отдел', 'client_id' => 'Клиент',
         'category_id' => 'Категория', 'material_id' => 'Материал', 'qty' => 'Количество',
         'name' => 'Название', 'title' => 'Заголовок', 'description' => 'Описание', 'note' => 'Заметка',
-        'number' => 'Номер', 'bin' => '№ договора / БИН', 'address' => 'Адрес',
+        'number' => 'Номер', 'bin' => '№ договора', 'address' => 'Адрес',
+        'customer_bin' => 'БИН / ИИН заказчика', 'contact_name' => 'Контакт клиента',
+        'contact_phone' => 'Телефон клиента',
         'company_name' => 'Заказчик', 'client_name' => 'Товар', 'lot_number' => 'Количество',
         'unit' => 'Ед. изм.', 'source' => 'Источник', 'deadline' => 'Срок',
         'contract_date' => 'Дата договора', 'issue_date' => 'Дата счёта', 'due_date' => 'Срок оплаты',
@@ -63,7 +65,7 @@ return [
         'deal_id' => 'Сделка', 'invoice_id' => 'Счёт', 'expenseable_id' => 'Запись-хозяин',
         'expenseable_type' => 'Тип хозяина', 'invoiceable_id' => 'Запись-хозяин', 'invoiceable_type' => 'Тип хозяина',
         'payment_date' => 'Дата оплаты', 'method' => 'Способ', 'branch' => 'Филиал', 'area_m2' => 'Площадь, м²',
-    
+
     ],
 
     // Значения по полю (статусы, способы оплаты, роли).
@@ -94,12 +96,12 @@ return [
         'is_active' => ['1' => 'Да', '0' => 'Нет', 'true' => 'Да', 'false' => 'Нет'],
         'is_completed' => ['1' => 'Да', '0' => 'Нет'],
         'is_won' => ['1' => 'Да', '0' => 'Нет'],
-    
+
     ],
 
     // Денежные поля — показываем с разрядами и знаком ₸.
     'money' => [
-'amount', 'budget', 'salary', 'balance', 'receivable', 'price',
-        'monthly_payment', 'sale_amount', 'rate_pcs', 'rate_m2', 'unit_price'
+        'amount', 'budget', 'salary', 'balance', 'receivable', 'price',
+        'monthly_payment', 'sale_amount', 'rate_pcs', 'rate_m2', 'unit_price',
     ],
 ];

@@ -7,7 +7,7 @@
  * заработал. Спрашивают именно так — «что у Бригады №1», — а раньше ответ
  * приходилось собирать по трём страницам.
  */
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { formatDate, money } from '@/utils/format';
@@ -22,6 +22,19 @@ const props = defineProps({
 });
 
 const num = (v) => Number(v ?? 0).toLocaleString('ru-RU');
+
+// Одна строка вместо блока планов: сколько товаров в задании и как оно идёт.
+// Метры и штуки раздельно — сложить их значит показать величину, которой нет.
+const planMeasures = computed(() => ['m2', 'pcs']
+    .map((measure) => {
+        const rows = props.plans.filter((p) => p.measure === measure);
+        const plan = rows.reduce((s, r) => s + Number(r.plan || 0), 0);
+        const done = rows.reduce((s, r) => s + Number(r.done || 0), 0);
+
+        return { measure, rows: rows.length, plan, done, percent: plan > 0 ? Math.round((done / plan) * 100) : 0 };
+    })
+    .filter((m) => m.rows > 0));
+
 const month = ref(props.month);
 const applyMonth = () => router.get(route('production.brigade', props.brigade.id), { month: month.value || undefined },
     { preserveState: true, preserveScroll: true, replace: true });
@@ -63,28 +76,24 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
                 </div>
             </div>
 
-            <!-- Планы месяца -->
-            <h3 class="mb-2 text-sm font-semibold text-slate-900">{{ $e('Планы месяца') }}</h3>
-            <div v-if="!plans.length" class="mb-6 rounded-xl border border-dashed border-slate-200 px-5 py-8 text-center text-sm text-slate-500">
-                {{ $e('На этот месяц плана нет.') }}
-            </div>
-            <div v-else class="mb-6 divide-y divide-slate-50 rounded-xl border border-slate-100 bg-white">
-                <div v-for="p in plans" :key="p.id" class="px-5 py-3">
-                    <div class="flex flex-wrap items-baseline justify-between gap-3">
-                        <span class="text-sm font-medium text-slate-800">{{ p.product }}</span>
-                        <div class="flex items-baseline gap-3 text-sm tabular-nums">
-                            <span><b :class="p.over ? 'text-amber-600' : 'text-slate-900'">{{ num(p.done) }}</b><span class="text-slate-400"> / {{ num(p.plan) }} {{ p.unit }}</span></span>
-                            <span v-if="p.pending" class="text-xs text-amber-600">+{{ num(p.pending) }} {{ $e('ждёт') }}</span>
-                            <span class="w-12 text-right text-xs text-slate-400">{{ p.percent }}%</span>
-                            <span class="w-24 text-right text-emerald-600">{{ money(p.bonus) }}</span>
-                        </div>
-                    </div>
-                    <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full rounded-full transition-all duration-500"
-                            :class="p.over ? 'bg-amber-400' : p.percent >= 100 ? 'bg-emerald-500' : 'bg-indigo-500'"
-                            :style="{ width: Math.min(p.percent, 100) + '%' }"></div>
-                    </div>
+            <!-- Планов здесь НЕТ намеренно: они живут на «План — факт», внутри
+                 блока своей бригады, вместе с кнопкой «Сделал». Показывать их
+                 и там, и тут значит держать две копии одной цифры — и однажды
+                 они разойдутся. Здесь то, чего на «План — факт» нет: состав,
+                 заработок по людям и все смены, включая работу под заказ. -->
+            <div v-if="plans.length" class="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-slate-100 bg-white px-5 py-3.5">
+                <div class="text-sm text-slate-500">
+                    {{ $e('План месяца:') }}
+                    <b class="text-slate-800">{{ plans.length }}</b>
+                    {{ plans.length === 1 ? $e('товар') : $e('товара') }}
                 </div>
+                <div v-for="m in planMeasures" :key="m.measure" class="text-sm tabular-nums text-slate-500">
+                    <b :class="m.percent >= 100 ? 'text-emerald-600' : 'text-slate-900'">{{ num(m.done) }}</b>
+                    / {{ num(m.plan) }} <span class="text-xs">{{ m.measure === 'm2' ? $e('м²') : $e('штук') }}</span>
+                    <span class="ml-1 text-xs" :class="m.percent >= 100 ? 'text-emerald-600' : 'text-slate-400'">{{ m.percent }}%</span>
+                </div>
+                <Link :href="route('production.plans.index', { month })"
+                    class="ml-auto text-xs font-semibold text-indigo-600 hover:underline">{{ $e('план — факт') }} →</Link>
             </div>
 
             <!-- Кто сколько заработал: только по подтверждённым сменам. -->

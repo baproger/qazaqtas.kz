@@ -11,6 +11,9 @@ use App\Services\ProductionProgressService;
 use App\Support\CurrentCompany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -29,21 +32,32 @@ use Inertia\Response;
 class ProductionPlanController extends Controller
 {
     /** План ставит только директор и админ: это задание, а не отчёт. */
+    /**
+     * План ставит руководство производства: директор и начальник цеха.
+     * Бригадир и финансист план не ставят — это задание, а не отчёт.
+     */
     private function canPlan(Request $request): bool
     {
-        return $request->user()->hasAnyRole(['admin', 'director']);
+        return $request->user()->hasAnyRole(['admin', 'director', 'production_head']);
     }
 
-    /** Подтверждает директор ИЛИ финансист — достаточно одного. */
+    /**
+     * Наряд подтверждают директор и начальник производства (плюс админ —
+     * он суперпользователь). Финансист право потерял 28.08.2026: смену
+     * принимает тот, кто отвечает за цех, а не тот, кто платит.
+     *
+     * Свою выработку бригадир не подтверждает никогда — иначе вписал бы
+     * тысячу вместо пятисот и сам это принял.
+     */
     private function canConfirm(Request $request): bool
     {
-        return $request->user()->hasAnyRole(['admin', 'director', 'financist']);
+        return $request->user()->hasAnyRole(['admin', 'director', 'production_head']);
     }
 
     private function isForeman(Request $request): bool
     {
         return $request->user()->hasRole('foreman')
-            && ! $request->user()->hasAnyRole(['admin', 'director', 'financist']);
+            && ! $request->user()->hasAnyRole(['admin', 'director', 'production_head']);
     }
 
     /** План другой фирмы не трогаем: выполнение превращается в её деньги. */
@@ -59,7 +73,7 @@ class ProductionPlanController extends Controller
     public function index(Request $request, ProductionProgressService $progress): Response
     {
         abort_unless(
-            $request->user()->hasAnyRole(['admin', 'director', 'financist', 'foreman']),
+            $request->user()->hasAnyRole(['admin', 'director', 'production_head', 'financist', 'foreman', 'assistant']),
             403,
             'Страница плана — для бригадиров и руководства.'
         );
@@ -74,6 +88,9 @@ class ProductionPlanController extends Controller
         $plans = ProductionPlan::query()
             ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w->where('company_id', $c)->orWhereNull('company_id')))
             ->whereDate('period_month', $month.'-01')
+            // Нераспределённые идут отдельной очередью ниже: в общем списке
+            // они не имеют бригады, а блок строится вокруг неё.
+            ->whereNotNull('brigade_id')
             // Бригадир видит план СВОИХ бригад: чужое задание не его дело.
             ->when($isForeman, fn ($q) => $q->whereIn('brigade_id',
                 Brigade::where('foreman_id', $request->user()->id)->select('id')))
@@ -100,6 +117,11 @@ class ProductionPlanController extends Controller
                 'rate' => round($rate, 2),
                 'bonus' => round($stat['done'] * $rate, 2),
                 'status' => $plan->status,
+                // План выполнен, когда сделано не меньше задания ИЛИ его
+                // закрыли руками. Признак считает сервер: посчитай его в
+                // браузере — и «выполнено» на странице разошлось бы с
+                // «выполнено» в подытоге.
+                'done' => $stat['percent'] >= 100 || $plan->status === 'closed',
                 'note' => $plan->note,
                 'editable' => $plan->isEditable(),
             ]);
@@ -135,18 +157,29 @@ class ProductionPlanController extends Controller
             // 1000 м² плитки и 1100 штук вазонов не значит ничего. Деньги —
             // складываются, они одни на всё.
             'summary' => [
-                'measures' => collect(['m2', 'pcs'])
-                    ->map(fn ($measure) => [
-                        'measure' => $measure,
-                        'plan' => round((float) $rows->where('measure', $measure)->sum('plan'), 2),
-                        'done' => round((float) $rows->where('measure', $measure)->sum('done'), 2),
-                        'pending' => round((float) $rows->where('measure', $measure)->sum('pending'), 2),
-                        'items' => $rows->where('measure', $measure)->count(),
-                    ])
-                    ->filter(fn ($row) => $row['items'] > 0)->values(),
+                // Итог месяца и подытоги блоков считает ОДНА функция: два
+                // расчёта «покороче» однажды разойдутся, и страница начнёт
+                // спорить сама с собой.
+                'measures' => $this->totalsFor($rows),
                 'bonus' => round((float) $rows->sum('bonus'), 2),
                 'waiting' => $orders->where('status', 'draft')->count(),
+                // Подытоги блоков: сумма «в работе» и «выполнено» обязана
+                // сойтись с итогом выше — это видно глазами, а не на веру.
+                'active' => [
+                    'measures' => $this->totalsFor($rows->where('done', false)),
+                    'bonus' => round((float) $rows->where('done', false)->sum('bonus'), 2),
+                    'count' => $rows->where('done', false)->count(),
+                ],
+                'done' => [
+                    'measures' => $this->totalsFor($rows->where('done', true)),
+                    'bonus' => round((float) $rows->where('done', true)->sum('bonus'), 2),
+                    'count' => $rows->where('done', true)->count(),
+                ],
             ],
+            'brigadeOutput' => $this->brigadeOutput($month, $companyId, $isForeman ? $request->user()->id : null),
+            // Очередь: пришло из сделок, бригада ещё не назначена. Бригадиру
+            // не показываем — это работа начальника производства, а не его.
+            'queue' => $isForeman ? [] : $this->queueFor($month, $companyId),
             'canPlan' => $this->canPlan($request),
             'canConfirm' => $this->canConfirm($request),
             'isForeman' => $isForeman,
@@ -164,6 +197,147 @@ class ProductionPlanController extends Controller
     }
 
     /**
+     * Очередь: объём пришёл из сделки, бригаду ещё не назначили.
+     *
+     * Пока строка здесь, цех о ней знает, но никто за неё не отвечает —
+     * поэтому очередь стоит ПЕРВОЙ на странице и подсвечена. Назначил
+     * бригаду — строка уезжает в «В работе» и начинает считаться.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function queueFor(string $month, ?int $companyId): array
+    {
+        return ProductionPlan::query()
+            ->whereNull('brigade_id')
+            ->whereDate('period_month', $month.'-01')
+            ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w->where('company_id', $c)->orWhereNull('company_id')))
+            ->with(['product:id,name,unit', 'deal:id,number,company_name,deadline'])
+            ->orderBy('id')
+            ->get()
+            ->map(fn (ProductionPlan $p) => [
+                'id' => $p->id,
+                'product' => $p->product?->name,
+                'qty' => (float) $p->plan_qty,
+                'unit' => $p->unit ?: $p->product?->unit,
+                'deal' => $p->deal ? [
+                    'id' => $p->deal->id,
+                    'number' => $p->deal->number,
+                    'client' => $p->deal->company_name,
+                    'deadline' => $p->deal->deadline?->toDateString(),
+                ] : null,
+            ])->values()->all();
+    }
+
+    /**
+     * Назначить бригаду плану из очереди.
+     *
+     * Если у этой бригады уже есть план на тот же товар в этом месяце,
+     * СКЛАДЫВАЕМ объёмы и очередную строку убираем: два задания на один товар
+     * одной бригаде — это одно задание, а уникальный ключ их и не пустит.
+     */
+    public function assign(Request $request, ProductionPlan $plan): RedirectResponse
+    {
+        abort_unless($this->canPlan($request), 403, 'Бригаду назначает начальник производства.');
+        abort_unless($plan->brigade_id === null, 422, 'У плана уже есть бригада.');
+
+        $data = $request->validate(['brigade_id' => ['required', 'exists:brigades,id']]);
+
+        DB::transaction(function () use ($plan, $data) {
+            $existing = ProductionPlan::whereDate('period_month', $plan->period_month)
+                ->where('product_id', $plan->product_id)
+                ->where('brigade_id', $data['brigade_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing) {
+                $existing->increment('plan_qty', (float) $plan->plan_qty);
+                $plan->delete();
+
+                return;
+            }
+
+            $plan->update(['brigade_id' => $data['brigade_id']]);
+        });
+
+        return back()->with('success', 'Бригада назначена — план в работе.');
+    }
+
+    /**
+     * Итоги по метрикам для набора планов.
+     *
+     * Одна функция и на месяц, и на подытог блока: посчитай подытог отдельно
+     * «покороче», и сумма блоков перестанет сходиться с итогом сверху.
+     *
+     * Метры и штуки в одно число не складываются: «план 2100» из 1000 м²
+     * плитки и 1100 штук вазонов не значит ничего.
+     *
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function totalsFor(Collection $rows): array
+    {
+        return collect(['m2', 'pcs'])
+            ->map(fn ($measure) => [
+                'measure' => $measure,
+                'plan' => round((float) $rows->where('measure', $measure)->sum('plan'), 2),
+                'done' => round((float) $rows->where('measure', $measure)->sum('done'), 2),
+                'pending' => round((float) $rows->where('measure', $measure)->sum('pending'), 2),
+                'items' => $rows->where('measure', $measure)->count(),
+            ])
+            ->filter(fn ($row) => $row['items'] > 0)
+            ->values()->all();
+    }
+
+    /**
+     * Выработка бригад за месяц: сколько каждая сделала и на сколько.
+     *
+     * Берём ВСЕ подтверждённые наряды месяца, а не только по планам: бригада
+     * работает и под заказ клиента, и месяц без планов выглядел бы пустым.
+     * Но колонки разделены — «по плану» и «под заказ», — иначе цифра тут
+     * спорила бы с бонусом в блоках планов выше, и понять, какая верная,
+     * было бы нечем. Столбец «по плану» обязан сойтись с их подытогами.
+     *
+     * Неподтверждённое в выработку не идёт: пока мастер не принял, это ещё
+     * не факт и не деньги (§4 «Производство»).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function brigadeOutput(string $month, ?int $companyId, ?int $foremanId): array
+    {
+        $start = $month.'-01';
+        $end = Carbon::parse($start)->endOfMonth()->toDateString();
+
+        $orders = WorkOrder::query()
+            ->where('status', 'confirmed')
+            ->whereDate('date', '>=', $start)->whereDate('date', '<=', $end)
+            ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w->where('company_id', $c)->orWhereNull('company_id')))
+            // Бригадир видит выработку СВОИХ бригад: чужая — не его дело.
+            ->when($foremanId, fn ($q, $id) => $q->whereIn('brigade_id',
+                Brigade::where('foreman_id', $id)->select('id')))
+            ->with(['brigade:id,name,workshop', 'lines'])
+            ->get();
+
+        return $orders->groupBy('brigade_id')
+            ->map(function ($group) {
+                $lines = $group->flatMap->lines;
+                $byPlan = $group->whereNotNull('production_plan_id')->flatMap->lines;
+
+                return [
+                    'id' => $group->first()->brigade_id,
+                    'name' => $group->first()->brigade?->name ?? '—',
+                    'workshop' => $group->first()->brigade?->workshop,
+                    'shifts' => $group->count(),
+                    'm2' => round((float) $lines->sum('qty_m2'), 2),
+                    'pcs' => round((float) $lines->sum('qty_pcs'), 2),
+                    'amount' => round((float) $lines->sum('amount'), 2),
+                    // Из них по плану — эта колонка сходится с блоками выше.
+                    'plan_amount' => round((float) $byPlan->sum('amount'), 2),
+                ];
+            })
+            ->sortByDesc('amount')->values()->all();
+    }
+
+    /**
      * Карточка бригады: состав, планы, наряды, начисления.
      *
      * На общей странице бригада — одна строка; здесь всё, что о ней известно.
@@ -172,7 +346,7 @@ class ProductionPlanController extends Controller
     public function brigade(Request $request, Brigade $brigade, ProductionProgressService $progress): Response
     {
         abort_unless(
-            $request->user()->hasAnyRole(['admin', 'director', 'financist'])
+            $request->user()->hasAnyRole(['admin', 'director', 'production_head'])
                 || $brigade->foreman_id === $request->user()->id,
             403,
             'Это чужая бригада.'
@@ -198,7 +372,7 @@ class ProductionPlanController extends Controller
         // и её месяц должен быть виден целиком.
         $orders = WorkOrder::where('brigade_id', $brigade->id)
             ->whereDate('date', '>=', $month.'-01')
-            ->whereDate('date', '<=', \Illuminate\Support\Carbon::parse($month.'-01')->endOfMonth()->toDateString())
+            ->whereDate('date', '<=', Carbon::parse($month.'-01')->endOfMonth()->toDateString())
             ->with(['lines.user:id,name', 'plan.product:id,name,unit', 'dealItem:id,deal_id,name,unit', 'dealItem.deal:id,number',
                 'creator:id,name', 'confirmer:id,name'])
             ->orderByDesc('date')->orderByDesc('id')->get();

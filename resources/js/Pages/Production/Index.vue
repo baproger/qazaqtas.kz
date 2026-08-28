@@ -25,10 +25,9 @@ const props = defineProps({
     plan: { type: Array, default: () => [] },
     planSummary: { type: Object, default: () => ({ m2: {}, pcs: {} }) },
     itemOptions: { type: Array, default: () => [] },
-    byPerson: { type: Array, default: () => [] },
     totals: { type: Object, default: () => ({ pcs: 0, m2: 0, amount: 0, waiting: 0 }) },
     brigades: { type: Array, default: () => [] },
-    rates: { type: Object, default: () => ({ foreman: { pcs: 0, m2: 0 }, worker: { pcs: 0, m2: 0 } }) },
+    rates: { type: Object, default: () => ({ foreman: { pcs: 0, m2: 0 } }) },
     canConfirm: { type: Boolean, default: false },
     canManage: { type: Boolean, default: false },
     employees: { type: Array, default: () => [] },
@@ -66,19 +65,16 @@ const fillMembers = () => {
     const brigade = props.brigades.find((b) => b.id === Number(form.brigade_id));
     form.lines = (brigade?.members ?? []).map((m) => ({ user_id: m.id, name: m.name, qty_pcs: '', qty_m2: '' }));
 };
-const lineAmount = (line) => Number(line.qty_pcs || 0) * props.rates.worker.pcs
-    + Number(line.qty_m2 || 0) * props.rates.worker.m2;
+/*
+ * Бонус наряда целиком у бригадира; строки рабочих держат ОБЪЁМ, а не деньги
+ * (по ним считается выполнение плана). Кто из бригады сколько получит, решает
+ * бригадир вне системы — он один знает, кто в какую смену вышел.
+ */
 const shiftTotals = computed(() => {
     const pcs = form.lines.reduce((s, l) => s + Number(l.qty_pcs || 0), 0);
     const m2 = form.lines.reduce((s, l) => s + Number(l.qty_m2 || 0), 0);
 
-    return {
-        pcs,
-        m2,
-        workers: form.lines.reduce((s, l) => s + lineAmount(l), 0),
-        // Бригадир получает за весь объём смены — своей ставкой.
-        foreman: pcs * props.rates.foreman.pcs + m2 * props.rates.foreman.m2,
-    };
+    return { pcs, m2, foreman: pcs * props.rates.foreman.pcs + m2 * props.rates.foreman.m2 };
 });
 const submit = () => form.post(route('production.orders.store'), {
     preserveScroll: true,
@@ -86,9 +82,19 @@ const submit = () => form.post(route('production.orders.store'), {
 });
 
 // Бригады: состав правит только руководство.
+/*
+ * Управление бригадами — в модалке, а не блоком на странице.
+ *
+ * Гридом внизу оно повторяло карточку бригады (состав, бригадир, цех) и
+ * занимало экран у всех, хотя правит состав только руководство и делает это
+ * раз в месяц. Список открывается кнопкой «Бригады» в шапке.
+ */
+const showBrigades = ref(false);
 const showBrigade = ref(false);
 const brigadeForm = useForm({ id: null, name: '', workshop: '', foreman_id: '', members: [], is_active: true });
 const openBrigade = (brigade = null) => {
+    // Две модалки одна поверх другой не читаются — список закрываем.
+    showBrigades.value = false;
     brigadeForm.clearErrors();
     brigadeForm.id = brigade?.id ?? null;
     brigadeForm.name = brigade?.name ?? '';
@@ -139,7 +145,7 @@ const removeOrder = async (order) => {
                 <span class="tab-soft tab-soft-active">{{ $e('Все наряды') }}</span>
             </div>
 
-            <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">{{ $e('Выработка бригад') }}</h2>
                     <p class="mt-0.5 text-xs text-slate-400">{{ $e('смена → кто сколько сделал → подтверждение мастера → бонус') }}</p>
@@ -147,9 +153,9 @@ const removeOrder = async (order) => {
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-xs text-slate-400">{{ $e('Месяц:') }}</span>
                     <input v-model="month" @change="applyMonth" type="month"
-                        class="rounded-lg border-slate-300 py-1.5 text-sm shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
-                    <button v-if="canManage" @click="openBrigade()"
-                        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors duration-150 hover:bg-slate-50">{{ $e('+ Бригада') }}</button>
+                        class="rounded-lg border-slate-200 py-1.5 text-sm shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
+                    <button v-if="canManage" @click="showBrigades = true"
+                        class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors duration-150 hover:bg-slate-50">{{ $e('Бригады') }}</button>
                     <button v-if="brigades.length" @click="openForm"
                         class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('+ Наряд') }}</button>
                 </div>
@@ -167,7 +173,7 @@ const removeOrder = async (order) => {
             <!-- План и факт по сделкам: сколько заказано и сколько закрыто.
                  План берётся из позиций сделки, факт — из подтверждённых
                  нарядов по ним. Одно и то же число видят и цех, и продажи. -->
-            <div v-if="plan.length" class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <div v-if="plan.length" class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-soft">
                 <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
                     <div>
                         <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -218,75 +224,11 @@ const removeOrder = async (order) => {
                 </div>
             </div>
 
-            <!-- Итог по людям: кто сколько сделал и заработал -->
-            <div v-if="byPerson.length" class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
-                <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
-                    <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                        <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
-                        {{ $e('Кто сколько сделал за месяц') }}
-                    </h3>
-                    <!-- Рядом с людьми — откуда взялся объём: столько заказано
-                         в сделках, столько закрыто нарядами. -->
-                    <div class="flex flex-wrap gap-4 text-xs tabular-nums text-slate-500">
-                        <template v-for="m in ['m2', 'pcs']" :key="m">
-                            <span v-if="planSummary[m]?.items">
-                                {{ $e('из сделок') }} <b class="text-slate-700">{{ num(planSummary[m].plan) }}</b> {{ measureLabel(m) }} ·
-                                {{ $e('сделано') }} <b class="text-slate-700">{{ num(planSummary[m].done) }}</b>
-                            </span>
-                        </template>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
-                            <tr>
-                                <th class="px-6 py-2.5 font-medium">{{ $e('Сотрудник') }}</th>
-                                <th class="px-4 py-2.5 text-right font-medium">{{ $e('м²') }}</th>
-                                <th class="px-4 py-2.5 text-right font-medium">{{ $e('штук') }}</th>
-                                <th class="px-4 py-2.5 text-right font-medium">{{ $e('Начислено') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50">
-                            <tr v-for="p in byPerson" :key="p.name" class="transition-colors duration-150 hover:bg-slate-50/60">
-                                <td class="px-6 py-2.5 font-medium text-slate-800">{{ p.name }}</td>
-                                <td class="px-4 py-2.5 text-right tabular-nums text-slate-600">{{ p.m2 ? num(p.m2) : '—' }}</td>
-                                <td class="px-4 py-2.5 text-right tabular-nums text-slate-600">{{ p.pcs ? num(p.pcs) : '—' }}</td>
-                                <td class="px-4 py-2.5 text-right font-semibold tabular-nums text-emerald-600">{{ money(p.amount) }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Бригады -->
-            <div v-if="canManage && brigades.length" class="mt-6 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <h3 class="mb-3 text-sm font-semibold text-slate-900">{{ $e('Бригады') }}</h3>
-                <div class="flex flex-wrap gap-2">
-                    <div v-for="b in brigades" :key="b.id"
-                        class="rounded-lg border px-3 py-2 text-xs"
-                        :class="b.is_active ? 'border-slate-200' : 'border-dashed border-slate-200 opacity-60'">
-                        <div class="font-semibold text-slate-800">
-                            {{ b.name }}
-                            <span v-if="!b.is_active" class="font-normal text-slate-400">· {{ $e('скрыта') }}</span>
-                        </div>
-                        <div class="mt-0.5 text-slate-400">
-                            {{ b.foreman || $e('бригадир не назначен') }} · {{ b.members.length }} {{ $e('чел.') }}
-                            <span v-if="b.workshop">· {{ b.workshop }}</span>
-                        </div>
-                        <div class="mt-1.5 flex gap-2">
-                            <Link :href="route('production.brigade', { brigade: b.id, month })" class="font-semibold text-indigo-600 hover:underline">{{ $e('Подробнее') }}</Link>
-                            <button v-if="canManage" @click="openBrigade(b)" class="font-semibold text-slate-500 hover:underline">{{ $e('Изменить') }}</button>
-                            <button v-if="canManage" @click="removeBrigade(b)" class="font-semibold text-slate-400 hover:underline">{{ $e('Убрать') }}</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Наряды по сменам — таблицей: одна смена = одна строка.
                  Карточками список уезжал на несколько экранов, а глазами
                  сравнить две смены было нельзя. Состав смены раскрывается по
                  клику: он нужен, когда сверяют начисление, а не всегда. -->
-            <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-soft">
                 <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-100 px-6 py-4">
                     <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900">
                         <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
@@ -448,7 +390,6 @@ const removeOrder = async (order) => {
                             <input v-model="line.qty_pcs" type="number" min="0" step="any" class="w-24 rounded-md border-slate-300 py-1 text-sm shadow-sm" />
                             {{ $e('штук') }}
                         </label>
-                        <span class="w-24 text-right text-sm tabular-nums text-slate-500">{{ money(lineAmount(line)) }}</span>
                     </div>
                     <p v-if="!form.lines.length" class="text-xs text-slate-400">{{ $e('В бригаде нет рабочих — добавьте их в состав бригады.') }}</p>
                     <div v-if="form.errors.lines" class="text-xs text-red-600">{{ form.errors.lines }}</div>
@@ -457,8 +398,8 @@ const removeOrder = async (order) => {
                 <div class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
                     {{ $e('Смена:') }} <b class="tabular-nums">{{ shiftTotals.m2 }}</b> {{ $e('м²') }} ·
                     <b class="tabular-nums">{{ shiftTotals.pcs }}</b> {{ $e('штук') }} ·
-                    {{ $e('рабочим') }} <b class="tabular-nums">{{ money(shiftTotals.workers) }}</b> ·
-                    {{ $e('бригадиру') }} <b class="tabular-nums">{{ money(shiftTotals.foreman) }}</b>
+                    {{ $e('бонус бригадиру') }} <b class="tabular-nums text-emerald-600">{{ money(shiftTotals.foreman) }}</b>
+                    <span class="ml-1 text-slate-400">{{ $e('— делит между рабочими сам') }}</span>
                 </div>
 
                 <div class="mt-5 flex justify-end gap-2">
@@ -468,6 +409,44 @@ const removeOrder = async (order) => {
             </div>
         </Modal>
         <!-- Бригада -->
+        <!-- Список бригад: кто, где и сколько человек. Отсюда открывается
+             карточка бригады и правится состав. -->
+        <Modal :show="showBrigades" @close="showBrigades = false" max-width="lg">
+            <div class="p-6">
+                <h2 class="mb-1 text-lg font-semibold text-slate-900">{{ $e('Бригады') }}</h2>
+                <p class="mb-4 text-xs text-slate-400">{{ $e('Бригаду с нарядами не удаляют, а скрывают — её наряды уже деньги.') }}</p>
+
+                <div class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                    <div v-for="b in brigades" :key="b.id"
+                        class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2.5 text-sm"
+                        :class="b.is_active ? 'border-slate-200' : 'border-dashed border-slate-200 opacity-60'">
+                        <div class="min-w-0">
+                            <div class="font-semibold text-slate-800">
+                                👷 {{ b.name }}
+                                <span v-if="!b.is_active" class="text-xs font-normal text-slate-400">· {{ $e('скрыта') }}</span>
+                            </div>
+                            <div class="mt-0.5 text-xs text-slate-400">
+                                {{ b.foreman || $e('бригадир не назначен') }} · {{ b.members.length }} {{ $e('чел.') }}
+                                <span v-if="b.workshop">· {{ b.workshop }}</span>
+                            </div>
+                        </div>
+                        <div class="ml-auto flex gap-3 text-xs font-semibold">
+                            <Link :href="route('production.brigade', { brigade: b.id, month })" class="text-indigo-600 hover:underline">{{ $e('Открыть') }}</Link>
+                            <button @click="openBrigade(b)" class="text-slate-500 hover:underline">{{ $e('Изменить') }}</button>
+                            <button @click="removeBrigade(b)" class="text-slate-400 hover:underline">{{ $e('Убрать') }}</button>
+                        </div>
+                    </div>
+                    <div v-if="!brigades.length" class="py-6 text-center text-sm text-slate-400">{{ $e('Бригад пока нет') }}</div>
+                </div>
+
+                <div class="mt-5 flex justify-between gap-2">
+                    <button @click="openBrigade()"
+                        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('+ Бригада') }}</button>
+                    <button @click="showBrigades = false" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700">{{ $e('Закрыть') }}</button>
+                </div>
+            </div>
+        </Modal>
+
         <Modal :show="showBrigade" @close="showBrigade = false" max-width="lg">
             <div class="p-6">
                 <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ brigadeForm.id ? $e('Бригада') : $e('Новая бригада') }}</h2>

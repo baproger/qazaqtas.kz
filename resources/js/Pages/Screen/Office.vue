@@ -8,10 +8,6 @@ const tr = useE();
 
 const props = defineProps({ screen: Object, plan: Number, month: String, monthLabel: String, managers: Array, leader: Object, lots: { type: Array, default: () => [] }, funnel: { type: Array, default: () => [] } });
 
-// Чек-лист: доля закрытых галочек — видно, работает менеджер по заявкам или нет.
-const checksPct = (m) => m.checks_total > 0 ? Math.round(m.checks_done / m.checks_total * 100) : 0;
-const checksClass = (p) => p >= 70 ? 'bg-emerald-100 text-emerald-700' : p >= 30 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-600';
-
 // ТВ-режим: часы + автообновление раз в 10 секунд. Без автопрокрутки —
 // список статичен, весь во всю ширину (просьба владельца 31.07.2026).
 const clock = ref('');
@@ -60,8 +56,8 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
              без воронки-плиток, без карточки лидера, без автопрокрутки. -->
         <div class="rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
-                    <span class="text-base font-bold text-slate-900">{{ $e('Отдел продаж — заявки за месяц') }}</span>
-                    <span class="text-xs text-slate-400">{{ $e('добавил заявок · в работе · конверсия %') }}</span>
+                    <span class="text-base font-bold text-slate-900">{{ $e('Отдел продаж — сделки за месяц') }}</span>
+                    <span class="text-xs text-slate-400">{{ $e('завёл сделок · оплачено · конверсия %') }}</span>
                 </div>
                 <div class="divide-y divide-slate-50">
                     <div v-for="(m, i) in managers" :key="m.name" class="flex items-center gap-4 px-5 py-3.5">
@@ -76,13 +72,13 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                                 <div class="h-2 w-full max-w-xs overflow-hidden rounded-full bg-slate-100">
                                     <div class="h-2 rounded-full transition-all duration-700" :class="barClass(m.conversion)" :style="{ width: Math.max(2, m.conversion) + '%' }"></div>
                                 </div>
-                                <span class="flex-shrink-0 text-xs text-slate-400">{{ $e('план заявок:') }} {{ m.total }}/{{ plan }}</span>
+                                <span class="flex-shrink-0 text-xs text-slate-400">{{ $e('план сделок:') }} {{ m.total }}/{{ plan }}</span>
                             </div>
                         </div>
                         <!-- Справа — данные менеджера: воронка + подтверждённые -->
                         <div class="text-right">
                             <div class="flex flex-wrap items-center justify-end gap-1.5">
-                                <!-- Персональная воронка: Заявки → Звонок/Замер/КП… → В работе -->
+                                <!-- Персональная воронка: Сделки → этапы воронки → Оплата успешно -->
                                 <span v-for="f in m.funnel" :key="f.label"
                                     class="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ring-1 ring-inset"
                                     :class="f.kind === 'won'
@@ -95,11 +91,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                                 <span class="ml-1 text-4xl font-black leading-none tabular-nums" :class="m.won > 0 ? 'text-emerald-600' : 'text-slate-300'">{{ m.won }}</span>
                             </div>
                             <div class="mt-1 flex items-center justify-end gap-1.5 text-xs text-slate-400">
-                                <span>{{ $e('в работе · заявок') }} {{ m.total }} {{ $e('· сделок') }} {{ m.deals }}</span>
-                                <!-- Чек-лист: закрыто галочек из возможных по его заявкам -->
-                                <span class="rounded-full px-1.5 py-0.5 font-bold tabular-nums"
-                                    :class="m.checks_total > 0 ? checksClass(checksPct(m)) : 'bg-slate-100 text-slate-400'"
-                                    :title="$e('Чек-лист по заявкам: сделано / всего')">☑ {{ m.checks_done }}/{{ m.checks_total }}</span>
+                                <span>{{ $e('сделок за месяц') }} {{ m.total }} {{ $e('· оплачено') }} {{ m.won }}</span>
                             </div>
                         </div>
                     </div>
@@ -107,31 +99,26 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                 </div>
         </div>
 
-        <!-- Заявки месяца с чек-листами: видно, кто реально работает по заявкам -->
+        <!-- Сделки месяца: что завели и где оно стоит -->
         <div class="mt-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div class="flex items-baseline justify-between border-b border-slate-100 px-5 py-3.5">
-                <span class="text-base font-bold text-slate-900">{{ $e('Заявки месяца — чек-листы') }}</span>
-                <span class="text-xs text-slate-400">{{ $e('☑ галочки заявки («Позвонил», «Замер», «КП», «Образец»…) — работа менеджера по заявке') }}</span>
+                <span class="text-base font-bold text-slate-900">{{ $e('Сделки месяца') }}</span>
+                <span class="text-xs text-slate-400">{{ $e('сделка · заказчик · менеджер · этап воронки') }}</span>
             </div>
             <div class="divide-y divide-slate-50">
                 <div v-for="(l, i) in lots" :key="i" class="flex items-center gap-4 px-5 py-2.5">
+                    <span class="w-20 flex-shrink-0 text-xs font-bold tabular-nums text-slate-400">{{ l.number }}</span>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
                             <span class="truncate text-sm font-semibold text-slate-900">{{ l.product || '—' }}</span>
-                            <span v-if="l.won" class="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{{ $e('ВЫИГРАЛ ✓') }}</span>
+                            <span v-if="l.won" class="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{{ $e('ОПЛАЧЕНО ✓') }}</span>
                         </div>
                         <div class="truncate text-xs text-slate-400">{{ l.customer || '—' }} · {{ l.manager }}</div>
                     </div>
-                    <div class="flex w-44 flex-shrink-0 items-center gap-2">
-                        <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                            <div class="h-2 rounded-full transition-all duration-700"
-                                :class="l.checks_total > 0 && l.checks_done === l.checks_total ? 'bg-emerald-500' : l.checks_done > 0 ? 'bg-amber-400' : 'bg-rose-300'"
-                                :style="{ width: Math.max(4, l.checks_total > 0 ? Math.round(l.checks_done / l.checks_total * 100) : 0) + '%' }"></div>
-                        </div>
-                        <span class="flex-shrink-0 text-xs font-bold tabular-nums" :class="l.checks_done === l.checks_total && l.checks_total > 0 ? 'text-emerald-600' : 'text-slate-500'">☑ {{ l.checks_done }}/{{ l.checks_total }}</span>
-                    </div>
+                    <span class="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                        :class="l.won ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'">{{ l.stage }}</span>
                 </div>
-                <div v-if="!lots.length" class="px-5 py-8 text-center text-sm text-slate-400">{{ $e('В') }} {{ monthLabel }} {{ $e('заявок ещё нет') }}</div>
+                <div v-if="!lots.length" class="px-5 py-8 text-center text-sm text-slate-400">{{ $e('В') }} {{ monthLabel }} {{ $e('сделок ещё нет') }}</div>
             </div>
         </div>
     </div>

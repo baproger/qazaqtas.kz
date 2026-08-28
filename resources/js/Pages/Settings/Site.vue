@@ -76,11 +76,13 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             <Link :href="route('screens.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Экраны') }}</Link>
             <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Доп. поля') }}</Link>
             <Link :href="route('siteSettings.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">{{ $e('Сайт') }}</Link>
+            <Link v-if="$page.props.auth.user?.roles?.includes('admin')" :href="route('access.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Права доступа') }}</Link>
+            <Link :href="route('structure.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Структура') }}</Link>
         </div>
 
         <div class="space-y-4">
             <!-- Первый экран -->
-            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+            <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-soft">
                 <h3 class="text-sm font-semibold text-slate-900">{{ $e('Первый экран сайта') }}</h3>
                 <p class="mt-1 text-xs text-slate-400">{{ $e('Что видит посетитель до прокрутки. Переключается мгновенно.') }}</p>
 
@@ -106,7 +108,7 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </section>
 
             <!-- Контакты -->
-            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+            <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-soft">
                 <h3 class="text-sm font-semibold text-slate-900">{{ $e('Контакты') }}</h3>
                 <p class="mt-1 text-xs text-slate-400">{{ $e('Показываются в шапке, подвале и на странице «Контакты».') }}</p>
 
@@ -159,13 +161,13 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </div>
 
             <!-- Филиалы -->
-            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+            <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-soft">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Производственные площадки') }}</h3>
                         <p class="mt-1 text-xs text-slate-400">{{ $e('Выводятся в подвале и на «Контактах».') }}</p>
                     </div>
-                    <button class="text-xs font-semibold text-indigo-600 hover:underline" @click="addRow('branches', { city: '', role: '', address: '', phone: '' })">{{ $e('+ Площадка') }}</button>
+                    <button class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700" @click="addRow('branches', { city: '', role: '', address: '', phone: '' })">{{ $e('+ Площадка') }}</button>
                 </div>
 
                 <div v-for="(b, i) in form.branches" :key="i" class="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_2fr_1fr_auto]">
@@ -178,13 +180,13 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </section>
 
             <!-- Доставка -->
-            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+            <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-soft">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Тарифы доставки') }}</h3>
                         <p class="mt-1 text-xs text-slate-400">{{ $e('Считают прикидку в корзине; менеджер подтверждает точную сумму.') }}</p>
                     </div>
-                    <button class="text-xs font-semibold text-indigo-600 hover:underline" @click="addRow('delivery', { city: '', base: 0, per_km: 0, free_from: 0 })">{{ $e('+ Тариф') }}</button>
+                    <button class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700" @click="addRow('delivery', { city: '', base: 0, per_km: 0, free_from: 0 })">{{ $e('+ Тариф') }}</button>
                 </div>
 
                 <div class="mt-3 hidden gap-2 px-1 text-[11px] uppercase tracking-wide text-slate-400 sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto]">
@@ -200,21 +202,40 @@ const submit = () => form.put(route('siteSettings.update'), { preserveScroll: tr
             </section>
 
             <!-- FAQ -->
-            <section class="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+            <section class="rounded-2xl border border-slate-100 bg-white p-6 shadow-soft">
                 <div class="flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900">{{ $e('Частые вопросы') }}</h3>
                         <p class="mt-1 text-xs text-slate-400">{{ $e('Блок на странице «Контакты».') }}</p>
                     </div>
-                    <button class="text-xs font-semibold text-indigo-600 hover:underline" @click="addRow('faq', { q: '', a: '' })">{{ $e('+ Вопрос') }}</button>
+                    <button class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700"
+                        @click="addRow('faq', { q: '', a: '' })">{{ $e('+ Вопрос') }}</button>
                 </div>
 
-                <div v-for="(f, i) in form.faq" :key="i" class="mt-3 rounded-lg border border-slate-100 p-3">
-                    <div class="flex gap-2">
-                        <TextInput v-model="f[at('q')]" class="flex-1" :placeholder="$e('Вопрос')" :title="fallback(f, 'q')" />
-                        <button class="rounded p-2 text-slate-300 hover:text-rose-600" @click="removeRow('faq', i)">✕</button>
+                <!-- Вопрос и ответ — одна карточка с номером.
+                     Раньше это были две одинаковые серые рамки подряд, и на
+                     пяти вопросах глаз терял, где кончается один и начинается
+                     следующий: и вопрос, и ответ выглядели одинаково.
+                     Номер даёт счёт, вопрос набран крупнее ответа. -->
+                <div class="mt-4 space-y-3">
+                    <div v-for="(f, i) in form.faq" :key="i"
+                        class="group rounded-xl border border-slate-100 bg-slate-50/40 p-4 transition-colors duration-150 focus-within:border-indigo-200 focus-within:bg-white">
+                        <div class="flex items-start gap-3">
+                            <span class="mt-2 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-bold text-slate-400 shadow-sm">{{ i + 1 }}</span>
+                            <div class="min-w-0 flex-1 space-y-2">
+                                <TextInput v-model="f[at('q')]" class="w-full font-medium" :placeholder="$e('Вопрос — как его задаёт клиент')" :title="fallback(f, 'q')" />
+                                <textarea v-model="f[at('a')]" rows="2"
+                                    class="w-full rounded-lg border-slate-300 text-sm shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20"
+                                    :placeholder="$e('Ответ — коротко и по делу')"></textarea>
+                            </div>
+                            <button class="mt-1.5 rounded p-2 text-slate-300 transition-colors duration-150 hover:bg-rose-50 hover:text-rose-600"
+                                :title="$e('Убрать вопрос')" @click="removeRow('faq', i)">✕</button>
+                        </div>
                     </div>
-                    <textarea v-model="f[at('a')]" rows="2" class="mt-2 w-full rounded-lg border-slate-300 text-sm shadow-sm" :placeholder="$e('Ответ')"></textarea>
+
+                    <div v-if="!form.faq.length" class="rounded-xl border border-dashed border-slate-200 px-6 py-10 text-center text-sm text-slate-400">
+                        {{ $e('Вопросов пока нет — «+ Вопрос»') }}
+                    </div>
                 </div>
             </section>
 

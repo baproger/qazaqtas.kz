@@ -12,8 +12,6 @@ use Illuminate\Support\Facades\Schedule;
 Schedule::command('tasks:notify-overdue')->hourly();
 // Дни рождения: раз в день утром, чтобы «сегодня»/«через 3 дня» не дублировались.
 Schedule::command('users:notify-birthdays')->dailyAt('09:00');
-// Сегодня истекает срок КП по заявке → уведомление её менеджеру.
-Schedule::command('pre-deals:notify-quote-deadline')->dailyAt('09:00');
 // Долги сотрудников: удержание из бонуса за ПРОШЛЫЙ месяц, 1-го числа.
 // К этому моменту месяц закрыт и бонус по нему уже не изменится.
 Schedule::command('debts:charge')->monthlyOn(1, '09:00');

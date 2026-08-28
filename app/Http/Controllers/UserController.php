@@ -3,14 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UserRequest;
+use App\Models\Company;
+use App\Models\Deal;
 use App\Models\Department;
+use App\Models\EmployeeDebt;
+use App\Models\EmployeeDebtPayment;
+use App\Models\PayrollAdjustment;
+use App\Models\Project;
+use App\Models\ProjectStage;
+use App\Models\Task;
 use App\Models\User;
+use App\Services\EmployeeDebtService;
+use App\Services\PayrollService;
+use App\Support\RoleTraits;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
@@ -49,11 +63,11 @@ class UserController extends Controller
             'users' => $users,
             'departments' => Department::where('is_active', true)->orderBy('name')->get(['id', 'name', 'head_user_id']),
             'roles' => Role::orderBy('name')->pluck('name'),
-            'companies' => \App\Models\Company::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'companies' => Company::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'can' => ['manage' => $request->user()->can('create', User::class)],
             // Цеха производства — чекбоксы доступа в форме сотрудника.
-            'workshopOptions' => \App\Models\Company::where('is_active', true)->pluck('id')
-                ->flatMap(fn ($id) => \App\Models\ProjectStage::workshopsFor((int) $id))->unique()->values(),
+            'workshopOptions' => Company::where('is_active', true)->pluck('id')
+                ->flatMap(fn ($id) => ProjectStage::workshopsFor((int) $id))->unique()->values(),
         ]);
     }
 
@@ -62,14 +76,15 @@ class UserController extends Controller
      * Видит руководство (user.view) или сам сотрудник; деньги (оклад/бонус) —
      * только admin/financist и сам сотрудник (директор — наблюдатель без ЗП-детали).
      */
-    public function show(Request $request, User $user, \App\Services\PayrollService $payroll): Response
+    public function show(Request $request, User $user, PayrollService $payroll): Response
     {
         $viewer = $request->user();
         abort_unless($viewer->can('view', $user) || $viewer->id === $user->id, 403);
 
-        $seesMoney = $viewer->hasAnyRole(['admin', 'financist', 'director']) || $viewer->id === $user->id;
+        // Чужую зарплату и бонусы видит руководство; свою — каждый сам.
+        $seesMoney = RoleTraits::isLeadership($viewer) || $viewer->id === $user->id;
 
-        $deals = \App\Models\Deal::forCurrentCompany()
+        $deals = Deal::forCurrentCompany()
             ->where('responsible_user_id', $user->id)
             ->with('stage:id,name,is_won')
             ->orderByDesc('created_at')
@@ -86,7 +101,7 @@ class UserController extends Controller
                 'deadline' => $d->deadline?->toDateString(),
             ]);
 
-        $projects = \App\Models\Project::query()
+        $projects = Project::query()
             ->where('responsible_user_id', $user->id)
             ->with('stage:id,name')
             ->orderByDesc('created_at')
@@ -102,7 +117,7 @@ class UserController extends Controller
                 'deadline' => $p->deadline?->toDateString(),
             ]);
 
-        $tasks = \App\Models\Task::where('assignee_id', $user->id)
+        $tasks = Task::where('assignee_id', $user->id)
             ->orderByRaw("status = 'done'")->orderByDesc('created_at')
             ->limit(30)
             ->get(['id', 'title', 'status', 'priority', 'due_date'])
@@ -126,10 +141,10 @@ class UserController extends Controller
             ? $request->string('month')->toString()
             : now()->format('Y-m');
         $monthStart = $month.'-01';
-        $monthEnd = \Illuminate\Support\Carbon::parse($monthStart)->endOfMonth()->toDateString();
+        $monthEnd = Carbon::parse($monthStart)->endOfMonth()->toDateString();
 
         $adjustments = $seesMoney
-            ? \App\Models\PayrollAdjustment::where('user_id', $user->id)
+            ? PayrollAdjustment::where('user_id', $user->id)
                 ->whereDate('date', '>=', $monthStart)->whereDate('date', '<=', $monthEnd)
                 ->orderByDesc('date')->limit(20)->get()
                 ->map(fn ($a) => [
@@ -143,10 +158,10 @@ class UserController extends Controller
         // история погашений — по ней видно, куда ушёл бонус.
         $debt = null;
         if ($seesMoney) {
-            $plan = app(\App\Services\EmployeeDebtService::class)->planFor($user->id, $month);
-            $payments = \App\Models\EmployeeDebtPayment::whereIn(
+            $plan = app(EmployeeDebtService::class)->planFor($user->id, $month);
+            $payments = EmployeeDebtPayment::whereIn(
                 'employee_debt_id',
-                \App\Models\EmployeeDebt::where('user_id', $user->id)->select('id'),
+                EmployeeDebt::where('user_id', $user->id)->select('id'),
             )->orderByDesc('month')->limit(24)->get()
                 ->map(fn ($p) => ['id' => $p->id, 'month' => $p->month, 'amount' => (float) $p->amount]);
 
@@ -181,6 +196,17 @@ class UserController extends Controller
             'debt' => $debt,
             'month' => $month,
             'can' => ['manage' => $viewer->can('update', $user)],
+            // Личные доступы СВЕРХ роли — только админу и только для не-админа.
+            // У админа полный доступ через Gate::before, и галочки там лгали бы.
+            'access' => $viewer->hasRole('admin') && ! $user->hasRole('admin')
+                ? [
+                    'modules' => app(AccessController::class)->userModules(),
+                    'abilities' => AccessController::abilityLabels(),
+                    'fromRole' => $user->getPermissionsViaRoles()->pluck('name')->values(),
+                    'personal' => $user->getDirectPermissions()->pluck('name')->values(),
+                    'roleLabel' => AccessController::roleLabel($user->roles->first()?->name ?? ''),
+                ]
+                : null,
         ]);
     }
 
@@ -188,7 +214,7 @@ class UserController extends Controller
      * Экспорт списка сотрудников в CSV (открывается в Excel): имя, отдел, роль,
      * телефон, email, компании, даты. Только для тех, кто видит страницу.
      */
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(Request $request): StreamedResponse
     {
         $this->authorize('viewAny', User::class);
 
@@ -278,7 +304,7 @@ class UserController extends Controller
         ]);
         if ($request->hasFile('contract')) {
             if ($user->contract_path) {
-                \Illuminate\Support\Facades\Storage::delete($user->contract_path);
+                Storage::delete($user->contract_path);
             }
             $user->update(['contract_path' => $request->file('contract')->store('contracts', 'local')]);
         }
@@ -294,15 +320,15 @@ class UserController extends Controller
     /**
      * Трудовой договор: скачать может руководство или сам сотрудник.
      */
-    public function contract(Request $request, User $user): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function contract(Request $request, User $user): StreamedResponse
     {
         abort_unless(
             $request->user()->hasAnyRole(['admin', 'director', 'financist']) || $request->user()->id === $user->id,
             403
         );
-        abort_unless($user->contract_path && \Illuminate\Support\Facades\Storage::exists($user->contract_path), 404);
+        abort_unless($user->contract_path && Storage::exists($user->contract_path), 404);
 
-        return \Illuminate\Support\Facades\Storage::download(
+        return Storage::download(
             $user->contract_path,
             'Договор — '.$user->name.'.'.pathinfo($user->contract_path, PATHINFO_EXTENSION)
         );
@@ -315,7 +341,7 @@ class UserController extends Controller
     private function companyIds(Request $request): array
     {
         $ids = collect($request->input('company_ids', []))->map(fn ($v) => (int) $v)->filter();
-        $valid = \App\Models\Company::where('is_active', true)->pluck('id');
+        $valid = Company::where('is_active', true)->pluck('id');
 
         $picked = $ids->intersect($valid);
 

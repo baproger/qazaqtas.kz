@@ -7,11 +7,17 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Material;
 use App\Models\MaterialReceipt;
+use App\Models\Product;
+use App\Models\ProductStock;
 use App\Models\Setting;
+use App\Models\StockMovement;
 use App\Support\CurrentCompany;
 use App\Support\FinanceAudit;
+use App\Support\StickyFilters;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -35,6 +41,10 @@ class WarehouseController extends Controller
 
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'warehouse', ['from', 'to']);
+
         abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist', 'manager']), 403);
 
         $allMode = CurrentCompany::id() === 0;
@@ -127,13 +137,13 @@ class WarehouseController extends Controller
      * Остаток берётся из движений (`stock_movements`) — числом его никто не
      * правит, поэтому по каждой строке видно, откуда она взялась.
      *
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
     private function finishedGoods()
     {
         $companyId = CurrentCompany::id() ?: null;
 
-        $stocks = \App\Models\ProductStock::query()
+        $stocks = ProductStock::query()
             ->where('company_id', $companyId)
             ->with('product:id,name,unit,min_stock')
             ->get()
@@ -141,7 +151,7 @@ class WarehouseController extends Controller
 
         // Движения этого месяца — «произведено» и «ушло в сделки» колонками.
         $since = now()->startOfMonth();
-        $moves = \App\Models\StockMovement::query()
+        $moves = StockMovement::query()
             ->where('company_id', $companyId)
             ->whereIn('product_id', $stocks->pluck('product_id'))
             ->where('created_at', '>=', $since)
@@ -162,8 +172,8 @@ class WarehouseController extends Controller
                 'min_stock' => $min,
                 // Серый — пусто, жёлтый — ниже минимума, зелёный — есть.
                 'level' => $qty <= 0 ? 'empty' : ($min !== null && $qty <= $min ? 'low' : 'ok'),
-                'produced' => round((float) $mine->where('type', \App\Models\StockMovement::PRODUCTION_IN)->sum('total'), 2),
-                'shipped' => round(abs((float) $mine->where('type', \App\Models\StockMovement::DEAL_OUT)->sum('total')), 2),
+                'produced' => round((float) $mine->where('type', StockMovement::PRODUCTION_IN)->sum('total'), 2),
+                'shipped' => round(abs((float) $mine->where('type', StockMovement::DEAL_OUT)->sum('total')), 2),
             ];
         })->sortBy('name')->values();
     }
@@ -174,11 +184,11 @@ class WarehouseController extends Controller
      * Ради этой ленты остаток и хранится движениями: «почему 800, а не 1000»
      * должно отвечаться построчно, а не догадками.
      */
-    public function productMovements(Request $request, \App\Models\Product $product): \Illuminate\Http\JsonResponse
+    public function productMovements(Request $request, Product $product): JsonResponse
     {
         abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist', 'manager']), 403);
 
-        $rows = \App\Models\StockMovement::query()
+        $rows = StockMovement::query()
             ->where('product_id', $product->id)
             ->where('company_id', CurrentCompany::id() ?: null)
             ->with('author:id,name')

@@ -3,15 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InvoiceRequest;
+use App\Models\AuditLog;
+use App\Models\CashReceipt;
+use App\Models\DdsEntry;
 use App\Models\Deal;
+use App\Models\Debt;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Project;
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\FinanceService;
 use App\Services\InvoiceNumberService;
 use App\Services\PayrollService;
+use App\Support\CurrentCompany;
+use App\Support\FinanceAudit;
+use App\Support\StickyFilters;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -47,10 +61,10 @@ class InvoiceController extends Controller
     }
 
     /** Счета своей фирмы (у заказов цеха — через сделку заказа). */
-    private function invoiceScope(): \Illuminate\Database\Eloquent\Builder
+    private function invoiceScope(): Builder
     {
-        return app(\App\Services\FinanceService::class)
-            ->scopeCompanyInvoices(Invoice::query(), \App\Support\CurrentCompany::id() ?: null);
+        return app(FinanceService::class)
+            ->scopeCompanyInvoices(Invoice::query(), CurrentCompany::id() ?: null);
     }
 
     /**
@@ -62,12 +76,12 @@ class InvoiceController extends Controller
         return function ($i) {
             $target = $i->invoiceable;
             $link = null;
-            if ($target instanceof \App\Models\Deal) {
+            if ($target instanceof Deal) {
                 $link = ['type' => 'deal', 'id' => $target->id, 'label' => trim($target->number.' · '.($target->company_name ?? ''), ' ·')];
-            } elseif ($target instanceof \App\Models\Project) {
+            } elseif ($target instanceof Project) {
                 $link = ['type' => 'project', 'id' => $target->id, 'label' => trim($target->number.' · '.($target->name ?? ''), ' ·')];
             } elseif ($i->invoiceable_type === 'deal' && $i->invoiceable_id) {
-                $trashed = \App\Models\Deal::withTrashed()->find($i->invoiceable_id);
+                $trashed = Deal::withTrashed()->find($i->invoiceable_id);
                 if ($trashed) {
                     $number = preg_replace('/#del\d+$/', '', (string) $trashed->number);
                     $link = ['type' => 'deal', 'id' => null, 'label' => trim($number.' · '.($trashed->company_name ?? ''), ' ·').' (сделка удалена)'];
@@ -92,7 +106,7 @@ class InvoiceController extends Controller
     {
         $live = fn () => $this->invoiceScope()->where('status', '!=', 'cancelled');
         $invoiced = (float) $live()->sum('amount');
-        $paid = (float) \App\Models\Payment::whereIn('invoice_id', $live()->select('id'))->sum('amount');
+        $paid = (float) Payment::whereIn('invoice_id', $live()->select('id'))->sum('amount');
 
         return ['invoiced' => $invoiced, 'paid' => $paid, 'debt' => max(0, $invoiced - $paid)];
     }
@@ -107,9 +121,13 @@ class InvoiceController extends Controller
      */
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'finance', ['fin_month']);
+
         $this->guardFinance($request);
 
-        $companyId = \App\Support\CurrentCompany::id();
+        $companyId = CurrentCompany::id();
         $invoiceTotals = $this->invoiceTotals();
 
         // Фильтр сводки по месяцу (YYYY-MM): остатки касса/банк и
@@ -117,27 +135,27 @@ class InvoiceController extends Controller
         $finMonth = preg_match('/^\d{4}-\d{2}$/', $request->string('fin_month')->toString())
             ? $request->string('fin_month')->toString() : '';
         $mStart = $finMonth ? $finMonth.'-01' : null;
-        $mEnd = $finMonth ? \Illuminate\Support\Carbon::parse($finMonth.'-01')->endOfMonth()->toDateString() : null;
+        $mEnd = $finMonth ? Carbon::parse($finMonth.'-01')->endOfMonth()->toDateString() : null;
         $monthly = fn ($q, $col = 'date') => $finMonth
             ? $q->whereDate($col, '>=', $mStart)->whereDate($col, '<=', $mEnd) : $q;
 
-        $expScope = fn ($q) => app(\App\Services\FinanceService::class)->scopeCompanyExpenses($q, $companyId ?: null);
+        $expScope = fn ($q) => app(FinanceService::class)->scopeCompanyExpenses($q, $companyId ?: null);
 
         $payroll = app(PayrollService::class);
         $fin = $payroll->companyTotals();
         $payrollRows = $payroll->perUser();
 
         // ---- Сводка: Доход − ВСЕ расходы = Чистая прибыль ----
-        $confirmedNoPeriod = fn () => \App\Models\Expense::query()->tap($expScope)->where('status', 'confirmed');
+        $confirmedNoPeriod = fn () => Expense::query()->tap($expScope)->where('status', 'confirmed');
         $byCategory = $monthly($confirmedNoPeriod())->whereNotNull('category_id')
             ->groupBy('category_id')->selectRaw('category_id, sum(amount) s')->pluck('s', 'category_id');
         // Выплаты сотрудникам (аванс, долг, зарплата) — расход категории
         // «Расходы по сотрудникам». В ИТОГ они не входят: зарплата стоит там
         // отдельной строкой payrollTotal, и сложить обе значило бы посчитать
         // ЗП дважды. Кассу/банк эти расходы уменьшают честно — там они деньги.
-        $employeeCategoryId = \App\Models\ExpenseCategory::findByCode(\App\Models\ExpenseCategory::EMPLOYEE)?->id;
-        $categories = \App\Models\ExpenseCategory::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
-        $catNames = \App\Models\ExpenseCategory::whereIn('id', $byCategory->keys())->pluck('name', 'id');
+        $employeeCategoryId = ExpenseCategory::findByCode(ExpenseCategory::EMPLOYEE)?->id;
+        $categories = ExpenseCategory::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']);
+        $catNames = ExpenseCategory::whereIn('id', $byCategory->keys())->pluck('name', 'id');
         $categoryRows = $byCategory
             ->map(fn ($sum, $id) => [
                 'name' => $catNames[$id] ?? '—',
@@ -160,14 +178,14 @@ class InvoiceController extends Controller
         $expensesTotal = round($categoryRows->reject(fn ($r) => $r['in_payroll'])->sum('sum')
             + $dealExpenses + $payrollTotal + $taxRow, 2);
 
-        $debtBase = \App\Models\Debt::query()->when($companyId, fn ($q, $c) => $q->where('company_id', $c));
+        $debtBase = Debt::query()->when($companyId, fn ($q, $c) => $q->where('company_id', $c));
         $receivableManual = (float) (clone $debtBase)->where('type', 'receivable')->sum('amount');
         $payableManual = (float) (clone $debtBase)->where('type', 'payable')->sum('amount');
 
-        $receiptBase = \App\Models\CashReceipt::query()
+        $receiptBase = CashReceipt::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c));
         $invoicePaidP = $finMonth
-            ? (float) \App\Models\Payment::whereIn('invoice_id', $this->invoiceScope()->select('id'))
+            ? (float) Payment::whereIn('invoice_id', $this->invoiceScope()->select('id'))
                 ->whereDate('payment_date', '>=', $mStart)->whereDate('payment_date', '<=', $mEnd)->sum('amount')
             : $invoiceTotals['paid'];
         $receiptManualP = $finMonth
@@ -175,8 +193,8 @@ class InvoiceController extends Controller
             : round((float) (clone $receiptBase)->sum('amount'), 2);
         $incomeTotal = round($invoicePaidP + $receiptManualP, 2);
 
-        $balances = app(\App\Services\FinanceService::class)->companyBalances($companyId ?: null);
-        $dealsIncome = app(\App\Services\FinanceService::class)->dealsIncome($companyId ?: null, $mStart, $mEnd);
+        $balances = app(FinanceService::class)->companyBalances($companyId ?: null);
+        $dealsIncome = app(FinanceService::class)->dealsIncome($companyId ?: null, $mStart, $mEnd);
 
         return Inertia::render('Finance/Index', [
             'invoiceTotals' => $invoiceTotals,
@@ -187,12 +205,12 @@ class InvoiceController extends Controller
             'isAdmin' => $request->user()->hasRole('admin'),
             // ДДС — ручная сводка (Excel-стиль): счета компаний и долги.
             'dds' => [
-                'accounts' => \App\Models\DdsEntry::where('kind', 'account')->orderBy('sort')->orderBy('id')->get(),
-                'debts' => \App\Models\DdsEntry::where('kind', 'debt')->orderBy('sort')->orderBy('id')->get(),
-                'date' => (string) \App\Models\Setting::get('dds_date', ''),
+                'accounts' => DdsEntry::where('kind', 'account')->orderBy('sort')->orderBy('id')->get(),
+                'debts' => DdsEntry::where('kind', 'debt')->orderBy('sort')->orderBy('id')->get(),
+                'date' => (string) Setting::get('dds_date', ''),
             ],
             'summary' => [
-                'contracts' => (float) \App\Models\Deal::forCurrentCompany()->where('status', '!=', 'cancelled')->sum('budget'),
+                'contracts' => (float) Deal::forCurrentCompany()->where('status', '!=', 'cancelled')->sum('budget'),
                 'receivables' => $invoiceTotals['debt'],
                 'receivablesManual' => $receivableManual,
                 'receivablesTotal' => round($invoiceTotals['debt'] + $receivableManual, 2),
@@ -200,7 +218,7 @@ class InvoiceController extends Controller
                 'dealsIncome' => $dealsIncome,
                 'cash' => $balances['cash'],
                 'bank' => $balances['bank'],
-                'cashCorrection' => (float) \App\Models\Setting::get('cash_correction', 0),
+                'cashCorrection' => (float) Setting::get('cash_correction', 0),
                 'income' => $incomeTotal,
                 'incomeInvoices' => $invoicePaidP,
                 'incomeManual' => $receiptManualP,
@@ -218,6 +236,10 @@ class InvoiceController extends Controller
     /** Счета: сегодняшние + прошлые с поиском по номеру и статусу. */
     public function invoices(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'invoices', ['search', 'status']);
+
         $this->guardFinance($request);
 
         $map = $this->mapInvoice();
@@ -254,10 +276,14 @@ class InvoiceController extends Controller
     /** Поступления денег (нал/банк): сегодня + прошлые с поиском и периодом. */
     public function receipts(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'receipts', ['rc_search', 'rc_from', 'rc_to']);
+
         $this->guardFinance($request);
 
-        $companyId = \App\Support\CurrentCompany::id();
-        $base = fn () => \App\Models\CashReceipt::query()
+        $companyId = CurrentCompany::id();
+        $base = fn () => CashReceipt::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c));
 
         $today = now()->toDateString();
@@ -286,8 +312,8 @@ class InvoiceController extends Controller
     {
         $this->guardFinance($request);
 
-        $companyId = \App\Support\CurrentCompany::id();
-        $base = \App\Models\Debt::query()
+        $companyId = CurrentCompany::id();
+        $base = Debt::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
             ->with('creator:id,name')->latest('date')->latest('id');
 
@@ -320,14 +346,14 @@ class InvoiceController extends Controller
         abort_unless($request->user()->hasRole('admin'), 403, 'Кассу корректирует только администратор.');
         $data = $request->validate(['actual' => ['required', 'numeric']]);
 
-        $service = app(\App\Services\FinanceService::class);
+        $service = app(FinanceService::class);
         $oldCash = $service->companyBalances(null)['cash'];
         // Расчётная касса БЕЗ текущей корректировки.
-        $raw = $oldCash - (float) \App\Models\Setting::get('cash_correction', 0);
-        \App\Models\Setting::set('cash_correction', round((float) $data['actual'] - $raw, 2));
+        $raw = $oldCash - (float) Setting::get('cash_correction', 0);
+        Setting::set('cash_correction', round((float) $data['actual'] - $raw, 2));
 
         // История: кто и когда изменил остаток кассы (страница Аудит, admin).
-        \App\Models\AuditLog::create([
+        AuditLog::create([
             'user_id' => $request->user()->id,
             'ip' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 255),
@@ -382,7 +408,7 @@ class InvoiceController extends Controller
         $this->authorize('delete', $invoice);
         $this->assertOwnership(request()->user(), $invoice->invoiceable);
         $invoice->delete();
-        \App\Support\FinanceAudit::notifyDeleted(
+        FinanceAudit::notifyDeleted(
             'Счёт '.$invoice->number.' на '.number_format((float) $invoice->amount, 0, '.', ' ').' ₸',
             $invoice->invoiceable_type,
             $invoice->invoiceable_id,

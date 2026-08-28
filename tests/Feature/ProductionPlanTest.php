@@ -4,13 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\Brigade;
 use App\Models\Company;
+use App\Models\Deal;
+use App\Models\DealStage;
 use App\Models\Product;
 use App\Models\ProductionPlan;
 use App\Models\User;
 use App\Models\WorkOrder;
+use App\Notifications\ProductionPlanQueued;
 use App\Services\ProductionProgressService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /**
@@ -27,6 +31,8 @@ class ProductionPlanTest extends TestCase
     private User $director;
 
     private User $financist;
+
+    private User $master;
 
     private User $foreman;
 
@@ -49,6 +55,11 @@ class ProductionPlanTest extends TestCase
             $user->companies()->attach($this->company);
             $this->{$role} = $user;
         }
+
+        // Смену принимает начальник производства (правило от 28.08.2026).
+        $this->master = User::factory()->create(['name' => 'Начальник цеха']);
+        $this->master->assignRole('production_head');
+        $this->master->companies()->attach($this->company);
 
         $this->foreman = User::factory()->create(['name' => 'Асхат Бекболат']);
         $this->foreman->assignRole('foreman');
@@ -173,7 +184,7 @@ class ProductionPlanTest extends TestCase
         $this->assertSame('draft', $order->status);
         $this->assertSame('Брусчатка «Классика» 60мм', $order->product);
 
-        $this->actingAs($this->financist)->patch(route('production.orders.confirm', $order->id))
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', $order->id))
             ->assertSessionHasNoErrors();
 
         $stats = app(ProductionProgressService::class)->forPlans([$plan->fresh()]);
@@ -183,9 +194,13 @@ class ProductionPlanTest extends TestCase
     }
 
     /** Подтверждает и финансист, и директор — достаточно одного. */
-    public function test_either_the_director_or_the_financist_confirms(): void
+    /**
+     * Достаточно одного из двух: директор ИЛИ начальник производства.
+     * Двойная подпись останавливала бы цех, пока один в отъезде.
+     */
+    public function test_either_the_director_or_the_production_head_confirms(): void
     {
-        foreach ([$this->director, $this->financist] as $confirmer) {
+        foreach ([$this->director, $this->master] as $confirmer) {
             $plan = $this->plan(['product_id' => Product::create([
                 'name' => 'Товар '.$confirmer->id, 'unit' => 'м²', 'price' => 1, 'is_active' => true, 'is_service' => false,
             ])->id]);
@@ -218,7 +233,7 @@ class ProductionPlanTest extends TestCase
         $this->actingAs($this->foreman)->post(route('production.plans.output', $plan->id), ['qty' => 100]);
         $order = WorkOrder::firstWhere('production_plan_id', $plan->id);
 
-        $this->actingAs($this->financist)
+        $this->actingAs($this->master)
             ->patch(route('production.orders.reject', $order->id), ['reason' => 'Нет фото партии'])
             ->assertSessionHasNoErrors();
 
@@ -341,5 +356,188 @@ class ProductionPlanTest extends TestCase
             ->assertForbidden();
 
         $this->assertSame(0, WorkOrder::count());
+    }
+
+    /**
+     * Планы делятся на «в работе» и «выполнено», и подытоги СХОДЯТСЯ с итогом.
+     *
+     * Сумма блоков обязана равняться итогу месяца: разойдись они, страница
+     * начала бы спорить сама с собой, и понять, какая цифра верная, было бы
+     * нечем. Признак «выполнен» считает сервер — посчитай его в браузере, и
+     * деление на блоки разъедется с подытогами.
+     */
+    public function test_the_page_splits_plans_and_the_parts_add_up(): void
+    {
+        // Закрытый план: 500 из 500.
+        $closed = $this->plan(['plan_qty' => 500]);
+        $this->actingAs($this->foreman)->post(route('production.plans.output', $closed->id), ['qty' => 500]);
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', WorkOrder::latest('id')->value('id')));
+
+        // Начатый план: 200 из 1000.
+        $open = $this->plan(['product_id' => Product::create([
+            'name' => 'Вазон', 'unit' => 'шт', 'price' => 1000, 'is_active' => true,
+        ])->id, 'plan_qty' => 1000, 'unit' => 'шт']);
+        $this->actingAs($this->foreman)->post(route('production.plans.output', $open->id), ['qty' => 200]);
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', WorkOrder::latest('id')->value('id')));
+
+        $this->actingAs($this->director)->get(route('production.plans.index'))
+            ->assertInertia(function ($page) {
+                $props = $page->toArray()['props'];
+                $summary = $props['summary'];
+
+                $this->assertSame(1, $summary['done']['count'], 'Закрытый план — в «Выполнено».');
+                $this->assertSame(1, $summary['active']['count'], 'Начатый — в «В работе».');
+
+                // Бонус: части складываются в целое.
+                $this->assertEqualsWithDelta(
+                    $summary['bonus'],
+                    $summary['active']['bonus'] + $summary['done']['bonus'],
+                    0.01,
+                    'Сумма бонусов по блокам не сошлась с итогом месяца.',
+                );
+
+                // И по каждой метрике отдельно: метры и штуки не смешиваются.
+                foreach ($summary['measures'] as $total) {
+                    $parts = 0.0;
+                    foreach (['active', 'done'] as $section) {
+                        foreach ($summary[$section]['measures'] as $row) {
+                            if ($row['measure'] === $total['measure']) {
+                                $parts += (float) $row['done'];
+                            }
+                        }
+                    }
+                    $this->assertEqualsWithDelta((float) $total['done'], $parts, 0.01,
+                        "Метрика {$total['measure']}: блоки не сошлись с итогом.");
+                }
+
+                // Выработка бригад: колонка «по плану» = бонус планов месяца.
+                $planAmount = collect($props['brigadeOutput'])->sum('plan_amount');
+                $this->assertEqualsWithDelta($summary['bonus'], $planAmount, 0.01,
+                    'Выработка «по плану» разошлась с бонусом планов.');
+            });
+    }
+
+    /** Неподтверждённая смена в выработку не идёт: это ещё не деньги. */
+    public function test_an_unconfirmed_shift_stays_out_of_the_output(): void
+    {
+        $plan = $this->plan(['plan_qty' => 500]);
+        $this->actingAs($this->foreman)->post(route('production.plans.output', $plan->id), ['qty' => 100]);
+
+        $this->actingAs($this->director)->get(route('production.plans.index'))
+            ->assertInertia(fn ($page) => $page
+                ->where('brigadeOutput', fn ($rows) => collect($rows)->sum('amount') == 0)
+                ->etc());
+    }
+
+    /**
+     * Финансист смену больше не принимает (правило от 28.08.2026).
+     *
+     * Раньше он был вторым мастером «чтобы цех не стоял». Теперь принимает
+     * тот, кто отвечает за цех, а не тот, кто платит: подпись под объёмом
+     * должна стоить знания, что этот объём действительно сделан.
+     */
+    public function test_the_financist_no_longer_confirms_a_shift(): void
+    {
+        $plan = $this->plan();
+        $this->actingAs($this->foreman)->post(route('production.plans.output', $plan->id), ['qty' => 100]);
+        $order = WorkOrder::firstWhere('production_plan_id', $plan->id);
+
+        $this->actingAs($this->financist)
+            ->patch(route('production.orders.confirm', $order->id))
+            ->assertForbidden();
+
+        $this->assertSame('draft', $order->fresh()->status);
+    }
+
+    /**
+     * Нехватка со склада уходит в план ОДНИМ нажатием, без заявки-посредника.
+     *
+     * План рождается без бригады: менеджер не знает, кто сейчас свободен в
+     * цехе. Пока бригады нет, строка стоит в очереди и в «сделано» не идёт.
+     */
+    public function test_a_shortage_goes_straight_into_the_plan_queue(): void
+    {
+        Notification::fake();
+
+        $manager = User::factory()->create();
+        $manager->assignRole('manager');
+        $manager->companies()->attach($this->company);
+
+        $head = User::factory()->create();
+        $head->assignRole('production_head');
+
+        $deal = Deal::create([
+            'company_id' => $this->company, 'number' => 'QT-900', 'name' => 'X',
+            'company_name' => 'Клиент', 'client_name' => 'Брусчатка', 'budget' => 100000,
+            'status' => 'active', 'deal_stage_id' => DealStage::orderBy('order')->value('id'),
+            'responsible_user_id' => $manager->id,
+        ]);
+        $deal->items()->create([
+            'product_id' => $this->tile->id, 'name' => $this->tile->name,
+            'unit' => 'м²', 'quantity' => 300, 'price' => 9000, 'amount' => 2700000, 'sort' => 0,
+        ]);
+
+        $this->actingAs($manager)->post(route('deals.toProduction', $deal->id))
+            ->assertSessionHas('success');
+
+        $queued = ProductionPlan::whereNull('brigade_id')->firstOrFail();
+        $this->assertSame(300.0, (float) $queued->plan_qty, 'Склад пуст — в план ушёл весь объём.');
+        $this->assertSame($deal->id, $queued->deal_id);
+
+        // Весть уходит руководству производства, а не бригадиру: план ещё ничей.
+        Notification::assertSentTo($head, ProductionPlanQueued::class);
+        Notification::assertNotSentTo($this->foreman, ProductionPlanQueued::class);
+
+        // Вторая сделка на тот же товар СКЛАДЫВАЕТСЯ, а не создаёт вторую строку.
+        $deal->items()->create([
+            'product_id' => $this->tile->id, 'name' => $this->tile->name,
+            'unit' => 'м²', 'quantity' => 200, 'price' => 9000, 'amount' => 1800000, 'sort' => 1,
+        ]);
+        $this->actingAs($manager)->post(route('deals.toProduction', $deal->fresh()->id));
+
+        $this->assertSame(1, ProductionPlan::whereNull('brigade_id')->count());
+        $this->assertSame(800.0, (float) ProductionPlan::whereNull('brigade_id')->value('plan_qty'));
+    }
+
+    /** Бригаду очереди назначает начальник производства, не бригадир. */
+    public function test_the_production_head_assigns_the_brigade(): void
+    {
+        $queued = ProductionPlan::create([
+            'company_id' => $this->company, 'period_month' => now()->startOfMonth()->toDateString(),
+            'brigade_id' => null, 'product_id' => $this->tile->id, 'plan_qty' => 400,
+            'unit' => 'м²', 'status' => 'active',
+        ]);
+
+        $this->actingAs($this->foreman)
+            ->put(route('production.plans.assign', $queued->id), ['brigade_id' => $this->brigade->id])
+            ->assertForbidden();
+
+        $this->actingAs($this->master)
+            ->put(route('production.plans.assign', $queued->id), ['brigade_id' => $this->brigade->id])
+            ->assertSessionHas('success');
+
+        $this->assertSame($this->brigade->id, $queued->fresh()->brigade_id);
+    }
+
+    /**
+     * У бригады уже есть план на этот товар — объёмы складываются, а очередная
+     * строка исчезает: два задания на один товар одной бригаде это одно
+     * задание, и уникальный ключ их всё равно не пустит.
+     */
+    public function test_assigning_merges_into_an_existing_plan(): void
+    {
+        $existing = $this->plan(['plan_qty' => 1000]);
+        $queued = ProductionPlan::create([
+            'company_id' => $this->company, 'period_month' => now()->startOfMonth()->toDateString(),
+            'brigade_id' => null, 'product_id' => $this->tile->id, 'plan_qty' => 400,
+            'unit' => 'м²', 'status' => 'active',
+        ]);
+
+        $this->actingAs($this->master)
+            ->put(route('production.plans.assign', $queued->id), ['brigade_id' => $this->brigade->id])
+            ->assertSessionHas('success');
+
+        $this->assertNull(ProductionPlan::find($queued->id), 'Очередная строка ушла.');
+        $this->assertSame(1400.0, (float) $existing->fresh()->plan_qty);
     }
 }

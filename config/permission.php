@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\Role;
 use Spatie\Permission\DefaultTeamResolver;
+// Своя модель роли: у неё есть признаки (руководство / видит суммы / цех),
+// на которых держится поведение, а не только права.
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 return [
 

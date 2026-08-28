@@ -17,14 +17,20 @@ use App\Models\Project;
 use App\Models\ProjectStage;
 use App\Models\Setting;
 use App\Models\User;
+use App\Notifications\ProductShortage;
 use App\Services\CustomFieldService;
 use App\Services\DealItemService;
 use App\Services\DealNumberService;
 use App\Services\FinanceService;
-use App\Services\ProductionProgressService;
 use App\Services\PayrollService;
+use App\Services\ProductionPlanService;
+use App\Services\ProductionProgressService;
+use App\Services\StockService;
+use App\Support\AccessScope;
 use App\Support\AuditFormatter;
 use App\Support\CurrentCompany;
+use App\Support\RoleTraits;
+use App\Support\StickyFilters;
 use Database\Seeders\StageSeeder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -50,21 +56,27 @@ class DealController extends Controller
      */
     private function seesMoney(User $user): bool
     {
-        return ! $user->hasRole('foreman') || $user->hasAnyRole(['admin', 'director', 'financist']);
+        return RoleTraits::seesMoney($user);
     }
 
     /**
-     * Видимость сделок в списках по роли: руководство — все; технолог —
-     * только сделки на этапе «Дизайн и расчет», снабженец — на «Закупе»
-     * (их гейт-этапы, чтобы не путались в чужих сделках); бригадир — те, на
-     * которые его назначили; менеджер — свои.
+     * Видимость сделок в списках.
+     *
+     * Ширину задаёт ОБЛАСТЬ ДОСТУПА роли (Настройки → Права доступа): свои /
+     * отдел / отдел и подчинённые / все. Не настроена — руководство видит всё,
+     * остальные свои, ровно как было до появления областей.
+     *
+     * Два случая областью не описываются и остаются отдельно:
+     *
+     * - технолог и снабженец видят сделки СВОЕГО ГЕЙТ-ЭТАПА, а не своего
+     *   отдела: они подключаются к чужим сделкам на одном шаге воронки;
+     * - бригадир видит те, на которые его назначил директор, — это личное
+     *   назначение, а не принадлежность к отделу.
+     *
      * Прямые ссылки (из уведомлений/задач) шире — их решает DealPolicy.
      */
     private function scopeForViewer($query, User $user): void
     {
-        if ($user->hasAnyRole(['admin', 'director', 'financist'])) {
-            return;
-        }
         $gateTypes = [];
         if ($user->hasRole('designer')) {
             $gateTypes[] = 'design';
@@ -85,11 +97,15 @@ class DealController extends Controller
             return;
         }
 
-        $query->where('responsible_user_id', $user->id);
+        AccessScope::apply($query, $user, 'deal.viewAny');
     }
 
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'deals', ['search', 'responsible', 'stage', 'branch', 'date_from', 'date_to', 'contract_from', 'contract_to']);
+
         $this->authorize('viewAny', Deal::class);
 
         $view = $request->string('view', 'kanban')->toString();
@@ -141,7 +157,7 @@ class DealController extends Controller
             // кроме самого филиала: счётчики на вкладках не должны обнуляться
             // от того, что одна вкладка уже выбрана.
             'branchCounts' => $this->branchCounts($request),
-            'isLeadership' => $request->user()->hasAnyRole(['admin', 'director', 'financist']),
+            'isLeadership' => RoleTraits::isLeadership($request->user()),
             // Роль/отдел — для фильтра: менеджеры сверху, остальные по отделам.
             'users' => User::where('is_active', true)->with(['roles:id,name', 'department:id,name'])
                 ->orderBy('name')->get(['id', 'name', 'department_id'])
@@ -258,7 +274,7 @@ class DealController extends Controller
         $data['deal_stage_id'] ??= DealStage::funnel($company?->id)->first()?->id;
         $data['status'] = $data['status'] ?? 'active';
         // Менеджер создаёт сделку только на себя — назначить ответственным другого нельзя.
-        if (! $request->user()->hasAnyRole(['admin', 'director', 'financist'])) {
+        if (! RoleTraits::isLeadership($request->user())) {
             $data['responsible_user_id'] = $request->user()->id;
         }
 
@@ -272,7 +288,125 @@ class DealController extends Controller
             app(DealItemService::class)->syncDeal($deal, $items);
         }
 
-        return back()->with('success', 'Сделка создана.');
+        $short = $this->warnAboutShortage($deal, $items);
+
+        return back()->with('success', 'Сделка создана.'.($short !== '' ? ' Не хватает на складе: '.$short.'.' : ''));
+    }
+
+    /**
+     * Под новую сделку не хватает готовой продукции — сказать начальнику
+     * производства сегодня, а не в день отгрузки.
+     *
+     * Сделку НЕ блокируем: договор уже подписан, и остановить его складом
+     * поздно — недостающее просто нужно успеть сделать. Менеджеру возвращаем
+     * ту же нехватку строкой, чтобы он узнал о ней сразу, не открывая склад.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function warnAboutShortage(Deal $deal, array $items): string
+    {
+        if ($items === []) {
+            return '';
+        }
+
+        $rows = app(StockService::class)->shortages($items, $deal->company_id ? (int) $deal->company_id : null);
+        if ($rows->isEmpty()) {
+            return '';
+        }
+
+        $payload = $rows->map(fn ($r) => [
+            'name' => $r['product']->name,
+            'unit' => $r['product']->unit,
+            'need' => $r['need'],
+            'have' => $r['have'],
+            'short' => $r['short'],
+        ])->all();
+
+        // Начальник производства — это директор; админ видит всё в любом случае.
+        User::role(['admin', 'director'])->where('is_active', true)->get()
+            ->each->notify(new ProductShortage($payload, $deal->number, $deal->id));
+
+        return collect($payload)
+            ->map(fn ($r) => $r['name'].' '.rtrim(rtrim(number_format($r['short'], 2, '.', ' '), '0'), '.').' '.($r['unit'] ?: ''))
+            ->implode(', ');
+    }
+
+    /**
+     * Остаток склада по позициям сделки: что нужно, что есть, чего не хватает.
+     *
+     * Считает `StockService` — тот же, что показывает склад: второй расчёт
+     * «покороче» однажды разошёлся бы, и менеджер отправлял бы в цех объём,
+     * который на складе уже лежит.
+     *
+     * @return array<string, mixed>
+     */
+    private function stockForItems(Deal $deal): array
+    {
+        $rows = $deal->items
+            ->filter(fn ($item) => $item->product_id !== null && (float) $item->quantity > 0)
+            ->map(fn ($item) => ['product_id' => (int) $item->product_id, 'quantity' => (float) $item->quantity])
+            ->values()->all();
+
+        if ($rows === []) {
+            return ['short' => [], 'has_shortage' => false];
+        }
+
+        $short = app(StockService::class)
+            ->shortages($rows, $deal->company_id ? (int) $deal->company_id : null);
+
+        return [
+            'short' => $short->map(fn ($row) => [
+                'product_id' => $row['product']->id,
+                'name' => $row['product']->name,
+                'unit' => $row['product']->unit,
+                'need' => $row['need'],
+                'have' => $row['have'],
+                'short' => $row['short'],
+            ])->values(),
+            'has_shortage' => $short->isNotEmpty(),
+        ];
+    }
+
+    /**
+     * Нехватка со склада — в план производства, одним нажатием.
+     *
+     * Менеджер видит в сделке «на складе 200, нужно 1000» и жмёт кнопку. Объём
+     * уходит в «План — факт» СРАЗУ, без промежуточной заявки: заявку всё равно
+     * разбирал бы тот же начальник производства, и лишний шаг только тянул бы
+     * время.
+     *
+     * Считаем нехватку ЗАНОВО на сервере, а не берём из формы: между тем, что
+     * менеджер увидел на экране, и нажатием кнопки склад мог измениться, а
+     * присланное число — это то, чему верить нельзя.
+     */
+    public function toProduction(Request $request, Deal $deal, StockService $stock, ProductionPlanService $plans): RedirectResponse
+    {
+        $this->authorize('view', $deal);
+
+        $deal->loadMissing('items:id,deal_id,product_id,name,unit,quantity');
+
+        $rows = $deal->items
+            ->filter(fn ($item) => $item->product_id !== null && (float) $item->quantity > 0)
+            ->map(fn ($item) => ['product_id' => (int) $item->product_id, 'quantity' => (float) $item->quantity])
+            ->values()->all();
+
+        $short = $stock->shortages($rows, $deal->company_id ? (int) $deal->company_id : null);
+
+        if ($short->isEmpty()) {
+            return back()->with('success', 'Склада хватает — в план ничего не добавлено.');
+        }
+
+        $queued = $plans->addShortage($deal, $short->map(fn ($row) => [
+            'product_id' => $row['product']->id,
+            'qty' => $row['short'],
+            'unit' => $row['product']->unit,
+        ])->all(), $request->user());
+
+        $what = collect($queued)
+            ->map(fn ($p) => $p->product?->name.' '.rtrim(rtrim(number_format((float) $p->plan_qty, 2, '.', ' '), '0'), '.').' '.($p->unit ?: ''))
+            ->implode(', ');
+
+        return back()->with('success', 'В план производства: '.$what.'. Бригаду назначит начальник производства.');
     }
 
     public function show(Deal $deal, FinanceService $finance, ProductionProgressService $progress): Response
@@ -395,7 +529,14 @@ class DealController extends Controller
                 'bonus' => $dealBonus, 'bonusRate' => round($dealBonusRate * 100, 1),
                 'bonusManual' => $bonusOverride !== null,
                 'company' => round($dealRemainder - $dealBonus, 2),
+                // Маржа — тем же методом, что в Сводном отчёте: показатель
+                // здоровья сделки должен быть ОДНИМ числом, где бы его ни
+                // смотрели. На бонус не влияет (§5.7).
+                'margin' => PayrollService::marginPct($dealBudget, $dealRemainder, $dealTax),
             ],
+            // Склад против заказа: сколько обещали и сколько лежит. Показываем
+            // всем, кто видит сделку, — это не деньги, а наличие.
+            'stock' => $this->stockForItems($deal),
             'chatId' => $dealChat->id,
             'workshops' => ProjectStage::workshopsFor($deal->company_id ? (int) $deal->company_id : null),
             'users' => User::where('is_active', true)->orderBy('name')->get(['id', 'name']),

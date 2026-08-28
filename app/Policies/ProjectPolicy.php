@@ -4,10 +4,15 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Support\RoleTraits;
 
 class ProjectPolicy
 {
-    public function viewAny(User $user): bool { return $user->can('project.viewAny'); }
+    public function viewAny(User $user): bool
+    {
+        return $user->can('project.viewAny');
+    }
+
     public function view(User $user, Project $p): bool
     {
         if (! $user->can('project.view')) {
@@ -23,16 +28,28 @@ class ProjectPolicy
         // открыть карточку, чтобы увидеть, что и к какому сроку делать. Город
         // ограничивает assertWorkshopAccess (users.workshops), деньги —
         // canSeeMoney: сумм в карточке ему не приходит.
-        if ($user->hasAnyRole(['admin', 'director', 'financist', 'employee', 'foreman'])) {
+        if (RoleTraits::seesWholeWorkshop($user)) {
             return true;
         }
 
         return $p->responsible_user_id === $user->id || $p->deal?->responsible_user_id === $user->id;
     }
-    public function create(User $user): bool { return $user->can('project.create'); }
+
+    public function create(User $user): bool
+    {
+        return $user->can('project.create');
+    }
+
     // update/delete требуют и права, и доступа к заказу (view уже проверяет
     // компанию/владение) — иначе через custom-fields можно было бы править
     // заказ чужой фирмы (IDOR).
-    public function update(User $user, Project $p): bool { return $user->can('project.update') && $this->view($user, $p); }
-    public function delete(User $user, Project $p): bool { return $user->can('project.delete') && $this->view($user, $p); }
+    public function update(User $user, Project $p): bool
+    {
+        return $user->can('project.update') && $this->view($user, $p);
+    }
+
+    public function delete(User $user, Project $p): bool
+    {
+        return $user->can('project.delete') && $this->view($user, $p);
+    }
 }

@@ -136,7 +136,7 @@ const hasFilters = computed(() => search.value || fResponsible.value || fStage.v
 // При фильтре по этапу канбан показывает ТОЛЬКО выбранную колонку —
 // остальные этапы скрываются (а не пустеют).
 const visibleStages = computed(() => fStage.value ? props.stages.filter((s) => String(s.id) === String(fStage.value)) : props.stages);
-const resetFilters = () => { search.value = ''; fResponsible.value = ''; fStage.value = ''; fBranch.value = ''; fFrom.value = ''; fTo.value = ''; fContractFrom.value = ''; fContractTo.value = ''; applyFilters(); };
+const resetFilters = () => { search.value = ''; fResponsible.value = ''; fStage.value = ''; fBranch.value = ''; fFrom.value = ''; fTo.value = ''; fContractFrom.value = ''; fContractTo.value = ''; router.get(window.location.pathname, { clear: 1 }, { replace: true }); };
 
 // Массовое удаление (вид «Список», только admin): чекбоксы + подтверждение.
 const selected = ref(new Set());
@@ -152,7 +152,30 @@ const bulkDelete = async () => {
 };
 
 const showModal = ref(false);
-const form = useForm({ company_id: props.currentCompanyId || props.companies[0]?.id || '', branch: '', company_name: '', address: '', bin: '', contract_date: '', client_name: '', product_id: '', lot_number: '', unit: '', area_m2: '', source: '', responsible_user_id: '', budget: 0, partner_pct: '', deadline: '', description: '', note: '', items: [], deal_type: 'production' });
+const form = useForm({ company_id: props.currentCompanyId || props.companies[0]?.id || '', branch: '', company_name: '', address: '', bin: '', customer_bin: '', contact_name: '', contact_phone: '', contract_date: '', client_name: '', product_id: '', lot_number: '', unit: '', area_m2: '', source: '', responsible_user_id: '', budget: 0, partner_pct: '', deadline: '', description: '', note: '', items: [], deal_type: 'production' });
+
+// Сделка в три шага: клиент → товары → сводка. Одним окном на двадцать полей
+// менеджер терял место, а ошибку видел уже после сохранения. Последний шаг —
+// контрольный: всё введённое на одном экране перед записью.
+const step = ref(1);
+const STEPS = [
+    { n: 1, title: 'Клиент и объект' },
+    { n: 2, title: 'Товары и сумма' },
+    { n: 3, title: 'Проверка' },
+];
+// Дальше пускаем, только когда шаг заполнен: на сводке нечего проверять, если
+// заказчика ещё нет.
+const stepReady = computed(() => (step.value === 1
+    ? !!String(form.company_name || '').trim() && !!String(form.address || '').trim()
+    : step.value === 2
+        ? (form.items.length > 0 || !!String(form.client_name || '').trim()) && Number(form.budget || 0) > 0
+        : true));
+const goNext = () => { if (stepReady.value && step.value < 3) step.value += 1; };
+const goBack = () => { if (step.value > 1) step.value -= 1; };
+const DEAL_TYPES = [
+    { key: 'production', label: '🏭 Своё производство', hint: 'Делаем сами в цехе', on: 'border-indigo-500 bg-indigo-50 text-indigo-700' },
+    { key: 'resale', label: '📦 Перепродажа', hint: 'Купили → склад → продали', on: 'border-amber-500 bg-amber-50 text-amber-700' },
+];
 
 // Сумма сделки считается по строкам товаров: пока они есть, поле суммы
 // только показывает итог (сервер всё равно пересчитает его сам).
@@ -161,8 +184,30 @@ watch(itemsTotal, (value) => { if (form.items.length) form.budget = value; });
 
 // Товар выбирается из каталога: подставляем название и единицу измерения,
 // чтобы менеджер не вводил их руками и не расходился с прайсом.
-const openCreate = () => { form.reset(); form.company_id = props.currentCompanyId || props.companies[0]?.id || ''; binMatch.value = null; showBinModal.value = false; showModal.value = true; };
-const submit = () => form.post(route('deals.store'), { preserveScroll: true, onSuccess: () => (showModal.value = false) });
+const openCreate = () => { form.reset(); form.clearErrors(); form.company_id = props.currentCompanyId || props.companies[0]?.id || ''; binMatch.value = null; showBinModal.value = false; step.value = 1; showModal.value = true; };
+// На каком шаге живёт поле: ошибку показываем ТАМ, где её можно исправить.
+const STEP_OF_FIELD = {
+    deal_type: 1, company_id: 1, company_name: 1, customer_bin: 1, address: 1,
+    contact_name: 1, contact_phone: 1, bin: 1, contract_date: 1, branch: 1,
+    source: 1, responsible_user_id: 1,
+    items: 2, client_name: 2, lot_number: 2, unit: 2, area_m2: 2,
+    budget: 2, partner_pct: 2, deadline: 2, description: 2, note: 2,
+};
+
+const submit = () => form.post(route('deals.store'), {
+    preserveScroll: true,
+    onSuccess: () => (showModal.value = false),
+    // Сервер отверг форму — переносим менеджера на шаг с первой ошибкой.
+    // Иначе ошибка приходит на скрытый шаг, и кнопка «Создать сделку»
+    // выглядит сломанной: нажал — и ничего не произошло.
+    onError: (errors) => {
+        const steps = Object.keys(errors)
+            .map((field) => STEP_OF_FIELD[field.split('.')[0]])
+            .filter(Boolean);
+
+        if (steps.length) step.value = Math.min(...steps);
+    },
+});
 
 // БИН lookup: if the entered БИН already exists, offer to copy its company data.
 const binMatch = ref(null);
@@ -170,7 +215,7 @@ const binHistory = ref([]);
 const showBinModal = ref(false);
 const showBinHistory = ref(false);
 const checkBin = async () => {
-    const bin = String(form.bin || '').trim();
+    const bin = String(form.customer_bin || '').trim();
     if (!bin) return;
     try {
         const res = await fetch(`${route('deals.binLookup')}?bin=${encodeURIComponent(bin)}`, { headers: { Accept: 'application/json' } });
@@ -183,8 +228,11 @@ const checkBin = async () => {
 const applyBinMatch = () => {
     if (binMatch.value) {
         form.company_name = binMatch.value.company_name;
-        form.bin = binMatch.value.bin;
+        form.customer_bin = binMatch.value.bin;
         if (binMatch.value.address) form.address = binMatch.value.address;
+        // Телефон подставляем, только если менеджер ещё не вписал свой:
+        // прошлый контакт мог смениться, и затирать введённое нельзя.
+        if (binMatch.value.phone && !form.contact_phone) form.contact_phone = binMatch.value.phone;
     }
     showBinModal.value = false;
 };
@@ -366,25 +414,69 @@ const applyBinMatch = () => {
         <!-- CREATE MODAL -->
         <Modal :show="showModal" @close="showModal = false" max-width="2xl">
             <div class="p-6">
-                <h2 class="mb-4 text-lg font-semibold">{{ $e('Новая сделка') }}</h2>
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <h3 class="mb-1 text-base font-semibold text-slate-900">{{ $e('Новая сделка') }}</h3>
+
+                <!-- Шаги: где мы и что осталось. Нумерация настоящая — на сводке
+                     нечего проверять, пока не введены товары и сумма. -->
+                <div class="mb-5 mt-3 flex items-center gap-2">
+                    <template v-for="(sp, i) in STEPS" :key="sp.n">
+                        <button type="button" @click="sp.n < step && (step = sp.n)"
+                            class="flex items-center gap-2 text-sm transition-colors duration-150"
+                            :class="sp.n === step ? 'font-semibold text-indigo-600' : sp.n < step ? 'text-slate-600 hover:text-indigo-600' : 'text-slate-300'">
+                            <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
+                                :class="sp.n === step ? 'bg-indigo-600 text-white' : sp.n < step ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'">
+                                {{ sp.n < step ? '✓' : sp.n }}
+                            </span>
+                            {{ $e(sp.title) }}
+                        </button>
+                        <span v-if="i < STEPS.length - 1" class="h-px flex-1" :class="sp.n < step ? 'bg-emerald-200' : 'bg-slate-200'"></span>
+                    </template>
+                </div>
+
+                <!-- ШАГ 1: с чего сделка начинается — тип, заказчик, куда везти.
+                     Тип стоит ПЕРВЫМ: от него зависит ставка бонуса и то, пойдёт
+                     ли заказ в цех или со склада, — это решение, а не деталь. -->
+                <div v-show="step === 1" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <InputLabel :value="$e('Тип сделки')" />
+                        <div class="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <button v-for="t in DEAL_TYPES" :key="t.key" type="button" @click="form.deal_type = t.key"
+                                class="rounded-xl border px-4 py-3 text-left transition-colors duration-150"
+                                :class="form.deal_type === t.key ? t.on : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'">
+                                <div class="text-sm font-semibold">{{ $e(t.label) }}</div>
+                                <div class="mt-0.5 text-[11px] opacity-70">{{ $e(t.hint) }}</div>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('От типа зависит ставка бонуса менеджера.') }}</p>
+                        <InputError :message="form.errors.deal_type" class="mt-1" />
+                    </div>
+
                     <div v-if="companies.length" class="sm:col-span-2">
                         <InputLabel :value="$e('Компания (нумерация сделки)')" />
-                        <div class="mt-1 flex gap-2">
+                        <div class="mt-1 flex flex-wrap gap-2">
                             <button v-for="c in companies" :key="c.id" type="button" @click="form.company_id = c.id"
-                                class="rounded-lg border px-4 py-2 text-sm font-semibold transition-all"
+                                class="rounded-lg border px-4 py-2 text-sm font-semibold transition-colors duration-150"
                                 :class="form.company_id === c.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'">
                                 {{ c.name }} <span class="font-normal text-slate-400">({{ c.code }}-…)</span>
                             </button>
                         </div>
                     </div>
-                    <div><InputLabel :value="$e('Название компании *')" /><TextInput v-model="form.company_name" class="mt-1 w-full" /><InputError :message="form.errors.company_name" class="mt-1" /></div>
-                    <div><InputLabel :value="$e('Номер договора')" /><TextInput v-model="form.bin" class="mt-1 w-full" @blur="checkBin" /><InputError :message="form.errors.bin" class="mt-1" /></div>
-                    <div class="sm:col-span-2"><InputLabel :value="$e('Адрес *')" /><TextInput v-model="form.address" class="mt-1 w-full" :placeholder="$e('Город, улица, дом')" /><InputError :message="form.errors.address" class="mt-1" /></div>
+
+                    <div><InputLabel :value="$e('Заказчик (компания или частное лицо) *')" /><TextInput v-model="form.company_name" class="mt-1 w-full" /><InputError :message="form.errors.company_name" class="mt-1" /></div>
+                    <div>
+                        <InputLabel :value="$e('БИН / ИИН заказчика')" />
+                        <TextInput v-model="form.customer_bin" class="mt-1 w-full" @blur="checkBin" />
+                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Уже работали с этим БИН — предложим подставить данные.') }}</p>
+                        <InputError :message="form.errors.customer_bin" class="mt-1" />
+                    </div>
+                    <div class="sm:col-span-2"><InputLabel :value="$e('Объект (адрес доставки / монтажа) *')" /><TextInput v-model="form.address" class="mt-1 w-full" :placeholder="$e('Город, улица, дом')" /><InputError :message="form.errors.address" class="mt-1" /></div>
+                    <div><InputLabel :value="$e('Имя клиента (контакт)')" /><TextInput v-model="form.contact_name" class="mt-1 w-full" /><InputError :message="form.errors.contact_name" class="mt-1" /></div>
+                    <div><InputLabel :value="$e('Телефон клиента')" /><TextInput v-model="form.contact_phone" class="mt-1 w-full" placeholder="+7 ___ ___ __ __" /><InputError :message="form.errors.contact_phone" class="mt-1" /></div>
+                    <div><InputLabel :value="$e('Номер договора')" /><TextInput v-model="form.bin" class="mt-1 w-full" /><InputError :message="form.errors.bin" class="mt-1" /></div>
                     <div><InputLabel :value="$e('Дата договора')" /><TextInput v-model="form.contract_date" type="date" class="mt-1 w-full" /><InputError :message="form.errors.contract_date" class="mt-1" /></div>
                     <div>
                         <InputLabel :value="$e('Филиал')" />
-                        <select v-model="form.branch" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
+                        <select v-model="form.branch" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">—</option>
                             <option v-for="b in branches" :key="b" :value="b">{{ b }}</option>
                         </select>
@@ -392,36 +484,34 @@ const applyBinMatch = () => {
                     </div>
                     <div>
                         <InputLabel :value="$e('Источник (портал)')" />
-                        <select v-model="form.source" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
+                        <select v-model="form.source" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">—</option>
                             <option v-for="s in SOURCES" :key="s" :value="s">{{ s }}</option>
                         </select>
                         <InputError :message="form.errors.source" class="mt-1" />
                     </div>
-                    <!-- Тип сделки решает ставку бонуса менеджера. -->
-                    <div class="sm:col-span-2">
-                        <InputLabel :value="$e('Тип сделки')" />
-                        <div class="mt-1 flex gap-2">
-                            <button type="button" @click="form.deal_type = 'production'"
-                                class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-150"
-                                :class="form.deal_type === 'production' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'">{{ $e('🏭 Своё производство') }}</button>
-                            <button type="button" @click="form.deal_type = 'resale'"
-                                class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-150"
-                                :class="form.deal_type === 'resale' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'">{{ $e('📦 Перепродажа') }}</button>
-                        </div>
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('От типа зависит ставка бонуса менеджера.') }}</p>
+                    <div v-if="isLeadership" class="sm:col-span-2">
+                        <InputLabel :value="$e('Ответственный')" />
+                        <select v-model="form.responsible_user_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">—</option>
+                            <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+                        </select>
                     </div>
+                </div>
+
+                <!-- ШАГ 2: что продаём и почём. -->
+                <div v-show="step === 2" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div class="sm:col-span-2">
                         <InputLabel :value="$e('Товары заказа')" />
                         <p class="mb-1.5 text-[11px] text-slate-400">{{ $e('Клиент берёт несколько позиций — выберите категории, затем товары. Единица подставится из каталога.') }}</p>
                         <ProductPicker v-model="form.items" :catalog="catalog" :categories="productCategories" :errors="form.errors" />
                     </div>
-                    <div><InputLabel :value="$e('Наименование товара *')" /><TextInput v-model="form.client_name" class="mt-1 w-full" /><InputError :message="form.errors.client_name" class="mt-1" /></div>
+                    <div v-if="!form.items.length"><InputLabel :value="$e('Наименование товара *')" /><TextInput v-model="form.client_name" class="mt-1 w-full" :placeholder="$e('Тротуарная плитка 300×300, вазон…')" /><InputError :message="form.errors.client_name" class="mt-1" /></div>
                     <div>
                         <InputLabel :value="$e('Количество')" />
                         <div class="mt-1 flex gap-2">
-                            <TextInput v-model="form.lot_number" type="number" min="0" step="any" class="w-1/2" />
-                            <select v-model="form.unit" class="w-1/2 rounded-md border-slate-300 shadow-sm">
+                            <TextInput v-model="form.lot_number" type="number" min="0" step="any" class="w-1/2" :placeholder="$e('кол-во')" />
+                            <select v-model="form.unit" class="w-1/2 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 <option value="">{{ $e('ед. изм.') }}</option>
                                 <option v-for="u in UNITS" :key="u" :value="u">{{ u }}</option>
                             </select>
@@ -433,18 +523,11 @@ const applyBinMatch = () => {
                         <TextInput v-model="form.area_m2" type="number" min="0" step="any" class="mt-1 w-full" />
                         <InputError :message="form.errors.area_m2" class="mt-1" />
                     </div>
-                    <div v-if="isLeadership">
-                        <InputLabel :value="$e('Ответственный')" />
-                        <select v-model="form.responsible_user_id" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
-                            <option value="">—</option>
-                            <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
-                        </select>
-                    </div>
                     <div>
                         <InputLabel :value="$e('Сумма договора *')" />
                         <TextInput v-model="form.budget" type="number" step="0.01" class="mt-1 w-full"
                             :disabled="form.items.length > 0" :class="form.items.length ? 'bg-slate-100' : ''" />
-                        <p v-if="form.items.length" class="mt-1 text-[11px] text-slate-400">{{ $e('Считается по товарам заказа.') }}</p>
+                        <p v-if="form.items.length" class="mt-1 text-[11px] text-emerald-600">{{ $e('Считается по товарам заказа:') }} {{ money(itemsTotal) }}</p>
                         <InputError :message="form.errors.budget" class="mt-1" />
                     </div>
                     <div>
@@ -453,12 +536,86 @@ const applyBinMatch = () => {
                         <InputError :message="form.errors.partner_pct" class="mt-1" />
                     </div>
                     <div><InputLabel :value="$e('Срок')" /><TextInput v-model="form.deadline" type="date" class="mt-1 w-full" /></div>
-                    <div class="sm:col-span-2"><InputLabel :value="$e('Описание')" /><textarea v-model="form.description" rows="2" class="mt-1 w-full rounded-md border-slate-300 shadow-sm"></textarea></div>
-                    <div class="sm:col-span-2"><InputLabel :value="$e('Заметка (кратко)')" /><textarea v-model="form.note" rows="2" class="mt-1 w-full rounded-md border-slate-300 shadow-sm" :placeholder="$e('Коротко и чётко по сделке')"></textarea></div>
+                    <div class="sm:col-span-2"><InputLabel :value="$e('Описание')" /><textarea v-model="form.description" rows="2" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea></div>
+                    <div class="sm:col-span-2"><InputLabel :value="$e('Заметка (кратко)')" /><textarea v-model="form.note" rows="2" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" :placeholder="$e('Коротко и чётко по сделке')"></textarea></div>
                 </div>
-                <div class="mt-6 flex justify-end gap-2">
+
+                <!-- ШАГ 3: контрольный экран. Всё введённое на одном месте —
+                     ошибку видно ДО записи, а не после создания сделки. -->
+                <div v-show="step === 3" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-sm sm:grid-cols-3">
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Тип сделки') }}</div>
+                            <div class="mt-0.5 font-semibold" :class="form.deal_type === 'resale' ? 'text-amber-700' : 'text-indigo-700'">
+                                {{ $e(form.deal_type === 'resale' ? '📦 Перепродажа' : '🏭 Своё производство') }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Заказчик') }}</div>
+                            <div class="mt-0.5 font-semibold text-slate-900">{{ form.company_name || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('БИН / ИИН заказчика') }}</div>
+                            <div class="mt-0.5 font-medium tabular-nums text-slate-900">{{ form.customer_bin || '—' }}</div>
+                        </div>
+                        <div class="col-span-2">
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Объект') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">📍 {{ form.address || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Контакт') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">{{ [form.contact_name, form.contact_phone].filter(Boolean).join(' · ') || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Договор') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">{{ [form.bin, form.contract_date ? formatDate(form.contract_date) : ''].filter(Boolean).join(' · ') || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Филиал') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">{{ form.branch || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Срок') }}</div>
+                            <div class="mt-0.5 font-medium text-slate-900">{{ form.deadline ? formatDate(form.deadline) : '—' }}</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="mb-1.5 text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Товары заказа') }}</div>
+                        <div v-if="form.items.length" class="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                            <div v-for="(it, i) in form.items" :key="i" class="flex flex-wrap items-baseline justify-between gap-3 px-4 py-2 text-sm">
+                                <span class="text-slate-700">🧱 {{ it.name }}</span>
+                                <span class="flex items-baseline gap-3 tabular-nums">
+                                    <b class="text-slate-900">{{ Number(it.quantity || 0).toLocaleString('ru-RU') }} {{ it.unit }}</b>
+                                    <span class="text-slate-400">{{ money(Number(it.quantity || 0) * Number(it.price || 0)) }}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div v-else class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700">
+                            🧱 {{ form.client_name || '—' }}
+                            <template v-if="form.lot_number"> · {{ Number(form.lot_number).toLocaleString('ru-RU') }} {{ form.unit }}</template>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+                        <div><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Сумма договора') }}</div><div class="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{{ money(Number(form.budget || 0)) }}</div></div>
+                        <div v-if="Number(form.area_m2 || 0)"><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Площадь, м²') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ Number(form.area_m2).toLocaleString('ru-RU') }}</div></div>
+                        <div v-if="Number(form.partner_pct || 0)"><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Доля партнёра') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ form.partner_pct }}% · {{ money(Number(form.budget || 0) * Number(form.partner_pct) / 100) }}</div></div>
+                    </div>
+                </div>
+
+                <!-- Форму отвергли: сказать об этом прямо. Молчаливый отказ
+                     читается как сломанная кнопка. -->
+                <div v-if="form.hasErrors" class="mt-4 rounded-xl border border-rose-200 bg-rose-50/60 px-4 py-2.5 text-sm text-rose-700">
+                    {{ $e('Проверьте поля, отмеченные красным — сделка не сохранена.') }}
+                </div>
+
+                <div class="mt-6 flex items-center justify-end gap-2">
+                    <button v-if="step > 1" type="button" @click="goBack"
+                        class="mr-auto rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition-colors duration-150 hover:text-slate-700">← {{ $e('Назад') }}</button>
                     <SecondaryButton @click="showModal = false">{{ $e('Отмена') }}</SecondaryButton>
-                    <PrimaryButton :disabled="form.processing" @click="submit">{{ $e('Создать') }}</PrimaryButton>
+                    <PrimaryButton v-if="step < 3" :disabled="!stepReady" @click="goNext">{{ $e('Далее →') }}</PrimaryButton>
+                    <PrimaryButton v-else :disabled="form.processing" @click="submit">{{ $e('Создать сделку') }}</PrimaryButton>
                 </div>
             </div>
         </Modal>

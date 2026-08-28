@@ -10,8 +10,8 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Invoice;
 use App\Models\Payment;
-use App\Models\PreDeal;
 use App\Models\User;
+use App\Services\FinanceService;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -155,28 +155,6 @@ class MoneyIntegrityTest extends TestCase
         $this->assertSame(2, Expense::count());
     }
 
-    /** Двойной клик по «В работу ✓» не создаёт вторую сделку. */
-    public function test_double_click_on_confirm_creates_one_deal(): void
-    {
-        $preDeal = PreDeal::create(PreDeal::calculate([
-            'product' => 'Плитка', 'customer' => 'Асхат',
-            'quantity' => 10, 'unit' => 'м²', 'unit_price' => 10000,
-            'contract_sum' => 100000, 'purchase_price' => 50000,
-        ]) + [
-            'company_id' => Company::where('code', 'QT')->value('id'),
-            'user_id' => $this->accountant->id,
-            'status' => 'new',
-        ]);
-
-        $before = Deal::count();
-
-        $this->actingAs($this->accountant)->post(route('preDeals.confirm', $preDeal->id));
-        $this->actingAs($this->accountant)->post(route('preDeals.confirm', $preDeal->id));
-
-        $this->assertSame($before + 1, Deal::count(), 'Вторая отправка сделку не создаёт.');
-        $this->assertSame('confirmed', $preDeal->fresh()->status);
-    }
-
     /** Отменённый счёт клиент не должен: в дебиторку он не идёт. */
     public function test_cancelled_invoice_is_not_a_receivable(): void
     {
@@ -230,7 +208,7 @@ class MoneyIntegrityTest extends TestCase
             ['name' => 'Расходы по сотрудникам', 'is_active' => true],
         );
 
-        $before = app(\App\Services\FinanceService::class)->companyBalances(null)['cash'];
+        $before = app(FinanceService::class)->companyBalances(null)['cash'];
 
         Expense::create([
             'company_id' => Company::where('code', 'QT')->value('id'),
@@ -239,7 +217,7 @@ class MoneyIntegrityTest extends TestCase
             'payment_method' => 'cash', 'responsible_user_id' => $this->accountant->id,
         ]);
 
-        $after = app(\App\Services\FinanceService::class)->companyBalances(null)['cash'];
+        $after = app(FinanceService::class)->companyBalances(null)['cash'];
         $this->assertSame(round($before - 40000, 2), round($after, 2));
     }
 

@@ -12,6 +12,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\PayrollService;
 use App\Support\CurrentCompany;
+use App\Support\StickyFilters;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -33,6 +34,10 @@ class ReportController extends Controller
 
     public function deals(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'reports', ['search', 'from', 'to', 'manager', 'stage']);
+
         abort_unless($request->user()->hasAnyRole(['admin', 'director']), 403);
 
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
@@ -236,7 +241,12 @@ class ReportController extends Controller
         });
 
         $sums = array_map(fn ($v) => round($v, 2), $sums);
-        $sums['margin'] = $sums['budget'] > 0 ? round($sums['company'] / $sums['budget'] * 100, 1) : 0;
+        // Итоговая маржа — ТОЙ ЖЕ формулой, что в строках таблицы
+        // (PayrollService::marginPct), а не «чистая прибыль / бюджет».
+        // Раньше это были две разные величины под одной подписью: строка
+        // считала маржу до налога и бонуса, итог — после обоих, и колонка
+        // не сходилась сама с собой.
+        $sums['margin'] = PayrollService::marginPct($sums['budget'], $sums['remainder'], $sums['tax']);
         $sums['count'] = $count;
 
         return $sums;

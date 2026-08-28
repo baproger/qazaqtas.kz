@@ -3,16 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Brigade;
+use App\Models\Company;
 use App\Models\Deal;
 use App\Models\DealStage;
 use App\Models\Project;
 use App\Models\ProjectStage;
+use App\Models\ProjectStageLog;
 use App\Models\User;
 use App\Services\FinanceService;
 use App\Services\ProductionProgressService;
+use App\Services\ProjectService;
 use App\Support\AuditFormatter;
+use App\Support\CurrentCompany;
+use App\Support\StickyFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\AbstractPaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,7 +57,7 @@ class ProjectController extends Controller
             return true;
         }
 
-        return \App\Models\Brigade::where('foreman_id', $user->id)->where('is_active', true)->exists();
+        return Brigade::where('foreman_id', $user->id)->where('is_active', true)->exists();
     }
 
     private function scope($query, Request $request)
@@ -69,6 +76,10 @@ class ProjectController extends Controller
 
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'projects', ['search']);
+
         $this->authorize('viewAny', Project::class);
 
         $view = $request->string('view', 'kanban')->toString();
@@ -77,13 +88,13 @@ class ProjectController extends Controller
             // cancelled = заказ отменён (в т.ч. каскадом при удалении сделки).
             ->whereNotIn('status', ['completed', 'cancelled'])
             // Цех тоже разделён по фирмам: заказ принадлежит компании исходной сделки.
-            ->when(\App\Support\CurrentCompany::id(), fn ($q, $c) => $q->whereHas('deal', fn ($d) => $d->where('company_id', $c)))
+            ->when(CurrentCompany::id(), fn ($q, $c) => $q->whereHas('deal', fn ($d) => $d->where('company_id', $c)))
             // Цеху на карточке нужны срок, описание, заметка и адрес (город) из сделки.
             // foreman_id + deal.foreman: на доске видно, чья бригада ведёт заказ.
             ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order', 'deal:id,number,company_name,client_name,address,deadline,description,note,foreman_id', 'deal.foreman:id,name'])
             ->withCount(['tasks as overdue_count' => fn ($q) => $q->where('status', '!=', 'done')->whereNotNull('due_date')->where('due_date', '<', now())])
             // Тайминг: когда заказ вошёл на текущий этап (открытый лог).
-            ->addSelect(['stage_entered_at' => \App\Models\ProjectStageLog::select('entered_at')
+            ->addSelect(['stage_entered_at' => ProjectStageLog::select('entered_at')
                 ->whereColumn('project_id', 'projects.id')->whereNull('left_at')
                 ->latest('entered_at')->limit(1)]);
         $this->scope($base, $request);
@@ -102,8 +113,8 @@ class ProjectController extends Controller
         // в режиме «Все компании» — этапы всех цехов С
         // ПОМЕТКОЙ фирмы (иначе одинаковые «Формовка» выглядят как дубли).
         // companyQuery: свои этапы приоритетны, «общие» (null) — только фолбэк.
-        $companyId = \App\Support\CurrentCompany::id() ?: null;
-        $companyCodes = \App\Models\Company::pluck('code', 'id');
+        $companyId = CurrentCompany::id() ?: null;
+        $companyCodes = Company::pluck('code', 'id');
         $stages = ProjectStage::companyQuery($companyId)
             ->with('translations')->get()
             // Секции чужих цехов скрываем у сотрудников с ограничением.
@@ -124,7 +135,7 @@ class ProjectController extends Controller
         // Цех не видит суммы — прячем budget из сериализуемой модели, а не только в UI.
         $canSeeMoney = $this->canSeeMoney($request);
         if (! $canSeeMoney) {
-            ($projects instanceof \Illuminate\Pagination\AbstractPaginator ? $projects->getCollection() : $projects)
+            ($projects instanceof AbstractPaginator ? $projects->getCollection() : $projects)
                 ->transform(fn ($p) => $p->makeHidden('budget'));
         }
 
@@ -323,7 +334,7 @@ class ProjectController extends Controller
     private function completeAndReturnDeal(Project $project): RedirectResponse
     {
         // Единая логика с «Готово» на ТВ-экране цеха (ProjectService).
-        [$ok, $message] = app(\App\Services\ProjectService::class)->completeAndReturnDeal($project);
+        [$ok, $message] = app(ProjectService::class)->completeAndReturnDeal($project);
 
         return back()->with($ok ? 'success' : 'error', $message);
     }

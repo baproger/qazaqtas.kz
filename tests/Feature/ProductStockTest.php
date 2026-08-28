@@ -4,13 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\Brigade;
 use App\Models\Company;
-use App\Models\PreDeal;
+use App\Models\Deal;
 use App\Models\Product;
 use App\Models\ProductionPlan;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Notifications\ProductShortage;
+use App\Services\ProductionBonusService;
 use App\Services\StockService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,7 @@ class ProductStockTest extends TestCase
 
     private User $director;
 
-    private User $financist;
+    private User $master;
 
     private User $foreman;
 
@@ -52,11 +53,11 @@ class ProductStockTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $this->company = Company::where('code', 'QT')->value('id');
 
-        foreach (['director', 'financist', 'manager'] as $role) {
+        foreach (['director', 'production_head', 'manager'] as $role) {
             $user = User::factory()->create();
             $user->assignRole($role);
             $user->companies()->attach($this->company);
-            $this->{$role} = $user;
+            $this->{$role === 'production_head' ? 'master' : $role} = $user;
         }
 
         $this->foreman = User::factory()->create();
@@ -115,7 +116,7 @@ class ProductStockTest extends TestCase
     {
         $order = $this->report($this->plan(), 1000);
 
-        $this->actingAs($this->financist)
+        $this->actingAs($this->master)
             ->patch(route('production.orders.confirm', $order->id))
             ->assertSessionHasNoErrors();
 
@@ -136,7 +137,7 @@ class ProductStockTest extends TestCase
     {
         $order = $this->report($this->plan(), 500);
 
-        $this->actingAs($this->financist)->patch(route('production.orders.confirm', $order->id));
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', $order->id));
         $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id));
 
         $this->assertSame(500.0, $this->stock());
@@ -146,7 +147,7 @@ class ProductStockTest extends TestCase
     /** Наряд под позицию сделки на склад не идёт — товар уже продан. */
     public function test_an_order_for_a_deal_item_gives_no_stock(): void
     {
-        $deal = \App\Models\Deal::create([
+        $deal = Deal::create([
             'company_id' => $this->company, 'number' => 'QT-800', 'name' => 'Объект',
             'company_name' => 'ТОО «Клиент»', 'status' => 'active',
         ]);
@@ -160,7 +161,7 @@ class ProductStockTest extends TestCase
             'deal_item_id' => $item->id, 'date' => now()->toDateString(),
             'status' => 'draft', 'created_by' => $this->foreman->id,
         ]);
-        app(\App\Services\ProductionBonusService::class)->syncLines($order->load('brigade'), [
+        app(ProductionBonusService::class)->syncLines($order->load('brigade'), [
             ['user_id' => $this->brigade->members()->value('users.id'), 'qty_m2' => 100],
         ]);
 
@@ -174,7 +175,7 @@ class ProductStockTest extends TestCase
     public function test_deleting_a_confirmed_order_reverses_the_stock(): void
     {
         $order = $this->report($this->plan(), 300);
-        $this->actingAs($this->financist)->patch(route('production.orders.confirm', $order->id));
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', $order->id));
         $this->assertSame(300.0, $this->stock());
 
         $this->actingAs($this->director)->delete(route('production.orders.destroy', $order->id))
@@ -192,7 +193,7 @@ class ProductStockTest extends TestCase
         $plan = $this->plan();
         foreach ([120, 80, 55.5] as $qty) {
             $order = $this->report($plan, $qty);
-            $this->actingAs($this->financist)->patch(route('production.orders.confirm', $order->id));
+            $this->actingAs($this->master)->patch(route('production.orders.confirm', $order->id));
         }
 
         $this->assertSame(255.5, $this->stock());
@@ -203,7 +204,7 @@ class ProductStockTest extends TestCase
     public function test_the_warehouse_page_shows_the_goods(): void
     {
         $order = $this->report($this->plan(), 640);
-        $this->actingAs($this->financist)->patch(route('production.orders.confirm', $order->id));
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', $order->id));
 
         $this->actingAs($this->director)->get(route('warehouse.index'))
             ->assertOk()
@@ -216,10 +217,10 @@ class ProductStockTest extends TestCase
     }
 
     /**
-     * Новая заявка с нехваткой уведомляет производство.
+     * Новая сделка с нехваткой уведомляет производство.
      *
-     * Заявку не блокируем: это запрос КП, а не обязательство. Но если
-     * менеджер обещает 1000 м², а на складе 200, начальник производства
+     * Сделку не блокируем: договор подписан, отменять его складом поздно. Но
+     * если менеджер продал 1000 м², а на складе 200, начальник производства
      * должен узнать в тот же день.
      */
     public function test_a_shortage_notifies_production(): void
@@ -228,17 +229,18 @@ class ProductStockTest extends TestCase
 
         // Кладём 200 м² на склад.
         $order = $this->report($this->plan(), 200);
-        $this->actingAs($this->financist)->patch(route('production.orders.confirm', $order->id));
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', $order->id));
 
-        $this->actingAs($this->manager)->post(route('preDeals.store'), [
-            'request_number' => '002100',
-            'customer' => 'Акимат',
-            'purchase_price' => 100000,
+        $this->actingAs($this->manager)->post(route('deals.store'), [
+            'company_name' => 'Акимат',
+            'client_name' => 'Плитка',
+            'address' => 'Шымкент',
+            'budget' => 12000000,
             'items' => [['product_id' => $this->tile->id, 'quantity' => 1000, 'price' => 12000]],
         ])->assertSessionHasNoErrors();
 
-        // Заявка создана — её не режем.
-        $this->assertSame(1, PreDeal::count());
+        // Сделка создана — её не режем.
+        $this->assertSame(1, Deal::count());
 
         Notification::assertSentTo($this->director, ProductShortage::class,
             function (ProductShortage $n) {
@@ -254,12 +256,13 @@ class ProductStockTest extends TestCase
         Notification::fake();
 
         $order = $this->report($this->plan(), 1000);
-        $this->actingAs($this->financist)->patch(route('production.orders.confirm', $order->id));
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', $order->id));
 
-        $this->actingAs($this->manager)->post(route('preDeals.store'), [
-            'request_number' => '002101',
-            'customer' => 'Акимат',
-            'purchase_price' => 100000,
+        $this->actingAs($this->manager)->post(route('deals.store'), [
+            'company_name' => 'Акимат',
+            'client_name' => 'Плитка',
+            'address' => 'Шымкент',
+            'budget' => 3600000,
             'items' => [['product_id' => $this->tile->id, 'quantity' => 300, 'price' => 12000]],
         ])->assertSessionHasNoErrors();
 

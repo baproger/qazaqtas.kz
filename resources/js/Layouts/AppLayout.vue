@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -19,6 +19,19 @@ const t = useT();
 const { chatUnread } = useChatAlerts();
 
 const page = usePage();
+
+/*
+ * Фильтр, восстановленный из памяти. Флаг ставит сервер
+ * (App\Support\StickyFilters) и только тогда, когда набор действительно
+ * подставлен — на странице, открытой с параметрами в адресе, плашки нет:
+ * там фильтр виден и так.
+ *
+ * «Показать всё» шлёт `clear=1`: сброс обязан быть СИЛЬНЕЕ памяти, иначе
+ * пустой набор параметров не отличить от «пришёл впервые», и фильтр
+ * возвращался бы сразу после сброса.
+ */
+const stickyFilter = computed(() => page.props.stickyFilter ?? null);
+const clearStickyFilter = () => router.get(window.location.pathname, { clear: 1 }, { replace: true });
 const user = computed(() => page.props.auth.user);
 const perms = computed(() => page.props.auth.user?.permissions ?? []);
 const roles = computed(() => page.props.auth.user?.roles ?? []);
@@ -55,7 +68,6 @@ const allNav = [
         key: 'nav.sales', name: tr('Продажи'), icon: '◈', children: [
             { key: 'nav.deals', name: tr('Сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny', notRoles: ['foreman'] },
             { key: 'nav.overdue', name: tr('Просроченные'), route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny', notRoles: ['foreman'] },
-            { key: 'nav.predeals', name: tr('Заявки'), route: 'preDeals.index', icon: '◧', roles: ['admin', 'director', 'financist', 'manager'] },
             // Заказы, оформленные на сайте: менеджер превращает их в сделки.
             { key: 'nav.siteOrders', name: tr('Заказы с сайта'), route: 'siteOrders.index', icon: '🛒', roles: ['admin', 'director', 'financist', 'manager'] },
             { key: 'nav.reports', name: tr('Сводный отчет'), route: 'reports.deals', icon: '▦', roles: ['admin', 'director'] },
@@ -101,6 +113,7 @@ const allNav = [
         key: 'nav.admin', name: tr('Управление'), icon: '⚙', children: [
             { key: 'nav.users', name: tr('Сотрудники'), route: 'users.index', icon: '☻', perm: 'user.viewAny' },
             { key: 'nav.departments', name: tr('Отделы'), route: 'departments.index', icon: '⌂', perm: 'department.viewAny', leadershipOnly: true },
+            { key: 'nav.structure', name: tr('Структура компании'), route: 'structure.index', icon: '⑃', perm: 'department.viewAny', leadershipOnly: true },
             { key: 'nav.audit', name: tr('Аудит'), route: 'audit.index', icon: '❑', roles: ['admin'] },
             { key: 'nav.settings', name: tr('Настройки'), route: 'settings.index', icon: '⚙', perm: 'setting.update' },
             { key: 'nav.translations', name: tr('Переводы'), route: 'translations.index', icon: '🌐', perm: 'setting.update' },
@@ -215,6 +228,24 @@ const toggleGroup = (item) => {
     groupOpen.value[item.key] = !groupOpen.value[item.key];
     try { localStorage.setItem(groupStore(item.key), groupOpen.value[item.key] ? '1' : '0'); } catch { /* приватный режим */ }
 };
+/*
+ * Прокрутка меню переживает переход.
+ *
+ * Лейаут не persistent: каждая страница подключает <AppLayout> в своём
+ * шаблоне, поэтому при переходе меню целиком уничтожается и создаётся заново,
+ * а новый узел начинается с нуля. Пользователь пролистывал до «Управления»,
+ * нажимал пункт — и его выбрасывало наверх, к «Аналитике».
+ *
+ * Помним положение в sessionStorage: это одна вкладка и один сеанс, а не
+ * настройка, которую надо тащить между устройствами. Восстанавливаем ДО
+ * отрисовки — иначе виден прыжок сверху вниз.
+ */
+const NAV_SCROLL = 'nav.scroll';
+const navEl = ref(null);
+const rememberNavScroll = () => {
+    try { sessionStorage.setItem(NAV_SCROLL, String(navEl.value?.scrollTop ?? 0)); } catch { /* приватный режим */ }
+};
+
 onMounted(() => {
     for (const item of allNav.filter((i) => i.children)) {
         let stored = null;
@@ -224,6 +255,15 @@ onMounted(() => {
         // Ручное раскрытие запоминается и переживает переходы.
         groupOpen.value[item.key] = stored === null ? groupActive(item) : stored === '1' || groupActive(item);
     }
+
+    // Прокрутку возвращаем ПОСЛЕ раскрытия разделов: они меняют высоту меню,
+    // и восстановленное до них смещение указывало бы уже на другое место.
+    nextTick(() => {
+        try {
+            const saved = Number(sessionStorage.getItem(NAV_SCROLL) ?? 0);
+            if (saved > 0 && navEl.value) navEl.value.scrollTop = saved;
+        } catch { /* приватный режим */ }
+    });
 });
 
 // Company switcher — full data separation per firm.
@@ -329,7 +369,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
             </div>
-            <nav class="flex-1 space-y-0.5 overflow-y-auto px-4 py-6">
+            <nav ref="navEl" @scroll.passive="rememberNavScroll" class="flex-1 space-y-0.5 overflow-y-auto px-4 py-6">
                 <template v-for="item in nav" :key="item.key ?? item.route">
                     <div v-if="sectionFor(item) && (!collapsed || mobileOpen)" class="nav-section">{{ $e(sectionFor(item)) }}</div>
                     <!-- В свёрнутом рельсе вместо надписи — черта: место
@@ -536,6 +576,19 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 <div class="loadbar h-full w-2/5 bg-indigo-600"></div>
             </div>
             <main class="page-enter p-4 sm:p-6">
+                <!-- Фильтр вернулся из памяти — скажи об этом.
+                     Молчаливое восстановление опаснее потерянного фильтра:
+                     открыл «Сделки», увидел три штуки вместо ста и решил, что
+                     данные пропали. Сброс здесь же, одним кликом. -->
+                <div v-if="stickyFilter" class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-2.5 text-sm">
+                    <span class="font-medium text-amber-900">{{ $e('Показано по сохранённому фильтру') }}</span>
+                    <span class="text-xs text-amber-700">{{ $e('условий:') }} {{ stickyFilter.count }}</span>
+                    <button type="button" @click="clearStickyFilter"
+                        class="ml-auto rounded-lg bg-white px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 transition-colors duration-150 hover:bg-amber-100">
+                        {{ $e('Показать всё') }}
+                    </button>
+                </div>
+
                 <SkeletonScreen v-if="showSkeleton" />
                 <slot v-else />
             </main>

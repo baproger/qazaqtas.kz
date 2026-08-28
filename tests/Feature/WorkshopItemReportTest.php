@@ -159,11 +159,12 @@ class WorkshopItemReportTest extends TestCase
                 ->where("itemProgress.{$vase->id}.left", $is(4.0))
                 ->etc());
 
-        // Наряд виден в «Нарядах по сменам», а бонус — в «Кто сколько сделал».
+        // Наряд виден в «Нарядах по сменам», а бонус — в итоге месяца.
+        // Разбивка по людям сюда больше не едет: она в карточке бригады.
         $this->actingAs($this->director)->get(route('production.index'))
             ->assertInertia(fn ($page) => $page
                 ->where('orders', fn ($orders) => collect($orders)->contains(fn ($o) => $o['status'] === 'confirmed'))
-                ->where('byPerson', fn ($people) => collect($people)->sum('pcs') > 0)
+                ->where('totals.amount', fn ($amount) => (float) $amount > 0)
                 ->where('planSummary.pcs.done', $is(20.0))
                 ->etc());
     }

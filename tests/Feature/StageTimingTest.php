@@ -58,23 +58,33 @@ class StageTimingTest extends TestCase
             ->assertInertia(fn (Assert $p) => $p->has('stageLogs', 2)->where('stageLogs.1.open', true));
     }
 
-    public function test_office_leader_by_won_lots(): void
+    /**
+     * Экран «Офис»: лидер — тот, у кого сделки ДОШЛИ до оплаты, а не тот, кто
+     * завёл их больше. Количеством лидером не стать.
+     */
+    public function test_office_leader_by_won_deals(): void
     {
         $company = Company::firstOrCreate(['code' => 'QT'], ['name' => 'QT']);
-        $stage = DealStage::orderBy('order')->first()->id;
+        $first = DealStage::orderBy('order')->first()->id;
+        $wonStage = DealStage::where('is_won', true)->first() ?? DealStage::orderBy('order', 'desc')->first();
 
-        // A: добавил 2 заявки, один ВЫИГРАЛ (стал сделкой) — лидер.
+        $deal = fn (User $u, string $number, int $stage) => Deal::create([
+            'number' => $number, 'name' => 'X', 'company_name' => 'Т', 'client_name' => 'И',
+            'budget' => 1000000, 'status' => 'active', 'company_id' => $company->id,
+            'deal_stage_id' => $stage, 'responsible_user_id' => $u->id,
+        ]);
+
+        // A: завёл 2 сделки, одну довёл до оплаты — лидер.
         $a = User::factory()->create(['name' => 'Выигрывает']);
         $a->assignRole('manager');
-        $deal = Deal::create(['number' => 'QT-001', 'name' => 'X', 'company_name' => 'Т', 'client_name' => 'И', 'budget' => 1000000, 'status' => 'active', 'company_id' => $company->id, 'deal_stage_id' => $stage, 'responsible_user_id' => $a->id]);
-        \App\Models\PreDeal::create(['company_id' => $company->id, 'user_id' => $a->id, 'product' => 'Divan', 'contract_sum' => 1000000, 'margin' => 30, 'status' => 'confirmed', 'deal_id' => $deal->id]);
-        \App\Models\PreDeal::create(['company_id' => $company->id, 'user_id' => $a->id, 'product' => 'Вазон', 'contract_sum' => 500000, 'margin' => 20, 'status' => 'new']);
+        $deal($a, 'QT-001', $wonStage->id);
+        $deal($a, 'QT-002', $first);
 
-        // B: добавил 3 заявки, ни одну не подтвердил — количеством лидером не стать.
+        // B: завёл 3 сделки, ни одна не оплачена.
         $b = User::factory()->create(['name' => 'Количество']);
         $b->assignRole('manager');
-        foreach ([1, 2, 3] as $i) {
-            \App\Models\PreDeal::create(['company_id' => $company->id, 'user_id' => $b->id, 'product' => 'Заявка '.$i, 'contract_sum' => 100000, 'margin' => 10, 'status' => 'new']);
+        foreach ([3, 4, 5] as $i) {
+            $deal($b, 'QT-00'.$i, $first);
         }
 
         $admin = User::factory()->create();
@@ -90,12 +100,11 @@ class StageTimingTest extends TestCase
             ->where('managers.0.won', 1)
             ->where('managers.0.total', 2)
             ->where('managers.0.conversion', 50)
-            ->where('managers.0.deals', 1)
             ->where('managers.1.name', 'Количество')
             ->where('managers.1.won', 0)
             ->where('managers.1.total', 3));
 
-        // Фильтр месяца: в прошлом месяце заявок не было — подтверждённых 0.
+        // Фильтр месяца: в прошлом месяце сделок не было — оплаченных 0.
         $this->get(route('screen.show', ['month' => now()->subMonthNoOverflow()->format('Y-m')]))
             ->assertInertia(fn (Assert $p) => $p->where('managers.0.won', 0));
     }

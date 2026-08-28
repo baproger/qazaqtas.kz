@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\Deal;
 use App\Models\DealStage;
-use App\Models\PreDeal;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\User;
@@ -121,46 +120,24 @@ class DealItemsTest extends TestCase
         $this->assertSame(135000.0, (float) $deal->budget);
     }
 
-    /** Заявка тоже многопозиционная: сумма КП и закуп — по строкам. */
-    public function test_pre_deal_sums_and_margin_come_from_items(): void
+    /**
+     * Форма без «Наименования товара»: оно берётся из первой позиции.
+     *
+     * В форме это поле показывается, только пока товары из каталога не
+     * выбраны, — значит при выбранных позициях его и не присылают. Требовать
+     * его на сервере значит молча отвергать каждую нормальную сделку.
+     */
+    public function test_client_name_comes_from_the_first_item(): void
     {
-        $this->actingAs($this->manager)->post(route('preDeals.store'), [
-            'customer' => 'Асхат',
-            'items' => [
-                ['product_id' => $this->paving->id, 'quantity' => 100, 'purchase_price' => 8000],
-                ['product_id' => $this->bin->id, 'quantity' => 2, 'purchase_price' => 30000],
-            ],
-        ]);
-        $preDeal = PreDeal::firstOrFail();
-
-        // Продажа: 100 × 12 000 + 2 × 45 000 = 1 290 000
-        $this->assertSame(1290000.0, (float) $preDeal->contract_sum);
-        // Закуп: 100 × 8 000 + 2 × 30 000 = 860 000
-        $this->assertSame(860000.0, (float) $preDeal->purchase_price);
-        $this->assertGreaterThan(0, (float) $preDeal->margin);
-        $this->assertSame(2, $preDeal->items->count());
-    }
-
-    /** «В работу ✓» переносит товары в сделку — второй раз их не вводят. */
-    public function test_confirming_a_pre_deal_carries_items_into_the_deal(): void
-    {
-        $this->actingAs($this->manager)->post(route('preDeals.store'), [
-            'customer' => 'Асхат',
-            'items' => [
-                ['product_id' => $this->paving->id, 'quantity' => 50, 'purchase_price' => 5000],
-                ['product_id' => $this->bin->id, 'quantity' => 1, 'purchase_price' => 20000],
-            ],
+        $this->actingAs($this->manager)->post(route('deals.store'), [
+            'company_name' => 'ТОО Тест',
+            'address' => 'Алматы',
+            'budget' => 120000,
+            'items' => [['product_id' => $this->paving->id, 'quantity' => 10, 'price' => 12000]],
         ])->assertSessionHasNoErrors();
 
-        $preDeal = PreDeal::firstOrFail();
-        $this->actingAs($this->manager)->post(route('preDeals.confirm', $preDeal->id))
-            ->assertSessionHasNoErrors();
-
-        $deal = Deal::firstOrFail()->load('items');
-
-        $this->assertSame(2, $deal->items->count());
-        $this->assertSame('м²', $deal->items[0]->unit);
-        $this->assertSame((float) $preDeal->contract_sum, (float) $deal->budget);
+        $deal = Deal::firstOrFail();
+        $this->assertSame($this->paving->name, $deal->client_name);
     }
 
     /** Пустые строки формы не создают позиций-призраков. */

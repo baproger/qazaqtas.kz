@@ -105,14 +105,30 @@ class ProductionBonusTest extends TestCase
     }
 
     /** Ставка рабочего по умолчанию нулевая: её задаёт владелец в настройках. */
-    public function test_worker_rate_is_set_by_the_owner(): void
+    /**
+     * Бонус смены целиком у бригадира (правило владельца от 28.08.2026).
+     *
+     * Строка рабочего остаётся, но с нулём: она держит ОБЪЁМ, по нему
+     * считается выполнение плана. Убери её — и план перестал бы закрываться.
+     * Кто из бригады сколько получит, решает бригадир вне системы.
+     */
+    public function test_the_whole_bonus_goes_to_the_foreman(): void
     {
-        Setting::set('worker_rate_m2', 300);
-
         $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 10, 'qty_pcs' => 0]]);
-        $line = $order->lines()->where('user_id', $this->worker->id)->where('role', 'worker')->firstOrFail();
 
-        $this->assertSame(3000.0, (float) $line->amount);
+        $worker = $order->lines()->where('user_id', $this->worker->id)->where('role', 'worker')->firstOrFail();
+        $foreman = $order->lines()->where('role', 'foreman')->firstOrFail();
+
+        $this->assertSame(0.0, (float) $worker->amount, 'Рабочему деньги не начисляются.');
+        $this->assertSame(10.0, (float) $worker->qty_m2, 'Но объём его строка держит.');
+
+        // Ставка бригадира по умолчанию 450 ₸/м²: 10 × 450 = 4 500.
+        $this->assertSame(4500.0, (float) $foreman->amount);
+        $this->assertSame(
+            (float) $foreman->amount,
+            round((float) $order->lines()->sum('amount'), 2),
+            'Весь бонус наряда — на строке бригадира.',
+        );
     }
 
     /** Ставка копируется в строку: поднятая цена не пересчитывает старые наряды. */
@@ -257,20 +273,19 @@ class ProductionBonusTest extends TestCase
      * Его заработок — только объём. Пока строк ведомости не было, бонус за
      * смены не попадал ни в «К выплате», ни в ЗП компании.
      */
-    public function test_a_worker_without_salary_stays_in_the_payroll(): void
+    /** Заработавший ТОЛЬКО объёмом (без оклада) обязан быть в ведомости. */
+    public function test_someone_earning_only_by_volume_stays_in_the_payroll(): void
     {
-        $this->worker->update(['salary' => 0]);
-        Setting::set('worker_rate_m2', 300);
+        $this->foreman->update(['salary' => 0]);
 
         $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 10, 'qty_pcs' => 0]]);
         $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id));
 
-        $row = app(PayrollService::class)->perUser()
-            ->firstWhere('uid', $this->worker->id);
+        $row = app(PayrollService::class)->perUser()->firstWhere('uid', $this->foreman->id);
 
         $this->assertNotNull($row, 'Заработавший объёмом обязан быть в ведомости.');
-        $this->assertSame(3000.0, round((float) $row['bonus_production'], 2));
-        $this->assertSame(3000.0, round((float) $row['payout'], 2));
+        $this->assertSame(4500.0, round((float) $row['bonus_production'], 2));
+        $this->assertSame(4500.0, round((float) $row['payout'], 2));
     }
 
     /**
@@ -327,8 +342,13 @@ class ProductionBonusTest extends TestCase
         $this->assertSame('draft', $order->fresh()->status);
     }
 
-    /** Страница производства показывает, кто сколько сделал. */
-    public function test_page_shows_output_per_person(): void
+    /**
+     * Кто сколько сделал — в карточке бригады, итог месяца — на «Всех нарядах».
+     *
+     * Разбивка по людям живёт в ОДНОМ месте: держи её и там, и тут — однажды
+     * две копии одной суммы разойдутся.
+     */
+    public function test_output_per_person_lives_in_the_brigade_card(): void
     {
         $order = $this->createOrder([['user_id' => $this->worker->id, 'qty_m2' => 12, 'qty_pcs' => 0]]);
         $this->actingAs($this->director)->patch(route('production.orders.confirm', $order->id));
@@ -337,6 +357,13 @@ class ProductionBonusTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Production/Index')
                 ->where('totals.m2', fn ($m2) => (float) $m2 === 12.0)
-                ->where('byPerson', fn ($rows) => collect($rows)->firstWhere('name', 'Бригадир')['amount'] == 5400.0));
+                ->missing('byPerson'));
+
+        $this->actingAs($this->director)
+            ->get(route('production.brigade', ['brigade' => $this->brigade->id, 'month' => '2026-08']))
+            ->assertInertia(fn ($page) => $page
+                ->component('Production/Brigade')
+                ->where('byPerson', fn ($rows) => collect($rows)->firstWhere('name', 'Бригадир')['amount'] == 5400.0)
+                ->etc());
     }
 }

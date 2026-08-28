@@ -2,11 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
+use App\Models\Deal;
+use App\Models\DealStage;
+use App\Models\DealStageLog;
 use App\Models\Project;
 use App\Models\ProjectStage;
+use App\Models\ProjectStageLog;
+use App\Models\Setting;
+use App\Models\User;
 use App\Models\WorkshopScreen;
+use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,7 +55,7 @@ class WorkshopScreenController extends Controller
             ->when($companyId, fn ($q, $c) => $q->whereHas('deal', fn ($d) => $d->where('company_id', $c)))
             ->when($screen->workshop, fn ($q, $w) => $q->where('workshop', $w))
             ->with(['stage:id,name', 'deal:id,number,company_name,address,deadline,description,note'])
-            ->addSelect(['stage_entered_at' => \App\Models\ProjectStageLog::select('entered_at')
+            ->addSelect(['stage_entered_at' => ProjectStageLog::select('entered_at')
                 ->whereColumn('project_id', 'projects.id')->whereNull('left_at')
                 ->latest('entered_at')->limit(1)])
             ->latest()->get()
@@ -69,85 +79,101 @@ class WorkshopScreenController extends Controller
     }
 
     /**
-     * Экран «Офис»: лидер — по ЭФФЕКТИВНОСТИ (принесённая компании прибыль
-     * за месяц по won-сделкам, та же формула, что в ЗП), а не по числу сделок.
-     * Денег на экране нет — только баллы (0–100 от лучшего), маржа %, штуки.
+     * Экран «Офис»: воронка отдела и рейтинг менеджеров по СДЕЛКАМ.
+     *
+     * Раньше экран считал заявки и их чек-лист. Заявок больше нет, и считать
+     * стало нечего — воронка переехала на настоящие этапы сделки: сколько
+     * сделок месяца ДОШЛО до «Договора», до «Цеха», до «Оплаты успешно».
+     *
+     * «Дошло» берём из `deal_stage_logs`, а не из текущего этапа: сделка,
+     * стоящая на «Оплате», прошла и «Договор», и «Цех», — считай по текущему
+     * этапу, и все ранние ступени воронки оказались бы пустыми.
+     *
+     * Денег на экране нет: он висит на стене, мимо ходят все.
      * Фильтр месяца (?month=YYYY-MM) — кто был лучшим в любом месяце.
      */
     private function office(WorkshopScreen $screen): Response
     {
         $companyId = $screen->company_id ? (int) $screen->company_id : null;
-        $plan = max(1, (int) \App\Models\Setting::get('sales_plan_monthly', 20));
+        $plan = max(1, (int) Setting::get('sales_plan_monthly', 20));
         $month = preg_match('/^\d{4}-\d{2}$/', (string) request()->query('month'))
             ? request()->query('month') : now()->format('Y-m');
         $mStart = $month.'-01';
-        $mEnd = \Illuminate\Support\Carbon::parse($mStart)->endOfMonth()->toDateString();
-        // Рейтинг по ЗАЯВКАМ за месяц: сколько заявок
-        // менеджер добавил, сколько перевёл в сделки (кнопка «В работу» → создана
-        // сделка) и конверсия %. Деньги на экране не показываются.
-        $lots = \App\Models\PreDeal::query()
-            ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
-            ->whereDate('created_at', '>=', $mStart)->whereDate('created_at', '<=', $mEnd)
-            ->groupBy('user_id')
-            ->selectRaw("user_id, count(*) total,
-                sum(case when status = 'confirmed' then 1 else 0 end) won,
-                sum(case when status = 'confirmed' and deal_id is not null then 1 else 0 end) deals")
-            ->get()->keyBy('user_id');
+        $mEnd = Carbon::parse($mStart)->endOfMonth()->toDateString();
 
-        // Чек-листы заявок («Позвонил клиенту», «Сделал замер»…): видно, работает
-        // ли менеджер по заявке. checks = {itemId: true} на каждой заяве.
-        $checkItemsList = \App\Models\PreDealChecklistItem::where('is_active', true)
-            ->orderBy('order')->get(['id', 'label']);
-        $checkItems = $checkItemsList->count();
-        $monthLots = \App\Models\PreDeal::query()
+        // Ступени воронки = этапы фирмы (плюс общие) в их порядке. Тот же
+        // набор, что видит менеджер в канбане: разойдись они, экран показывал
+        // бы воронку, которой в системе нет.
+        $stages = DealStage::funnel($companyId);
+        $wonStageIds = $stages->where('is_won', true)->pluck('id');
+
+        // Сделки месяца — по дате СОЗДАНИЯ: экран отвечает на вопрос «сколько
+        // завели в этом месяце и что с ними стало».
+        $deals = Deal::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
             ->whereDate('created_at', '>=', $mStart)->whereDate('created_at', '<=', $mEnd)
-            ->with('user:id,name')
+            ->with('responsible:id,name')
             ->latest()
-            ->get(['id', 'user_id', 'product', 'customer', 'margin', 'status', 'checks', 'created_at']);
-        $checksDone = fn ($p) => count(array_filter($p->checks ?? []));
-        $checksByUser = $monthLots->groupBy('user_id')->map(fn ($rows) => $rows->sum($checksDone));
-        // Персональная воронка менеджера: заявки → каждый пункт чек-листа → в работе.
-        $funnelFor = function ($rows) use ($checkItemsList) {
-            return collect([['label' => 'Заявки', 'count' => $rows->count(), 'kind' => 'start']])
-                ->concat($checkItemsList->map(fn ($it) => [
-                    'label' => trim(str_ireplace('через WhatsApp', '', $it->label)),
-                    'count' => $rows->filter(fn ($p) => ! empty(($p->checks ?? [])[(string) $it->id]))->count(),
-                    'kind' => 'step',
-                ]))
-                ->push(['label' => 'В работе', 'count' => $rows->where('status', 'confirmed')->count(), 'kind' => 'won'])
-                ->values();
+            ->get(['id', 'number', 'responsible_user_id', 'company_name', 'client_name', 'deal_stage_id', 'status', 'created_at']);
+
+        // Какие этапы каждая сделка уже проходила: id сделки → набор этапов.
+        $reached = DealStageLog::whereIn('deal_id', $deals->pluck('id'))
+            ->get(['deal_id', 'deal_stage_id'])
+            ->groupBy('deal_id')
+            ->map(fn ($rows) => $rows->pluck('deal_stage_id')->filter()->unique()->all());
+
+        // Текущий этап тоже считается пройденным: у сделок, заведённых до
+        // появления журнала, лога может не быть вовсе.
+        $passed = function (Deal $d, int $stageId) use ($reached): bool {
+            return $d->deal_stage_id === $stageId || in_array($stageId, $reached[$d->id] ?? [], true);
         };
-        $funnelByUser = $monthLots->groupBy('user_id')->map($funnelFor);
+        $isWon = fn (Deal $d) => $wonStageIds->contains($d->deal_stage_id);
+
+        // Воронка по набору сделок: Сделки → каждый этап → выигранные.
+        $funnelFor = function ($rows) use ($stages, $passed, $isWon, $plan) {
+            return collect([[
+                'label' => 'Сделки', 'count' => $rows->count(), 'plan' => $plan, 'kind' => 'start',
+            ]])->concat($stages->where('is_won', false)->map(fn ($st) => [
+                'label' => $st->name,
+                'count' => $rows->filter(fn ($d) => $passed($d, $st->id))->count(),
+                'plan' => $plan,
+                'kind' => 'step',
+            ]))->push([
+                'label' => 'Оплата успешно',
+                'count' => $rows->filter($isWon)->count(),
+                'plan' => max(1, (int) Setting::get('sales_plan_won_monthly', 20)),
+                'kind' => 'won',
+            ])->values();
+        };
+
+        $byUser = $deals->groupBy('responsible_user_id');
         $emptyFunnel = $funnelFor(collect());
-        // Список заявок на экран (последние 40): заявка · менеджер · чек-лист · статус.
-        $lotRows = $monthLots->take(40)->map(fn ($p) => [
-            'manager' => $p->user?->name ?? '—',
-            'product' => $p->product,
-            'customer' => $p->customer,
-            'won' => $p->status === 'confirmed',
-            'checks_done' => min($checksDone($p), $checkItems),
-            'checks_total' => $checkItems,
+
+        // Список сделок на экран (последние 40): сделка · менеджер · этап.
+        $dealRows = $deals->take(40)->map(fn ($d) => [
+            'manager' => $d->responsible?->name ?? '—',
+            'number' => $d->number,
+            'product' => $d->client_name,
+            'customer' => $d->company_name,
+            'stage' => $stages->firstWhere('id', $d->deal_stage_id)?->name ?? '—',
+            'won' => $isWon($d),
         ])->values();
 
-        $managers = \App\Models\User::role('manager')->where('is_active', true)->get(['id', 'name', 'avatar'])
-            ->map(function (\App\Models\User $u) use ($lots, $plan, $checksByUser, $checkItems, $funnelByUser, $emptyFunnel) {
-                $m = $lots[$u->id] ?? null;
-                $total = (int) ($m->total ?? 0);
-                $won = (int) ($m->won ?? 0);
+        $managers = User::role('manager')->where('is_active', true)->get(['id', 'name', 'avatar'])
+            ->map(function (User $u) use ($byUser, $plan, $isWon, $funnelFor, $emptyFunnel) {
+                $rows = $byUser[$u->id] ?? collect();
+                $total = $rows->count();
+                $won = $rows->filter($isWon)->count();
 
                 return [
                     'name' => $u->name, 'avatar' => $u->avatar,
-                    'total' => $total,                          // заявок добавил
-                    'won' => $won,                              // переведено в сделки
-                    'deals' => (int) ($m->deals ?? 0),          // из них стало сделками
+                    'total' => $total,                          // сделок завёл
+                    'won' => $won,                              // из них оплачены
+                    'deals' => $total,                          // сделка и есть сделка
                     'conversion' => $total > 0 ? (int) round($won / $total * 100) : 0,
                     'plan_pct' => min(100, (int) round($total / $plan * 100)),
-                    // Чек-лист: сделано галочек / всего возможных (заявки × пункты).
-                    'checks_done' => (int) ($checksByUser[$u->id] ?? 0),
-                    'checks_total' => $total * $checkItems,
-                    // Персональная воронка: заявки → звонок/замер/КП… → в работе.
-                    'funnel' => $funnelByUser[$u->id] ?? $emptyFunnel,
+                    // Персональная воронка: сделки → этапы → оплата успешно.
+                    'funnel' => $total > 0 ? $funnelFor($rows) : $emptyFunnel,
                 ];
             })
             ->sortBy([['won', 'desc'], ['conversion', 'desc'], ['total', 'desc']])->values();
@@ -156,31 +182,13 @@ class WorkshopScreenController extends Controller
             'screen' => ['company' => $screen->company?->name],
             'plan' => $plan,
             'month' => $month,
-            'monthLabel' => \Illuminate\Support\Carbon::parse($mStart)->locale('ru')->translatedFormat('F Y'),
+            'monthLabel' => Carbon::parse($mStart)->locale('ru')->translatedFormat('F Y'),
             'managers' => $managers,
             'leader' => $managers->first(),
-            // Заявки месяца с чек-листами — видно, кто реально работает по заявкам.
-            'lots' => $lotRows,
-            // Воронка отдела КРУПНО: Заявки → этапы чек-листа
-            // (Звонок, КП… — любые пункты из «⚙ Чек-лист») → Выигранные.
-            // План заявок и чек-листа общий (каждая заявка проходит каждый шаг),
-            // у подтверждённых — свой план (sales_plan_won_monthly).
-            'funnel' => collect([[
-                'label' => 'Заявки',
-                'count' => $monthLots->count(),
-                'plan' => $plan,
-                'kind' => 'start',
-            ]])->concat($checkItemsList->map(fn ($it) => [
-                'label' => trim(str_ireplace('через WhatsApp', '', $it->label)),
-                'count' => $monthLots->filter(fn ($p) => ! empty(($p->checks ?? [])[(string) $it->id]))->count(),
-                'plan' => $plan,
-                'kind' => 'step',
-            ]))->push([
-                'label' => 'Выигранные сделки',
-                'count' => $monthLots->where('status', 'confirmed')->count(),
-                'plan' => max(1, (int) \App\Models\Setting::get('sales_plan_won_monthly', 20)),
-                'kind' => 'won',
-            ])->values(),
+            // Сделки месяца — видно, кто что завёл и где оно стоит.
+            'lots' => $dealRows,
+            // Воронка отдела КРУПНО: Сделки → этапы воронки → Оплата успешно.
+            'funnel' => $funnelFor($deals),
         ]);
     }
 
@@ -193,9 +201,9 @@ class WorkshopScreenController extends Controller
             // Отдельный план ВЫИГРАННЫХ сделок (воронка на экране «Офис»).
             'plan_won' => ['nullable', 'integer', 'min:1', 'max:1000'],
         ]);
-        \App\Models\Setting::set('sales_plan_monthly', $data['plan']);
+        Setting::set('sales_plan_monthly', $data['plan']);
         if (! empty($data['plan_won'])) {
-            \App\Models\Setting::set('sales_plan_won_monthly', $data['plan_won']);
+            Setting::set('sales_plan_won_monthly', $data['plan_won']);
         }
 
         return back()->with('success', 'План на месяц: заявок '.$data['plan'].(! empty($data['plan_won']) ? ', подтверждённых '.$data['plan_won'] : '').'.');
@@ -262,7 +270,7 @@ class WorkshopScreenController extends Controller
      * «Готово» с ТВ-экрана: доступно ТОЛЬКО на последнем этапе воронки цеха
      * («Отправка») — заказ завершается, сделка возвращается на «Логистику».
      */
-    public function completeProject(Request $request, Project $project, \App\Services\ProjectService $projects): RedirectResponse
+    public function completeProject(Request $request, Project $project, ProjectService $projects): RedirectResponse
     {
         $screen = $this->screenForAction($request, $project);
 
@@ -281,7 +289,7 @@ class WorkshopScreenController extends Controller
         $this->guardAdmin($request);
 
         $screens = WorkshopScreen::get()->keyBy(fn ($s) => ($s->company_id ?? 0).'|'.($s->workshop ?? '').'|'.$s->kind);
-        $companies = \App\Models\Company::orderBy('id')->get(['id', 'name'])->map(function ($c) use ($screens) {
+        $companies = Company::orderBy('id')->get(['id', 'name'])->map(function ($c) use ($screens) {
             // Та же выборка, что и на канбане цеха (ProjectStage::companyQuery):
             // свои этапы фирмы, а если их нет — общие. Иначе на свежей базе
             // «Экраны» показывали «Единый цех», хотя цехов несколько.
@@ -305,8 +313,8 @@ class WorkshopScreenController extends Controller
 
         return Inertia::render('Settings/Screens', [
             'companies' => $companies,
-            'salesPlan' => (int) \App\Models\Setting::get('sales_plan_monthly', 20),
-            'salesPlanWon' => (int) \App\Models\Setting::get('sales_plan_won_monthly', 20),
+            'salesPlan' => (int) Setting::get('sales_plan_monthly', 20),
+            'salesPlanWon' => (int) Setting::get('sales_plan_won_monthly', 20),
         ]);
     }
 
@@ -331,7 +339,7 @@ class WorkshopScreenController extends Controller
         $data = $request->validate([
             'company_id' => ['nullable', 'exists:companies,id'],
             'workshop' => ['nullable', 'string', 'max:100'],
-            'kind' => ['nullable', \Illuminate\Validation\Rule::in(['workshop', 'office'])],
+            'kind' => ['nullable', Rule::in(['workshop', 'office'])],
         ]);
 
         WorkshopScreen::updateOrCreate(

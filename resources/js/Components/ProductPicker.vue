@@ -14,12 +14,10 @@ import { useE } from '@/composables/useTranslations';
 const tr = useE();
 
 const props = defineProps({
-    // Строки: [{ product_id, name, unit, quantity, price, purchase_price? }]
+    // Строки: [{ product_id, name, unit, quantity, price }]
     modelValue: { type: Array, default: () => [] },
     catalog: { type: Array, default: () => [] },
     categories: { type: Array, default: () => [] },
-    // Заявке нужна закупочная цена: по ней считается маржа.
-    withPurchasePrice: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['update:modelValue']);
@@ -61,7 +59,6 @@ const toggleProduct = (product) => {
         unit: product.unit,
         quantity: '',
         price: product.price,
-        ...(props.withPurchasePrice ? { purchase_price: '' } : {}),
     }]);
 };
 
@@ -73,8 +70,6 @@ const removeRow = (index) => emit('update:modelValue', props.modelValue.filter((
 
 const lineTotal = (row) => Number(row.quantity || 0) * Number(row.price || 0);
 const total = computed(() => props.modelValue.reduce((sum, r) => sum + lineTotal(r), 0));
-const purchaseTotal = computed(() => props.modelValue
-    .reduce((sum, r) => sum + Number(r.quantity || 0) * Number(r.purchase_price || 0), 0));
 </script>
 
 <template>
@@ -131,13 +126,6 @@ const purchaseTotal = computed(() => props.modelValue
                             class="w-28 rounded-md border-slate-300 py-1 text-sm shadow-sm" />
                     </label>
 
-                    <label v-if="withPurchasePrice" class="flex items-center gap-1 text-xs text-slate-400">
-                        {{ $e('закуп') }}
-                        <input :value="row.purchase_price" @input="updateRow(i, 'purchase_price', $event.target.value)"
-                            type="number" min="0" step="any"
-                            class="w-28 rounded-md border-slate-300 py-1 text-sm shadow-sm" />
-                    </label>
-
                     <span class="w-28 text-right text-sm font-semibold tabular-nums text-slate-800">{{ money(lineTotal(row)) }}</span>
                     <button type="button" @click="removeRow(i)"
                         class="rounded p-1 text-slate-300 transition-colors hover:text-rose-600" :title="$e('Убрать товар')">✕</button>
@@ -145,9 +133,6 @@ const purchaseTotal = computed(() => props.modelValue
             </div>
 
             <div class="mt-2 flex flex-wrap items-center justify-end gap-4 text-sm">
-                <span v-if="withPurchasePrice && purchaseTotal > 0" class="text-slate-400">
-                    {{ $e('закуп') }} <b class="tabular-nums text-slate-600">{{ money(purchaseTotal) }}</b>
-                </span>
                 <span class="text-slate-500">
                     {{ $e('Сумма заказа:') }} <b class="text-base tabular-nums text-slate-900">{{ money(total) }}</b>
                 </span>

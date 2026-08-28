@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -78,7 +78,7 @@ class RolePermissionSeeder extends Seeder
         // «Финансист-Бухгалтер» = financist.
         // Бригадир — уровень сотрудника плюс своя страница производства:
         // он ведёт наряды своей бригады (доступ проверяется в контроллере).
-        foreach (['lawyer', 'cook', 'designer', 'supplier', 'foreman'] as $job) {
+        foreach (['lawyer', 'cook', 'designer', 'supplier', 'foreman', 'production_head', 'assistant'] as $job) {
             $perms = [
                 'project.viewAny', 'project.view',
                 'task.viewAny', 'task.view', 'task.update',
@@ -94,7 +94,70 @@ class RolePermissionSeeder extends Seeder
             if (in_array($job, ['designer', 'supplier', 'foreman'], true)) {
                 $perms = array_merge($perms, ['deal.viewAny', 'deal.view']);
             }
+            // Начальник производства ведёт цех: доска и карточки заказов,
+            // планы, склад. Наряды он ПОДТВЕРЖДАЕТ — это проверяется ролью
+            // в контроллере, правом такое не выразить.
+            if ($job === 'production_head') {
+                $perms = array_merge($perms, [
+                    'deal.viewAny', 'deal.view',
+                    'project.update',
+                    'product.viewAny', 'product.view',
+                    'department.viewAny',
+                ]);
+            }
+            // Ассистент — помощник руководства: видит ход дел, но ничего не
+            // двигает. Ему приходят уведомления о нехватке и о новых планах.
+            if ($job === 'assistant') {
+                $perms = array_merge($perms, [
+                    'deal.viewAny', 'deal.view',
+                    'product.viewAny', 'product.view',
+                    'department.viewAny',
+                ]);
+            }
             Role::findOrCreate($job, 'web')->syncPermissions($perms);
+        }
+
+        $this->applyTraits();
+    }
+
+    /**
+     * Признаки ролей: чем роль ЯВЛЯЕТСЯ, а не только что ей разрешено.
+     *
+     * Живут здесь, а не только в миграции: на чистой установке и в тестах
+     * миграции проходят ДО сидера, когда таблица ролей ещё пуста, и апдейт
+     * в миграции не нашёл бы ни одной строки. Миграция досеивает признаки
+     * действующим базам, сидер — источник правды для новых.
+     *
+     * [подпись, руководство, видит суммы, цеховая]
+     */
+    private function applyTraits(): void
+    {
+        $traits = [
+            'admin' => ['СЕО (админ)', true, true, false],
+            'director' => ['Директор', true, true, false],
+            'financist' => ['Финансист-Бухгалтер', true, true, false],
+            'manager' => ['Менеджер', false, true, false],
+            'employee' => ['Сотрудник цеха', false, false, true],
+            'foreman' => ['Бригадир', false, false, true],
+            'designer' => ['Технолог', false, true, false],
+            'supplier' => ['Снабженец', false, true, false],
+            'lawyer' => ['Юрист', false, false, false],
+            'cook' => ['Повар', false, false, false],
+            // Начальник производства видит весь цех и все заказы, но суммы
+            // сделок ему не нужны: он отвечает за объём, а не за деньги.
+            'production_head' => ['Начальник производства', false, false, true],
+            // Ассистент — наблюдатель руководства: видит всех, сумм не видит.
+            'assistant' => ['Ассистент', true, false, false],
+        ];
+
+        foreach ($traits as $name => [$label, $leadership, $money, $workshop]) {
+            Role::where('name', $name)->update([
+                'label' => $label,
+                'is_leadership' => $leadership,
+                'sees_money' => $money,
+                'is_workshop' => $workshop,
+                'is_system' => true,
+            ]);
         }
     }
 

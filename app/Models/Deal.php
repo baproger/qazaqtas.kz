@@ -24,7 +24,7 @@ class Deal extends Model
     public const SOURCES = ['Сайт', 'Instagram', 'WhatsApp', 'Входящий звонок', 'Рекомендация', 'Повторный клиент', 'Выставка', 'Дилер / партнёр', 'Госзакуп', 'Другое'];
 
     protected $fillable = [
-        'company_id', 'branch', 'number', 'name', 'client_name', 'product_id', 'company_name', 'address', 'bin', 'contract_date', 'lot_number', 'unit', 'area_m2', 'source', 'client_id', 'responsible_user_id', 'foreman_id', 'department_id',
+        'company_id', 'branch', 'number', 'name', 'client_name', 'product_id', 'company_name', 'address', 'bin', 'customer_bin', 'contact_name', 'contact_phone', 'contract_date', 'lot_number', 'unit', 'area_m2', 'source', 'client_id', 'responsible_user_id', 'foreman_id', 'department_id',
         'deal_type', 'deal_stage_id', 'budget', 'partner_pct', 'bonus_rate_override', 'deadline', 'description', 'note', 'status', 'closed_at',
     ];
 

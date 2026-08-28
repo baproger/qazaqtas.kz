@@ -18,8 +18,6 @@ const form = useForm({
     bonus_resale_percent: props.settings.bonus_resale_percent,
     foreman_rate_m2: props.settings.foreman_rate_m2,
     foreman_rate_pcs: props.settings.foreman_rate_pcs,
-    worker_rate_m2: props.settings.worker_rate_m2,
-    worker_rate_pcs: props.settings.worker_rate_pcs,
 });
 const save = () => form.put(route('settings.update'), { preserveScroll: true });
 </script>
@@ -35,6 +33,8 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
             <Link :href="route('screens.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Экраны') }}</Link>
             <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Доп. поля') }}</Link>
             <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Сайт') }}</Link>
+            <Link v-if="$page.props.auth.user?.roles?.includes('admin')" :href="route('access.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Права доступа') }}</Link>
+            <Link :href="route('structure.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Структура') }}</Link>
         </div>
 
         <div class="max-w-xl rounded-xl border border-slate-100 bg-white p-6 shadow-sm space-y-4">
@@ -94,14 +94,10 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
                     <InputLabel :value="$e('Бригадир: ₸ за штуку')" />
                     <TextInput v-model="form.foreman_rate_pcs" type="number" step="1" min="0" class="mt-1 w-full" />
                 </div>
-                <div>
-                    <InputLabel :value="$e('Рабочий: ₸ за м²')" />
-                    <TextInput v-model="form.worker_rate_m2" type="number" step="1" min="0" class="mt-1 w-full" />
-                    <p class="mt-1 text-xs text-slate-400">{{ $e('Ноль — рабочим за объём не платим, только бригадиру.') }}</p>
-                </div>
-                <div>
-                    <InputLabel :value="$e('Рабочий: ₸ за штуку')" />
-                    <TextInput v-model="form.worker_rate_pcs" type="number" step="1" min="0" class="mt-1 w-full" />
+                <div class="sm:col-span-2">
+                    <p class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                        {{ $e('Бонус смены начисляется бригадиру целиком. Кто из бригады сколько получит, решает он сам — система долей не считает.') }}
+                    </p>
                 </div>
             </div>
             <label class="flex items-center gap-2 text-sm">

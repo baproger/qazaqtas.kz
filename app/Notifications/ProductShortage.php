@@ -6,11 +6,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 /**
- * Начальнику производства: под новую заявку не хватает товара на складе.
+ * Начальнику производства: под новую сделку не хватает товара на складе.
  *
- * Заявку не блокируем — это ещё запрос КП, а не обязательство. Но если
- * менеджер обещает 1000 м², а на складе 200, кто-то должен узнать об этом в
- * тот же день, а не когда придёт время грузить.
+ * Сделку не блокируем — договор уже подписан, отменять его складом поздно. Но
+ * если менеджер продал 1000 м², а на складе 200, кто-то должен узнать об этом
+ * в тот же день, а не когда придёт время грузить.
  */
 class ProductShortage extends Notification
 {
@@ -21,8 +21,8 @@ class ProductShortage extends Notification
      */
     public function __construct(
         public array $rows,
-        public ?string $requestNumber = null,
-        public ?int $preDealId = null,
+        public ?string $dealNumber = null,
+        public ?int $dealId = null,
     ) {}
 
     /** @return array<int, string> */
@@ -42,9 +42,9 @@ class ProductShortage extends Notification
         return [
             'type' => 'product_shortage',
             'title' => 'Не хватает на складе',
-            'message' => ($this->requestNumber ? 'Заявка №'.$this->requestNumber.': ' : '').$short,
-            'url' => route('preDeals.index', [], false),
-            'pre_deal_id' => $this->preDealId,
+            'message' => ($this->dealNumber ? 'Сделка '.$this->dealNumber.': ' : '').$short,
+            'url' => $this->dealId ? route('deals.show', $this->dealId, false) : route('deals.index', [], false),
+            'deal_id' => $this->dealId,
         ];
     }
 }

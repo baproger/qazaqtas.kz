@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Services\FinanceService;
 use App\Support\CurrentCompany;
+use App\Support\StickyFilters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -25,6 +27,10 @@ class ExpensesBoardController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'expenses', ['kind', 'method']);
+
         $user = $request->user();
         abort_unless($user->hasAnyRole(['admin', 'director', 'financist']), 403, 'Страница расходов — для бухгалтерии и руководства.');
 
@@ -76,7 +82,7 @@ class ExpensesBoardController extends Controller
             // Форма «Расход компании» и список категорий — прямо здесь:
             // бухгалтер работает с расходами на этой странице, и уходить за
             // ними на Финансы незачем.
-            'categories' => \App\Models\ExpenseCategory::where('is_active', true)
+            'categories' => ExpenseCategory::where('is_active', true)
                 ->orderBy('name')->get(['id', 'code', 'name']),
             'balances' => app(FinanceService::class)->companyBalances($companyId),
         ]);

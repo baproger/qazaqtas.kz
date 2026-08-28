@@ -14,13 +14,13 @@ use App\Models\ExpenseCategory;
 use App\Models\Invoice;
 use App\Models\Material;
 use App\Models\Payment;
-use App\Models\PreDeal;
 use App\Models\Project;
 use App\Models\ProjectStage;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\AuditDictionary;
 use App\Support\AuditFormatter;
+use App\Support\StickyFilters;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -30,6 +30,10 @@ class AuditController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'audit', ['table', 'action', 'user', 'from', 'to']);
+
         // Только админ: журнал — generic-таблица (diff всех сущностей обеих
         // фирм, включая зарплаты/бюджеты), корректно разделить по компаниям
         // нельзя, поэтому доступ у глобального владельца (admin), а не у
@@ -84,7 +88,6 @@ class AuditController extends Controller
                 ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')->where('invoices.invoiceable_type', 'deal')
                 ->pluck('invoices.invoiceable_id', 'payments.id'),
             'projects' => Project::whereIn('id', $ids('projects'))->whereNotNull('deal_id')->pluck('deal_id', 'id'),
-            'pre_deals' => PreDeal::whereIn('id', $ids('pre_deals'))->whereNotNull('deal_id')->pluck('deal_id', 'id'),
             'tasks' => Task::whereIn('id', $ids('tasks'))->where('taskable_type', 'deal')->pluck('taskable_id', 'id'),
         ];
         // withTrashed: у удалённой сделки номер показываем, но серым (без ссылки).

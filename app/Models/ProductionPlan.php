@@ -19,7 +19,7 @@ class ProductionPlan extends Model
     use Auditable;
 
     protected $fillable = [
-        'company_id', 'period_month', 'brigade_id', 'product_id',
+        'company_id', 'period_month', 'brigade_id', 'product_id', 'deal_id',
         'plan_qty', 'unit', 'bonus_rate', 'status', 'note', 'created_by',
     ];
 

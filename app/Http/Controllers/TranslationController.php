@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UiTranslation;
 use App\Support\Locales;
+use App\Support\StickyFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -34,6 +35,10 @@ class TranslationController extends Controller
 
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'translations', ['group', 'search']);
+
         $this->authorizeManage($request);
 
         $group = (string) $request->query('group', 'site');

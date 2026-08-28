@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Avatar from '@/Components/Avatar.vue';
@@ -17,7 +17,38 @@ const props = defineProps({
     debt: { type: Object, default: null },
     month: { type: String, default: '' },
     can: { type: Object, default: () => ({ manage: false }) },
+    // Личные доступы: приходят только админу и только для не-админа.
+    access: { type: Object, default: null },
 });
+
+/*
+ * Личные доступы — ДОБАВКА к роли, а не замена.
+ *
+ * Права роли показаны серыми и не снимаются: сняли бы здесь — и «почему у
+ * него нет того, что есть у всех менеджеров» пришлось бы искать в двух
+ * местах сразу. Забрать право у роли можно только в Настройки → Доступы.
+ */
+const personal = ref(new Set(props.access?.personal ?? []));
+const fromRole = computed(() => new Set(props.access?.fromRole ?? []));
+const accessBusy = ref(false);
+
+const grantedByRole = (permission) => fromRole.value.has(permission);
+const grantedPersonally = (permission) => personal.value.has(permission);
+const togglePersonal = (permission) => {
+    if (grantedByRole(permission)) return;   // право роли отсюда не трогаем
+    const set = new Set(personal.value);
+    set.has(permission) ? set.delete(permission) : set.add(permission);
+    personal.value = set;
+};
+const accessDirty = computed(() => {
+    const was = [...(props.access?.personal ?? [])].sort().join('|');
+    return [...personal.value].sort().join('|') !== was;
+});
+const saveAccess = () => {
+    accessBusy.value = true;
+    router.put(route('access.updateUser', props.person.id), { permissions: [...personal.value] },
+        { preserveScroll: true, onFinish: () => (accessBusy.value = false) });
+};
 
 // Месяц блока «Зарплата» переключает и корректировки, и долг: профиль
 // должен сходиться с ведомостью ЗП за тот же месяц.
@@ -225,6 +256,46 @@ const stats = computed(() => ({
                 </div>
                 <p v-if="!tasks.length" class="py-6 text-center text-sm text-slate-400">{{ $e('Нет задач') }}</p>
             </div>
+        </div>
+
+        <!-- Личные доступы сверх роли (только админу) -->
+        <div v-if="access" class="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-soft">
+            <div class="flex flex-wrap items-baseline justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900">{{ $e('Доступы') }}</h3>
+                    <p class="mt-0.5 text-xs text-slate-400">
+                        {{ $e('Роль') }} «{{ access.roleLabel }}» {{ $e('даёт серые галочки — они правятся в') }}
+                        <Link :href="route('access.index')" class="font-semibold text-indigo-600 hover:underline">{{ $e('Настройки → Доступы') }}</Link>.
+                        {{ $e('Здесь — только личная добавка этому человеку.') }}
+                    </p>
+                </div>
+                <button v-if="accessDirty" :disabled="accessBusy" @click="saveAccess"
+                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-indigo-700 disabled:opacity-50">
+                    {{ accessBusy ? '…' : $e('Сохранить доступы') }}
+                </button>
+            </div>
+
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div v-for="m in access.modules" :key="m.key" class="rounded-xl border border-slate-100 bg-slate-50/40 p-3">
+                    <div class="text-sm font-semibold text-slate-800">{{ $e(m.label) }}</div>
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                        <button v-for="(permission, key) in m.permissions" :key="permission" type="button"
+                            :disabled="grantedByRole(permission)"
+                            :title="grantedByRole(permission) ? $e('Даёт роль — снимается в «Настройки → Доступы»') : ''"
+                            @click="togglePersonal(permission)"
+                            class="rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors duration-150"
+                            :class="grantedByRole(permission) ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                                : grantedPersonally(permission) ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:ring-indigo-300'">
+                            {{ $e(access.abilities[key] ?? key) }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <p class="mt-4 text-xs text-slate-400">
+                {{ $e('Серое — от роли, синее — личная добавка. Правила про деньги остаются в силе: доступ открывает раздел, но не отменяет проверок в политиках.') }}
+            </p>
         </div>
     </AppLayout>
 </template>

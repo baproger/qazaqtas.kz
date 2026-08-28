@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Deal;
-use App\Models\PreDeal;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 
@@ -27,7 +26,7 @@ class DealItemService
      * @param  array<int, array<string, mixed>>  $rows
      * @return array<int, array<string, mixed>>
      */
-    public function normalize(array $rows, bool $withPurchasePrice = false): array
+    public function normalize(array $rows): array
     {
         $products = Product::whereIn('id', collect($rows)->pluck('product_id')->filter()->all())
             ->get(['id', 'name', 'unit', 'price'])->keyBy('id');
@@ -57,12 +56,6 @@ class DealItemService
                 'amount' => round(max($quantity, 0) * max($price, 0), 2),
                 'sort' => $sort,
             ];
-
-            if ($withPurchasePrice) {
-                $item['purchase_price'] = ($row['purchase_price'] ?? null) !== null && $row['purchase_price'] !== ''
-                    ? round((float) $row['purchase_price'], 2)
-                    : null;
-            }
 
             $items[] = $item;
         }
@@ -149,46 +142,5 @@ class DealItemService
         foreach ($deal->items()->whereNotIn('id', $keep ?: [0])->get() as $stale) {
             $stale->delete();
         }
-    }
-
-    /**
-     * Переписать позиции заявки. Сумму и закуп заявки считает
-     * PreDeal::calculate — здесь только строки.
-     *
-     * @param  array<int, array<string, mixed>>  $rows
-     */
-    public function syncPreDeal(PreDeal $preDeal, array $rows): void
-    {
-        $items = $this->normalize($rows, withPurchasePrice: true);
-
-        DB::transaction(function () use ($preDeal, $items) {
-            $preDeal->items()->delete();
-            $preDeal->items()->createMany($items);
-        });
-    }
-
-    /**
-     * Перенести позиции заявки в созданную сделку («В работу ✓»).
-     *
-     * Закупочная цена остаётся в заявке: в сделке себестоимость живёт
-     * расходами, а не строкой заказа.
-     */
-    public function copyToDeal(PreDeal $preDeal, Deal $deal): void
-    {
-        $items = $preDeal->items->map(fn ($i) => [
-            'product_id' => $i->product_id,
-            'name' => $i->name,
-            'unit' => $i->unit,
-            'quantity' => (float) $i->quantity,
-            'price' => (float) $i->price,
-            'amount' => (float) $i->amount,
-            'sort' => $i->sort,
-        ])->all();
-
-        if ($items === []) {
-            return;
-        }
-
-        $deal->items()->createMany($items);
     }
 }

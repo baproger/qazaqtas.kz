@@ -24,17 +24,14 @@ class ProductionBonusService
     /** @return array{pcs: float, m2: float} ставки роли */
     public function rates(string $role): array
     {
+        // Ставка одна — бригадира: бонус смены целиком его. Роль оставлена
+        // параметром, чтобы старые вызовы не сломались; «worker» — нули.
         return $role === 'foreman'
             ? [
                 'pcs' => (float) Setting::get('foreman_rate_pcs', 35),
                 'm2' => (float) Setting::get('foreman_rate_m2', 450),
             ]
-            : [
-                // Ставку рабочего задаёт владелец: выдумывать её нельзя,
-                // поэтому по умолчанию ноль и подпись в настройках.
-                'pcs' => (float) Setting::get('worker_rate_pcs', 0),
-                'm2' => (float) Setting::get('worker_rate_m2', 0),
-            ];
+            : ['pcs' => 0.0, 'm2' => 0.0];
     }
 
     /**
@@ -72,14 +69,26 @@ class ProductionBonusService
      * Переписать строки наряда: объём по рабочим + строка бригадира на всю
      * смену.
      *
+     * ДЕНЬГИ ЦЕЛИКОМ У БРИГАДИРА (правило владельца от 28.08.2026). Строки
+     * рабочих остаются, но с нулевой ставкой: они держат ОБЪЁМ, а по нему
+     * считается «сделано» (ProductionProgressService берёт именно их). Убери
+     * их — и план перестал бы закрываться.
+     *
+     * Кто из бригады сколько получит, решает бригадир вне системы: он один
+     * знает, кто в какую смену вышел и кто тянул. Раньше система делила
+     * объём поровну, и это делёж не отражал, а изображал.
+     *
+     * Прошлые наряды не трогаем: 48 строк рабочих на 450 970 ₸ уже начислены,
+     * часть выплачена. Тот же принцип, что у замороженных ставок (§4):
+     * поменяли правило — прошлые смены не пересчитываются.
+     *
      * @param  array<int, array<string, mixed>>  $rows  [[user_id, qty_pcs, qty_m2]]
      */
     public function syncLines(WorkOrder $order, array $rows): void
     {
-        $workerRates = $this->rates('worker');
         $foremanRates = $this->foremanRatesFor($order);
 
-        DB::transaction(function () use ($order, $rows, $workerRates, $foremanRates) {
+        DB::transaction(function () use ($order, $rows, $foremanRates) {
             $order->lines()->delete();
 
             $totalPcs = 0.0;
@@ -95,19 +104,21 @@ class ProductionBonusService
                 $totalPcs += $pcs;
                 $totalM2 += $m2;
 
+                // Ставка рабочего — ноль: бонус целиком у бригадира. Строка
+                // нужна ради объёма, по нему считается выполнение плана.
                 $order->lines()->create([
                     'user_id' => $row['user_id'] ?? null,
                     'qty_pcs' => $pcs,
                     'qty_m2' => $m2,
-                    'rate_pcs' => $workerRates['pcs'],
-                    'rate_m2' => $workerRates['m2'],
-                    'amount' => $this->lineAmount($pcs, $m2, $workerRates),
+                    'rate_pcs' => 0,
+                    'rate_m2' => 0,
+                    'amount' => 0,
                     'role' => 'worker',
                 ]);
             }
 
-            // Бригадир получает за ВЕСЬ объём смены — отдельной строкой, а не
-            // долей: так видно, за что именно ему начислено.
+            // Бригадир получает за ВЕСЬ объём смены — и это теперь весь бонус
+            // наряда целиком, а не его доля.
             $foremanId = $order->brigade?->foreman_id;
             if ($foremanId && ($totalPcs > 0 || $totalM2 > 0)) {
                 $order->lines()->create([

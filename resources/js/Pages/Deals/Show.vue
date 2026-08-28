@@ -28,7 +28,7 @@ import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 
-const props = defineProps({ deal: Object, stages: Array, branches: { type: Array, default: () => [] }, users: Array, foremen: { type: Array, default: () => [] }, finance: { type: Object, default: null }, profit: { type: Object, default: null }, customFields: Array, itemProgress: { type: Object, default: () => ({}) }, history: Array, chatId: Number, can: Object, stageTask: Object, materials: { type: Array, default: () => [] }, balances: { type: Object, default: null }, workshops: { type: Array, default: () => [] }, stageLogs: { type: Array, default: () => [] } });
+const props = defineProps({ deal: Object, stages: Array, branches: { type: Array, default: () => [] }, users: Array, foremen: { type: Array, default: () => [] }, finance: { type: Object, default: null }, profit: { type: Object, default: null }, customFields: Array, itemProgress: { type: Object, default: () => ({}) }, history: Array, chatId: Number, can: Object, stageTask: Object, materials: { type: Array, default: () => [] }, balances: { type: Object, default: null }, workshops: { type: Array, default: () => [] }, stageLogs: { type: Array, default: () => [] }, stock: { type: Object, default: null } });
 
 const tab = ref(props.can?.money ? 'finance' : 'custom');
 // Фото и документы — одна таблица, разводим их по типу файла: снимок объекта
@@ -39,6 +39,18 @@ const attachments = computed(() => [...(props.deal.documents ?? []), ...(props.d
 const photos = computed(() => attachments.value.filter((d) => isImage(d.mime_type)));
 const files = computed(() => (props.deal.documents ?? []).filter((d) => !isImage(d.mime_type)));
 const items = computed(() => props.deal.items ?? []);
+
+// Склад против заказа и кнопка «в план производства». Нехватку считает
+// сервер — присланному из браузера числу тут верить нельзя.
+const num = (v) => Number(v ?? 0).toLocaleString('ru-RU');
+const toProductionBusy = ref(false);
+const sendToProduction = () => {
+    toProductionBusy.value = true;
+    router.post(route('deals.toProduction', props.deal.id), {}, {
+        preserveScroll: true,
+        onFinish: () => (toProductionBusy.value = false),
+    });
+};
 const qty = (v) => Number(v ?? 0).toLocaleString('ru-RU');
 const visibleFields = computed(() => (props.customFields ?? []).filter((f) => f.is_visible && f.value));
 const lastStage = computed(() => props.stages[props.stages.length - 1]);
@@ -131,6 +143,7 @@ const showEdit = ref(false);
 const dateOnly = (v) => (v ?? '').slice(0, 10);
 const editFields = () => ({
     company_name: props.deal.company_name ?? '', bin: props.deal.bin ?? '', client_name: props.deal.client_name ?? '',
+    customer_bin: props.deal.customer_bin ?? '', contact_name: props.deal.contact_name ?? '', contact_phone: props.deal.contact_phone ?? '',
     address: props.deal.address ?? '',
     branch: props.deal.branch ?? '',
     contract_date: dateOnly(props.deal.contract_date), source: props.deal.source ?? '',
@@ -248,6 +261,17 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                             <div class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.bin || '—' }}</div>
                         </div>
                         <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('БИН / ИИН заказчика') }}</div>
+                            <div class="mt-1 text-[15px] font-medium tabular-nums text-slate-900">{{ deal.customer_bin || '—' }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Контакт клиента') }}</div>
+                            <div class="mt-1 text-[15px] font-medium text-slate-900">
+                                {{ deal.contact_name || '—' }}
+                                <a v-if="deal.contact_phone" :href="'tel:' + deal.contact_phone" class="ml-1 font-semibold text-indigo-600 hover:underline">{{ deal.contact_phone }}</a>
+                            </div>
+                        </div>
+                        <div>
                             <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Наименование товара') }}</div>
                             <div class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.client_name || deal.client?.name || '—' }}</div>
                         </div>
@@ -312,6 +336,31 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                     </div>
                     <OrderItems :items="items" :progress="itemProgress" :show-money="!!can.money"
                         :fallback-name="deal.client_name" :fallback-quantity="deal.lot_number" :fallback-unit="deal.unit" />
+
+                    <!-- Склад против заказа. Сделку НЕ блокируем: договор уже
+                         подписан, останавливать его складом поздно. Но пока
+                         недостающее не поставлено в план, цех о нём не знает. -->
+                    <div v-if="stock?.has_shortage" class="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                        <div class="flex flex-wrap items-baseline justify-between gap-3">
+                            <span class="text-sm font-semibold text-amber-900">{{ $e('На складе не хватает') }}</span>
+                            <button v-if="can.update" :disabled="toProductionBusy" @click="sendToProduction"
+                                class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-amber-700 disabled:opacity-50">
+                                {{ toProductionBusy ? '…' : $e('Добавить недостающее в план производства') }}
+                            </button>
+                        </div>
+                        <div class="mt-2.5 space-y-1">
+                            <div v-for="row in stock.short" :key="row.product_id"
+                                class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-[13px]">
+                                <span class="text-slate-700">🧱 {{ row.name }}</span>
+                                <span class="tabular-nums text-slate-500">
+                                    {{ $e('нужно') }} <b class="text-slate-800">{{ num(row.need) }}</b> ·
+                                    {{ $e('на складе') }} <b class="text-slate-800">{{ num(row.have) }}</b> ·
+                                    {{ $e('не хватает') }} <b class="text-amber-700">{{ num(row.short) }} {{ row.unit }}</b>
+                                </span>
+                            </div>
+                        </div>
+                        <p class="mt-2 text-[11px] text-amber-700">{{ $e('Объём уйдёт в «План — факт»; бригаду назначит начальник производства.') }}</p>
+                    </div>
                 </div>
 
                 <!-- Общие снимки заказа: объект, площадка, отгрузка — то, что
@@ -416,9 +465,19 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                                 <button @click="editBonusRate = false" class="ml-auto text-slate-400 hover:text-slate-600">✕</button>
                             </div>
                         </div>
+                        <!-- Итог сделки: сколько осталось компании и какой ценой.
+                             Маржа рядом с суммой — то же число, что в Сводном
+                             отчёте: показатель здоровья сделки должен быть один. -->
                         <div class="rounded-xl px-4 py-3 text-white" style="background-color: #1A3B5C">
                             <div class="text-[11px] font-semibold uppercase tracking-wide text-white/70">{{ $e('Чистая прибыль компании') }}</div>
-                            <div class="mt-0.5 text-[28px] font-bold leading-tight tabular-nums tracking-tight">{{ money(profit.company) }}</div>
+                            <div class="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                <span class="text-[28px] font-bold leading-tight tabular-nums tracking-tight">{{ money(profit.company) }}</span>
+                                <span class="rounded-full px-2.5 py-1 text-xs font-bold tabular-nums"
+                                    :class="profit.margin >= 15 ? 'bg-emerald-400/20 text-emerald-300' : profit.margin > 0 ? 'bg-amber-400/20 text-amber-200' : 'bg-rose-400/20 text-rose-200'">
+                                    {{ $e('маржа') }} {{ profit.margin }}%
+                                </span>
+                            </div>
+                            <div class="mt-1 text-[11px] text-white/50">{{ $e('маржа = (сумма − расходы) / сумма, до налога — как в Сводном отчёте') }}</div>
                         </div>
                     </div>
                 </div>
@@ -441,6 +500,9 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div><InputLabel :value="$e('Название компании *')" /><TextInput v-model="editForm.company_name" class="mt-1 w-full" /><InputError :message="editForm.errors.company_name" class="mt-1" /></div>
                     <div><InputLabel :value="$e('Номер договора')" /><TextInput v-model="editForm.bin" class="mt-1 w-full" /><InputError :message="editForm.errors.bin" class="mt-1" /></div>
+                    <div><InputLabel :value="$e('БИН / ИИН заказчика')" /><TextInput v-model="editForm.customer_bin" class="mt-1 w-full" /><InputError :message="editForm.errors.customer_bin" class="mt-1" /></div>
+                    <div><InputLabel :value="$e('Имя клиента (контакт)')" /><TextInput v-model="editForm.contact_name" class="mt-1 w-full" /><InputError :message="editForm.errors.contact_name" class="mt-1" /></div>
+                    <div><InputLabel :value="$e('Телефон клиента')" /><TextInput v-model="editForm.contact_phone" class="mt-1 w-full" placeholder="+7 ___ ___ __ __" /><InputError :message="editForm.errors.contact_phone" class="mt-1" /></div>
                     <div class="sm:col-span-2"><InputLabel :value="$e('Адрес *')" /><TextInput v-model="editForm.address" class="mt-1 w-full" :placeholder="$e('Город, улица, дом')" /><InputError :message="editForm.errors.address" class="mt-1" /></div>
                     <div>
                         <InputLabel :value="$e('Филиал')" />

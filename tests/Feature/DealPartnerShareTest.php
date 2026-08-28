@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Deal;
 use App\Models\DealStage;
-use App\Models\PreDeal;
 use App\Models\User;
 use App\Services\PayrollService;
 use Database\Seeders\RolePermissionSeeder;
@@ -72,17 +71,16 @@ class DealPartnerShareTest extends TestCase
                 ->where('profit.remainder', 447500));
     }
 
-    public function test_predeal_confirm_carries_partner_pct_into_deal(): void
+    /** Доля партнёра вводится в форме сделки и доезжает до записи. */
+    public function test_creating_a_deal_keeps_partner_pct(): void
     {
         $mgr = $this->user('manager');
-        $this->actingAs($mgr)->post(route('preDeals.store'), [
-            'product' => 'Парта', 'customer' => 'Школа', 'contract_sum' => 1600000,
-            'purchase_price' => 700000, 'partner_pct' => 5,
-        ]);
-        $lot = PreDeal::firstOrFail();
-        $this->actingAs($mgr)->post(route('preDeals.confirm', $lot->id))->assertSessionHas('success');
+        $this->actingAs($mgr)->post(route('deals.store'), [
+            'company_name' => 'Школа', 'client_name' => 'Парта', 'address' => 'Алматы',
+            'budget' => 1600000, 'partner_pct' => 5,
+        ])->assertSessionHasNoErrors();
 
-        $this->assertEquals(5.0, (float) $lot->fresh()->deal->partner_pct);
+        $this->assertEquals(5.0, (float) Deal::firstOrFail()->partner_pct);
     }
 
     public function test_manager_can_set_partner_pct_on_own_deal(): void

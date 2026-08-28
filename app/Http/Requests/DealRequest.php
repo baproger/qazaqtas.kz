@@ -2,7 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Deal;
+use App\Models\Product;
+use App\Services\PayrollService;
+use Database\Seeders\StageSeeder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DealRequest extends FormRequest
 {
@@ -16,6 +21,25 @@ class DealRequest extends FormRequest
         // «Количество» приходит из числового поля как number — колонка строковая.
         if ($this->has('lot_number') && $this->lot_number !== null) {
             $this->merge(['lot_number' => (string) $this->lot_number]);
+        }
+
+        // «Наименование товара» = что заказали. Выбрал менеджер позиции из
+        // каталога — поле в форме не показывается, и присылать его нечего:
+        // берём первую позицию. Без этого форма молча падала на required, а
+        // менеджер видел неработающую кнопку «Создать сделку».
+        if (blank($this->input('client_name'))) {
+            $first = collect($this->input('items', []))
+                ->first(fn ($row) => filled($row['name'] ?? null) || filled($row['product_id'] ?? null));
+
+            if ($first) {
+                $name = $first['name'] ?? null;
+                if (blank($name) && filled($first['product_id'] ?? null)) {
+                    $name = Product::whereKey($first['product_id'])->value('name');
+                }
+                if (filled($name)) {
+                    $this->merge(['client_name' => $name]);
+                }
+            }
         }
     }
 
@@ -32,21 +56,26 @@ class DealRequest extends FormRequest
             'address' => ['required', 'string', 'max:255'],
             // В UI поле называется «Номер договора» (историческое имя колонки — bin).
             'bin' => ['nullable', 'string', 'max:100'],
+            // Заказчик и контакт — свои колонки, а не легаси bin/client_name:
+            // у тех давно другое значение (номер договора и наименование товара).
+            'customer_bin' => ['nullable', 'string', 'max:32'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
+            'contact_phone' => ['nullable', 'string', 'max:64'],
             'contract_date' => ['nullable', 'date'],
             // В UI — «Количество» (историческое имя колонки — lot_number) + ед. изм.
             'lot_number' => ['nullable', 'string', 'max:100'],
-            'unit' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Deal::UNITS)],
+            'unit' => ['nullable', Rule::in(Deal::UNITS)],
             // Филиал сделки: те же площадки, что и цеха производства.
-            'branch' => ['nullable', \Illuminate\Validation\Rule::in(\Database\Seeders\StageSeeder::WORKSHOPS)],
+            'branch' => ['nullable', Rule::in(StageSeeder::WORKSHOPS)],
             'area_m2' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
             // Товар выбирается из каталога; название дублируется в client_name.
             'product_id' => ['nullable', 'exists:products,id'],
             // Тип сделки решает ставку бонуса: производство или перепродажа.
-            'deal_type' => ['nullable', \Illuminate\Validation\Rule::in([
-                \App\Services\PayrollService::TYPE_PRODUCTION,
-                \App\Services\PayrollService::TYPE_RESALE,
+            'deal_type' => ['nullable', Rule::in([
+                PayrollService::TYPE_PRODUCTION,
+                PayrollService::TYPE_RESALE,
             ])],
-            'source' => ['nullable', \Illuminate\Validation\Rule::in(\App\Models\Deal::SOURCES)],
+            'source' => ['nullable', Rule::in(Deal::SOURCES)],
             'client_id' => ['nullable', 'exists:clients,id'],
             'responsible_user_id' => ['nullable', 'exists:users,id'],
             'department_id' => ['nullable', 'exists:departments,id'],

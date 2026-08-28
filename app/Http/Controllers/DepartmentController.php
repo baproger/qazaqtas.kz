@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DepartmentRequest;
 use App\Models\Department;
+use App\Models\User;
+use App\Support\StickyFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,6 +15,10 @@ class DepartmentController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'departments', ['search']);
+
         $this->authorize('viewAny', Department::class);
 
         $departments = Department::query()
@@ -27,7 +33,7 @@ class DepartmentController extends Controller
             'departments' => $departments,
             'filters' => $request->only('search'),
             // Для селекта «Руководитель» в модалке отдела.
-            'users' => \App\Models\User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'department_id']),
+            'users' => User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'department_id']),
             'can' => [
                 'create' => $request->user()->can('create', Department::class),
                 'update' => $request->user()->can('update', Department::class),

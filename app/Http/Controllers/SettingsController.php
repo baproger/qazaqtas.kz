@@ -32,8 +32,6 @@ class SettingsController extends Controller
         // владельцем; ставку рабочего он задаёт сам — выдумывать её нельзя.
         'foreman_rate_m2' => 450,
         'foreman_rate_pcs' => 35,
-        'worker_rate_m2' => 0,
-        'worker_rate_pcs' => 0,
         // 3D-конфигуратор двора на сайте: пока выключен, включается здесь.
         'configurator_enabled' => false,
     ];
@@ -72,8 +70,6 @@ class SettingsController extends Controller
             'bonus_resale_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'foreman_rate_m2' => ['sometimes', 'numeric', 'min:0'],
             'foreman_rate_pcs' => ['sometimes', 'numeric', 'min:0'],
-            'worker_rate_m2' => ['sometimes', 'numeric', 'min:0'],
-            'worker_rate_pcs' => ['sometimes', 'numeric', 'min:0'],
             'configurator_enabled' => ['boolean'],
         ]);
 

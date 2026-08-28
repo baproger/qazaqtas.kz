@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccessController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BinLookupController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\CompanyStructureController;
 use App\Http\Controllers\CustomFieldController;
 use App\Http\Controllers\CustomFieldValueController;
 use App\Http\Controllers\DashboardController;
@@ -33,7 +35,6 @@ use App\Http\Controllers\MyExpensesController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayrollController;
-use App\Http\Controllers\PreDealController;
 use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ProductionPlanController;
 use App\Http\Controllers\ProfileController;
@@ -90,23 +91,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
 
     // Deals
-    // Заявки / запросы КП: расчёт маржи до создания сделки.
-    Route::get('pre-deals', [PreDealController::class, 'index'])->name('preDeals.index');
-    Route::post('pre-deals', [PreDealController::class, 'store'])->name('preDeals.store');
-    // Быстрая проверка № заявки ДО заполнения формы (кнопка «Проверить» у поля).
-    Route::get('pre-deals/check-number', [PreDealController::class, 'checkNumber'])->middleware('throttle:60,1')->name('preDeals.checkNumber');
-    Route::put('pre-deals/{preDeal}', [PreDealController::class, 'update'])->name('preDeals.update');
-    Route::delete('pre-deals/{preDeal}', [PreDealController::class, 'destroy'])->name('preDeals.destroy');
-    Route::post('pre-deals/{preDeal}/confirm', [PreDealController::class, 'confirm'])->name('preDeals.confirm');
-    // Откат случайного «В работу ✓»: сделка удаляется, заявка снова «В работе».
-    Route::post('pre-deals/{preDeal}/revert', [PreDealController::class, 'revert'])->name('preDeals.revert');
-    Route::post('pre-deals/{preDeal}/check/{item}', [PreDealController::class, 'check'])->name('preDeals.check');
-    Route::post('pre-deal-items', [PreDealController::class, 'storeItem'])->name('preDealItems.store');
-    Route::put('pre-deal-items/{item}', [PreDealController::class, 'updateItem'])->name('preDealItems.update');
-    Route::delete('pre-deal-items/{item}', [PreDealController::class, 'destroyItem'])->name('preDealItems.destroy');
     Route::get('deals/overdue', [DealController::class, 'overdue'])->name('deals.overdue');
     // До resource-маршрута: иначе DELETE deals/bulk сматчится как deals/{deal}.
     Route::delete('deals/bulk', [DealController::class, 'bulkDestroy'])->name('deals.bulkDestroy');
+    // Нехватка со склада → в «План — факт» без промежуточной заявки.
+    Route::post('deals/{deal}/to-production', [DealController::class, 'toProduction'])->name('deals.toProduction');
     Route::get('deals/bin-lookup', [BinLookupController::class, 'binLookup'])
         ->middleware('throttle:30,1')
         ->name('deals.binLookup');
@@ -279,6 +268,24 @@ Route::middleware('auth')->group(function () {
     // Settings
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+    // Доступы: матрица «модуль × роль» и личные права сотрудника.
+    // Внутренний guard — только admin: право setting.update есть и у других.
+    Route::get('settings/access', [AccessController::class, 'index'])->name('access.index');
+    Route::put('settings/access', [AccessController::class, 'update'])->name('access.update');
+    // Очередь производства: начальник назначает бригаду плану из сделки.
+    Route::put('production/plans/{plan}/assign', [ProductionPlanController::class, 'assign'])->name('production.plans.assign');
+    Route::put('settings/access/user/{user}', [AccessController::class, 'updateUser'])->name('access.updateUser');
+    Route::post('settings/roles', [AccessController::class, 'storeRole'])->name('access.roles.store');
+    Route::post('settings/roles/{role}/users', [AccessController::class, 'addToRole'])->name('access.roles.addUsers');
+    Route::delete('settings/roles/{role}/users/{user}', [AccessController::class, 'removeFromRole'])->name('access.roles.removeUser');
+    Route::put('settings/roles/{role}', [AccessController::class, 'renameRole'])->name('access.roles.rename');
+    Route::delete('settings/roles/{role}', [AccessController::class, 'destroyRole'])->name('access.roles.destroy');
+    // Структура компании: дерево отделов — оно же граница областей доступа.
+    Route::get('structure', [CompanyStructureController::class, 'index'])->name('structure.index');
+    Route::post('structure', [CompanyStructureController::class, 'store'])->name('structure.store');
+    Route::put('structure/{department}', [CompanyStructureController::class, 'update'])->name('structure.update');
+    Route::delete('structure/{department}', [CompanyStructureController::class, 'destroy'])->name('structure.destroy');
+    Route::put('structure/assign/{user}', [CompanyStructureController::class, 'assign'])->name('structure.assign');
     // Контент витрины: контакты, филиалы, тарифы доставки, FAQ.
     Route::get('settings/site', [SiteSettingsController::class, 'index'])->name('siteSettings.index');
     Route::put('settings/site', [SiteSettingsController::class, 'update'])->name('siteSettings.update');

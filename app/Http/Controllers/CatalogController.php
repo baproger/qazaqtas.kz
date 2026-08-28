@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Deal;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Services\CatalogService;
+use App\Support\Locales;
+use App\Support\StickyFilters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,6 +24,10 @@ class CatalogController extends Controller
 {
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'catalog', ['search', 'category']);
+
         $this->authorize('viewAny', Product::class);
 
         $products = Product::with(['translations', 'category:id,name,slug'])
@@ -38,9 +45,9 @@ class CatalogController extends Controller
             ]),
             'categories' => ProductCategory::orderBy('order')->orderBy('name')
                 ->withCount('products')->get(),
-            'locales' => \App\Support\Locales::forForm(),
+            'locales' => Locales::forForm(),
             'filters' => $request->only('search', 'category'),
-            'units' => \App\Models\Deal::UNITS,
+            'units' => Deal::UNITS,
         ]);
     }
 
@@ -85,7 +92,7 @@ class CatalogController extends Controller
     {
         $rules = ['translations' => ['nullable', 'array']];
 
-        foreach (\App\Support\Locales::ALL as $locale) {
+        foreach (Locales::ALL as $locale) {
             $rules["translations.$locale.name"] = ['nullable', 'string', 'max:255'];
             $rules["translations.$locale.short_description"] = ['nullable', 'string', 'max:255'];
             $rules["translations.$locale.description"] = ['nullable', 'string', 'max:5000'];
@@ -135,5 +142,4 @@ class CatalogController extends Controller
 
         return $data;
     }
-
 }

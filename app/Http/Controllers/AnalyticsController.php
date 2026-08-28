@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\FinanceService;
 use App\Services\PayrollService;
 use App\Support\CurrentCompany;
+use App\Support\StickyFilters;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,6 +37,10 @@ class AnalyticsController extends Controller
 
     public function index(Request $request): Response
     {
+        // Фильтр переживает уход со страницы: пришли без параметров —
+        // подставляем сохранённый набор (App\Support\StickyFilters).
+        StickyFilters::apply($request, 'analytics', ['from', 'to', 'manager', 'stage', 'search']);
+
         // financist — как на бывшем Дашборде: видит деньги, но без report.viewAny.
         abort_unless($request->user()->can('report.viewAny') || $request->user()->hasAnyRole(['admin', 'financist']), 403);
 

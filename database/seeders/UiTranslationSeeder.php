@@ -13,7 +13,6 @@ class UiTranslationSeeder extends Seeder
             // key, group, ru, kk
             ['nav.dashboard', 'nav', 'Дашборд', 'Басқару тақтасы'],
             ['nav.analytics', 'nav', 'Аналитика', 'Аналитика'],
-            ['nav.predeals', 'nav', 'Заявки', 'Өтінімдер'],
             ['nav.deals', 'nav', 'Сделки', 'Мәмілелер'],
             ['nav.warehouse', 'nav', 'Склад', 'Қойма'],
             ['nav.catalog', 'nav', 'Каталог сайта', 'Сайт каталогы'],
@@ -28,6 +27,7 @@ class UiTranslationSeeder extends Seeder
             ['nav.payroll', 'nav', 'Зарплата', 'Жалақы'],
             ['nav.audit', 'nav', 'Аудит', 'Аудит'],
             ['nav.departments', 'nav', 'Отделы', 'Бөлімдер'],
+            ['nav.structure', 'nav', 'Структура компании', 'Компания құрылымы'],
             ['nav.users', 'nav', 'Сотрудники', 'Қызметкерлер'],
             ['nav.settings', 'nav', 'Настройки', 'Баптаулар'],
             ['nav.translations', 'nav', 'Переводы', 'Аудармалар'],

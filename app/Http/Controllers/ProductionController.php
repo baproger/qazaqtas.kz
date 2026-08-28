@@ -14,6 +14,7 @@ use App\Support\CurrentCompany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,7 +31,7 @@ class ProductionController extends Controller
 {
     private function canView(Request $request): bool
     {
-        return $request->user()->hasAnyRole(['admin', 'director', 'financist', 'foreman']);
+        return $request->user()->hasAnyRole(['admin', 'director', 'production_head', 'financist', 'foreman', 'assistant']);
     }
 
     /**
@@ -39,9 +40,17 @@ class ProductionController extends Controller
      * Двойная подпись останавливала бы цех, пока директор в отъезде, а сам
      * бригадир свою выработку не подтверждает ни в каком случае.
      */
+    /**
+     * Наряд подтверждают директор и начальник производства (плюс админ —
+     * он суперпользователь). Финансист право потерял 28.08.2026: смену
+     * принимает тот, кто отвечает за цех, а не тот, кто платит.
+     *
+     * Свою выработку бригадир не подтверждает никогда — иначе вписал бы
+     * тысячу вместо пятисот и сам это принял.
+     */
     private function canConfirm(Request $request): bool
     {
-        return $request->user()->hasAnyRole(['admin', 'director', 'financist']);
+        return $request->user()->hasAnyRole(['admin', 'director', 'production_head']);
     }
 
     /**
@@ -75,7 +84,7 @@ class ProductionController extends Controller
 
         $companyId = CurrentCompany::id() ?: null;
         $isForeman = $request->user()->hasRole('foreman')
-            && ! $request->user()->hasAnyRole(['admin', 'director', 'financist']);
+            && ! $request->user()->hasAnyRole(['admin', 'director', 'production_head']);
 
         $orders = WorkOrder::query()
             ->when($companyId, fn ($q, $c) => $q->where('company_id', $c))
@@ -123,7 +132,10 @@ class ProductionController extends Controller
                 ])->values(),
             ]);
 
-        // Итог месяца по людям: кто сколько сделал и заработал.
+        // Итог месяца по людям — только ради строки «Начислено за месяц».
+        // Таблицей он больше не едет: разбивка по людям живёт в карточке
+        // бригады, и держать её в двух местах значит держать две копии одной
+        // суммы.
         $byPerson = $orders->flatMap(fn ($o) => $o['status'] === 'confirmed' ? $o['lines'] : [])
             ->groupBy('user')
             ->map(fn ($lines, $name) => [
@@ -182,7 +194,6 @@ class ProductionController extends Controller
         return Inertia::render('Production/Index', [
             'month' => $month,
             'orders' => $orders,
-            'byPerson' => $byPerson,
             'plan' => $plan,
             'planSummary' => $summary,
             // Что можно выбрать в новом наряде: позиции сделок, которые
@@ -210,10 +221,9 @@ class ProductionController extends Controller
                     'foreman' => $b->foreman?->name,
                     'members' => $b->members->map(fn ($m) => ['id' => $m->id, 'name' => $m->name])->values(),
                 ]),
-            'rates' => [
-                'foreman' => $bonuses->rates('foreman'),
-                'worker' => $bonuses->rates('worker'),
-            ],
+            // Ставка одна — бригадира: бонус наряда целиком его, рабочих он
+            // делит сам вне системы (правило владельца от 28.08.2026).
+            'rates' => ['foreman' => $bonuses->rates('foreman')],
             'canConfirm' => $this->canConfirm($request),
             'canManage' => $this->canManage($request),
             // Кандидаты в бригаду — только руководству: бригадир состав не правит.
@@ -231,7 +241,7 @@ class ProductionController extends Controller
      * городами, куда человека пускают (`users.workshops`) — иначе бригадир
      * Шымкента списывал бы объём на заказ Алматы.
      *
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
     private function itemOptions(Request $request, ?int $companyId, ProductionProgressService $progress)
     {
@@ -279,7 +289,7 @@ class ProductionController extends Controller
         $brigade = Brigade::findOrFail($data['brigade_id']);
         // Бригадир заводит наряды только своей бригады.
         abort_unless(
-            $request->user()->hasAnyRole(['admin', 'director', 'financist'])
+            $request->user()->hasAnyRole(['admin', 'director', 'production_head'])
                 || $brigade->foreman_id === $request->user()->id,
             403,
             'Наряд заводит бригадир своей бригады.'
