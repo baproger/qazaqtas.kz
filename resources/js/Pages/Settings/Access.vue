@@ -82,12 +82,28 @@ const syncRoles = (roles) => {
     const names = new Set(roles.map((r) => r.name));
 
     for (const role of roles) {
-        // Уже правим эту роль — не затираем незаписанное.
-        if (draft[role.name] && dirty(role.name)) continue;
+        const serverRow = rowFor(role);
+        const serverTraits = { ...role.traits };
+        const fromServer = JSON.stringify(serverRow) + JSON.stringify(serverTraits);
 
-        draft[role.name] = rowFor(role);
-        traits[role.name] = { ...role.traits };
-        saved[role.name] = snapshot(role.name);
+        /*
+         * Точка отсчёта — ВСЕГДА состояние сервера. «Не сохранено» тогда
+         * означает «отличается от того, что в базе сейчас», и после записи
+         * гаснет само.
+         *
+         * Раньше отсчёт брался из черновика и обновлялся, только когда роль
+         * «чистая», — а сразу после сохранения она как раз грязная. Отметка
+         * висела навсегда, и кнопка «Сохранить» выглядела не нажатой.
+         */
+        saved[role.name] = fromServer;
+
+        // Черновика нет — берём серверный. Есть и уже совпал с сервером
+        // (только что записали) — обновляем, чтобы не держать копию.
+        // Отличается — значит человек правит прямо сейчас, не трогаем.
+        if (! draft[role.name] || snapshot(role.name) === fromServer) {
+            draft[role.name] = serverRow;
+            traits[role.name] = serverTraits;
+        }
     }
 
     // Роль удалили — убираем и её черновик, иначе он копится в памяти и
@@ -108,10 +124,26 @@ watch(() => props.roles, (roles) => syncRoles(roles), { deep: true });
 const changed = computed(() => props.roles.filter((r) => !r.locked && dirty(r.name)));
 
 const busy = ref(null);
-const save = (role) => {
+const save = (role, after = null) => {
     busy.value = role;
     router.put(route('access.update'), { role, scopes: draft[role] ?? {}, traits: traits[role] ?? {} },
-        { preserveScroll: true, onFinish: () => (busy.value = null) });
+        { preserveScroll: true, onFinish: () => { busy.value = null; after?.(); } });
+};
+
+/*
+ * Сохранить все правки подряд, по одной роли за раз.
+ *
+ * Не параллельно: каждый ответ приносит свежий список ролей, и одновременные
+ * запросы перетирали бы состояние друг друга — последний ответ решал бы, что
+ * сохранилось, а что нет.
+ */
+const saveAll = () => {
+    const queue = changed.value.map((r) => r.name);
+    const next = () => {
+        const name = queue.shift();
+        if (name) save(name, next);
+    };
+    next();
 };
 
 // Раздел целиком: у четырнадцати разделов по пять действий иначе семьдесят
@@ -280,20 +312,31 @@ const removeRole = async (role) => {
                 <button @click="openRole" class="rounded-lg bg-bx-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-bx-600">{{ $e('+ Роль') }}</button>
             </div>
 
-            <div v-if="changed.length" class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-2.5 text-sm">
+            <!-- Полоса правок липнет к верху: правишь середину таблицы —
+                 сохранить можно не поднимаясь. «Сохранить всё» одной кнопкой:
+                 три роли это три клика, а бывает и больше. -->
+            <div v-if="changed.length" class="sticky top-0 z-40 mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm shadow-sm">
                 <span class="font-medium text-amber-800">{{ $e('Не сохранено:') }}</span>
                 <button v-for="r in changed" :key="r.name" @click="save(r.name)"
                     class="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100">
-                    {{ r.label }} — {{ $e('сохранить') }}
+                    {{ r.label }}
+                </button>
+                <button v-if="changed.length > 1" :disabled="!!busy" @click="saveAll"
+                    class="ml-auto rounded-lg bg-amber-600 px-3 py-1 text-xs font-semibold text-white transition-colors duration-150 hover:bg-amber-700 disabled:opacity-50">
+                    {{ busy ? '…' : $e('Сохранить всё') }} ({{ changed.length }})
                 </button>
             </div>
 
             <div class="overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-sm">
-                <div class="overflow-x-auto">
+                <!-- Свой скроллбокс: пока прокручивалась вся страница,
+                     sticky было не за что цеплять — шапка с ролями уезжала
+                     вверх, и на середине таблицы уже не понять, чей столбец
+                     правишь, а до «Сохранить» надо было листать вниз. -->
+                <div class="max-h-[calc(100vh-15rem)] overflow-auto">
                     <table class="min-w-full text-[12px]">
-                        <thead>
+                        <thead class="sticky top-0 z-30">
                             <tr class="border-b border-slate-200 bg-slate-50">
-                                <th class="sticky left-0 z-20 min-w-[13rem] bg-slate-50 px-4 py-2.5 text-left align-bottom text-[10px] font-medium uppercase tracking-wide text-slate-400 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e('Раздел') }}</th>
+                                <th class="sticky left-0 z-40 min-w-[13rem] bg-slate-50 px-4 py-2.5 text-left align-bottom text-[10px] font-medium uppercase tracking-wide text-slate-400 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e('Раздел') }}</th>
                                 <!-- Колонка роли: имя, меню «⋯», стопка
                                      носителей и круглая «+». Действия иконками:
                                      у десяти ролей подписи повторяли одно и то
@@ -401,9 +444,9 @@ const removeRole = async (role) => {
                             </template>
                         </tbody>
 
-                        <tfoot class="border-t border-slate-200 bg-slate-50">
+                        <tfoot class="sticky bottom-0 z-30 border-t border-slate-200 bg-slate-50">
                             <tr>
-                                <td class="sticky left-0 z-10 bg-slate-50 px-4 py-2.5 text-[10px] text-slate-400 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e('Сохраняется по одной роли') }}</td>
+                                <td class="sticky left-0 z-40 bg-slate-50 px-4 py-2.5 text-[10px] text-slate-400 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e('Сохраняется по одной роли') }}</td>
                                 <td v-for="r in roles" :key="r.name" class="px-2.5 py-2 text-center">
                                     <button v-if="!r.locked" type="button" :disabled="!dirty(r.name) || busy === r.name" @click="save(r.name)"
                                         class="rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors duration-150"

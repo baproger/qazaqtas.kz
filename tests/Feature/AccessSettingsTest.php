@@ -505,4 +505,35 @@ class AccessSettingsTest extends TestCase
                 }
             });
     }
+
+    /**
+     * После сохранения сервер отдаёт УЖЕ НОВЫЕ области.
+     *
+     * На этом держится отметка «Не сохранено»: страница сравнивает черновик
+     * с тем, что пришло. Верни сервер старое — и отметка висела бы вечно,
+     * а кнопка «Сохранить» выглядела бы не нажатой.
+     */
+    public function test_saving_returns_the_new_scopes_right_away(): void
+    {
+        $scopes = [
+            'deal.viewAny' => AccessScope::DEPARTMENT_TREE,
+            'deal.view' => AccessScope::DEPARTMENT_TREE,
+        ];
+
+        $this->actingAs($this->admin)->put(route('access.update'), [
+            'role' => 'manager', 'scopes' => $scopes,
+            'traits' => ['is_leadership' => false, 'sees_money' => true, 'is_workshop' => false],
+        ])->assertSessionHas('success');
+
+        $this->actingAs($this->admin)->get(route('access.index'))
+            ->assertInertia(function (Assert $page) {
+                $manager = collect($page->toArray()['props']['roles'])->firstWhere('name', 'manager');
+
+                $this->assertSame(AccessScope::DEPARTMENT_TREE, $manager['scopes']['deal.viewAny'],
+                    'Область должна прийти уже новой — иначе «не сохранено» не погаснет.');
+                // Снятые области в ответе отсутствуют — страница подставит
+                // им «нет доступа» по тому же правилу, что и сервер.
+                $this->assertArrayNotHasKey('project.viewAny', $manager['scopes']);
+            });
+    }
 }
