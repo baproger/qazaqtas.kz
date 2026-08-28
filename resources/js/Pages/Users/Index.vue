@@ -23,7 +23,11 @@ const props = defineProps({
     workshopOptions: { type: Array, default: () => [] },
 });
 
-const roleLabels = { admin: tr('СЕО (админ)'), director: tr('Директор'), financist: tr('Финансист-Бухгалтер'), manager: tr('Менеджер'), employee: tr('Сотрудник (цех)'), lawyer: tr('Юрист'), cook: tr('Повар'), designer: tr('Технолог'), supplier: tr('Снабженец') };
+// Подписи ролей приходят из БД одним общим списком (HandleInertiaRequests):
+// зашитый в шаблоне словарь не знал ни «Бригадира», ни ролей, созданных
+// владельцем через Настройки → Права доступа, и показывал голый код.
+const roleLabels = computed(() => usePage().props.roleLabels ?? {});
+const roleTitle = (code) => roleLabels.value[code] ?? code ?? '';
 const roleColors = {
     admin: 'bg-purple-50 text-purple-700 ring-purple-200',
     director: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
@@ -75,7 +79,7 @@ const visibleUsers = computed(() => {
         if (!showInactive.value && !u.is_active) return false;
         if (deptFilter.value !== 'all' && (u.department_id ?? 0) !== deptFilter.value) return false;
         if (!q) return true;
-        return [u.name, u.email, u.phone, u.department?.name, roleLabels[u.role]]
+        return [u.name, u.email, u.phone, u.department?.name, roleTitle(u.role)]
             .some((v) => (v ?? '').toLowerCase().includes(q));
     });
 });
@@ -244,7 +248,7 @@ const deactivate = async (u) => {
                         </td>
                         <td class="px-4 py-3">
                             <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ring-1"
-                                :class="roleColors[u.role] ?? roleColors.employee">{{ roleLabels[u.role] ?? u.role ?? '—' }}</span>
+                                :class="roleColors[u.role] ?? roleColors.employee">{{ roleTitle(u.role) ?? u.role ?? '—' }}</span>
                         </td>
                         <td class="px-4 py-3">
                             <!-- Филиал = цех, к которому у сотрудника есть доступ.
@@ -314,7 +318,7 @@ const deactivate = async (u) => {
                     <div>
                         <InputLabel :value="$e('Роль')" />
                         <select v-model="form.role" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
-                            <option v-for="r in roles" :key="r" :value="r">{{ roleLabels[r] ?? r }}</option>
+                            <option v-for="r in roles" :key="r" :value="r">{{ roleTitle(r) }}</option>
                         </select>
                     </div>
                     <div v-if="workshopOptions.length" class="col-span-2">

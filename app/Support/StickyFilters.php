@@ -39,7 +39,10 @@ final class StickyFilters
      */
     public static function apply(Request $request, string $key, array $fields): array
     {
-        $slot = 'filters.'.$key;
+        // Слот с id человека: сессия живёт в БРАУЗЕРЕ, а вход её данные не
+        // стирает — сменился пользователь за тем же компьютером, и чужой
+        // отбор подставился бы ему как свой.
+        $slot = 'filters.'.($request->user()?->id ?? 'guest').'.'.$key;
 
         if ($request->boolean('clear')) {
             $request->session()->forget($slot);

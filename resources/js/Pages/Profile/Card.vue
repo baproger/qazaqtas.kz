@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -29,7 +29,11 @@ const loadUser = () => {
     form.clearErrors();
 };
 
-const roleLabels = { admin: tr('СЕО (админ)'), director: tr('Директор'), financist: tr('Финансист-Бухгалтер'), manager: tr('Менеджер'), employee: tr('Сотрудник (цех)'), lawyer: tr('Юрист'), cook: tr('Повар'), designer: tr('Технолог'), supplier: tr('Снабженец') };
+// Подписи ролей приходят из БД одним общим списком (HandleInertiaRequests):
+// зашитый в шаблоне словарь не знал ни «Бригадира», ни ролей, созданных
+// владельцем через Настройки → Права доступа, и показывал голый код.
+const roleLabels = computed(() => usePage().props.roleLabels ?? {});
+const roleTitle = (code) => roleLabels.value[code] ?? code ?? '';
 const deptName = (id) => props.departments.find((d) => d.id === id)?.name ?? '—';
 
 const save = () => form.put(route('profile.card.update', current.value.id), { preserveScroll: true });
@@ -78,7 +82,7 @@ const onAvatar = (e) => {
                     <div>
                         <div class="text-xl font-semibold text-slate-900">{{ current.name }}</div>
                         <div class="mt-1.5 flex items-center gap-2">
-                            <span class="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ roleLabels[current.role] ?? current.role ?? '—' }}</span>
+                            <span class="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ roleTitle(current.role) || '—' }}</span>
                             <span class="text-xs text-slate-400">{{ deptName(current.department_id) }}</span>
                         </div>
                     </div>
@@ -116,7 +120,7 @@ const onAvatar = (e) => {
                         <div>
                             <InputLabel :value="$e('Роль')" />
                             <div class="mt-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                                {{ roleLabels[current.role] ?? current.role ?? '—' }} <span class="text-xs text-slate-400">{{ $e('(изменяется только в «Сотрудники»)') }}</span>
+                                {{ roleTitle(current.role) || '—' }} <span class="text-xs text-slate-400">{{ $e('(изменяется только в «Сотрудники»)') }}</span>
                             </div>
                         </div>
                     </div>
@@ -139,7 +143,7 @@ const onAvatar = (e) => {
                     <div><dt class="text-xs uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-0.5 text-slate-800">{{ current.email }}</dd></div>
                     <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Телефон') }}</dt><dd class="mt-0.5 text-slate-800">{{ current.phone || '—' }}</dd></div>
                     <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Отдел / должность') }}</dt><dd class="mt-0.5 text-slate-800">{{ deptName(current.department_id) }}</dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Роль') }}</dt><dd class="mt-0.5 text-slate-800">{{ roleLabels[current.role] ?? current.role ?? '—' }}</dd></div>
+                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Роль') }}</dt><dd class="mt-0.5 text-slate-800">{{ roleTitle(current.role) || '—' }}</dd></div>
                 </dl>
             </div>
 

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Avatar from '@/Components/Avatar.vue';
 import { useE } from '@/composables/useTranslations';
@@ -55,7 +55,11 @@ const saveAccess = () => {
 const setMonth = (value) => router.get(route('users.show', props.person.id), { month: value || undefined },
     { preserveState: true, preserveScroll: true, replace: true });
 
-const roleLabels = { admin: tr('СЕО (админ)'), director: tr('Директор'), financist: tr('Финансист-Бухгалтер'), manager: tr('Менеджер'), employee: tr('Сотрудник (цех)'), lawyer: tr('Юрист'), cook: tr('Повар'), designer: tr('Технолог'), supplier: tr('Снабженец') };
+// Подписи ролей приходят из БД одним общим списком (HandleInertiaRequests):
+// зашитый в шаблоне словарь не знал ни «Бригадира», ни ролей, созданных
+// владельцем через Настройки → Права доступа, и показывал голый код.
+const roleLabels = computed(() => usePage().props.roleLabels ?? {});
+const roleTitle = (code) => roleLabels.value[code] ?? code ?? '';
 const adjLabels = { absence: tr('Отгул'), sick: tr('Больничный'), fine: tr('Штраф'), advance: tr('Аванс'), bonus: tr('Премия') };
 const taskStatusLabels = { todo: tr('К выполнению'), in_progress: tr('В работе'), done: tr('Готово') };
 
@@ -107,7 +111,7 @@ const stats = computed(() => ({
                         <span v-if="!person.is_active" class="rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">{{ $e('Отключён') }}</span>
                     </div>
                     <p class="mt-0.5 text-sm text-slate-500">
-                        {{ roleLabels[person.role] ?? person.role ?? '—' }}
+                        {{ roleTitle(person.role) || '—' }}
                         <template v-if="person.department"> · {{ person.department }}</template>
                         <template v-if="person.companies?.length"> · {{ person.companies.join(', ') }}</template>
                     </p>

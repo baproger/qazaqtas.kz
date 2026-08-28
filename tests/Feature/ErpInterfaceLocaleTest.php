@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
 use App\Models\UiTranslation;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -88,7 +90,7 @@ class ErpInterfaceLocaleTest extends TestCase
 
     public function test_admin_page_lists_shipped_strings_not_only_saved_ones(): void
     {
-        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
@@ -105,7 +107,7 @@ class ErpInterfaceLocaleTest extends TestCase
 
     public function test_clearing_an_override_brings_back_the_shipped_text(): void
     {
-        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
@@ -129,11 +131,28 @@ class ErpInterfaceLocaleTest extends TestCase
     public function test_every_dictionary_key_is_still_used_in_the_interface(): void
     {
         $dictionary = array_keys(require base_path('lang/kk/erp.php'));
-        $used = $this->stringsUsedInTemplates();
+        $used = array_merge($this->stringsUsedInTemplates(), $this->stringsUsedByTheServer());
 
         $orphans = array_values(array_diff($dictionary, $used));
 
         $this->assertSame([], $orphans, 'В словаре есть строки, которых больше нет в шаблонах.');
+    }
+
+    /**
+     * Строки, которые переводит СЕРВЕР по динамическому ключу.
+     *
+     * Подписи ролей приходят из БД (`roles.label`), а подпись — это русский
+     * текст, то есть готовый ключ словаря. Регулярка по шаблонам их не найдёт
+     * никогда: в шаблоне стоит `roleTitle(code)`, а не литерал. Берём их
+     * оттуда же, откуда берёт приложение, — из ролей.
+     *
+     * @return array<int, string>
+     */
+    private function stringsUsedByTheServer(): array
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        return Role::whereNotNull('label')->pluck('label')->all();
     }
 
     public function test_every_interface_string_has_a_kazakh_translation(): void

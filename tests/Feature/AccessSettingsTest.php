@@ -412,4 +412,57 @@ class AccessSettingsTest extends TestCase
             );
         }
     }
+
+    /**
+     * Человек без роли не видит денег.
+     *
+     * Роли удаляет владелец, значит люди без роли появляются на законных
+     * основаниях. Правило «нет запрещающей роли — значит можно» тогда
+     * открывало бы суммы само собой. Доступ дают, а не забывают отнять.
+     */
+    public function test_a_person_without_a_role_sees_no_money(): void
+    {
+        $orphan = User::factory()->create();
+
+        $this->assertFalse(RoleTraits::seesMoney($orphan));
+        $this->assertFalse(RoleTraits::isLeadership($orphan));
+        $this->assertSame(
+            AccessScope::NONE,
+            AccessScope::for($orphan, 'deal.viewAny'),
+        );
+    }
+
+    /**
+     * Роль, созданная владельцем, показывается ПОДПИСЬЮ всюду.
+     *
+     * Подписи жили зашитым словарём в четырёх шаблонах сразу, и новая роль
+     * выпадала голым кодом («foreman» вместо «Бригадир»). Теперь список один
+     * и приходит из БД общими данными Inertia — значит и новая роль в нём есть.
+     */
+    public function test_a_new_role_shows_its_label_everywhere(): void
+    {
+        $this->actingAs($this->admin)->post(route('access.roles.store'), [
+            'label' => 'Кладовщик', 'name' => 'storekeeper',
+        ])->assertSessionHas('success');
+
+        $this->actingAs($this->admin)->get(route('users.index'))
+            ->assertInertia(fn (Assert $p) => $p
+                ->where('roleLabels.storekeeper', 'Кладовщик')
+                // И системные, которых в зашитом словаре не было.
+                ->where('roleLabels.foreman', 'Бригадир')
+                ->where('roleLabels.production_head', 'Начальник производства')
+                ->where('roleLabels.assistant', 'Ассистент')
+                ->etc());
+    }
+
+    /** Переименовали роль — новая подпись видна сразу, без правки шаблонов. */
+    public function test_renaming_a_role_changes_its_label_everywhere(): void
+    {
+        $this->actingAs($this->admin)
+            ->put(route('access.roles.rename', Role::findByName('foreman')->id), ['label' => 'Старший бригады'])
+            ->assertSessionHas('success');
+
+        $this->actingAs($this->admin)->get(route('users.index'))
+            ->assertInertia(fn (Assert $p) => $p->where('roleLabels.foreman', 'Старший бригады')->etc());
+    }
 }

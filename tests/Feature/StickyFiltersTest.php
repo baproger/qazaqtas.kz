@@ -111,4 +111,22 @@ class StickyFiltersTest extends TestCase
             $this->actingAs($this->admin)->get(route('deals.index', ['view' => 'list'])),
         ));
     }
+
+    /**
+     * Отбор не переезжает к другому человеку за тем же компьютером.
+     *
+     * Сессия живёт в браузере, а вход её данные не стирает: слот с id
+     * человека — единственное, что отделяет его отбор от чужого.
+     */
+    public function test_the_filter_does_not_leak_to_another_person(): void
+    {
+        $this->actingAs($this->admin)->get(route('deals.index', ['branch' => 'Алматы']));
+
+        $other = User::factory()->create();
+        $other->assignRole('admin');
+        $other->companies()->attach(Company::where('code', 'QT')->value('id'));
+
+        $this->actingAs($other)->get(route('deals.index'))
+            ->assertInertia(fn (Assert $p) => $p->missing('stickyFilter')->etc());
+    }
 }

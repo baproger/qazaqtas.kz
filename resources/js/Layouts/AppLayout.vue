@@ -315,8 +315,12 @@ const relTime = (t) => {
     return new Date(t).toLocaleDateString('ru-RU');
 };
 
-const roleLabels = { admin: tr('СЕО (админ)'), director: tr('Директор'), financist: tr('Финансист-Бухгалтер'), manager: tr('Менеджер'), employee: tr('Сотрудник (цех)'), lawyer: tr('Юрист'), cook: tr('Повар'), designer: tr('Технолог'), supplier: tr('Снабженец') };
-const roleLabel = computed(() => roleLabels[roles.value[0]] ?? roles.value[0] ?? '');
+// Подписи ролей приходят из БД одним общим списком (HandleInertiaRequests):
+// зашитый в шаблоне словарь не знал ни «Бригадира», ни ролей, созданных
+// владельцем через Настройки → Права доступа, и показывал голый код.
+const roleLabels = computed(() => usePage().props.roleLabels ?? {});
+const roleTitle = (code) => roleLabels.value[code] ?? code ?? '';
+const roleLabel = computed(() => roleTitle(roles.value[0]));
 
 // Live clock next to the language switcher.
 const now = ref(new Date());
