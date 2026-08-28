@@ -189,19 +189,27 @@ const scopeClass = (scope) => ({
 // ---- Меню роли (⋯) ----
 // Действия роли собраны в одно меню, а не разложены кнопками по шапке: их
 // пять, а колонок десять — пятьдесят кнопок в шапке никто не читает.
-const menuFor = ref(null);
+/*
+ * Меню и выбор людей держат ИМЯ роли, а не сам объект.
+ *
+ * Объект приходит из пропа: добавил человека в роль, props обновились — а
+ * сохранённая ссылка указывает на старую копию, и список носителей в модалке
+ * остаётся без только что добавленного. Имя переживает обновление, объект нет.
+ */
+const menuForName = ref(null);
+const menuFor = computed(() => props.roles.find((r) => r.name === menuForName.value) ?? null);
 // Координаты кнопки: меню живёт ВНЕ таблицы. Внутри её обрезал бы
 // `overflow-x-auto` — выпадающий список просто исчезал бы за краем.
 const menuAt = ref({ top: 0, left: 0 });
 const toggleMenu = (role, event) => {
-    if (menuFor.value?.name === role.name) {
-        menuFor.value = null;
+    if (menuForName.value === role.name) {
+        menuForName.value = null;
 
         return;
     }
     const box = event.currentTarget.getBoundingClientRect();
     menuAt.value = { top: box.bottom + 6, left: box.left + box.width / 2 };
-    menuFor.value = role;
+    menuForName.value = role.name;
 };
 
 // Открыть/закрыть всё разом. Меняем черновик и СРАЗУ сохраняем: пункт меню
@@ -211,7 +219,7 @@ const setAll = (role, scope) => {
     for (const m of props.modules) {
         for (const permission of Object.values(m.permissions)) draft[role.name][permission] = scope;
     }
-    menuFor.value = null;
+    menuForName.value = null;
     save(role.name);
 };
 
@@ -222,7 +230,7 @@ const openRename = (role) => {
     renamingRole.value = role;
     renameForm.clearErrors();
     renameForm.label = role.label;
-    menuFor.value = null;
+    menuForName.value = null;
 };
 const submitRename = () => renameForm.put(route('access.roles.rename', renamingRole.value.id), {
     preserveScroll: true, onSuccess: () => (renamingRole.value = null),
@@ -232,10 +240,11 @@ const submitRename = () => renameForm.put(route('access.roles.rename', renamingR
 // Колонка без лиц — просто слово. Добавляем людей отделом или ролью целиком:
 // назначить право отделу из восьми человек поштучно значит восемь раз
 // повторить одно решение.
-const pickerFor = ref(null);
-const openPicker = (role) => (pickerFor.value = role);
+const pickerForName = ref(null);
+const pickerFor = computed(() => props.roles.find((r) => r.name === pickerForName.value) ?? null);
+const openPicker = (role) => (pickerForName.value = role.name);
 const addPeople = (ids) => {
-    if (!pickerFor.value) return;
+    if (! pickerFor.value) return;
     router.post(route('access.roles.addUsers', pickerFor.value.id), { users: ids }, { preserveScroll: true });
 };
 const removePerson = (role, person) =>
@@ -260,7 +269,7 @@ const openRole = (copyFrom = null) => {
         roleForm.copy_from = copyFrom.name;
         roleForm.label = copyFrom.label + ' — копия';
     }
-    menuFor.value = null;
+    menuForName.value = null;
     showRole.value = true;
 };
 const submitRole = () => roleForm.post(route('access.roles.store'), {
@@ -280,7 +289,7 @@ const removeRole = async (role) => {
 
     if (!(await confirmDialog({ title: tr('Удалить роль?'), message, confirmText: tr('Удалить'), danger: true }))) return;
 
-    menuFor.value = null;
+    menuForName.value = null;
     router.delete(route('access.roles.destroy', role.id), { preserveScroll: true });
 };
 </script>
@@ -467,7 +476,7 @@ const removeRole = async (role) => {
 
         <!-- Клик мимо закрывает меню: без подложки оно висит, пока не нажмёшь
              ту же кнопку ещё раз. -->
-        <div v-if="menuFor" class="fixed inset-0 z-30" @click="menuFor = null"></div>
+        <div v-if="menuFor" class="fixed inset-0 z-30" @click="menuForName = null"></div>
 
         <!-- Меню роли — телепортом в body и фиксированно по кнопке: внутри
              таблицы его обрезал бы `overflow-x-auto`. -->
@@ -537,7 +546,7 @@ const removeRole = async (role) => {
             :people="people" :departments="departments" :roles="roles"
             :members="pickerFor?.holders ?? []"
             :selected="pickerFor ? pickerFor.holders.map((h) => h.id) : []"
-            @close="pickerFor = null" @pick="addPeople"
+            @close="pickerForName = null" @pick="addPeople"
             @remove="(id) => removePerson(pickerFor, { id })" />
 
         <!-- Новая роль -->

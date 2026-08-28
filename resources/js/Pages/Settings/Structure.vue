@@ -51,8 +51,26 @@ const toggle = (id) => {
     collapsed.value = set;
 };
 
-const selected = ref(null);
-const pick = (node) => (selected.value = selected.value?.id === node.id ? null : node);
+/*
+ * Храним ID, а не сам узел.
+ *
+ * Узел — объект из пропа. Добавил человека в отдел, props обновились — а
+ * сохранённая ссылка указывает на СТАРЫЙ объект, и панель показывает список
+ * без только что добавленного. Выбор храним идентификатором, а сам узел
+ * достаём из свежего дерева.
+ */
+const selectedId = ref(null);
+const selected = computed(() => (selectedId.value === null ? null : findNode(tree.value, selectedId.value)));
+const pick = (node) => (selectedId.value = selectedId.value === node.id ? null : node.id);
+
+const findNode = (nodes, id) => {
+    for (const node of nodes) {
+        if (node.id === id) return node;
+        const inChild = findNode(node.children, id);
+        if (inChild) return inChild;
+    }
+    return null;
+};
 
 // Обработчики узлам — через provide: прокидывать их пропсами через каждый
 // уровень вложенности значит повторять одно и то же на всю глубину дерева.
@@ -60,14 +78,16 @@ provide('structure', {
     collapsed, selected, toggle, pick,
     canManage: props.can.manage,
     openCreate: (parentId) => openCreate(parentId),
-    addPerson: (node) => (pickerFor.value = node),
+    addPerson: (node) => (pickerForId.value = node.id),
 });
 
 // Кого добавить в отдел: тот же выбор с вкладками, что в правах доступа.
-const pickerFor = ref(null);
+// Тоже по id: состав отдела в модалке обязан обновляться после добавления.
+const pickerForId = ref(null);
+const pickerFor = computed(() => (pickerForId.value === null ? null : findNode(tree.value, pickerForId.value)));
 const addToDepartment = (ids) => {
-    if (!pickerFor.value) return;
-    ids.forEach((id) => moveTo(id, pickerFor.value.id));
+    if (! pickerForId.value) return;
+    ids.forEach((id) => moveTo(id, pickerForId.value));
 };
 
 // ---- Форма отдела ----
@@ -163,7 +183,7 @@ const parentOptions = computed(() => {
                                 <h3 class="truncate text-[12px] font-semibold text-slate-900">{{ selected.name }}</h3>
                                 <p v-if="selected.description" class="mt-0.5 text-xs text-slate-400">{{ selected.description }}</p>
                             </div>
-                            <button class="rounded p-1 text-slate-300 hover:text-slate-600" @click="selected = null">✕</button>
+                            <button class="rounded p-1 text-slate-300 hover:text-slate-600" @click="selectedId = null">✕</button>
                         </div>
 
                         <div class="mt-4 text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Руководитель') }}</div>
@@ -226,7 +246,7 @@ const parentOptions = computed(() => {
             :people="pickerPeople" :departments="departments" :roles="[]"
             :members="pickerFor?.people ?? []"
             :selected="pickerFor ? pickerFor.people.map((p) => p.id) : []"
-            @close="pickerFor = null" @pick="addToDepartment"
+            @close="pickerForId = null" @pick="addToDepartment"
             @remove="(id) => moveTo(id, null)" />
 
         <!-- Отдел -->

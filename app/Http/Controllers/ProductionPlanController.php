@@ -6,6 +6,7 @@ use App\Models\Brigade;
 use App\Models\Product;
 use App\Models\ProductionPlan;
 use App\Models\WorkOrder;
+use App\Models\WorkOrderLine;
 use App\Services\ProductionBonusService;
 use App\Services\ProductionProgressService;
 use App\Support\CurrentCompany;
@@ -100,8 +101,9 @@ class ProductionPlanController extends Controller
 
         $stats = $progress->forPlans($plans);
         $rates = app(ProductionBonusService::class)->rates('foreman');
+        $accrued = $this->accruedByPlan($plans);
 
-        $rows = $plans->map(function (ProductionPlan $plan) use ($stats, $rates) {
+        $rows = $plans->map(function (ProductionPlan $plan) use ($stats, $rates, $accrued) {
             $stat = $stats[$plan->id];
             // Бонус бригадира за выполненное: ставка плана, а нет её — общая.
             $rate = $plan->bonus_rate !== null ? (float) $plan->bonus_rate : $rates[$stat['measure']];
@@ -115,7 +117,9 @@ class ProductionPlanController extends Controller
                 'product' => $plan->product?->name,
                 'product_id' => $plan->product_id,
                 'rate' => round($rate, 2),
-                'bonus' => round($stat['done'] * $rate, 2),
+                // Начислено по замороженным строкам; плана ещё не касались —
+                // показываем прикидку по текущей ставке.
+                'bonus' => $accrued[$plan->id] ?? round($stat['done'] * $rate, 2),
                 'status' => $plan->status,
                 // План выполнен, когда сделано не меньше задания ИЛИ его
                 // закрыли руками. Признак считает сервер: посчитай его в
@@ -263,6 +267,35 @@ class ProductionPlanController extends Controller
     }
 
     /**
+     * Сколько по этим планам РЕАЛЬНО начислено.
+     *
+     * Берём суммы строк подтверждённых нарядов, а не «сделано × ставка»:
+     * ставка замораживается в строке (§4), и после её правки расчёт по
+     * текущей показывал бы бонус, которого никто не получит — ведомость
+     * платит по замороженным строкам. Владелец поднял цену со 100 до 300 —
+     * и прошлая смена «дорожала» на экране втрое.
+     *
+     * @param  Collection<int, ProductionPlan>  $plans
+     * @return array<int, float> id плана → начислено
+     */
+    private function accruedByPlan(Collection $plans): array
+    {
+        if ($plans->isEmpty()) {
+            return [];
+        }
+
+        return WorkOrderLine::query()
+            ->join('work_orders', 'work_orders.id', '=', 'work_order_lines.work_order_id')
+            ->whereIn('work_orders.production_plan_id', $plans->pluck('id'))
+            ->where('work_orders.status', 'confirmed')
+            ->groupBy('work_orders.production_plan_id')
+            ->selectRaw('work_orders.production_plan_id as pid, sum(work_order_lines.amount) as total')
+            ->pluck('total', 'pid')
+            ->map(fn ($v) => round((float) $v, 2))
+            ->all();
+    }
+
+    /**
      * Итоги по метрикам для набора планов.
      *
      * Одна функция и на месяц, и на подытог блока: посчитай подытог отдельно
@@ -367,6 +400,7 @@ class ProductionPlanController extends Controller
 
         $stats = $progress->forPlans($plans);
         $rates = app(ProductionBonusService::class)->rates('foreman');
+        $accrued = $this->accruedByPlan($plans);
 
         // Все наряды месяца — и по плану, и под заказ клиента: бригада одна,
         // и её месяц должен быть виден целиком.
@@ -389,7 +423,7 @@ class ProductionPlanController extends Controller
                 'foreman' => $brigade->foreman?->name,
                 'members' => $brigade->members->map(fn ($m) => ['id' => $m->id, 'name' => $m->name])->values(),
             ],
-            'plans' => $plans->map(function (ProductionPlan $plan) use ($stats, $rates) {
+            'plans' => $plans->map(function (ProductionPlan $plan) use ($stats, $rates, $accrued) {
                 $stat = $stats[$plan->id];
                 $rate = $plan->bonus_rate !== null ? (float) $plan->bonus_rate : $rates[$stat['measure']];
 
@@ -398,7 +432,9 @@ class ProductionPlanController extends Controller
                     'product' => $plan->product?->name,
                     'status' => $plan->status,
                     'rate' => round($rate, 2),
-                    'bonus' => round($stat['done'] * $rate, 2),
+                    // Как и на «План — факт»: начислено по ЗАМОРОЖЕННЫМ строкам.
+                    // Две страницы про один план обязаны звать одно число.
+                    'bonus' => $accrued[$plan->id] ?? round($stat['done'] * $rate, 2),
                 ]);
             })->values(),
             'orders' => $orders->map(fn (WorkOrder $o) => [

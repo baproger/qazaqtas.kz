@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductionPlan;
 use App\Models\User;
 use App\Models\WorkOrder;
+use App\Models\WorkOrderLine;
 use App\Notifications\ProductionPlanQueued;
 use App\Services\ProductionProgressService;
 use Database\Seeders\RolePermissionSeeder;
@@ -562,5 +563,37 @@ class ProductionPlanTest extends TestCase
 
         $this->assertNull(ProductionPlan::find($queued->id), 'Очередная строка ушла.');
         $this->assertSame(1400.0, (float) $existing->fresh()->plan_qty);
+    }
+
+    /**
+     * Бонус плана обязан совпадать с тем, что РЕАЛЬНО начислено.
+     *
+     * Ставка замораживается в строке наряда: подняли цену — прошлые смены не
+     * пересчитываются (§4). Но страница считала бонус как «сделано × текущая
+     * ставка» и после правки ставки показывала сумму, которую никто не
+     * получит: ведомость платит по замороженным строкам.
+     */
+    public function test_plan_bonus_matches_what_was_actually_accrued(): void
+    {
+        $plan = $this->plan(['plan_qty' => 1000, 'bonus_rate' => 100]);
+
+        // Смена по ставке 100 ₸: начислено 200 × 100 = 20 000.
+        $this->actingAs($this->foreman)->post(route('production.plans.output', $plan->id), ['qty' => 200]);
+        $this->actingAs($this->master)->patch(route('production.orders.confirm', WorkOrder::latest('id')->value('id')));
+
+        $accrued = (float) WorkOrderLine::whereHas('order', fn ($q) => $q->where('production_plan_id', $plan->id))
+            ->sum('amount');
+        $this->assertSame(20000.0, $accrued);
+
+        // Директор поднял ставку до 300 ₸ — прошлая смена не пересчитывается.
+        $plan->update(['bonus_rate' => 300]);
+
+        $this->actingAs($this->director)->get(route('production.plans.index'))
+            ->assertInertia(function ($page) use ($accrued) {
+                $shown = (float) collect($page->toArray()['props']['plans'])->first()['bonus'];
+
+                $this->assertSame($accrued, $shown,
+                    'Страница показывает бонус, которого нет в нарядах: '.$shown.' против '.$accrued);
+            });
     }
 }

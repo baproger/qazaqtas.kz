@@ -12,6 +12,7 @@ use App\Models\ExpenseCategory;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Services\FinanceService;
@@ -187,6 +188,10 @@ class DemoSeeder extends Seeder
             'is_active' => true,
             'hired_at' => now()->subYear()->toDateString(),
         ]);
+        // Роль могли удалить через Настройки → Права доступа: `assignRole`
+        // бросает исключение, и демо-данные переставали заводиться вовсе.
+        // Заводим недостающую роль пустой — права ей разложит владелец.
+        Role::findOrCreate($role, 'web');
         $user->assignRole($role);
         if ($companyId) {
             $user->companies()->attach($companyId);
