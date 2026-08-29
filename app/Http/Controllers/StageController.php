@@ -7,9 +7,12 @@ use App\Models\Deal;
 use App\Models\DealStage;
 use App\Models\Project;
 use App\Models\ProjectStage;
+use App\Models\Role;
+use App\Support\CurrentCompany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,7 +60,7 @@ class StageController extends Controller
             return $id;
         }
 
-        return \App\Support\CurrentCompany::id() ?: (int) Company::orderBy('id')->value('id');
+        return CurrentCompany::id() ?: (int) Company::orderBy('id')->value('id');
     }
 
     public function index(Request $request): Response
@@ -91,7 +94,14 @@ class StageController extends Controller
             // чтобы было понятно, куда идти освобождать.
             'typeOwners' => $dealStages->whereNotNull('stage_type')
                 ->mapWithKeys(fn ($s) => [$s->stage_type => $s->name])->all(),
-            'gateRoles' => ['financist' => 'Бухгалтер', 'designer' => 'Технолог', 'supplier' => 'Снабженец', 'manager' => 'Менеджер', 'director' => 'Директор', 'admin' => 'Админ'],
+            // Кому ставится гейт-задача: особые адресаты + роли из БД.
+            'gateRoles' => DealStage::GATE_SPECIAL + Role::where('name', '!=', 'admin')->orderBy('name')->get()
+                ->mapWithKeys(fn ($r) => [$r->name => 'Всем с ролью «'.$r->title().'»'])->all(),
+            // Роли для конструктора логики — из БД, как их назвал владелец.
+            'roles' => Role::where('name', '!=', 'admin')->orderBy('name')->get()
+                ->map(fn ($r) => ['value' => $r->name, 'label' => $r->title()])->values(),
+            // Действующие правила каждого этапа (явные или выведенные из типа).
+            'stageRules' => $dealStages->mapWithKeys(fn ($s) => [$s->id => $s->effectiveRules()])->all(),
             // Обязательные типы: без payment_won не работает подсчёт денег/won.
             'missingTypes' => collect(['payment_won', 'shop_gate', 'logistics'])
                 ->mapWithKeys(fn ($type) => [$type => DealStage::STAGE_TYPES[$type]])
@@ -181,6 +191,18 @@ class StageController extends Controller
         if ($kind !== 'project' && $request->has('requires_document')) {
             $updates['requires_document'] = (bool) $data['requires_document'];
         }
+        // Свойства «финальная проверка» и «не считать просроченной».
+        foreach (['is_closing', 'ignores_deadline'] as $flag) {
+            if ($kind !== 'project' && $request->has($flag)) {
+                $updates[$flag] = (bool) $data[$flag];
+            }
+        }
+
+        // Конструктор логики — только у этапов сделок. Пришли правила —
+        // сохраняем явно; с этого момента тип больше их не выводит.
+        if ($kind !== 'project' && $request->has('rules')) {
+            $updates['rules'] = $this->normalizeRules((array) ($data['rules'] ?? []), $stage);
+        }
 
         // Тип и гейт — только у этапов сделок.
         if ($kind !== 'project' && $request->hasAny(['stage_type', 'gate_task_title', 'gate_task_role', 'gate_task_days'])) {
@@ -188,7 +210,7 @@ class StageController extends Controller
                 $type = $data['stage_type'] ?? null;
                 // Один спец-тип на воронку: два «Акта» сломали бы логику.
                 if ($type && DealStage::where('stage_type', $type)->where('company_id', $stage->company_id)->where('id', '!=', $stage->id)->exists()) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'stage_type' => 'Тип «'.(DealStage::STAGE_TYPES[$type] ?? $type).'» уже назначен другому этапу этой воронки.',
                     ]);
                 }
@@ -211,6 +233,65 @@ class StageController extends Controller
         }
 
         return back()->with('success', 'Этап обновлён.');
+    }
+
+    /**
+     * Копия этапа со всей логикой — рядом с оригиналом. Системный тип не
+     * копируется (он один на воронку), остальное — как есть.
+     */
+    public function duplicate(Request $request, string $kind, int $id): RedirectResponse
+    {
+        $this->guard($request);
+        $model = $this->model($kind);
+        $source = $model::findOrFail($id);
+
+        $copy = $source->replicate(['stage_type', 'is_won', 'is_completed']);
+        $copy->name = $source->name.' (копия)';
+        $copy->order = $source->order + 1;
+        if ($kind !== 'project') {
+            // Явные правила — чтобы копия не зависела от типа, которого у неё нет.
+            $copy->rules = $source->effectiveRules();
+        }
+        $copy->save();
+        $copy->translations()->updateOrCreate(['locale' => app()->getLocale()], ['name' => $copy->name]);
+
+        // Сдвигаем всё, что стояло после оригинала, и перенумеровываем 1..N.
+        $companyId = $source->company_id ? (int) $source->company_id : null;
+        $model::where('id', '!=', $copy->id)->where('order', '>', $source->order)
+            ->where(fn ($w) => $w->where('company_id', $companyId)->orWhereNull('company_id'))
+            ->increment('order');
+        $this->reindexFunnel($model, $companyId);
+
+        return back()->with('success', 'Этап скопирован: «'.$copy->name.'».');
+    }
+
+    /**
+     * Правила из формы → чистый набор: только известные роли и этапы своей
+     * воронки, только допустимые значения. Подделанный запрос ничего не
+     * добавит.
+     *
+     * @param  array<string, mixed>  $rules
+     * @return array<string, mixed>
+     */
+    private function normalizeRules(array $rules, DealStage $stage): array
+    {
+        $roles = Role::pluck('name')->all();
+        $onlyRoles = fn ($list) => array_values(array_intersect(array_map('strval', (array) $list), $roles));
+        $funnelIds = DealStage::where(fn ($w) => $w->where('company_id', $stage->company_id)->orWhereNull('company_id'))
+            ->where('id', '!=', $stage->id)->pluck('id')->all();
+        $req = (array) ($rules['require'] ?? []);
+
+        return [
+            'leave_roles' => $onlyRoles($rules['leave_roles'] ?? []),
+            'enter_roles' => $onlyRoles($rules['enter_roles'] ?? []),
+            'extra_movers' => $onlyRoles($rules['extra_movers'] ?? []),
+            'from_stages' => array_values(array_intersect(array_map('intval', (array) ($rules['from_stages'] ?? [])), $funnelIds)),
+            'require' => [
+                'invoice' => (bool) ($req['invoice'] ?? false),
+                'payment' => in_array($req['payment'] ?? 'none', ['none', 'partial', 'full'], true) ? $req['payment'] : 'none',
+                'items_done' => (bool) ($req['items_done'] ?? false),
+            ],
+        ];
     }
 
     /**
@@ -271,13 +352,13 @@ class StageController extends Controller
 
         if (($count = (clone $occupants)->count()) > 0) {
             if (! $transferTo) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'transfer_to' => "На этапе «{$stage->name}» — {$count} ".($kind === 'project' ? 'заказ(ов)' : 'сделок(ки)').'. Выберите этап, куда их перенести.',
                 ]);
             }
             $target = $model::findOrFail($transferTo);
             if ($target->id === $stage->id || $target->company_id !== $stage->company_id) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'transfer_to' => 'Этап переноса должен быть другим этапом той же воронки.',
                 ]);
             }
@@ -306,11 +387,22 @@ class StageController extends Controller
             'order' => ['nullable', 'integer'],
             'stage_type' => ['nullable', Rule::in(array_keys(DealStage::STAGE_TYPES))],
             'gate_task_title' => ['nullable', 'string', 'max:255'],
-            'gate_task_role' => ['nullable', Rule::in(['financist', 'designer', 'supplier', 'manager', 'director', 'admin'])],
+            'gate_task_role' => ['nullable', Rule::in(array_merge(array_keys(DealStage::GATE_SPECIAL), Role::pluck('name')->all()))],
             'gate_task_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'is_completed' => ['nullable', 'boolean'],
             'requires_document' => ['nullable', 'boolean'],
+            'is_closing' => ['nullable', 'boolean'],
+            'ignores_deadline' => ['nullable', 'boolean'],
             'workshop' => ['nullable', 'string', 'max:100'],
+            'rules' => ['nullable', 'array'],
+            'rules.leave_roles' => ['nullable', 'array'], 'rules.leave_roles.*' => ['string'],
+            'rules.enter_roles' => ['nullable', 'array'], 'rules.enter_roles.*' => ['string'],
+            'rules.extra_movers' => ['nullable', 'array'], 'rules.extra_movers.*' => ['string'],
+            'rules.from_stages' => ['nullable', 'array'], 'rules.from_stages.*' => ['integer'],
+            'rules.require' => ['nullable', 'array'],
+            'rules.require.invoice' => ['nullable', 'boolean'],
+            'rules.require.items_done' => ['nullable', 'boolean'],
+            'rules.require.payment' => ['nullable', Rule::in(['none', 'partial', 'full'])],
         ]);
     }
 }

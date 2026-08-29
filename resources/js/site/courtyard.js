@@ -568,6 +568,10 @@ export function createCourtyard(canvas, options = {}) {
                 }
             });
             Object.values(materials).forEach((m) => m.dispose());
+            // Карта окружения живёт на GPU отдельно от материалов: без этого
+            // каждый заход на главную оставлял бы в памяти видеокарты ещё одну.
+            environment.dispose();
+            pmrem.dispose();
             renderer.dispose();
         },
     };

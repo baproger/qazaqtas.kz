@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -43,17 +43,7 @@ const needsOptions = () => form.type === 'select' || form.type === 'radio';
 
 <template>
     <Head :title="$e('Доп. поля')" />
-    <AppLayout>
-        <template #header>{{ $t('page.settings_fields', 'Настройки · Дополнительные поля') }}</template>
-        <div class="mb-4 flex gap-2 border-b">
-            <Link :href="route('settings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Общие') }}</Link>
-            <Link :href="route('stages.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Этапы') }}</Link>
-            <Link :href="route('screens.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Экраны') }}</Link>
-            <Link :href="route('custom-fields.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">{{ $e('Доп. поля') }}</Link>
-            <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Сайт') }}</Link>
-            <Link v-if="$page.props.auth.user?.roles?.includes('admin')" :href="route('access.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Права доступа') }}</Link>
-            <Link :href="route('structure.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Структура') }}</Link>
-        </div>
+    <SettingsLayout :title="$e('Доп. поля')" wide>
         <div class="mb-4 flex justify-end"><PrimaryButton @click="openCreate">{{ $e('+ Новое поле') }}</PrimaryButton></div>
 
         <div class="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
@@ -113,5 +103,5 @@ const needsOptions = () => form.type === 'select' || form.type === 'radio';
                 </div>
             </div>
         </Modal>
-    </AppLayout>
+    </SettingsLayout>
 </template>

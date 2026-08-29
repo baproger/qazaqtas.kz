@@ -40,9 +40,9 @@ const LABEL = {
 
 <template>
     <div class="rounded-2xl p-4 shadow-soft-md" :class="BOX[tone]" :style="tone === 'dark' ? 'background-color: #1A3B5C' : ''">
-        <div class="text-[11px] uppercase tracking-wide" :class="LABEL[tone]">{{ label }}</div>
+        <div class="text-xs uppercase tracking-wide" :class="LABEL[tone]">{{ label }}</div>
         <div class="mt-1 whitespace-nowrap text-xl font-bold tabular-nums" :class="VALUE[tone]">{{ value }}</div>
-        <div v-if="hint" class="mt-0.5 text-[11px]" :class="LABEL[tone]">{{ hint }}</div>
+        <div v-if="hint" class="mt-0.5 text-xs" :class="LABEL[tone]">{{ hint }}</div>
         <slot />
     </div>
 </template>

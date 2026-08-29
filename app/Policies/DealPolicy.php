@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Deal;
 use App\Models\User;
+use App\Support\AccessScope;
 
 class DealPolicy
 {
@@ -14,7 +15,7 @@ class DealPolicy
 
     public function view(User $user, Deal $d): bool
     {
-        return $user->can('deal.view') && $this->ownsOrLeads($user, $d);
+        return $user->can('deal.view') && $this->ownsOrLeads($user, $d, 'deal.view');
     }
 
     public function create(User $user): bool
@@ -24,7 +25,7 @@ class DealPolicy
 
     public function update(User $user, Deal $d): bool
     {
-        return $this->ownsOrLeads($user, $d) && ($user->can('deal.update') || $d->responsible_user_id === $user->id);
+        return $this->ownsOrLeads($user, $d, 'deal.update') && ($user->can('deal.update') || $d->responsible_user_id === $user->id);
     }
 
     // Удаление сделки — ТОЛЬКО админ (менеджеру/директору/бухгалтеру нельзя).
@@ -51,9 +52,13 @@ class DealPolicy
             return true;
         }
 
-        return $user->hasRole('designer')
-            && $this->ownsOrLeads($user, $d)
-            && $d->stage?->stage_type === 'design';
+        // Правило этапа «также могут двигать»: технолог на замере и любая
+        // роль, которую владелец добавил в конструкторе логики этапа.
+        $extra = $d->stage?->effectiveRules()['extra_movers'] ?? [];
+
+        return $extra !== []
+            && $user->hasAnyRole($extra)
+            && $this->ownsOrLeads($user, $d);
     }
 
     /**
@@ -82,7 +87,7 @@ class DealPolicy
      * deals they are responsible for. Сделка чужой фирмы недоступна
      * по прямой ссылке даже руководству, не привязанному к той компании.
      */
-    private function ownsOrLeads(User $user, Deal $d): bool
+    private function ownsOrLeads(User $user, Deal $d, string $permission = 'deal.view'): bool
     {
         if (! $user->worksInCompany($d->company_id ? (int) $d->company_id : null)) {
             return false;
@@ -92,8 +97,32 @@ class DealPolicy
         // гейт-этапы; править/удалять не могут (нет deal.update, см. update()).
         // Бригадир видит ТОЛЬКО те сделки, на которые его назначили: чужие
         // объекты не его дело.
-        return $user->hasAnyRole(['admin', 'director', 'financist', 'designer', 'supplier'])
+        if ($user->hasAnyRole(['admin', 'director', 'financist', 'designer', 'supplier'])
             || $d->responsible_user_id === $user->id
-            || ($user->hasRole('foreman') && (int) $d->foreman_id === $user->id);
+            || ($user->hasRole('foreman') && (int) $d->foreman_id === $user->id)) {
+            return true;
+        }
+
+        // Область доступа из Настроек → Права (§3): «отдела», «отдела и
+        // подчинённых», «все». Список сделок её уже учитывал, а карточка —
+        // нет: руководитель отдела видел сделку подчинённого в списке и
+        // получал 403, открыв её.
+        return $this->inScope($user, $d, $permission);
+    }
+
+    /** Сделка внутри области доступа человека по этому праву. */
+    private function inScope(User $user, Deal $d, string $permission): bool
+    {
+        $scope = AccessScope::for($user, $permission);
+
+        if ($scope === AccessScope::ALL) {
+            return true;
+        }
+        if ($scope === AccessScope::DEPARTMENT || $scope === AccessScope::DEPARTMENT_TREE) {
+            return $d->responsible_user_id !== null
+                && in_array((int) $d->responsible_user_id, AccessScope::peerIds($user, $scope), true);
+        }
+
+        return false;
     }
 }

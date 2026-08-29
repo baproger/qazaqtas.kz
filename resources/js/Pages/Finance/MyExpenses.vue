@@ -48,7 +48,7 @@ const submit = () => form.post(route('expenses.store'), {
 
 <template>
     <Head :title="$e('Мои расходы')" />
-    <FinanceLayout :title="$e('Мои расходы')" :subtitle="$e('мои заявки на расход и мои выплаты')" width="max-w-5xl">
+    <FinanceLayout :title="$e('Мои расходы')" :subtitle="$e('мои заявки на расход и мои выплаты')">
         <template #actions>
             <span class="text-xs text-slate-400">{{ $e('Месяц:') }}</span>
             <input v-model="month" @change="applyMonth" type="month"

@@ -88,7 +88,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                                     <span class="max-w-36 truncate">{{ f.label }}</span>
                                     <b class="text-base leading-none tabular-nums" :class="f.count > 0 ? (f.kind === 'won' ? 'text-emerald-600' : 'text-slate-900') : 'text-slate-300'">{{ f.count }}</b>
                                 </span>
-                                <span class="ml-1 text-4xl font-black leading-none tabular-nums" :class="m.won > 0 ? 'text-emerald-600' : 'text-slate-300'">{{ m.won }}</span>
+                                <span class="ml-1 text-3xl font-bold leading-none tabular-nums" :class="m.won > 0 ? 'text-emerald-600' : 'text-slate-300'">{{ m.won }}</span>
                             </div>
                             <div class="mt-1 flex items-center justify-end gap-1.5 text-xs text-slate-400">
                                 <span>{{ $e('сделок за месяц') }} {{ m.total }} {{ $e('· оплачено') }} {{ m.won }}</span>
@@ -111,7 +111,7 @@ const barClass = (s) => s >= 70 ? 'bg-emerald-500' : s >= 30 ? 'bg-indigo-500' :
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
                             <span class="truncate text-sm font-semibold text-slate-900">{{ l.product || '—' }}</span>
-                            <span v-if="l.won" class="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{{ $e('ОПЛАЧЕНО ✓') }}</span>
+                            <span v-if="l.won" class="flex-shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">{{ $e('ОПЛАЧЕНО ✓') }}</span>
                         </div>
                         <div class="truncate text-xs text-slate-400">{{ l.customer || '—' }} · {{ l.manager }}</div>
                     </div>

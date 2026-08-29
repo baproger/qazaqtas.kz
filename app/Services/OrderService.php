@@ -129,7 +129,9 @@ class OrderService
     private function nextNumber(): string
     {
         $year = now()->format('Y');
-        $last = Order::where('number', 'like', "ZT-{$year}-%")->orderByDesc('id')->value('number');
+        // Внутри транзакции createFromCart: блокируем последний номер, иначе
+        // два одновременных оформления получили бы один и тот же ZT-….
+        $last = Order::where('number', 'like', "ZT-{$year}-%")->orderByDesc('id')->lockForUpdate()->value('number');
         $next = $last ? ((int) substr($last, -4)) + 1 : 1;
 
         return sprintf('ZT-%s-%04d', $year, $next);

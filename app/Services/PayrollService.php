@@ -169,7 +169,7 @@ class PayrollService
         // подходе» тоже нет. Раньше здесь подставлялся «второй с конца», и в
         // воронке без акта под «деньги на подходе» попадал случайный этап —
         // перестановка воронки в настройках меняла цифры ЗП без правки кода.
-        $pendingIds = $stages->whereIn('stage_type', ['act', 'esf'])->pluck('id');
+        $pendingIds = $stages->where('is_closing', true)->pluck('id');
         $stageFilter = $wonStageIds->merge($pendingIds)->unique()->all();
 
         $deals = Deal::forCurrentCompany()->whereNotNull('responsible_user_id')

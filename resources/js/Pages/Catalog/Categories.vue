@@ -162,7 +162,7 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
                 <!-- Снимок на клетчатой подложке: прозрачность видно сразу -->
                 <div class="checkerboard grid h-20 w-20 shrink-0 place-items-center rounded-lg border border-slate-200">
                     <img v-if="c.thumb || c.image" :src="c.thumb ?? c.image" :alt="c.name" class="h-full w-full object-contain p-1" />
-                    <span v-else class="text-[10px] uppercase tracking-wider text-slate-400">{{ $e('нет фото') }}</span>
+                    <span v-else class="text-xs uppercase tracking-wider text-slate-400">{{ $e('нет фото') }}</span>
                 </div>
 
                 <div class="min-w-0 flex-1">
@@ -247,7 +247,7 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
                             <TextInput v-model="row.value" :placeholder="specHints[i].value" />
                         </div>
                     </div>
-                    <p class="mt-2 text-[11px] text-slate-400">
+                    <p class="mt-2 text-xs text-slate-400">
                         {{ $e('Если оставить всё пустым, подписи соберутся из характеристик самой дешёвой позиции раздела.') }}
                     </p>
                 </div>

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Deal;
+use App\Models\DealStage;
 use App\Models\Project;
 use App\Models\ProjectStage;
 
@@ -14,7 +15,7 @@ class ProjectService
      * «Готово»: завершить заказ цеха и вернуть сделку на «Логистику»
      * (или «Акт», если этапа логистики нет). Общая логика ERP и ТВ-экрана.
      *
-     * @return array{0: bool, 1: string}  [успех, сообщение]
+     * @return array{0: bool, 1: string} [успех, сообщение]
      */
     public function completeAndReturnDeal(Project $project): array
     {
@@ -38,8 +39,8 @@ class ProjectService
         // цеха)». Подставлять этап по позиции нельзя: в воронке без логистики
         // им оказывалась «Оплата успешно», и заказ из цеха закрывал сделку
         // успешной — с деньгами, ЗП и аналитикой.
-        $returnStage = \App\Models\DealStage::logisticsStage($companyId)
-            ?? \App\Models\DealStage::actStage($companyId);
+        $returnStage = DealStage::logisticsStage($companyId)
+            ?? DealStage::funnel($companyId)->firstWhere('is_closing', true);
         if (! $returnStage) {
             return [false, 'Не задан этап возврата из цеха: назначьте системный тип «Логистика (возврат из цеха)» нужному этапу в Настройки → Этапы.'];
         }

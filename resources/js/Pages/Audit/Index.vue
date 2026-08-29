@@ -75,7 +75,7 @@ const hasFilters = () => fTable.value || fAction.value || fUser.value || fFrom.v
                         <td class="whitespace-nowrap px-4 py-3 text-slate-400">{{ fmt(log.created_at) }}</td>
                         <td class="px-4 py-3">
                             {{ log.user ?? $e('Система') }}
-                            <span v-if="log.ip" class="block text-[10px] text-slate-300">{{ log.ip }}</span>
+                            <span v-if="log.ip" class="block text-xs text-slate-300">{{ log.ip }}</span>
                         </td>
                         <td class="px-4 py-3 text-slate-600">{{ log.table }}</td>
                         <td class="px-4 py-3">

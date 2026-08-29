@@ -24,7 +24,7 @@
  */
 import { computed, reactive, ref, watch } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import Avatar from '@/Components/Avatar.vue';
 import Modal from '@/Components/Modal.vue';
 import PeoplePicker from '@/Components/PeoplePicker.vue';
@@ -181,8 +181,8 @@ const toggle = (key) => {
 const scopeClass = (scope) => ({
     none: 'bg-slate-100 text-slate-500 border-slate-200',
     own: 'bg-white text-slate-700 border-slate-200',
-    department: 'bg-bx-50 text-bx-600 border-bx-200',
-    department_tree: 'bg-bx-100 text-bx-600 border-bx-200',
+    department: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    department_tree: 'bg-indigo-100 text-indigo-700 border-indigo-200',
     all: 'bg-emerald-50 text-emerald-700 border-emerald-200',
 }[scope] ?? 'bg-amber-50 text-amber-700 border-amber-200');
 
@@ -296,18 +296,7 @@ const removeRole = async (role) => {
 
 <template>
     <Head :title="$e('Права доступа')" />
-    <AppLayout>
-        <template #header>{{ $e('Настройки системы') }}</template>
-
-        <div class="mb-4 flex gap-2 border-b">
-            <Link :href="route('settings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Общие') }}</Link>
-            <Link :href="route('stages.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Этапы') }}</Link>
-            <Link :href="route('screens.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Экраны') }}</Link>
-            <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Доп. поля') }}</Link>
-            <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Сайт') }}</Link>
-            <Link :href="route('access.index')" class="border-b-2 border-bx-500 px-3 py-2 text-sm font-medium text-bx-600">{{ $e('Права доступа') }}</Link>
-            <Link :href="route('structure.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Структура') }}</Link>
-        </div>
+    <SettingsLayout :title="$e('Права доступа')" wide>
 
         <div class="mx-auto max-w-full">
             <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
@@ -315,10 +304,10 @@ const removeRole = async (role) => {
                     <h2 class="text-lg font-semibold text-slate-900">{{ $e('Кто что может') }}</h2>
                     <p class="mt-0.5 text-xs text-slate-400">
                         {{ $e('Область показывает, на сколько записей действует право. Что такое «Отдел» — решает') }}
-                        <Link :href="route('structure.index')" class="font-semibold text-bx-600 hover:underline">{{ $e('Структура компании') }}</Link>.
+                        <Link :href="route('structure.index')" class="font-semibold text-indigo-700 hover:underline">{{ $e('Структура компании') }}</Link>.
                     </p>
                 </div>
-                <button @click="openRole" class="rounded-lg bg-bx-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-bx-600">{{ $e('+ Роль') }}</button>
+                <button @click="openRole" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700">{{ $e('+ Роль') }}</button>
             </div>
 
             <!-- Полоса правок липнет к верху: правишь середину таблицы —
@@ -342,10 +331,10 @@ const removeRole = async (role) => {
                      вверх, и на середине таблицы уже не понять, чей столбец
                      правишь, а до «Сохранить» надо было листать вниз. -->
                 <div class="max-h-[calc(100vh-15rem)] overflow-auto">
-                    <table class="min-w-full text-[12px]">
+                    <table class="min-w-full text-xs">
                         <thead class="sticky top-0 z-30">
                             <tr class="border-b border-slate-200 bg-slate-50">
-                                <th class="sticky left-0 z-40 min-w-[13rem] bg-slate-50 px-4 py-2.5 text-left align-bottom text-[10px] font-medium uppercase tracking-wide text-slate-400 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e('Раздел') }}</th>
+                                <th class="sticky left-0 z-40 min-w-[13rem] bg-slate-50 px-4 py-2.5 text-left align-bottom text-xs font-medium uppercase tracking-wide text-slate-400 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e('Раздел') }}</th>
                                 <!-- Колонка роли: имя, меню «⋯», стопка
                                      носителей и круглая «+». Действия иконками:
                                      у десяти ролей подписи повторяли одно и то
@@ -354,7 +343,7 @@ const removeRole = async (role) => {
                                 <th v-for="r in roles" :key="r.name" class="min-w-[10rem] px-2.5 py-2 align-top">
                                     <div class="flex flex-col items-center gap-1">
                                         <div class="relative flex items-baseline gap-1">
-                                            <span class="text-[12px] font-medium leading-tight" :class="r.locked ? 'text-slate-400' : 'text-slate-700'">{{ r.label }}</span>
+                                            <span class="text-xs font-medium leading-tight" :class="r.locked ? 'text-slate-400' : 'text-slate-700'">{{ r.label }}</span>
 
                                             <!-- Меню роли: пять действий в одном
                                                  месте. Разложи их кнопками по
@@ -363,7 +352,7 @@ const removeRole = async (role) => {
                                                  не читает. -->
                                             <button v-if="!r.locked" type="button" @click="toggleMenu(r, $event)"
                                                 :title="$e('Настройки роли')"
-                                                class="rounded px-1 text-[13px] leading-none text-slate-300 transition-colors duration-150 hover:text-slate-600">⋯</button>
+                                                class="rounded px-1 text-sm leading-none text-slate-300 transition-colors duration-150 hover:text-slate-600">⋯</button>
                                         </div>
 
                                         <!-- Носители — СТОПКОЙ аватаров, а не
@@ -381,17 +370,17 @@ const removeRole = async (role) => {
                                                     <Avatar v-for="h in r.holders.slice(0, 4)" :key="h.id" :name="h.name" :src="h.avatar" :size="24"
                                                         class="ring-2 ring-white" />
                                                 </span>
-                                                <span v-if="r.holders.length > 4" class="ml-1.5 text-[11px] font-semibold text-slate-500">+{{ r.holders.length - 4 }}</span>
+                                                <span v-if="r.holders.length > 4" class="ml-1.5 text-xs font-semibold text-slate-500">+{{ r.holders.length - 4 }}</span>
                                             </button>
 
                                             <button v-if="!r.locked" type="button" @click="openPicker(r)"
                                                 :title="$e('Добавить сотрудника или отдел')"
-                                                class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-bx-200 text-bx-500 transition-colors duration-150 hover:border-bx-400 hover:bg-bx-50">
+                                                class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-indigo-200 text-indigo-600 transition-colors duration-150 hover:border-indigo-400 hover:bg-indigo-50">
                                                 <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                                             </button>
                                         </div>
 
-                                        <span v-if="r.locked" class="text-[10px] font-normal text-slate-300">{{ $e('полный доступ') }}</span>
+                                        <span v-if="r.locked" class="text-xs font-normal text-slate-300">{{ $e('полный доступ') }}</span>
                                     </div>
                                 </th>
                             </tr>
@@ -400,11 +389,11 @@ const removeRole = async (role) => {
                         <tbody class="divide-y divide-slate-50">
                             <!-- Признаки роли: чем роль ЯВЛЯЕТСЯ. Их не выразить
                                  областью — «видит суммы» не про число записей. -->
-                            <tr v-for="(label, key) in traitLabels" :key="key" class="bg-bx-50">
-                                <td class="sticky left-0 z-10 bg-bx-50 px-4 py-1.5 text-[11px] font-medium text-slate-600 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e(label) }}</td>
+                            <tr v-for="(label, key) in traitLabels" :key="key" class="bg-indigo-50">
+                                <td class="sticky left-0 z-10 bg-indigo-50 px-4 py-1.5 text-xs font-medium text-slate-600 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e(label) }}</td>
                                 <td v-for="r in roles" :key="r.name" class="px-2.5 py-1 text-center">
                                     <input v-if="!r.locked && traits[r.name]" type="checkbox" v-model="traits[r.name][key]"
-                                        class="h-4 w-4 rounded border-slate-300 text-bx-500 focus:ring-bx-500" />
+                                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
                                     <span v-else class="text-emerald-500/50">✓</span>
                                 </td>
                             </tr>
@@ -416,19 +405,19 @@ const removeRole = async (role) => {
                                             <svg class="h-3 w-3 text-slate-300 transition-transform duration-200" :class="open.has(m.key) ? 'rotate-90' : ''"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                                             <span class="min-w-0">
-                                                <span class="text-[12px] font-semibold text-slate-800">{{ $e(m.label) }}</span>
-                                                <span v-if="m.hint" class="ml-1.5 text-[10px] font-normal text-slate-400">{{ $e(m.hint) }}</span>
+                                                <span class="text-xs font-semibold text-slate-800">{{ $e(m.label) }}</span>
+                                                <span v-if="m.hint" class="ml-1.5 text-xs font-normal text-slate-400">{{ $e(m.hint) }}</span>
                                             </span>
                                         </button>
                                     </td>
                                     <td v-for="r in roles" :key="r.name" class="px-2.5 py-1.5 text-center">
                                         <select v-if="!r.locked" :value="moduleScope(r.name, m)" @change="setModule(r.name, m, $event.target.value)"
-                                            class="w-full rounded-md border py-0.5 pl-1.5 pr-5 text-[11px] font-semibold shadow-sm focus:border-bx-500 focus:ring-2 focus:ring-bx-500/20"
+                                            class="w-full rounded-md border py-0.5 pl-1.5 pr-5 text-xs font-semibold shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
                                             :class="scopeClass(moduleScope(r.name, m))">
                                             <option v-if="moduleScope(r.name, m) === 'mixed'" value="mixed">{{ $e('по действиям') }}</option>
                                             <option v-for="s in scopeLevels" :key="s.value" :value="s.value">{{ $e(s.label) }}</option>
                                         </select>
-                                        <span v-else class="text-[12px] font-semibold text-emerald-600/45">{{ $e('Все') }}</span>
+                                        <span v-else class="text-xs font-semibold text-emerald-600/45">{{ $e('Все') }}</span>
                                     </td>
                                 </tr>
 
@@ -442,11 +431,11 @@ const removeRole = async (role) => {
                                     <td class="sticky left-0 z-10 bg-white px-4 py-1.5 pl-9 text-slate-500 shadow-[1px_0_0_0_rgb(226_232_240)] transition-colors duration-150 group-hover:bg-slate-50">{{ $e(label) }}</td>
                                     <td v-for="r in roles" :key="r.name" class="px-2.5 py-1 text-center">
                                         <select v-if="!r.locked && m.permissions[key] && draft[r.name]" v-model="draft[r.name][m.permissions[key]]"
-                                            class="w-full rounded-md border py-0.5 pl-1.5 pr-5 text-[11px] shadow-sm focus:border-bx-500 focus:ring-2 focus:ring-bx-500/20"
+                                            class="w-full rounded-md border py-0.5 pl-1.5 pr-5 text-xs shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20"
                                             :class="scopeClass(draft[r.name][m.permissions[key]])">
                                             <option v-for="s in scopeLevels" :key="s.value" :value="s.value">{{ $e(s.label) }}</option>
                                         </select>
-                                        <span v-else-if="r.locked && m.permissions[key]" class="text-[12px] text-emerald-600/45">{{ $e('Все') }}</span>
+                                        <span v-else-if="r.locked && m.permissions[key]" class="text-xs text-emerald-600/45">{{ $e('Все') }}</span>
                                         <span v-else class="text-slate-200">—</span>
                                     </td>
                                 </tr>
@@ -455,11 +444,11 @@ const removeRole = async (role) => {
 
                         <tfoot class="sticky bottom-0 z-30 border-t border-slate-200 bg-slate-50">
                             <tr>
-                                <td class="sticky left-0 z-40 bg-slate-50 px-4 py-2.5 text-[10px] text-slate-400 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e('Сохраняется по одной роли') }}</td>
+                                <td class="sticky left-0 z-40 bg-slate-50 px-4 py-2.5 text-xs text-slate-400 shadow-[1px_0_0_0_rgb(226_232_240)]">{{ $e('Сохраняется по одной роли') }}</td>
                                 <td v-for="r in roles" :key="r.name" class="px-2.5 py-2 text-center">
                                     <button v-if="!r.locked" type="button" :disabled="!dirty(r.name) || busy === r.name" @click="save(r.name)"
-                                        class="rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors duration-150"
-                                        :class="dirty(r.name) ? 'bg-bx-500 text-white hover:bg-bx-600' : 'bg-slate-100 text-slate-300'">
+                                        class="rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors duration-150"
+                                        :class="dirty(r.name) ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-100 text-slate-300'">
                                         {{ busy === r.name ? '…' : $e('Сохранить') }}
                                     </button>
                                 </td>
@@ -486,37 +475,37 @@ const removeRole = async (role) => {
                 <button type="button" @click="setAll(menuFor, 'all')" class="flex w-full gap-2.5 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-slate-50">
                     <span class="mt-0.5 text-emerald-600">✓</span>
                     <span>
-                        <span class="block text-[12px] font-semibold text-slate-900">{{ $e('Открыть доступ ко всем') }}</span>
-                        <span class="block text-[11px] font-normal text-slate-400">{{ $e('Роль получит область «Все» во всех разделах') }}</span>
+                        <span class="block text-xs font-semibold text-slate-900">{{ $e('Открыть доступ ко всем') }}</span>
+                        <span class="block text-xs font-normal text-slate-400">{{ $e('Роль получит область «Все» во всех разделах') }}</span>
                     </span>
                 </button>
                 <button type="button" @click="setAll(menuFor, 'none')" class="flex w-full gap-2.5 border-t border-slate-100 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-slate-50">
                     <span class="mt-0.5 text-rose-500">🔒</span>
                     <span>
-                        <span class="block text-[12px] font-semibold text-slate-900">{{ $e('Закрыть доступ ко всем') }}</span>
-                        <span class="block text-[11px] font-normal text-slate-400">{{ $e('Все права роли снимаются разом') }}</span>
+                        <span class="block text-xs font-semibold text-slate-900">{{ $e('Закрыть доступ ко всем') }}</span>
+                        <span class="block text-xs font-normal text-slate-400">{{ $e('Все права роли снимаются разом') }}</span>
                     </span>
                 </button>
                 <button type="button" @click="openRename(menuFor)" class="flex w-full gap-2.5 border-t border-slate-100 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-slate-50">
-                    <span class="mt-0.5 text-bx-500">✎</span>
+                    <span class="mt-0.5 text-indigo-600">✎</span>
                     <span>
-                        <span class="block text-[12px] font-semibold text-slate-900">{{ $e('Переименовать') }}</span>
-                        <span class="block text-[11px] font-normal text-slate-400">{{ $e('Меняется подпись, код роли остаётся') }}</span>
+                        <span class="block text-xs font-semibold text-slate-900">{{ $e('Переименовать') }}</span>
+                        <span class="block text-xs font-normal text-slate-400">{{ $e('Меняется подпись, код роли остаётся') }}</span>
                     </span>
                 </button>
                 <button type="button" @click="openRole(menuFor)" class="flex w-full gap-2.5 border-t border-slate-100 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-slate-50">
-                    <span class="mt-0.5 text-bx-500">⧉</span>
+                    <span class="mt-0.5 text-indigo-600">⧉</span>
                     <span>
-                        <span class="block text-[12px] font-semibold text-slate-900">{{ $e('Скопировать') }}</span>
-                        <span class="block text-[11px] font-normal text-slate-400">{{ $e('В новую роль перейдут все области этой') }}</span>
+                        <span class="block text-xs font-semibold text-slate-900">{{ $e('Скопировать') }}</span>
+                        <span class="block text-xs font-normal text-slate-400">{{ $e('В новую роль перейдут все области этой') }}</span>
                     </span>
                 </button>
                 <button type="button" @click="removeRole(menuFor)"
                     class="flex w-full gap-2.5 border-t border-slate-100 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-rose-50">
                     <span class="mt-0.5 text-rose-500">🗑</span>
                     <span>
-                        <span class="block text-[12px] font-semibold text-slate-900">{{ $e('Удалить') }}</span>
-                        <span class="block text-[11px] font-normal text-slate-400">
+                        <span class="block text-xs font-semibold text-slate-900">{{ $e('Удалить') }}</span>
+                        <span class="block text-xs font-normal text-slate-400">
                             {{ menuFor.system ? $e('Системная роль — на её имя ссылается код')
                                 : menuFor.holders.length ? $e('Сотрудники останутся без роли:') + ' ' + menuFor.holders.length
                                 : $e('Роль удалится со всеми настроенными областями') }}
@@ -532,12 +521,12 @@ const removeRole = async (role) => {
                 <h2 class="mb-1 text-base font-semibold text-slate-900">{{ $e('Переименовать роль') }}</h2>
                 <p class="mb-4 text-xs text-slate-400">{{ $e('Код роли не меняется: на нём держатся правила и политики.') }}</p>
                 <input v-model="renameForm.label" type="text" @keyup.enter="submitRename"
-                    class="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-bx-500 focus:ring-2 focus:ring-bx-500/20" />
+                    class="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20" />
                 <p v-if="renameForm.errors.label" class="mt-1 text-xs text-rose-600">{{ renameForm.errors.label }}</p>
                 <div class="mt-5 flex justify-end gap-2">
                     <button @click="renamingRole = null" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700">{{ $e('Отмена') }}</button>
                     <button :disabled="renameForm.processing" @click="submitRename"
-                        class="rounded-lg bg-bx-500 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-bx-600 disabled:opacity-50">{{ $e('Сохранить') }}</button>
+                        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-indigo-700 disabled:opacity-50">{{ $e('Сохранить') }}</button>
                 </div>
             </div>
         </Modal>
@@ -567,7 +556,7 @@ const removeRole = async (role) => {
                         <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Код (латиницей)') }}</label>
                         <input v-model="roleForm.name" type="text" placeholder="sales_head"
                             class="w-full rounded-lg border-slate-200 font-mono text-sm shadow-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Код не меняется потом: на нём держатся правила. Название переименовать можно всегда.') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ $e('Код не меняется потом: на нём держатся правила. Название переименовать можно всегда.') }}</p>
                         <p v-if="roleForm.errors.name" class="mt-1 text-xs text-rose-600">{{ roleForm.errors.name }}</p>
                     </div>
                     <div>
@@ -586,5 +575,5 @@ const removeRole = async (role) => {
                 </div>
             </div>
         </Modal>
-    </AppLayout>
+    </SettingsLayout>
 </template>

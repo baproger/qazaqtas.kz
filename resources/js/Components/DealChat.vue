@@ -42,7 +42,7 @@ onUnmounted(() => { clearInterval(timer); document.removeEventListener('visibili
                 <div :class="m.user_id === me?.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-100'" class="max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-sm">
                     <div v-if="m.user_id !== me?.id" class="text-xs font-semibold text-indigo-500">{{ m.user_name }}</div>
                     <div class="whitespace-pre-line">{{ m.message }}</div>
-                    <div class="mt-0.5 text-right text-[10px] opacity-70">{{ fmt(m.created_at) }}</div>
+                    <div class="mt-0.5 text-right text-xs opacity-70">{{ fmt(m.created_at) }}</div>
                 </div>
             </div>
             <div v-if="!messages.length" class="flex flex-col items-center gap-2 pt-10 text-center">

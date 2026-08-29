@@ -515,7 +515,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
 
                 <div class="flex-1 overflow-y-auto px-2 py-2">
                     <div v-for="sec in sections" :key="sec.key" class="mb-2">
-                        <div class="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <div class="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                             <span v-if="sec.key === 'pinned'">📌</span>{{ sec.title }}
                         </div>
                         <button v-for="c in sec.items" :key="c.id" @click="selectChat(c)"
@@ -530,15 +530,15 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="flex min-w-0 items-center gap-1.5">
                                         <span class="truncate text-sm" :class="isUnread(c) ? 'font-bold text-slate-900' : 'font-medium text-slate-700'">{{ c.name }}</span>
-                                        <span v-if="c.company_name" class="flex-shrink-0 rounded bg-slate-200/70 px-1 py-px text-[9px] font-bold uppercase text-slate-500">{{ c.company_name }}</span>
+                                        <span v-if="c.company_name" class="flex-shrink-0 rounded bg-slate-200/70 px-1 py-px text-xs font-bold uppercase text-slate-500">{{ c.company_name }}</span>
                                     </span>
-                                    <span v-if="lastOf(c)" class="flex-shrink-0 text-[10px] text-slate-400">{{ fmtTime(lastOf(c).time) }}</span>
+                                    <span v-if="lastOf(c)" class="flex-shrink-0 text-xs text-slate-400">{{ fmtTime(lastOf(c).time) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="truncate text-xs" :class="isUnread(c) ? 'font-semibold text-slate-600' : 'text-slate-400'">
                                         {{ lastOf(c) ? lastOf(c).text : $e('Нет сообщений') }}
                                     </span>
-                                    <span v-if="unreadCount(c) > 0" class="flex h-4 min-w-4 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500 px-1 text-[10px] font-bold text-white">{{ unreadCount(c) > 99 ? '99+' : unreadCount(c) }}</span>
+                                    <span v-if="unreadCount(c) > 0" class="flex h-4 min-w-4 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500 px-1 text-xs font-bold text-white">{{ unreadCount(c) > 99 ? '99+' : unreadCount(c) }}</span>
                                 </div>
                             </div>
                             <button @click.stop="togglePin(c)" :title="isPinned(c) ? $e('Открепить') : $e('Закрепить')"
@@ -553,7 +553,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
 
                     <!-- Архив -->
                     <div v-if="archivedChats.length" class="mb-2">
-                        <button @click="showArchived = !showArchived" class="flex w-full items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600">
+                        <button @click="showArchived = !showArchived" class="flex w-full items-center gap-1.5 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600">
                             <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
                             {{ $e('Архив (') }}{{ archivedChats.length }})
                             <span class="ml-auto">{{ showArchived ? '▲' : '▼' }}</span>
@@ -575,7 +575,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                     </div>
                     <!-- Корзина (admin/director): вернуть чат или стереть навсегда -->
                     <div v-if="canCreateGroup && trashedChats.length" class="mb-2">
-                        <button @click="showTrash = !showTrash" class="flex w-full items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600">
+                        <button @click="showTrash = !showTrash" class="flex w-full items-center gap-1.5 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600">
                             {{ $e('🗑 Корзина (') }}{{ trashedChats.length }})
                             <span class="ml-auto">{{ showTrash ? '▲' : '▼' }}</span>
                         </button>
@@ -584,7 +584,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                 <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-300 text-sm font-bold text-white">#</span>
                                 <div class="min-w-0 flex-1">
                                     <div class="truncate text-sm font-medium text-slate-600">{{ c.name }}</div>
-                                    <div class="text-[10px] text-slate-400">{{ $e('удалён') }} {{ fmtDay(c.deleted_at) }}</div>
+                                    <div class="text-xs text-slate-400">{{ $e('удалён') }} {{ fmtDay(c.deleted_at) }}</div>
                                 </div>
                                 <button @click="restoreChat(c)" :title="$e('Восстановить')" class="flex-shrink-0 text-xs font-medium text-indigo-500 hover:underline">{{ $e('Вернуть') }}</button>
                                 <button @click="purgeChat(c)" :title="$e('Стереть навсегда')" class="flex-shrink-0 text-xs text-rose-500 hover:underline">✕</button>
@@ -607,7 +607,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                         </span>
                         <div class="min-w-0">
                             <div class="truncate text-sm font-semibold text-slate-900">{{ activeChat?.name ?? $e('Выберите чат') }}</div>
-                            <div class="text-[11px] text-slate-400">{{ activeChat ? typeLabel(activeChat) + (activeChat.company_name ? ' · ' + activeChat.company_name : '') + ' · ' + (activeChat.participants?.length || 0) + $e(' уч.') : '' }}</div>
+                            <div class="text-xs text-slate-400">{{ activeChat ? typeLabel(activeChat) + (activeChat.company_name ? ' · ' + activeChat.company_name : '') + ' · ' + (activeChat.participants?.length || 0) + $e(' уч.') : '' }}</div>
                         </div>
                     </div>
                     <div v-if="activeChat" class="flex items-center gap-1.5">
@@ -642,7 +642,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                     <TransitionGroup name="msg" tag="div" class="space-y-1.5">
                         <template v-for="m in grouped" :key="m.id">
                             <div v-if="m.sep" class="my-3 flex justify-center">
-                                <span class="rounded-full bg-white/80 px-3 py-0.5 text-[11px] font-medium text-slate-400 shadow-sm ring-1 ring-slate-200">{{ m.day }}</span>
+                                <span class="rounded-full bg-white/80 px-3 py-0.5 text-xs font-medium text-slate-400 shadow-sm ring-1 ring-slate-200">{{ m.day }}</span>
                             </div>
                             <div v-else class="group flex items-end gap-2" :class="m.user_id === me?.id ? 'flex-row-reverse' : ''">
                                 <Avatar v-if="m.user_id !== me?.id" :name="m.user_name" :src="m.user_avatar" :size="28" />
@@ -666,13 +666,13 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                                 <span class="text-xl">📄</span>
                                                 <span class="min-w-0 flex-1">
                                                     <span class="block truncate text-xs font-semibold" :class="m.user_id === me?.id ? 'text-white' : 'text-slate-700'">{{ a.name }}</span>
-                                                    <span class="block text-[10px]" :class="m.user_id === me?.id ? 'text-indigo-200' : 'text-slate-400'">{{ fmtSize(a.size) }}</span>
+                                                    <span class="block text-xs" :class="m.user_id === me?.id ? 'text-indigo-200' : 'text-slate-400'">{{ fmtSize(a.size) }}</span>
                                                 </span>
                                                 <svg viewBox="0 0 24 24" class="h-4 w-4 flex-shrink-0" :class="m.user_id === me?.id ? 'text-indigo-200' : 'text-slate-400'" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
                                             </a>
                                         </div>
                                         <div v-if="m.message" class="whitespace-pre-line break-words">{{ m.message }}</div>
-                                        <div class="mt-0.5 flex items-center gap-1.5 text-[10px]" :class="m.user_id === me?.id ? 'justify-end text-indigo-200' : 'text-slate-400'">
+                                        <div class="mt-0.5 flex items-center gap-1.5 text-xs" :class="m.user_id === me?.id ? 'justify-end text-indigo-200' : 'text-slate-400'">
                                             <span v-if="m.user_id !== me?.id && activeChat?.type !== 'personal'" class="font-semibold text-indigo-500">{{ m.user_name }}</span>
                                             <span v-if="m.edited">{{ $e('изменено') }}</span>
                                             <span>{{ fmtTime(m.created_at) }}</span>
@@ -690,7 +690,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                         <button v-for="r in m.reactions" :key="r.emoji" @click="react(m, r.emoji)"
                                             class="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs ring-1 transition-colors"
                                             :class="r.mine ? 'bg-indigo-50 ring-indigo-300' : 'bg-white ring-slate-200 hover:bg-slate-50'">
-                                            <span>{{ r.emoji }}</span><span class="text-[10px] font-semibold text-slate-500">{{ r.count }}</span>
+                                            <span>{{ r.emoji }}</span><span class="text-xs font-semibold text-slate-500">{{ r.count }}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -812,7 +812,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                 <div v-for="p in activeChat.participants" :key="p.id" class="group/member flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
                                     <Avatar :name="p.name" :src="p.avatar" :size="32" />
                                     <span class="text-sm text-slate-700">{{ p.name }}</span>
-                                    <span v-if="p.id === me?.id" class="ml-auto text-[10px] text-slate-400">{{ $e('вы') }}</span>
+                                    <span v-if="p.id === me?.id" class="ml-auto text-xs text-slate-400">{{ $e('вы') }}</span>
                                     <button v-else-if="canManage(activeChat)" @click="removeMember(p)" :title="$e('Убрать из группы')"
                                         class="ml-auto hidden text-xs text-slate-300 hover:text-rose-500 group-hover/member:block">✕</button>
                                 </div>
@@ -820,7 +820,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
 
                                 <!-- Добавить сотрудника в группу (admin/director) -->
                                 <div v-if="canManage(activeChat)" class="mt-3 border-t border-slate-100 pt-3">
-                                    <div class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{{ $e('➕ Добавить участника') }}</div>
+                                    <div class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('➕ Добавить участника') }}</div>
                                     <input v-model="memberSearch" :placeholder="$e('Поиск сотрудника…')"
                                         class="mb-1.5 w-full rounded-lg border-slate-200 py-1.5 text-xs shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
                                     <div class="max-h-44 space-y-0.5 overflow-y-auto">
@@ -830,7 +830,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                             <span class="min-w-0 flex-1 truncate text-slate-700">{{ u.name }}</span>
                                             <span class="flex-shrink-0 text-indigo-500">+</span>
                                         </button>
-                                        <div v-if="!nonMembers.length" class="py-2 text-center text-[11px] text-slate-400">{{ $e('Все уже в группе') }}</div>
+                                        <div v-if="!nonMembers.length" class="py-2 text-center text-xs text-slate-400">{{ $e('Все уже в группе') }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -847,7 +847,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                     <span v-else class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-slate-100 text-base">📄</span>
                                     <span class="min-w-0 flex-1">
                                         <span class="block truncate text-xs font-medium text-slate-700">{{ a.name }}</span>
-                                        <span class="block truncate text-[10px] text-slate-400">{{ fmtSize(a.size) }} · {{ a.author }}</span>
+                                        <span class="block truncate text-xs text-slate-400">{{ fmtSize(a.size) }} · {{ a.author }}</span>
                                     </span>
                                 </a>
                             </div>

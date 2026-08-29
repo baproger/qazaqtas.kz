@@ -95,7 +95,7 @@ const remove = async (order) => {
                             <tr class="hover:bg-slate-50">
                                 <td class="px-4 py-3">
                                     <button class="font-medium text-indigo-600 hover:underline" @click="expanded = expanded === order.id ? null : order.id">{{ order.number }}</button>
-                                    <span class="block text-[10px] text-slate-400">{{ new Date(order.created_at).toLocaleString('ru-RU') }}</span>
+                                    <span class="block text-xs text-slate-400">{{ new Date(order.created_at).toLocaleString('ru-RU') }}</span>
                                 </td>
                                 <td class="px-4 py-3">
                                     <span class="block text-slate-800">{{ order.name }}</span>

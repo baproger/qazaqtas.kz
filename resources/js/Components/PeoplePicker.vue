@@ -73,10 +73,10 @@ const pick = (ids) => emit('pick', Array.isArray(ids) ? ids : [ids]);
             <!-- Состав: кто уже здесь. Без этой строки после закрытия окна
                  приходилось бы гадать, кого ты только что добавил. -->
             <div v-if="members.length" class="mb-4 rounded-lg border border-slate-100 bg-slate-50/60 p-2.5">
-                <div class="mb-1.5 text-[10px] uppercase tracking-wide text-slate-400">{{ $e('Сейчас в составе') }} · {{ members.length }}</div>
+                <div class="mb-1.5 text-xs uppercase tracking-wide text-slate-400">{{ $e('Сейчас в составе') }} · {{ members.length }}</div>
                 <div class="flex flex-wrap gap-1">
                     <span v-for="m in members" :key="m.id"
-                        class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-1.5 py-0.5 text-[11px] font-medium text-sky-700">
+                        class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-1.5 py-0.5 text-xs font-medium text-sky-700">
                         {{ m.name }}
                         <button @click="emit('remove', m.id)" :title="$e('Убрать')"
                             class="text-sky-400 transition-colors duration-150 hover:text-rose-600">×</button>
@@ -86,27 +86,27 @@ const pick = (ids) => emit('pick', Array.isArray(ids) ? ids : [ids]);
 
             <div class="mb-3 flex gap-1 rounded-lg bg-slate-100 p-1">
                 <button v-for="t in TABS" :key="t.key" type="button" @click="tab = t.key"
-                    class="flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors duration-150"
+                    class="flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150"
                     :class="tab === t.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
                     {{ t.label }}
                 </button>
             </div>
 
             <input v-model="search" type="text" :placeholder="$e('Поиск по имени…')"
-                class="mb-3 w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-bx-500 focus:ring-2 focus:ring-bx-500/20" />
+                class="mb-3 w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20" />
 
             <div class="max-h-80 space-y-1 overflow-y-auto pr-1">
                 <template v-if="tab === 'recent'">
                     <button v-for="p in visiblePeople" :key="p.id" type="button" @click="pick(p.id)"
                         :disabled="has(p.id)"
                         class="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors duration-150"
-                        :class="has(p.id) ? 'opacity-40' : 'hover:bg-bx-50'">
+                        :class="has(p.id) ? 'opacity-40' : 'hover:bg-indigo-50'">
                         <Avatar :name="p.name" :src="p.avatar" :size="28" />
                         <span class="min-w-0 flex-1">
-                            <span class="block truncate text-[13px] text-slate-800">{{ p.name }}</span>
-                            <span class="block truncate text-[11px] text-slate-400">{{ p.department || $e('без отдела') }}</span>
+                            <span class="block truncate text-sm text-slate-800">{{ p.name }}</span>
+                            <span class="block truncate text-xs text-slate-400">{{ p.department || $e('без отдела') }}</span>
                         </span>
-                        <span v-if="has(p.id)" class="text-[11px] text-slate-400">{{ $e('уже есть') }}</span>
+                        <span v-if="has(p.id)" class="text-xs text-slate-400">{{ $e('уже есть') }}</span>
                     </button>
                     <p v-if="!visiblePeople.length" class="py-6 text-center text-sm text-slate-400">{{ $e('Никого не нашли') }}</p>
                 </template>
@@ -114,17 +114,17 @@ const pick = (ids) => emit('pick', Array.isArray(ids) ? ids : [ids]);
                 <template v-else>
                     <div v-for="g in groups" :key="g.id" class="rounded-lg border border-slate-100 p-2">
                         <div class="flex items-center gap-2">
-                            <span class="min-w-0 flex-1 truncate text-[13px] font-semibold text-slate-800">{{ g.name }}</span>
-                            <span class="text-[11px] text-slate-400">{{ g.people.length }}</span>
+                            <span class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{{ g.name }}</span>
+                            <span class="text-xs text-slate-400">{{ g.people.length }}</span>
                             <button type="button" @click="pick(g.people.map((p) => p.id))"
-                                class="rounded-md bg-bx-50 px-2 py-1 text-[11px] font-semibold text-bx-600 transition-colors duration-150 hover:bg-bx-100">
+                                class="rounded-md bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 transition-colors duration-150 hover:bg-indigo-100">
                                 {{ $e('добавить всех') }}
                             </button>
                         </div>
                         <div class="mt-1.5 flex flex-wrap gap-1">
                             <button v-for="p in g.people" :key="p.id" type="button" @click="pick(p.id)" :disabled="has(p.id)"
-                                class="rounded-md px-2 py-1 text-[11px] transition-colors duration-150"
-                                :class="has(p.id) ? 'bg-slate-100 text-slate-400' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-bx-400'">
+                                class="rounded-md px-2 py-1 text-xs transition-colors duration-150"
+                                :class="has(p.id) ? 'bg-slate-100 text-slate-400' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-indigo-400'">
                                 {{ p.name }}
                             </button>
                         </div>

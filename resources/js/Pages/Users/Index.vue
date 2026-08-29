@@ -236,8 +236,8 @@ const deactivate = async (u) => {
                                     <div class="flex items-center gap-1.5">
                                         <span v-if="headIds.has(u.id)" :title="$e('Руководитель отдела')">⭐</span>
                                         <span class="truncate font-semibold text-slate-900">{{ u.name }}</span>
-                                        <span v-if="daysToBirthday(u) === 0" class="rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold text-pink-600">{{ $e('🎂 сегодня!') }}</span>
-                                        <span v-else-if="daysToBirthday(u) !== null && daysToBirthday(u) <= 7" class="rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-semibold text-pink-600">{{ $e('🎂 через') }} {{ daysToBirthday(u) }} {{ $e('дн.') }}</span>
+                                        <span v-if="daysToBirthday(u) === 0" class="rounded-full bg-pink-50 px-2 py-0.5 text-xs font-semibold text-pink-600">{{ $e('🎂 сегодня!') }}</span>
+                                        <span v-else-if="daysToBirthday(u) !== null && daysToBirthday(u) <= 7" class="rounded-full bg-pink-50 px-2 py-0.5 text-xs font-semibold text-pink-600">{{ $e('🎂 через') }} {{ daysToBirthday(u) }} {{ $e('дн.') }}</span>
                                     </div>
                                     <div class="text-xs text-slate-400">{{ hiredSince(u) ?? '—' }}</div>
                                 </div>
@@ -330,7 +330,7 @@ const deactivate = async (u) => {
                                 🏭 {{ w }}
                             </button>
                         </div>
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Сотрудник увидит и сможет двигать только заказы своих цехов') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ $e('Сотрудник увидит и сможет двигать только заказы своих цехов') }}</p>
                     </div>
                     <div><InputLabel :value="$e('Телефон')" /><TextInput v-model="form.phone" class="mt-1 w-full" /></div>
                     <div>
@@ -351,7 +351,7 @@ const deactivate = async (u) => {
                     <div>
                         <InputLabel :value="$e('% бонуса')" />
                         <TextInput v-model="form.bonus_percent" type="number" step="0.01" min="0" max="100" class="mt-1 w-full" :placeholder="$e('например 1')" />
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Считается от чистого остатка сделки. Пусто — ступени от маржи.') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ $e('Считается от чистого остатка сделки. Пусто — ступени от маржи.') }}</p>
                         <InputError :message="form.errors.bonus_percent" class="mt-1" />
                     </div>
                     <div>

@@ -161,9 +161,9 @@ class AnalyticsController extends Controller
         $allStages = DealStage::where('is_active', true)->orderBy('order')->get();
         // Без этапов act/esf блока «на подходе» нет — случайный этап по позиции
         // сюда больше не подставляется (см. PayrollService::dealBreakdown).
-        $pendingIds = $allStages->whereIn('stage_type', ['act', 'esf'])->pluck('id');
+        $pendingIds = $allStages->where('is_closing', true)->pluck('id');
         // Из просрочки исключается только ЭСФ (и won): Акт — просрочка.
-        $esfIds = $allStages->where('stage_type', 'esf')->pluck('id');
+        $esfIds = $allStages->where('ignores_deadline', true)->pluck('id');
         $today = now()->startOfDay();
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
 
@@ -175,7 +175,7 @@ class AnalyticsController extends Controller
                     ->orWhereIn('deal_stage_id', $pendingIds)
                     ->orWhere(fn ($o) => $o->whereNotNull('deadline')->whereDate('deadline', '<', $today)
                         ->whereNotIn('status', ['closed', 'cancelled'])
-                        ->whereDoesntHave('stage', fn ($s) => $s->where('is_won', true)->orWhere('stage_type', 'esf')));
+                        ->whereDoesntHave('stage', fn ($s) => $s->where('is_won', true)->orWhere('ignores_deadline', true)));
             })
             ->get(['id', 'number', 'company_name', 'budget', 'partner_pct', 'bonus_rate_override', 'deadline', 'deal_stage_id', 'responsible_user_id', 'status']);
 
@@ -310,7 +310,7 @@ class AnalyticsController extends Controller
         $overdueDeals = Deal::forCurrentCompany()->whereNotNull('deadline')->whereDate('deadline', '<', $today)
             ->whereNotIn('status', ['closed', 'cancelled'])
             // ЭСФ/Оплата — не просрочка; Акт утверждение — считается просрочкой.
-            ->whereDoesntHave('stage', fn ($s) => $s->where('is_won', true)->orWhere('stage_type', 'esf'))->count();
+            ->whereDoesntHave('stage', fn ($s) => $s->where('is_won', true)->orWhere('ignores_deadline', true))->count();
 
         $overdueTasks = Task::where('status', '!=', 'done')->whereNotNull('due_date')->where('due_date', '<', now())
             ->when($companyId, fn ($q, $c) => $q->where(fn ($w) => $w

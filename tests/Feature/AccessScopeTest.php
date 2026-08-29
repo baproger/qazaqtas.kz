@@ -124,6 +124,29 @@ class AccessScopeTest extends TestCase
         $this->assertSame(['Клиент 2'], $this->visibleTo($this->stranger));
     }
 
+    /**
+     * Область действует и в КАРТОЧКЕ: руководитель видел сделку подчинённого
+     * в списке и получал 403, открыв её, — политика области не знала.
+     */
+    public function test_department_tree_scope_opens_the_card_too(): void
+    {
+        $company = Company::where('code', 'QT')->value('id');
+        foreach ([$this->head, $this->peer, $this->stranger] as $u) {
+            $u->companies()->attach($company);
+        }
+        $this->setScope('manager', 'deal.viewAny', AccessScope::DEPARTMENT_TREE);
+        $this->setScope('manager', 'deal.view', AccessScope::DEPARTMENT_TREE);
+
+        $peerDeal = Deal::where('responsible_user_id', $this->peer->id)->firstOrFail();
+        $strangerDeal = Deal::where('responsible_user_id', $this->stranger->id)->firstOrFail();
+
+        $this->actingAs($this->head)->get(route('deals.show', $peerDeal))->assertOk();
+        $this->actingAs($this->head)->get(route('deals.show', $strangerDeal))->assertForbidden();
+        // Снизу вверх не работает: подчинённый карточку начальника не откроет.
+        $headDeal = Deal::where('responsible_user_id', $this->head->id)->firstOrFail();
+        $this->actingAs($this->peer)->get(route('deals.show', $headDeal))->assertForbidden();
+    }
+
     public function test_all_scope_opens_the_whole_company(): void
     {
         $this->setScope('manager', 'deal.viewAny', AccessScope::ALL);

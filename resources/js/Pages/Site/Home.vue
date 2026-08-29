@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
+import ProjectsBento from '@/Components/site/ProjectsBento.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import PavingParallax from '@/Components/site/PavingParallax.vue';
 import HeroShowcase from '@/Components/site/HeroShowcase.vue';
@@ -346,42 +347,8 @@ onBeforeUnmount(() => {
                 <Link :href="$r('site.projects')" class="btn-ghost">{{ $t('site.home.all_projects') }}</Link>
             </div>
 
-            <div class="mt-14 grid gap-4 sm:grid-cols-2">
-                <article
-                    v-for="p in projects.slice(0, 4)"
-                    :key="p.title"
-                    class="card card-hover reveal group overflow-hidden"
-                >
-                    <!-- Фото объекта из ERP; пока его нет — бетонная заливка,
-                         чтобы плитка карточки не разъезжалась по высоте. -->
-                    <div class="relative aspect-[16/10] overflow-hidden">
-                        <img
-                            v-if="p.image"
-                            :src="p.image"
-                            :srcset="p.thumb ? `${p.thumb} 600w, ${p.image} 1600w` : undefined"
-                            sizes="(max-width: 640px) 100vw, 50vw"
-                            :alt="p.title"
-                            loading="lazy"
-                            decoding="async"
-                            class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105"
-                        />
-                        <div v-else class="paving-pattern flex h-full w-full items-center justify-center">
-                            <span class="text-[11px] uppercase tracking-[0.28em] text-sand-100/25">{{ $t('site.projects.photo_placeholder') }}</span>
-                        </div>
-
-                        <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/20 to-transparent" />
-
-                        <p v-if="p.area" class="absolute bottom-5 left-6 display text-3xl text-sand-50 sm:text-4xl">{{ p.area }}</p>
-                    </div>
-
-                    <div class="p-7 sm:p-8">
-                        <p class="text-xs uppercase tracking-[0.24em] text-sand-300/60">
-                            {{ p.city }}<template v-if="p.year"> · {{ p.year }}</template>
-                        </p>
-                        <h3 class="display mt-3 text-2xl text-sand-50">{{ p.title }}</h3>
-                        <p v-if="p.products" class="mt-3 text-sm leading-relaxed text-sand-100/50">{{ p.products }}</p>
-                    </div>
-                </article>
+            <div class="mt-14">
+                <ProjectsBento :projects="projects.slice(0, 4)" />
             </div>
           </div>
         </section>

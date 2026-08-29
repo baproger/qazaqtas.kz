@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\Site\CartController;
 use App\Http\Controllers\Site\CatalogController;
 use App\Http\Controllers\Site\CheckoutController;
 use App\Http\Controllers\Site\ConfiguratorController;
 use App\Http\Controllers\Site\PageController;
+use App\Http\Controllers\Site\QuotationController;
 use App\Support\Locales;
 use Illuminate\Support\Facades\Route;
 
@@ -41,7 +43,7 @@ $routes = function (): void {
     Route::delete('/korzina', [CartController::class, 'clear'])->name('cart.clear');
 
     // Коммерческое предложение в PDF по составу корзины.
-    Route::get('/kp', [\App\Http\Controllers\Site\QuotationController::class, 'download'])
+    Route::get('/kp', [QuotationController::class, 'download'])
         ->middleware('throttle:20,1')->name('quotation');
 
     Route::get('/oformlenie', [CheckoutController::class, 'show'])->name('checkout');
@@ -57,3 +59,7 @@ Route::name('site.')->group($routes);
 foreach (Locales::ALL as $locale) {
     Route::prefix($locale)->name("$locale.site.")->group($routes);
 }
+
+// Ошибки из браузера (сайт и ERP): без входа, с лимитом.
+Route::post('errors/browser', [ErrorLogController::class, 'browser'])
+    ->middleware('throttle:30,1')->name('errors.browser');

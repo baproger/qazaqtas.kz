@@ -10,12 +10,12 @@ use App\Models\Debt;
 use App\Models\Expense;
 use App\Models\PayrollAdjustment;
 use App\Models\User;
+use App\Notifications\FinanceRecordDeleted;
 use App\Services\FinanceService;
 use App\Services\PayrollService;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /**
@@ -98,7 +98,7 @@ class CodebaseFindingsTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame(1, $director->notifications()
-            ->where('type', \App\Notifications\FinanceRecordDeleted::class)->count());
+            ->where('type', FinanceRecordDeleted::class)->count());
     }
 
     /** Поступление чужой фирмы не удалить и в режиме «Все компании». */
@@ -162,7 +162,7 @@ class CodebaseFindingsTest extends TestCase
      */
     public function test_pending_block_is_empty_without_act_stage(): void
     {
-        DealStage::whereIn('stage_type', ['act', 'esf'])->update(['stage_type' => null]);
+        DealStage::where('is_closing', true)->update(['is_closing' => false]);
 
         $manager = $this->staff('manager');
         $deal = $this->deal();

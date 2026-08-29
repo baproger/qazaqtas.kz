@@ -108,7 +108,7 @@ const filledCount = (locale) => props.fields.filter((f) => {
                 <span class="ml-1 font-normal text-slate-400">{{ locale.name }}</span>
                 <span
                     v-if="filledCount(locale.code)"
-                    class="ml-1.5 rounded bg-emerald-100 px-1.5 text-[10px] font-semibold text-emerald-700"
+                    class="ml-1.5 rounded bg-emerald-100 px-1.5 text-xs font-semibold text-emerald-700"
                 >{{ filledCount(locale.code) }}</span>
             </button>
 

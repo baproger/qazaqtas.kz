@@ -44,7 +44,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
         <div v-if="open" class="absolute z-30 mt-1 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-100 bg-white py-1 shadow-lg">
             <button type="button" @click="pick('')"
                 class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50" :class="!modelValue ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ $e(placeholder) }}</button>
-            <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ $e('Менеджеры (отдел продаж)') }}</div>
+            <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-slate-400">{{ $e('Менеджеры (отдел продаж)') }}</div>
             <button v-for="m in managers" :key="m.id" type="button" @click="pick(m.id)"
                 class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
                 :class="Number(modelValue) === m.id ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ m.name }}</button>
@@ -52,7 +52,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
             <!-- Остальные отделы: свёрнуты, раскрываются кликом -->
             <template v-for="g in groups" :key="g.name">
                 <button type="button" @click="toggleDept(g.name)"
-                    class="mt-1 flex w-full items-center justify-between border-t border-slate-100 px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400 hover:text-slate-600">
+                    class="mt-1 flex w-full items-center justify-between border-t border-slate-100 px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-slate-400 hover:text-slate-600">
                     {{ g.name }} ({{ g.items.length }})
                     <span>{{ openDepts.has(g.name) ? '▲' : '▼' }}</span>
                 </button>

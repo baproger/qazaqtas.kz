@@ -1,9 +1,14 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import { Head, useForm } from '@inertiajs/vue3';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
+import SettingSection from '@/Components/settings/SettingSection.vue';
+import SettingRow from '@/Components/settings/SettingRow.vue';
+import Toggle from '@/Components/settings/Toggle.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import InputLabel from '@/Components/InputLabel.vue';
+import { useE } from '@/composables/useTranslations';
+
+const tr = useE();
 
 const props = defineProps({ settings: Object });
 const form = useForm({
@@ -18,103 +23,84 @@ const form = useForm({
     bonus_resale_percent: props.settings.bonus_resale_percent,
     foreman_rate_m2: props.settings.foreman_rate_m2,
     foreman_rate_pcs: props.settings.foreman_rate_pcs,
+    ui_font_size: props.settings.ui_font_size || 'normal',
 });
+const fontSizes = [
+    { value: 'compact', label: tr('Компактный') },
+    { value: 'normal', label: tr('Обычный') },
+    { value: 'large', label: tr('Крупный') },
+    { value: 'xlarge', label: tr('Очень крупный') },
+];
 const save = () => form.put(route('settings.update'), { preserveScroll: true });
 </script>
 
 <template>
     <Head :title="$e('Настройки')" />
-    <AppLayout>
-        <template #header>{{ $t('page.settings', 'Настройки системы') }}</template>
-
-        <div class="mb-4 flex gap-2 border-b">
-            <Link :href="route('settings.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">{{ $e('Общие') }}</Link>
-            <Link :href="route('stages.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Этапы') }}</Link>
-            <Link :href="route('screens.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Экраны') }}</Link>
-            <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Доп. поля') }}</Link>
-            <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Сайт') }}</Link>
-            <Link v-if="$page.props.auth.user?.roles?.includes('admin')" :href="route('access.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Права доступа') }}</Link>
-            <Link :href="route('structure.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Структура') }}</Link>
-        </div>
-
-        <div class="max-w-xl rounded-xl border border-slate-100 bg-white p-6 shadow-sm space-y-4">
-            <div>
-                <InputLabel :value="$e('Название компании')" />
-                <TextInput v-model="form.company_name" class="mt-1 w-full" />
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <InputLabel :value="$e('Валюта')" />
-                    <TextInput v-model="form.currency" class="mt-1 w-full" />
-                </div>
-                <div>
-                    <InputLabel :value="$e('Язык по умолчанию')" />
-                    <select v-model="form.default_locale" class="mt-1 w-full rounded-md border-slate-300 shadow-sm">
+    <SettingsLayout :title="$e('Общие')">
+        <div class="space-y-6">
+            <SettingSection :title="$e('Компания')">
+                <SettingRow :title="$e('Название компании')">
+                    <TextInput v-model="form.company_name" class="w-full" />
+                </SettingRow>
+                <SettingRow :title="$e('Валюта')">
+                    <TextInput v-model="form.currency" class="w-full" />
+                </SettingRow>
+                <SettingRow :title="$e('Язык по умолчанию')" :description="$e('Для новых сотрудников; каждый может сменить язык у себя.')">
+                    <select v-model="form.default_locale" class="w-full rounded-lg border-slate-300 text-sm shadow-sm">
                         <option value="kk">{{ $e('Қазақша (KZ)') }}</option>
                         <option value="ru">{{ $e('Русский (RU)') }}</option>
                     </select>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <InputLabel :value="$e('Налог, % с суммы сделок')" />
-                    <TextInput v-model="form.tax_percent" type="number" step="0.1" class="mt-1 w-full" />
-                </div>
-                <div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-500 ring-1 ring-slate-200">
-                    <div class="font-semibold text-slate-600">{{ $e('Бонус считается двумя ставками:') }}</div>
-                    {{ $e('отдел продаж — процент от остатка сделки, производство — деньги за сделанный объём.') }}
-                </div>
-            </div>
-            <!-- Товар со склада: наценка и бонус менеджера от неё -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <InputLabel :value="$e('Наценка на товар со склада, %')" />
-                    <TextInput v-model="form.material_markup_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
-                    <p class="mt-1 text-xs text-slate-400">{{ $e('Общая: цена продажи = закуп + наценка. У позиции склада может быть своя.') }}</p>
-                </div>
-                <div>
-                    <InputLabel :value="$e('Бонус менеджера: своё производство, %')" />
-                    <TextInput v-model="form.bonus_sale_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
-                    <p class="mt-1 text-xs text-slate-400">{{ $e('Процент от остатка сделки (сумма − налог − расходы − партнёр), пропорционально оплате клиента.') }}</p>
-                </div>
-                <div>
-                    <InputLabel :value="$e('Бонус менеджера: перепродажа, %')" />
-                    <TextInput v-model="form.bonus_resale_percent" type="number" step="0.01" min="0" class="mt-1 w-full" />
-                    <p class="mt-1 text-xs text-slate-400">{{ $e('Купили → склад → продали: своя ставка, обычно выше производственной.') }}</p>
-                </div>
-            </div>
-            <!-- Производство: деньги за объём, а не процент от сделки -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <InputLabel :value="$e('Бригадир: ₸ за м²')" />
-                    <TextInput v-model="form.foreman_rate_m2" type="number" step="1" min="0" class="mt-1 w-full" />
-                    <p class="mt-1 text-xs text-slate-400">{{ $e('Бригадиру платят за весь объём смены его бригады.') }}</p>
-                </div>
-                <div>
-                    <InputLabel :value="$e('Бригадир: ₸ за штуку')" />
-                    <TextInput v-model="form.foreman_rate_pcs" type="number" step="1" min="0" class="mt-1 w-full" />
-                </div>
-                <div class="sm:col-span-2">
-                    <p class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                        {{ $e('Бонус смены начисляется бригадиру целиком. Кто из бригады сколько получит, решает он сам — система долей не считает.') }}
-                    </p>
-                </div>
-            </div>
-            <label class="flex items-center gap-2 text-sm">
-                <input type="checkbox" v-model="form.auto_create_project" class="rounded border-slate-300 text-indigo-600" />
-                {{ $e('Автоматически создавать проект при переходе сделки в «Оплата успешно»') }}
-            </label>
+                </SettingRow>
+            </SettingSection>
 
-            <label class="flex items-start gap-2 text-sm text-slate-700">
-                <input type="checkbox" v-model="form.configurator_enabled" class="mt-0.5 rounded border-slate-300 text-indigo-600" />
-                <span>
-                    {{ $e('Показывать 3D-конфигуратор двора на сайте') }}
-                    <span class="block text-xs text-slate-400">
-                        {{ $e('Пока выключен, пункт скрыт в меню, а страница отдаёт 404') }}
-                    </span>
-                </span>
-            </label>
-            <div class="pt-2"><PrimaryButton :disabled="form.processing" @click="save">{{ $e('Сохранить') }}</PrimaryButton></div>
+            <SettingSection :title="$e('Финансы и бонусы')" :description="$e('отдел продаж — процент от остатка сделки, производство — деньги за сделанный объём.')">
+                <SettingRow :title="$e('Налог, % с суммы сделок')">
+                    <TextInput v-model="form.tax_percent" type="number" step="0.1" class="w-full" />
+                </SettingRow>
+                <SettingRow :title="$e('Наценка на товар со склада, %')" :description="$e('Общая: цена продажи = закуп + наценка. У позиции склада может быть своя.')">
+                    <TextInput v-model="form.material_markup_percent" type="number" step="0.01" min="0" class="w-full" />
+                </SettingRow>
+                <SettingRow :title="$e('Бонус менеджера: своё производство, %')" :description="$e('Процент от остатка сделки (сумма − налог − расходы − партнёр), пропорционально оплате клиента.')">
+                    <TextInput v-model="form.bonus_sale_percent" type="number" step="0.01" min="0" class="w-full" />
+                </SettingRow>
+                <SettingRow :title="$e('Бонус менеджера: перепродажа, %')" :description="$e('Купили → склад → продали: своя ставка, обычно выше производственной.')">
+                    <TextInput v-model="form.bonus_resale_percent" type="number" step="0.01" min="0" class="w-full" />
+                </SettingRow>
+            </SettingSection>
+
+            <SettingSection :title="$e('Производство')" :description="$e('Бонус смены начисляется бригадиру целиком. Кто из бригады сколько получит, решает он сам — система долей не считает.')">
+                <SettingRow :title="$e('Бригадир: ₸ за м²')" :description="$e('Бригадиру платят за весь объём смены его бригады.')">
+                    <TextInput v-model="form.foreman_rate_m2" type="number" step="1" min="0" class="w-full" />
+                </SettingRow>
+                <SettingRow :title="$e('Бригадир: ₸ за штуку')">
+                    <TextInput v-model="form.foreman_rate_pcs" type="number" step="1" min="0" class="w-full" />
+                </SettingRow>
+            </SettingSection>
+
+            <SettingSection :title="$e('Интерфейс')">
+                <SettingRow :title="$e('Размер шрифта интерфейса')" :description="$e('Действует для всех сотрудников во всём ERP; сайт не меняется.')">
+                    <div class="flex flex-wrap gap-2 sm:justify-end">
+                        <button v-for="s in fontSizes" :key="s.value" type="button" @click="form.ui_font_size = s.value"
+                            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition"
+                            :class="form.ui_font_size === s.value ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'">
+                            {{ s.label }}
+                        </button>
+                    </div>
+                </SettingRow>
+            </SettingSection>
+
+            <SettingSection :title="$e('Автоматизация')">
+                <SettingRow :title="$e('Автоматически создавать проект при переходе сделки в «Оплата успешно»')">
+                    <Toggle v-model="form.auto_create_project" />
+                </SettingRow>
+                <SettingRow :title="$e('Показывать 3D-конфигуратор двора на сайте')" :description="$e('Пока выключен, пункт скрыт в меню, а страница отдаёт 404')">
+                    <Toggle v-model="form.configurator_enabled" />
+                </SettingRow>
+            </SettingSection>
+
+            <div class="flex justify-end">
+                <PrimaryButton :disabled="form.processing" @click="save">{{ $e('Сохранить') }}</PrimaryButton>
+            </div>
         </div>
-    </AppLayout>
+    </SettingsLayout>
 </template>

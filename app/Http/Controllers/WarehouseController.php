@@ -45,7 +45,7 @@ class WarehouseController extends Controller
         // подставляем сохранённый набор (App\Support\StickyFilters).
         StickyFilters::apply($request, 'warehouse', ['from', 'to']);
 
-        abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist', 'manager']), 403);
+        abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist', 'manager']) && $request->user()->can('expense.viewAny'), 403);
 
         $allMode = CurrentCompany::id() === 0;
         $materials = Material::forCurrentCompany()
@@ -186,7 +186,7 @@ class WarehouseController extends Controller
      */
     public function productMovements(Request $request, Product $product): JsonResponse
     {
-        abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist', 'manager']), 403);
+        abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist', 'manager']) && $request->user()->can('expense.viewAny'), 403);
 
         $rows = StockMovement::query()
             ->where('product_id', $product->id)

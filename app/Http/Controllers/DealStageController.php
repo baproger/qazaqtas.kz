@@ -38,11 +38,10 @@ class DealStageController extends Controller
         $gateStage = self::gateStage($deal);
         abort_unless($gateStage !== null, 404);
 
-        $gateRole = $gateStage->gate_task_role ?: 'financist';
         abort_unless(
-            $request->user()->hasRole('admin') || $request->user()->hasRole($gateRole),
+            $gateStage->gateAllowedFor($request->user(), $deal),
             403,
-            'Галочку ставит только '.(self::GATE_ROLE_LABELS[$gateRole] ?? $gateRole).' или админ.'
+            'Галочку ставит только '.mb_strtolower($gateStage->gateRoleLabel()).' или админ.'
         );
 
         // Галочка гейта закрывает задачу — и гасит её уведомления у исполнителей.

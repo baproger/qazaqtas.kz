@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -63,14 +63,14 @@ const allNav = [
     // по смыслу — продажи, производство, деньги, сайт, управление.
     // Раздел виден, если внутри есть хоть один доступный пункт, а раскрыт
     // по умолчанию только тот, в котором открыта текущая страница.
-    { key: 'nav.analytics', name: tr('Аналитика'), route: 'analytics.index', icon: '◊', leadershipOnly: true },
+    { key: 'nav.analytics', name: tr('Аналитика'), route: 'analytics.index', icon: '◊', perm: 'report.viewAny', leadershipOnly: true },
     {
         key: 'nav.sales', name: tr('Продажи'), icon: '◈', children: [
             { key: 'nav.deals', name: tr('Сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny', notRoles: ['foreman'] },
             { key: 'nav.overdue', name: tr('Просроченные'), route: 'deals.overdue', icon: '⏰', perm: 'deal.viewAny', notRoles: ['foreman'] },
             // Заказы, оформленные на сайте: менеджер превращает их в сделки.
-            { key: 'nav.siteOrders', name: tr('Заказы с сайта'), route: 'siteOrders.index', icon: '🛒', roles: ['admin', 'director', 'financist', 'manager'] },
-            { key: 'nav.reports', name: tr('Сводный отчет'), route: 'reports.deals', icon: '▦', roles: ['admin', 'director'] },
+            { key: 'nav.siteOrders', name: tr('Заказы с сайта'), route: 'siteOrders.index', icon: '🛒', perm: 'deal.viewAny', roles: ['admin', 'director', 'financist', 'manager'] },
+            { key: 'nav.reports', name: tr('Сводный отчет'), route: 'reports.deals', icon: '▦', perm: 'report.viewAny', roles: ['admin', 'director'] },
         ],
     },
     {
@@ -78,10 +78,12 @@ const allNav = [
             { key: 'nav.workshop', name: tr('Цех'), route: 'projects.index', icon: '◇', perm: 'project.viewAny' },
             // Сделки бригадира лежат здесь, а не в «Продажах»: он их не
             // продаёт, а ведёт в цехе, и видит только назначенные ему.
-            { key: 'nav.myDeals', name: tr('Мои сделки'), route: 'deals.index', icon: '◈', onlyRoles: ['foreman'] },
+            // Право обязательно: закрыл владелец «Сделки» бригадиру в Правах доступа —
+            // пункт исчезает, а не ведёт на 403.
+            { key: 'nav.myDeals', name: tr('Мои сделки'), route: 'deals.index', icon: '◈', perm: 'deal.viewAny', onlyRoles: ['foreman'] },
             // Выработка бригад по сменам (бригадир видит только свои бригады).
-            { key: 'nav.production', name: tr('Производство'), route: 'production.plans.index', icon: '⚒', roles: ['admin', 'director', 'financist', 'foreman'] },
-            { key: 'nav.warehouse', name: tr('Склад'), route: 'warehouse.index', icon: '▤', roles: ['admin', 'director', 'financist', 'manager'] },
+            { key: 'nav.production', name: tr('Производство'), route: 'production.plans.index', icon: '⚒', perm: 'project.viewAny', roles: ['admin', 'director', 'production_head', 'financist', 'foreman', 'assistant'] },
+            { key: 'nav.warehouse', name: tr('Склад'), route: 'warehouse.index', icon: '▤', perm: 'expense.viewAny', roles: ['admin', 'director', 'financist', 'manager'] },
         ],
     },
     // «Финансы» — всё, что про деньги. Каждый пункт виден по СВОИМ правам:
@@ -92,8 +94,8 @@ const allNav = [
             { key: 'nav.finance.overview', name: tr('Обзор'), route: 'finance.index', icon: '◔', perm: 'invoice.viewAny', leadershipOnly: true },
             { key: 'nav.finance.invoices', name: tr('Счета'), route: 'finance.invoices', icon: '▤', perm: 'invoice.viewAny', leadershipOnly: true },
             { key: 'nav.finance.receipts', name: tr('Поступления'), route: 'finance.receipts', icon: '◕', perm: 'invoice.viewAny', leadershipOnly: true },
-            { key: 'nav.finance.expenses', name: tr('Расходы'), route: 'expensesBoard.index', icon: '◫', roles: ['admin', 'director', 'financist'] },
-            { key: 'nav.finance.cashBook', name: tr('Касса'), route: 'cashBook.index', icon: '◰', roles: ['admin', 'director', 'financist'] },
+            { key: 'nav.finance.expenses', name: tr('Расходы'), route: 'expensesBoard.index', icon: '◫', perm: 'expense.viewAny', roles: ['admin', 'director', 'financist'] },
+            { key: 'nav.finance.cashBook', name: tr('Касса'), route: 'cashBook.index', icon: '◰', perm: 'payment.viewAny', roles: ['admin', 'director', 'financist'] },
             { key: 'nav.finance.debts', name: tr('Задолженности'), route: 'finance.debts', icon: '◵', perm: 'invoice.viewAny', leadershipOnly: true },
             { key: 'nav.finance.myExpenses', name: tr('Мои расходы'), route: 'myExpenses.index', icon: '◨', perm: 'expense.create' },
             { key: 'nav.finance.payroll', name: tr('Зарплата'), route: 'payroll.index', icon: '💵', perm: 'payroll.view' },
@@ -105,7 +107,7 @@ const allNav = [
             // Каталог сайта: карточки продукции, которые видит витрина.
             { key: 'nav.catalog', name: tr('Каталог сайта'), route: 'catalog.index', icon: '▥', perm: 'product.viewAny' },
             // Реализованные объекты: их фото идут крупными кадрами на главной.
-            { key: 'nav.siteProjects', name: tr('Объекты сайта'), route: 'siteProjects.index', icon: '◱', roles: ['admin', 'director', 'financist'] },
+            { key: 'nav.siteProjects', name: tr('Объекты сайта'), route: 'siteProjects.index', icon: '◱', perm: 'product.viewAny', roles: ['admin', 'director', 'financist'] },
         ],
     },
     { key: 'nav.chat', name: tr('Чат'), route: 'chat.index', icon: '✉' },
@@ -115,6 +117,7 @@ const allNav = [
             { key: 'nav.departments', name: tr('Отделы'), route: 'departments.index', icon: '⌂', perm: 'department.viewAny', leadershipOnly: true },
             { key: 'nav.structure', name: tr('Структура компании'), route: 'structure.index', icon: '⑃', perm: 'department.viewAny', leadershipOnly: true },
             { key: 'nav.audit', name: tr('Аудит'), route: 'audit.index', icon: '❑', roles: ['admin'] },
+            { key: 'nav.errors', name: tr('Ошибки'), route: 'errors.index', icon: '⚠', roles: ['admin'] },
             { key: 'nav.settings', name: tr('Настройки'), route: 'settings.index', icon: '⚙', perm: 'setting.update' },
             { key: 'nav.translations', name: tr('Переводы'), route: 'translations.index', icon: '🌐', perm: 'setting.update' },
         ],
@@ -171,6 +174,7 @@ const navIcons = {
     'profile.edit': '<circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>',
     'finance.index': '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
     'payroll.index': '<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
+    'errors.index': '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
     'audit.index': '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 11h6M9 15h6"/>',
     'departments.index': '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
     'users.index': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -327,6 +331,14 @@ const now = ref(new Date());
 let clockTimer = null;
 onMounted(() => { clockTimer = setInterval(() => (now.value = new Date()), 1000); });
 onUnmounted(() => clearInterval(clockTimer));
+
+// Размер шрифта из настроек — на корень документа. Снимаем при уходе из ERP
+// (витрина живёт своим размером). Следим за пропом: сохранили настройку —
+// применилось без перезагрузки.
+const applyFont = (size) => { document.documentElement.dataset.uiFont = size || 'normal'; };
+onMounted(() => applyFont(page.props.uiFontSize));
+watch(() => page.props.uiFontSize, applyFont);
+onUnmounted(() => { delete document.documentElement.dataset.uiFont; });
 const clockTime = computed(() => now.value.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }));
 </script>
@@ -421,8 +433,8 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                      место обозначает направляющая слева. -->
                                 <div v-show="groupOpen[item.key]" class="nav-children mt-1 space-y-0.5">
                                     <Link v-for="child in item.children" :key="child.route" :href="route(child.route)" @click="go"
-                                        :class="isActive(child.route) ? 'nav-child-active' : 'text-slate-400 hover:text-white'"
-                                        class="nav-child block truncate rounded-lg py-1.5 pl-4 pr-3 text-[13px] transition-colors duration-150">
+                                        :class="isActive(child.route) ? 'nav-child-active' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'"
+                                        class="nav-child block truncate rounded-lg py-1.5 pl-4 pr-3 text-sm transition-colors duration-150">
                                         {{ t(child.key, child.name) }}
                                     </Link>
                                 </div>
@@ -461,7 +473,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                     </span>
                     <div v-if="!collapsed || mobileOpen" class="min-w-0 leading-tight">
                         <div class="truncate text-xs font-semibold text-slate-800">{{ user?.name }}</div>
-                        <div class="truncate text-[11px] text-slate-500">{{ user?.email ?? roleLabel }}</div>
+                        <div class="truncate text-xs text-slate-500">{{ user?.email ?? roleLabel }}</div>
                     </div>
                 </Link>
             </div>
@@ -510,7 +522,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                         <template #trigger>
                             <button class="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100" @click="bellClicked">
                                 <span class="text-lg">🔔</span>
-                                <span v-if="notifications.unread > 0" class="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">{{ notifications.unread > 9 ? '9+' : notifications.unread }}</span>
+                                <span v-if="notifications.unread > 0" class="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white ring-2 ring-white">{{ notifications.unread > 9 ? '9+' : notifications.unread }}</span>
                             </button>
                         </template>
                         <template #content>
@@ -518,7 +530,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                 <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                                     <div class="flex items-center gap-2">
                                         <span class="text-sm font-semibold text-slate-800">{{ t('header.notifications', 'Уведомления') }}</span>
-                                        <span v-if="notifications.unread > 0" class="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-600">{{ notifications.unread }}</span>
+                                        <span v-if="notifications.unread > 0" class="rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-bold text-red-600">{{ notifications.unread }}</span>
                                     </div>
                                     <button v-if="notifications.unread > 0" class="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="markAllRead">
                                         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l3 3 4-5M9 13l3 3 5-7"/></svg>
@@ -537,7 +549,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                                 <span v-if="!n.read_at" class="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-500"></span>
                                             </div>
                                             <div class="mt-0.5 text-xs leading-snug text-slate-500">{{ n.data.message }}</div>
-                                            <div class="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
+                                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-400">
                                                 <span>{{ relTime(n.created_at) }}</span>
                                                 <span v-if="n.data.url" class="font-medium text-indigo-500">→ {{ n.data.deal_number || $e('Открыть') }}</span>
                                             </div>
@@ -548,6 +560,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                         <span class="text-sm text-slate-400">{{ t('header.no_notifications', 'Нет уведомлений') }}</span>
                                     </div>
                                 </div>
+                                <Link :href="route('notifications.index')" class="block border-t border-slate-100 px-4 py-2.5 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50">{{ tr('Все уведомления и события →') }}</Link>
                             </div>
                         </template>
                     </Dropdown>

@@ -93,9 +93,10 @@ class DealItemService
         DB::transaction(function () use ($deal, $items) {
             $this->reconcile($deal, $items);
 
-            if ($items !== []) {
-                $deal->forceFill(['budget' => $this->total($items)])->save();
-            }
+            // Всегда, включая пустой список: «удалить все позиции» обнуляет
+            // сумму. Иначе бюджет оставался бы тем, что прислал браузер, —
+            // а от него считается бонус менеджера.
+            $deal->forceFill(['budget' => $this->total($items)])->save();
         });
     }
 

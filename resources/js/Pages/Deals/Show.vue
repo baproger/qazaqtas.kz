@@ -73,7 +73,7 @@ const canAccounting = computed(() => (usePage().props.auth.user?.roles ?? []).so
 // Гейт-галочку ставит роль гейта этапа (технолог/снабженец/бухгалтер) или админ.
 const canConfirmGate = computed(() => {
     const roles = usePage().props.auth.user?.roles ?? [];
-    return roles.includes('admin') || (props.stageTask?.role && roles.includes(props.stageTask.role));
+    return !!props.stageTask?.allowed;
 });
 const postActIds = computed(() => [actStage.value?.id, esfStage.value?.id, wonStage.value?.id].filter(Boolean));
 const managerFrozen = computed(() => !canAccounting.value && postActIds.value.includes(props.deal.deal_stage_id));
@@ -249,50 +249,50 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
                     <div class="grid grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-3">
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Компания') }}</div>
-                            <div class="mt-1 text-[15px] font-semibold text-slate-900">{{ deal.company_name || '—' }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Компания') }}</div>
+                            <div class="mt-1 text-base font-semibold text-slate-900">{{ deal.company_name || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Адрес') }}</div>
-                            <div class="mt-1 text-[15px] font-medium text-slate-900">📍 {{ deal.address || '—' }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Адрес') }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900">📍 {{ deal.address || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Номер договора') }}</div>
-                            <div class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.bin || '—' }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Номер договора') }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.bin || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('БИН / ИИН заказчика') }}</div>
-                            <div class="mt-1 text-[15px] font-medium tabular-nums text-slate-900">{{ deal.customer_bin || '—' }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('БИН / ИИН заказчика') }}</div>
+                            <div class="mt-1 text-base font-medium tabular-nums text-slate-900">{{ deal.customer_bin || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Контакт клиента') }}</div>
-                            <div class="mt-1 text-[15px] font-medium text-slate-900">
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Контакт клиента') }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900">
                                 {{ deal.contact_name || '—' }}
                                 <a v-if="deal.contact_phone" :href="'tel:' + deal.contact_phone" class="ml-1 font-semibold text-indigo-600 hover:underline">{{ deal.contact_phone }}</a>
                             </div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Наименование товара') }}</div>
-                            <div class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.client_name || deal.client?.name || '—' }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Наименование товара') }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.client_name || deal.client?.name || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Количество') }}</div>
-                            <div class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.lot_number ? `${deal.lot_number} ${deal.unit || ''}` : '—' }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Количество') }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.lot_number ? `${deal.lot_number} ${deal.unit || ''}` : '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Дата договора') }}</div>
-                            <div class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.contract_date ? formatDate(deal.contract_date) : '—' }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Дата договора') }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.contract_date ? formatDate(deal.contract_date) : '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Источник (портал)') }}</div>
-                            <div class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.source || '—' }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Источник (портал)') }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.source || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Срок') }}</div>
-                            <div class="mt-1 text-[15px] font-medium" :class="deadlineClass(deal.deadline, deal.status==='closed')">{{ formatDate(deal.deadline) }}<span v-if="overdue"> {{ $e('· просрочено') }}</span></div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Срок') }}</div>
+                            <div class="mt-1 text-base font-medium" :class="deadlineClass(deal.deadline, deal.status==='closed')">{{ formatDate(deal.deadline) }}<span v-if="overdue"> {{ $e('· просрочено') }}</span></div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Ответственный') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Ответственный') }}</div>
                             <select :value="deal.responsible_user_id ?? ''" @change="setResponsible" class="mt-1 w-full rounded-lg border-slate-200 py-1.5 text-sm shadow-sm transition duration-150 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20">
                                 <option value="">{{ $e('— не назначен —') }}</option>
                                 <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
@@ -300,28 +300,28 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                         </div>
                         <!-- Бригадир: назначает директор, остальные видят имя -->
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бригадир') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Бригадир') }}</div>
                             <select v-if="can.setForeman" :value="deal.foreman_id ?? ''" @change="setForeman"
                                 class="mt-1 w-full rounded-lg border-slate-200 py-1.5 text-sm shadow-sm transition duration-150 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20">
                                 <option value="">{{ $e('— не назначен —') }}</option>
                                 <option v-for="u in foremen" :key="u.id" :value="u.id">{{ u.name }}</option>
                             </select>
-                            <div v-else class="mt-1 text-[15px] font-medium text-slate-900">{{ deal.foreman?.name || '—' }}</div>
+                            <div v-else class="mt-1 text-base font-medium text-slate-900">{{ deal.foreman?.name || '—' }}</div>
                         </div>
                         <div v-for="f in visibleFields" :key="f.id">
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ f.name }}</div>
-                            <div class="mt-1 text-[15px] font-medium text-slate-900">{{ f.value }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ f.name }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900">{{ f.value }}</div>
                         </div>
                     </div>
                     <div v-if="deal.note" class="mt-5 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-inset ring-amber-100">
-                        <div class="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                        <div class="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700">
                             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 10.8V5a3 3 0 0 1 6 0v5.8l2.7 1.6a2 2 0 0 1 1 1.7V15H5.3v-.9a2 2 0 0 1 1-1.7z"/></svg>
                             {{ $e('Заметка') }}
                         </div>
                         <p class="whitespace-pre-line text-sm text-slate-700">{{ deal.note }}</p>
                     </div>
                     <div v-if="deal.description" class="mt-4">
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Описание') }}</div>
+                        <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Описание') }}</div>
                         <p class="mt-1 whitespace-pre-line text-sm text-slate-700">{{ deal.description }}</p>
                     </div>
                 </div>
@@ -358,7 +358,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                         </div>
                         <div class="mt-2.5 space-y-1">
                             <div v-for="row in stock.short" :key="row.product_id"
-                                class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-[13px]">
+                                class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-sm">
                                 <span class="text-slate-700">🧱 {{ row.name }}</span>
                                 <span class="tabular-nums text-slate-500">
                                     {{ $e('нужно') }} <b class="text-slate-800">{{ num(row.need) }}</b> ·
@@ -370,7 +370,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                                 </span>
                             </div>
                         </div>
-                        <p class="mt-2 text-[11px] text-amber-700">
+                        <p class="mt-2 text-xs text-amber-700">
                             {{ stock.can_send
                                 ? $e('Объём уйдёт в «План — факт»; бригаду назначит начальник производства.')
                                 : $e('Объём уже в «Плане — факт»; бригаду назначает начальник производства.') }}
@@ -430,8 +430,8 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                                     :class="l.open ? 'bg-indigo-50' : 'bg-slate-50'">
                                     <div class="flex min-w-0 items-center gap-2">
                                         <span class="font-medium text-slate-800">{{ l.stage }}</span>
-                                        <span v-if="l.open" class="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">{{ $e('сейчас') }}</span>
-                                        <span v-if="l.mover" class="truncate text-[11px] text-slate-400">{{ $e('перевёл(а):') }} {{ l.mover }}</span>
+                                        <span v-if="l.open" class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ $e('сейчас') }}</span>
+                                        <span v-if="l.mover" class="truncate text-xs text-slate-400">{{ $e('перевёл(а):') }} {{ l.mover }}</span>
                                     </div>
                                     <div class="flex items-center gap-3 tabular-nums">
                                         <span class="text-xs text-slate-400">{{ formatDateTime(l.entered_at) }}<template v-if="l.left_at"> → {{ formatDateTime(l.left_at) }}</template></span>
@@ -449,13 +449,13 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 <!-- Деньги сделки. Бригадир их не видит: сервер не присылает
                      profit, и блок не рисуется вовсе. -->
                 <div v-if="profit" class="rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
-                    <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Сумма договора') }}</div>
-                    <div class="mt-1 text-[28px] font-bold leading-tight tracking-tight text-indigo-600">{{ money(deal.budget) }}</div>
+                    <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Сумма договора') }}</div>
+                    <div class="mt-1 text-2xl font-bold leading-tight tracking-tight text-indigo-600">{{ money(deal.budget) }}</div>
                     <div class="mt-4 space-y-2 text-sm">
                         <div class="flex justify-between"><span class="text-slate-500">{{ $e('Статус') }}</span><StatusBadge :status="deal.status" /></div>
                         <div class="flex justify-between"><span class="text-slate-500">{{ $e('Аванс (оплачено)') }}</span><span class="font-medium tabular-nums text-emerald-600">{{ money(finance.income) }}</span></div>
                         <div class="flex justify-between"><span class="text-slate-500">{{ $e('Остаток к оплате') }}</span><span class="font-bold tabular-nums" :class="remainder > 0 ? 'text-rose-600' : 'text-emerald-600'">{{ remainder > 0 ? money(remainder) : $e('оплачено ✓') }}</span></div>
-                        <div class="mt-2 border-t border-slate-100 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ $e('Расчёт прибыли') }}</div>
+                        <div class="mt-2 border-t border-slate-100 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Расчёт прибыли') }}</div>
                         <div class="flex justify-between"><span class="text-slate-500">{{ $e('Налог') }} {{ profit.taxRate }}%</span><span class="font-medium tabular-nums text-rose-600">− {{ money(profit.tax) }}</span></div>
                         <div class="flex justify-between"><span class="text-slate-500">{{ $e('Прочие расходы') }}</span><span class="font-medium tabular-nums text-rose-600">− {{ money(profit.expense) }}</span></div>
                         <div v-if="profit.partnerPct != null" class="flex justify-between"><span class="text-slate-500">{{ $e('Доля партнёра') }} {{ profit.partnerPct }}%</span><span class="font-medium tabular-nums text-rose-600">− {{ money(profit.partner) }}</span></div>
@@ -464,13 +464,13 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                         <div class="flex items-center justify-between">
                             <span class="flex items-center gap-1.5 text-slate-500">
                                 {{ $e('ЗП сотрудника') }} {{ profit.bonusRate }}%
-                                <span class="rounded px-1 py-px text-[9px] font-bold uppercase" :class="profit.bonusManual ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'">{{ profit.bonusManual ? $e('вручную') : $e('авто') }}</span>
+                                <span class="rounded px-1 py-px text-xs font-bold uppercase" :class="profit.bonusManual ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'">{{ profit.bonusManual ? $e('вручную') : $e('авто') }}</span>
                                 <button v-if="canAccounting" @click="openBonusEdit" :title="$e('Изменить % бонуса')" class="text-slate-300 hover:text-indigo-500">✎</button>
                             </span>
                             <span class="font-medium tabular-nums text-emerald-600">− {{ money(profit.bonus) }}</span>
                         </div>
                         <div v-if="editBonusRate" class="rounded-lg bg-slate-50 p-2.5">
-                            <div class="mb-1.5 text-[11px] text-slate-500">{{ $e('Ручной % бонуса по этой сделке (пусто/«Авто» — по ступеням маржи):') }}</div>
+                            <div class="mb-1.5 text-xs text-slate-500">{{ $e('Ручной % бонуса по этой сделке (пусто/«Авто» — по ступеням маржи):') }}</div>
                             <div class="flex items-center gap-1.5">
                                 <input v-model="bonusRateInput" type="number" min="0" max="100" step="0.5"
                                     class="w-20 rounded-lg border-slate-200 py-1 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
@@ -484,15 +484,15 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                              Маржа рядом с суммой — то же число, что в Сводном
                              отчёте: показатель здоровья сделки должен быть один. -->
                         <div class="rounded-xl px-4 py-3 text-white" style="background-color: #1A3B5C">
-                            <div class="text-[11px] font-semibold uppercase tracking-wide text-white/70">{{ $e('Чистая прибыль компании') }}</div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-white/70">{{ $e('Чистая прибыль компании') }}</div>
                             <div class="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                <span class="text-[28px] font-bold leading-tight tabular-nums tracking-tight">{{ money(profit.company) }}</span>
+                                <span class="text-2xl font-bold leading-tight tabular-nums tracking-tight">{{ money(profit.company) }}</span>
                                 <span class="rounded-full px-2.5 py-1 text-xs font-bold tabular-nums"
                                     :class="profit.margin >= 15 ? 'bg-emerald-400/20 text-emerald-300' : profit.margin > 0 ? 'bg-amber-400/20 text-amber-200' : 'bg-rose-400/20 text-rose-200'">
                                     {{ $e('маржа') }} {{ profit.margin }}%
                                 </span>
                             </div>
-                            <div class="mt-1 text-[11px] text-white/50">{{ $e('маржа = (сумма − расходы) / сумма, до налога — как в Сводном отчёте') }}</div>
+                            <div class="mt-1 text-xs text-white/50">{{ $e('маржа = (сумма − расходы) / сумма, до налога — как в Сводном отчёте') }}</div>
                         </div>
                     </div>
                 </div>
@@ -551,7 +551,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                     <div><InputLabel :value="$e('Сумма договора *')" /><TextInput v-model="editForm.budget" type="number" step="0.01" class="mt-1 w-full" /><InputError :message="editForm.errors.budget" class="mt-1" /></div>
                     <div>
                         <InputLabel :value="$e('Доля партнёра, %')" /><TextInput v-model="editForm.partner_pct" type="number" min="0" max="100" step="0.01" class="mt-1 w-full" placeholder="0" />
-                        <p v-if="Number(editForm.partner_pct) > 0 && Number(editForm.budget) > 0" class="mt-1 text-[11px] text-slate-400">= {{ money(Number(editForm.budget) * Number(editForm.partner_pct) / 100) }} {{ $e('партнёру (вычитается из остатка)') }}</p>
+                        <p v-if="Number(editForm.partner_pct) > 0 && Number(editForm.budget) > 0" class="mt-1 text-xs text-slate-400">= {{ money(Number(editForm.budget) * Number(editForm.partner_pct) / 100) }} {{ $e('партнёру (вычитается из остатка)') }}</p>
                         <InputError :message="editForm.errors.partner_pct" class="mt-1" />
                     </div>
                     <div><InputLabel :value="$e('Срок')" /><TextInput v-model="editForm.deadline" type="date" class="mt-1 w-full" /></div>

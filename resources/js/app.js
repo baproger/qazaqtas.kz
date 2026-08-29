@@ -9,6 +9,28 @@ import { syncI18n, t, tc, e, siteRoute, isCurrentRoute } from './i18n';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+// Ошибки браузера — в журнал ошибок ERP (Управление → Ошибки). Не чаще
+// одного отчёта в секунду и не больше 20 за сеанс: журнал, а не поток.
+const reportBrowserError = (() => {
+    let sent = 0; let last = 0;
+    return (payload) => {
+        const now = Date.now();
+        if (sent >= 20 || now - last < 1000) return;
+        sent++; last = now;
+        try {
+            window.axios.post('/errors/browser', { ...payload, url: location.href }).catch(() => {});
+        } catch { /* сеть недоступна — молчим */ }
+    };
+})();
+window.addEventListener('error', (e) => reportBrowserError({
+    kind: e.error?.name ?? 'Error', message: e.message ?? String(e.error ?? 'Ошибка'),
+    file: e.filename, line: e.lineno, stack: e.error?.stack,
+}));
+window.addEventListener('unhandledrejection', (e) => reportBrowserError({
+    kind: e.reason?.name ?? 'UnhandledRejection', message: e.reason?.message ?? String(e.reason ?? 'Promise rejected'),
+    stack: e.reason?.stack,
+}));
+
 // Язык обновляется на каждом переходе Inertia — при смене языка всё
 // приложение перерисовывается без перезагрузки страницы.
 router.on('success', (event) => syncI18n(event.detail.page.props));

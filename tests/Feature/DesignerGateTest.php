@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\StageTransitionService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
@@ -27,14 +28,14 @@ class DesignerGateTest extends TestCase
         $manager = User::factory()->create();
         $manager->assignRole('manager');
 
-        $contract = DealStage::create(['name' => 'Договор', 'order' => 1, 'is_active' => true, 'stage_type' => 'contract']);
-        $design = DealStage::create(['name' => 'Дизайн и расчет', 'order' => 2, 'is_active' => true, 'stage_type' => 'design',
+        $contract = DealStage::create(['name' => 'Договор', 'order' => 1, 'is_active' => true]);
+        $design = DealStage::create(['name' => 'Дизайн и расчет', 'order' => 2, 'is_active' => true, 'rules' => ['extra_movers' => ['designer']],
             'gate_task_title' => 'Подтвердить дизайн и расчет', 'gate_task_role' => 'designer', 'gate_task_days' => 3]);
         $next = DealStage::create(['name' => 'Закуп', 'order' => 3, 'is_active' => true, 'stage_type' => 'shop_gate']);
         // Полная воронка: без act/esf/won позиционные фолбэки приняли бы
         // «Дизайн» за «Акт» и заблокировали переход не-бухгалтеру.
-        DealStage::create(['name' => 'Акт утверждение', 'order' => 4, 'is_active' => true, 'stage_type' => 'act']);
-        DealStage::create(['name' => 'ЭСФ', 'order' => 5, 'is_active' => true, 'stage_type' => 'esf']);
+        DealStage::create(['name' => 'Акт утверждение', 'order' => 4, 'is_active' => true, 'is_closing' => true, 'rules' => ['leave_roles' => ['financist']]]);
+        DealStage::create(['name' => 'ЭСФ', 'order' => 5, 'is_active' => true, 'is_closing' => true, 'rules' => ['leave_roles' => ['financist'], 'enter_roles' => ['financist']]]);
         DealStage::create(['name' => 'Оплата успешно', 'order' => 6, 'is_active' => true, 'stage_type' => 'payment_won', 'is_won' => true]);
 
         $deal = Deal::create(['number' => 'T-1', 'name' => 'X', 'company_name' => 'ТОО Дизайн', 'client_name' => 'И',
@@ -54,7 +55,7 @@ class DesignerGateTest extends TestCase
         try {
             app(StageTransitionService::class)->moveToStage($deal->fresh(), $next);
             $this->fail('Сделка не должна пройти без подтверждения дизайнера.');
-        } catch (\Illuminate\Validation\ValidationException) {
+        } catch (ValidationException) {
             // ожидаемо: гейт держит
         }
 

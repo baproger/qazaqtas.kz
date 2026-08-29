@@ -17,7 +17,11 @@ const props = defineProps({
     debts: { type: Object, default: () => ({ receivables: [], payables: [] }) },
     totals: { type: Object, default: () => ({ invoices: 0, receivablesManual: 0, receivablesTotal: 0, payables: 0 }) },
     canManage: { type: Boolean, default: false },
+    // Незакрытые счета сделок: кто, по какому счёту, сколько осталось.
+    invoiceDebts: { type: Array, default: () => [] },
 });
+const invoicesOpen = ref(true);
+const overdueCount = computed(() => props.invoiceDebts.filter((i) => i.overdue).length);
 
 // Дебиторка (нам должны) / кредиторка (мы должны): ручные строки поверх
 // автоматического долга по счетам сделок.
@@ -53,7 +57,7 @@ const delDebt = async (d) => {
 
 <template>
     <Head :title="$e('Задолженности')" />
-    <FinanceLayout :title="$e('Задолженности')" :subtitle="$e('кто нам должен: счета сделок и записи вручную')" width="max-w-5xl">
+    <FinanceLayout :title="$e('Задолженности')" :subtitle="$e('кто нам должен: счета сделок и записи вручную')">
         <!-- ================= Задолженности (аккордеоны) =================
              Кредиторка скрыта по просьбе владельца (24.07.2026) — вернуть:
              добавить обратно строку { type: 'payable', … } в массив. -->
@@ -73,15 +77,61 @@ const delDebt = async (d) => {
                 </button>
                 <div v-show="debtOpen[acc.type]" class="border-t border-slate-100 px-5 py-3">
                     <!-- Дебиторка: автоматическая часть по счетам сделок -->
-                    <div v-if="acc.type === 'receivable'" class="mb-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                        <span class="text-slate-500">{{ $e('По счетам сделок (автоматически)') }}</span>
-                        <span class="font-semibold tabular-nums text-slate-700">{{ money(totals.invoices) }}</span>
+                    <div v-if="acc.type === 'receivable'" class="mb-3 overflow-hidden rounded-xl border border-slate-100">
+                        <button type="button" @click="invoicesOpen = !invoicesOpen"
+                            class="flex w-full items-center justify-between gap-3 bg-slate-50 px-3 py-2 text-left text-sm">
+                            <span class="flex items-center gap-2 text-slate-600">
+                                <svg class="h-3.5 w-3.5 text-slate-400 transition-transform" :class="invoicesOpen ? 'rotate-90' : ''" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l5 5-5 5"/></svg>
+                                {{ $e('По счетам сделок (автоматически)') }}
+                                <span class="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500 ring-1 ring-slate-200">{{ invoiceDebts.length }}</span>
+                                <span v-if="overdueCount" class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">{{ $e('просрочено:') }} {{ overdueCount }}</span>
+                            </span>
+                            <span class="font-semibold tabular-nums text-slate-700">{{ money(totals.invoices) }}</span>
+                        </button>
+                        <div v-show="invoicesOpen" class="overflow-x-auto">
+                            <table v-if="invoiceDebts.length" class="min-w-full divide-y divide-slate-100 text-sm">
+                                <thead class="bg-white text-left text-xs uppercase tracking-wide text-slate-400">
+                                    <tr>
+                                        <th class="px-3 py-2">{{ $e('Сделка') }}</th>
+                                        <th class="px-3 py-2">{{ $e('Заказчик') }}</th>
+                                        <th class="px-3 py-2">{{ $e('Счёт') }}</th>
+                                        <th class="px-3 py-2 text-right">{{ $e('Выставлено') }}</th>
+                                        <th class="px-3 py-2 text-right">{{ $e('Оплачено') }}</th>
+                                        <th class="px-3 py-2 text-right">{{ $e('Остаток') }}</th>
+                                        <th class="px-3 py-2">{{ $e('Срок оплаты') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-50">
+                                    <tr v-for="i in invoiceDebts" :key="i.id" class="hover:bg-slate-50/60">
+                                        <td class="whitespace-nowrap px-3 py-2">
+                                            <Link v-if="i.deal?.id" :href="route('deals.show', i.deal.id)" class="font-semibold text-indigo-600 hover:underline">{{ i.deal.number }}</Link>
+                                            <span v-else class="text-slate-400">{{ i.deal?.number ?? '—' }}</span>
+                                        </td>
+                                        <td class="max-w-64 px-3 py-2">
+                                            <div class="truncate font-medium text-slate-800">{{ i.deal?.company ?? '—' }}</div>
+                                            <div v-if="i.deal?.client" class="truncate text-xs text-slate-400">{{ i.deal.client }}</div>
+                                        </td>
+                                        <td class="whitespace-nowrap px-3 py-2 text-slate-500">{{ i.number }}<span class="block text-xs text-slate-400">{{ formatDate(i.issue_date) }}</span></td>
+                                        <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums text-slate-600">{{ money(i.amount) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums text-emerald-600">{{ money(i.paid) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-rose-600">{{ money(i.left) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-2">
+                                            <span v-if="i.overdue" class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">{{ formatDate(i.due_date) }} · {{ i.days_overdue }} {{ $e('дн.') }}</span>
+                                            <span v-else-if="i.due_date" class="text-slate-500">{{ formatDate(i.due_date) }}</span>
+                                            <span v-else class="text-slate-300">—</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div v-else class="py-3 text-center text-xs text-slate-300">{{ $e('Незакрытых счетов нет') }}</div>
+                        </div>
                     </div>
+                    <div class="px-1 pb-1 text-xs font-medium uppercase tracking-wide text-slate-400">{{ $e('Записи вручную') }}</div>
                     <div class="divide-y divide-slate-50">
                         <div v-for="d in acc.list" :key="d.id" class="flex items-center justify-between gap-3 py-2.5 text-sm">
                             <div class="min-w-0">
                                 <div class="truncate font-medium text-slate-800">{{ d.counterparty }}</div>
-                                <div class="text-[11px] text-slate-400">
+                                <div class="text-xs text-slate-400">
                                     <template v-if="d.date">{{ formatDate(d.date) }} · </template>{{ d.note || '—' }}<template v-if="d.creator?.name"> · {{ d.creator.name }}</template> {{ $e('· внесено') }} {{ formatDateTime(d.created_at) }}
                                 </div>
                             </div>

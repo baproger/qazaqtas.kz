@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SiteProject;
 use App\Services\MediaService;
+use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,7 +23,7 @@ class SiteProjectController extends Controller
         $this->guard($request);
 
         return Inertia::render('SiteProjects/Index', [
-            'locales' => \App\Support\Locales::forForm(),
+            'locales' => Locales::forForm(),
             // Форма правит базовые значения; переводы едут отдельным полем.
             'projects' => SiteProject::with('translations')
                 ->orderBy('order')->orderByDesc('id')->get()
@@ -79,7 +80,7 @@ class SiteProjectController extends Controller
 
         // Ни одно поле перевода не обязательно: пустое откатывается
         // к базовому значению объекта.
-        foreach (\App\Support\Locales::ALL as $locale) {
+        foreach (Locales::ALL as $locale) {
             $rules["translations.$locale.title"] = ['nullable', 'string', 'max:180'];
             $rules["translations.$locale.city"] = ['nullable', 'string', 'max:80'];
             $rules["translations.$locale.products"] = ['nullable', 'string', 'max:255'];
@@ -106,7 +107,7 @@ class SiteProjectController extends Controller
     private function guard(Request $request): void
     {
         abort_unless(
-            $request->user()->hasAnyRole(['admin', 'director', 'financist']),
+            $request->user()->hasAnyRole(['admin', 'director', 'financist']) && $request->user()->can('product.viewAny'),
             403,
             'Объекты сайта ведут админ, директор или финансист.'
         );

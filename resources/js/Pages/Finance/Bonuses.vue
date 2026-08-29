@@ -141,7 +141,7 @@ const cellClass = (cell) => {
                                     : $e('нет начислений')">
                                 <template v-if="cell.accrued > 0">
                                     {{ money(cell.accrued) }}
-                                    <div class="text-[10px] font-normal">
+                                    <div class="text-xs font-normal">
                                         {{ cell.left <= 0 ? $e('✓ получил') : $e('копит') }}
                                     </div>
                                 </template>
@@ -151,7 +151,7 @@ const cellClass = (cell) => {
                             <td class="px-4 py-2.5 text-right tabular-nums text-emerald-600">
                                 {{ money(r.paid) }}
                                 <!-- Переплата: выдали больше, чем начислено -->
-                                <div v-if="r.overpaid > 0" class="text-[10px] font-semibold text-rose-600"
+                                <div v-if="r.overpaid > 0" class="text-xs font-semibold text-rose-600"
                                     :title="$e('Начисление уменьшилось уже после выплаты — удалили наряд или выросли расходы по сделке.')">
                                     {{ $e('переплата') }} {{ money(r.overpaid) }}
                                 </div>
@@ -170,7 +170,7 @@ const cellClass = (cell) => {
                     </tbody>
                 </table>
             </div>
-            <p class="border-t border-slate-100 px-6 py-3 text-[11px] text-slate-400">
+            <p class="border-t border-slate-100 px-6 py-3 text-xs text-slate-400">
                 {{ $e('Зелёным — бонус за месяц получен, янтарным — копится. «К выплате» — сколько сотруднику должны на сегодня; в ведомости ЗП идёт та же сумма.') }}
             </p>
         </div>

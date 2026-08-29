@@ -296,7 +296,7 @@ const applyBinMatch = () => {
             </label>
             <button v-if="hasFilters" type="button" @click="resetFilters"
                 class="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">{{ $e('Сбросить ✕') }}</button>
-            <span class="ml-auto hidden text-[11px] tabular-nums text-slate-300 lg:block">{{ $e('найдено:') }} {{ Array.isArray(deals) ? list.length : deals.total ?? list.length }}</span>
+            <span class="ml-auto hidden text-xs tabular-nums text-slate-300 lg:block">{{ $e('найдено:') }} {{ Array.isArray(deals) ? list.length : deals.total ?? list.length }}</span>
         </div>
 
         <!-- KANBAN -->
@@ -308,7 +308,7 @@ const applyBinMatch = () => {
                         <span class="truncate text-sm font-semibold text-slate-700">{{ stage.name }}</span>
                         <span class="shrink-0 text-xs text-slate-400">{{ byStage(stage.id).length }}</span>
                     </div>
-                    <div class="mt-0.5 pl-4 text-[11px] font-medium tabular-nums text-slate-400">{{ money(stageTotal(stage.id)) }}</div>
+                    <div class="mt-0.5 pl-4 text-xs font-medium tabular-nums text-slate-400">{{ money(stageTotal(stage.id)) }}</div>
                 </div>
                 <div class="flex-1 space-y-2 px-2 pb-2">
                     <!-- Кнопка создания всегда СВЕРХУ колонки «Заключение договора» -->
@@ -324,14 +324,14 @@ const applyBinMatch = () => {
                                 <div class="truncate text-sm font-bold text-slate-900">{{ deal.company_name || deal.name }}</div>
                                 <!-- Номер сделки виден ВСЕГДА, «Просрочена» — дополнительным бейджем -->
                                 <span class="flex shrink-0 flex-col items-end gap-0.5">
-                                    <span class="text-[10px] text-slate-300">{{ deal.number }}</span>
-                                    <span v-if="deal.overdue_count" class="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">{{ $e('ПРОСРОЧЕНА') }}</span>
+                                    <span class="text-xs text-slate-300">{{ deal.number }}</span>
+                                    <span v-if="deal.overdue_count" class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-600">{{ $e('ПРОСРОЧЕНА') }}</span>
                                 </span>
                             </div>
                             <!-- Бригадиру сервер бюджет не присылает: строки суммы нет вовсе. -->
                             <div v-if="deal.budget != null" class="text-base font-bold leading-tight text-indigo-600">{{ money(deal.budget) }}</div>
                             <!-- Куда и что -->
-                            <div class="mt-1.5 space-y-0.5 text-[11px] leading-4 text-slate-500">
+                            <div class="mt-1.5 space-y-0.5 text-xs leading-4 text-slate-500">
                                 <div v-if="deal.address" class="truncate">📍 {{ deal.address }}</div>
                                 <div class="truncate">📦 {{ deal.client_name || '—' }}<template v-if="deal.lot_number"> · {{ deal.lot_number }} {{ deal.unit || '' }}</template><template v-if="deal.area_m2"> · {{ Number(deal.area_m2) }} {{ $e('м²') }}</template></div>
                                 <!-- Товары сделки: первая позиция и «+N», иначе
@@ -340,28 +340,28 @@ const applyBinMatch = () => {
                                     🧱 {{ deal.items[0].name }} · {{ Number(deal.items[0].quantity) }} {{ deal.items[0].unit }}
                                     <template v-if="deal.items.length > 1"> +{{ deal.items.length - 1 }}</template>
                                 </div>
-                                <div v-if="deal.branch" class="truncate text-[11px] text-slate-400">🏭 {{ deal.branch }}</div>
+                                <div v-if="deal.branch" class="truncate text-xs text-slate-400">🏭 {{ deal.branch }}</div>
                             </div>
                             <!-- Когда и кто ведёт -->
                             <div class="mt-1.5 flex items-center justify-between gap-2">
                                 <span class="flex min-w-0 items-center gap-1.5">
-                                    <span class="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-500 text-[10px] font-bold text-white">
+                                    <span class="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-500 text-xs font-bold text-white">
                                         <img v-if="deal.responsible?.avatar" :src="deal.responsible.avatar" class="h-full w-full object-cover" />
                                         <template v-else>{{ deal.responsible?.name?.charAt(0) ?? '—' }}</template>
                                     </span>
-                                    <span class="truncate text-[11px] text-slate-600">{{ deal.responsible?.name ?? $e('не назначен') }}</span>
+                                    <span class="truncate text-xs text-slate-600">{{ deal.responsible?.name ?? $e('не назначен') }}</span>
                                 </span>
-                                <span v-if="deal.deadline" class="shrink-0 text-[11px]" :class="deadlineClass(deal.deadline, deal.status==='closed') || 'text-slate-400'">⏰ {{ formatDate(deal.deadline) }}</span>
+                                <span v-if="deal.deadline" class="shrink-0 text-xs" :class="deadlineClass(deal.deadline, deal.status==='closed') || 'text-slate-400'">⏰ {{ formatDate(deal.deadline) }}</span>
                             </div>
                         </Link>
                         <div class="mt-2 flex items-center justify-between border-t pt-1.5">
-                            <Link :href="route('deals.show', deal.id)" class="text-[11px] text-slate-400 hover:text-indigo-600">{{ $e('+ Дело') }}</Link>
-                            <span v-if="stageTime(deal)" :title="$e('Время на текущем этапе')" class="text-[10px] tabular-nums text-slate-400">⏱ {{ stageTime(deal) }}</span>
-                            <button v-if="workshopIds.includes(deal.deal_stage_id)" @click="toWorkshop(deal)" class="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-emerald-700">{{ $e('📦 В цех') }}</button>
-                            <button v-else-if="!wonIds.includes(deal.deal_stage_id) && (canAccounting || !postActIds.includes(deal.deal_stage_id))" @click="advance(deal)" class="rounded bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600 transition-colors hover:bg-indigo-100 hover:text-indigo-700">{{ $e('Далее →') }}</button>
+                            <Link :href="route('deals.show', deal.id)" class="text-xs text-slate-400 hover:text-indigo-600">{{ $e('+ Дело') }}</Link>
+                            <span v-if="stageTime(deal)" :title="$e('Время на текущем этапе')" class="text-xs tabular-nums text-slate-400">⏱ {{ stageTime(deal) }}</span>
+                            <button v-if="workshopIds.includes(deal.deal_stage_id)" @click="toWorkshop(deal)" class="rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-700">{{ $e('📦 В цех') }}</button>
+                            <button v-else-if="!wonIds.includes(deal.deal_stage_id) && (canAccounting || !postActIds.includes(deal.deal_stage_id))" @click="advance(deal)" class="rounded bg-slate-100 px-2.5 py-1 text-xs text-slate-600 transition-colors hover:bg-indigo-100 hover:text-indigo-700">{{ $e('Далее →') }}</button>
                         </div>
                     </div>
-                    <div v-if="!byStage(stage.id).length" class="py-5 text-center text-[11px] text-slate-400">{{ $e('Пусто') }}</div>
+                    <div v-if="!byStage(stage.id).length" class="py-5 text-center text-xs text-slate-400">{{ $e('Пусто') }}</div>
                 </div>
             </div>
         </div>
@@ -444,10 +444,10 @@ const applyBinMatch = () => {
                                 class="rounded-xl border px-4 py-3 text-left transition-colors duration-150"
                                 :class="form.deal_type === t.key ? t.on : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'">
                                 <div class="text-sm font-semibold">{{ $e(t.label) }}</div>
-                                <div class="mt-0.5 text-[11px] opacity-70">{{ $e(t.hint) }}</div>
+                                <div class="mt-0.5 text-xs opacity-70">{{ $e(t.hint) }}</div>
                             </button>
                         </div>
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('От типа зависит ставка бонуса менеджера.') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ $e('От типа зависит ставка бонуса менеджера.') }}</p>
                         <InputError :message="form.errors.deal_type" class="mt-1" />
                     </div>
 
@@ -466,7 +466,7 @@ const applyBinMatch = () => {
                     <div>
                         <InputLabel :value="$e('БИН / ИИН заказчика')" />
                         <TextInput v-model="form.customer_bin" class="mt-1 w-full" @blur="checkBin" />
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Уже работали с этим БИН — предложим подставить данные.') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ $e('Уже работали с этим БИН — предложим подставить данные.') }}</p>
                         <InputError :message="form.errors.customer_bin" class="mt-1" />
                     </div>
                     <div class="sm:col-span-2"><InputLabel :value="$e('Объект (адрес доставки / монтажа) *')" /><TextInput v-model="form.address" class="mt-1 w-full" :placeholder="$e('Город, улица, дом')" /><InputError :message="form.errors.address" class="mt-1" /></div>
@@ -503,7 +503,7 @@ const applyBinMatch = () => {
                 <div v-show="step === 2" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div class="sm:col-span-2">
                         <InputLabel :value="$e('Товары заказа')" />
-                        <p class="mb-1.5 text-[11px] text-slate-400">{{ $e('Клиент берёт несколько позиций — выберите категории, затем товары. Единица подставится из каталога.') }}</p>
+                        <p class="mb-1.5 text-xs text-slate-400">{{ $e('Клиент берёт несколько позиций — выберите категории, затем товары. Единица подставится из каталога.') }}</p>
                         <ProductPicker v-model="form.items" :catalog="catalog" :categories="productCategories" :errors="form.errors" />
                     </div>
                     <div v-if="!form.items.length"><InputLabel :value="$e('Наименование товара *')" /><TextInput v-model="form.client_name" class="mt-1 w-full" :placeholder="$e('Тротуарная плитка 300×300, вазон…')" /><InputError :message="form.errors.client_name" class="mt-1" /></div>
@@ -527,12 +527,12 @@ const applyBinMatch = () => {
                         <InputLabel :value="$e('Сумма договора *')" />
                         <TextInput v-model="form.budget" type="number" step="0.01" class="mt-1 w-full"
                             :disabled="form.items.length > 0" :class="form.items.length ? 'bg-slate-100' : ''" />
-                        <p v-if="form.items.length" class="mt-1 text-[11px] text-emerald-600">{{ $e('Считается по товарам заказа:') }} {{ money(itemsTotal) }}</p>
+                        <p v-if="form.items.length" class="mt-1 text-xs text-emerald-600">{{ $e('Считается по товарам заказа:') }} {{ money(itemsTotal) }}</p>
                         <InputError :message="form.errors.budget" class="mt-1" />
                     </div>
                     <div>
                         <InputLabel :value="$e('Доля партнёра, %')" /><TextInput v-model="form.partner_pct" type="number" min="0" max="100" step="0.01" class="mt-1 w-full" placeholder="0" />
-                        <p v-if="Number(form.partner_pct) > 0 && Number(form.budget) > 0" class="mt-1 text-[11px] text-slate-400">= {{ money(Number(form.budget) * Number(form.partner_pct) / 100) }} {{ $e('партнёру (вычитается из остатка)') }}</p>
+                        <p v-if="Number(form.partner_pct) > 0 && Number(form.budget) > 0" class="mt-1 text-xs text-slate-400">= {{ money(Number(form.budget) * Number(form.partner_pct) / 100) }} {{ $e('партнёру (вычитается из остатка)') }}</p>
                         <InputError :message="form.errors.partner_pct" class="mt-1" />
                     </div>
                     <div><InputLabel :value="$e('Срок')" /><TextInput v-model="form.deadline" type="date" class="mt-1 w-full" /></div>
@@ -545,43 +545,43 @@ const applyBinMatch = () => {
                 <div v-show="step === 3" class="space-y-4">
                     <div class="grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-sm sm:grid-cols-3">
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Тип сделки') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Тип сделки') }}</div>
                             <div class="mt-0.5 font-semibold" :class="form.deal_type === 'resale' ? 'text-amber-700' : 'text-indigo-700'">
                                 {{ $e(form.deal_type === 'resale' ? '📦 Перепродажа' : '🏭 Своё производство') }}
                             </div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Заказчик') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Заказчик') }}</div>
                             <div class="mt-0.5 font-semibold text-slate-900">{{ form.company_name || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('БИН / ИИН заказчика') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('БИН / ИИН заказчика') }}</div>
                             <div class="mt-0.5 font-medium tabular-nums text-slate-900">{{ form.customer_bin || '—' }}</div>
                         </div>
                         <div class="col-span-2">
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Объект') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Объект') }}</div>
                             <div class="mt-0.5 font-medium text-slate-900">📍 {{ form.address || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Контакт') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Контакт') }}</div>
                             <div class="mt-0.5 font-medium text-slate-900">{{ [form.contact_name, form.contact_phone].filter(Boolean).join(' · ') || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Договор') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Договор') }}</div>
                             <div class="mt-0.5 font-medium text-slate-900">{{ [form.bin, form.contract_date ? formatDate(form.contract_date) : ''].filter(Boolean).join(' · ') || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Филиал') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Филиал') }}</div>
                             <div class="mt-0.5 font-medium text-slate-900">{{ form.branch || '—' }}</div>
                         </div>
                         <div>
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Срок') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Срок') }}</div>
                             <div class="mt-0.5 font-medium text-slate-900">{{ form.deadline ? formatDate(form.deadline) : '—' }}</div>
                         </div>
                     </div>
 
                     <div>
-                        <div class="mb-1.5 text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Товары заказа') }}</div>
+                        <div class="mb-1.5 text-xs uppercase tracking-wide text-slate-400">{{ $e('Товары заказа') }}</div>
                         <div v-if="form.items.length" class="divide-y divide-slate-100 rounded-xl border border-slate-200">
                             <div v-for="(it, i) in form.items" :key="i" class="flex flex-wrap items-baseline justify-between gap-3 px-4 py-2 text-sm">
                                 <span class="text-slate-700">🧱 {{ it.name }}</span>
@@ -598,9 +598,9 @@ const applyBinMatch = () => {
                     </div>
 
                     <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-                        <div><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Сумма договора') }}</div><div class="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{{ money(Number(form.budget || 0)) }}</div></div>
-                        <div v-if="Number(form.area_m2 || 0)"><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Площадь, м²') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ Number(form.area_m2).toLocaleString('ru-RU') }}</div></div>
-                        <div v-if="Number(form.partner_pct || 0)"><div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Доля партнёра') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ form.partner_pct }}% · {{ money(Number(form.budget || 0) * Number(form.partner_pct) / 100) }}</div></div>
+                        <div><div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Сумма договора') }}</div><div class="mt-0.5 text-lg font-bold tabular-nums text-slate-900">{{ money(Number(form.budget || 0)) }}</div></div>
+                        <div v-if="Number(form.area_m2 || 0)"><div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Площадь, м²') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ Number(form.area_m2).toLocaleString('ru-RU') }}</div></div>
+                        <div v-if="Number(form.partner_pct || 0)"><div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Доля партнёра') }}</div><div class="mt-0.5 font-medium tabular-nums text-slate-700">{{ form.partner_pct }}% · {{ money(Number(form.budget || 0) * Number(form.partner_pct) / 100) }}</div></div>
                     </div>
                 </div>
 

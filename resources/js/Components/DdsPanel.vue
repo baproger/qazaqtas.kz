@@ -65,7 +65,7 @@ const fmt = (v) => (v === null || v === undefined || v === '' ? '—' : money(Nu
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-sm font-semibold text-slate-800">
                 {{ $e('ДДС — сводка по счетам и долгам') }}
-                <span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-400" :title="$e('Цифры вводятся вручную и нигде не пересчитываются')">{{ $e('ручной ввод') }}</span>
+                <span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-bold uppercase text-slate-400" :title="$e('Цифры вводятся вручную и нигде не пересчитываются')">{{ $e('ручной ввод') }}</span>
             </h3>
             <div class="flex items-center gap-2 text-sm">
                 <template v-if="editDate">

@@ -61,9 +61,9 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
             <!-- Кто в бригаде: без этого «Ержан 55 м²» ниже ни о чём не говорит. -->
             <div class="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-5">
                 <div class="min-w-0">
-                    <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бригадир') }}</div>
+                    <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Бригадир') }}</div>
                     <div class="mt-0.5 font-medium text-slate-900">{{ brigade.foreman || '—' }}</div>
-                    <div class="mt-3 text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Состав') }}</div>
+                    <div class="mt-3 text-xs uppercase tracking-wide text-slate-400">{{ $e('Состав') }}</div>
                     <div class="mt-1 flex flex-wrap gap-1.5">
                         <span v-for="m in brigade.members" :key="m.id" class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs text-slate-700">{{ m.name }}</span>
                         <span v-if="!brigade.members?.length" class="text-xs text-slate-400">{{ $e('рабочие не назначены') }}</span>
@@ -101,7 +101,7 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
                 <h3 class="mb-2 text-sm font-semibold text-slate-900">{{ $e('Заработали за месяц') }}</h3>
                 <div class="mb-6 overflow-x-auto rounded-xl border border-slate-100 bg-white">
                     <table class="min-w-full text-sm">
-                        <thead class="border-b border-slate-100 text-left text-[11px] uppercase tracking-wide text-slate-400">
+                        <thead class="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
                             <tr>
                                 <th class="px-5 py-2.5 font-medium">{{ $e('Сотрудник') }}</th>
                                 <th class="px-3 py-2.5 text-right font-medium">{{ $e('м²') }}</th>
@@ -113,7 +113,7 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
                             <tr v-for="p in byPerson" :key="p.name">
                                 <td class="px-5 py-2.5 text-slate-800">
                                     {{ p.name }}
-                                    <span v-if="p.role === 'foreman'" class="ml-1.5 rounded bg-indigo-50 px-1.5 py-px text-[10px] font-semibold text-indigo-700">{{ $e('бригадир') }}</span>
+                                    <span v-if="p.role === 'foreman'" class="ml-1.5 rounded bg-indigo-50 px-1.5 py-px text-xs font-semibold text-indigo-700">{{ $e('бригадир') }}</span>
                                 </td>
                                 <td class="px-3 py-2.5 text-right tabular-nums text-slate-600">{{ p.m2 ? num(p.m2) : '—' }}</td>
                                 <td class="px-3 py-2.5 text-right tabular-nums text-slate-600">{{ p.pcs ? num(p.pcs) : '—' }}</td>
@@ -139,7 +139,7 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
                         <span class="tabular-nums text-slate-400">{{ formatDate(o.date) }}</span>
                         <span class="text-slate-800">{{ o.source.name || $e('без изделия') }}</span>
                         <span v-if="o.source.kind === 'deal'" class="text-xs text-slate-400">🧾 {{ o.source.deal }}</span>
-                        <span v-else-if="o.source.kind === 'plan'" class="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">{{ $e('по плану') }}</span>
+                        <span v-else-if="o.source.kind === 'plan'" class="rounded bg-indigo-50 px-1.5 py-0.5 text-xs font-semibold text-indigo-700">{{ $e('по плану') }}</span>
                         <span class="tabular-nums text-slate-700">
                             <template v-if="o.totals.m2">{{ num(o.totals.m2) }} {{ $e('м²') }}</template>
                             <template v-if="o.totals.m2 && o.totals.pcs"> · </template>
@@ -154,14 +154,14 @@ const statusClass = (s) => (s === 'confirmed' ? 'text-emerald-600' : s === 'reje
                         <div v-if="o.reject_reason" class="mb-1.5 text-rose-600">✕ {{ o.reject_reason }}</div>
                         <div v-for="l in o.lines" :key="l.id" class="flex items-baseline gap-3 py-0.5">
                             <span class="text-slate-700">{{ l.user || '—' }}</span>
-                            <span v-if="l.role === 'foreman'" class="rounded bg-indigo-50 px-1.5 py-px text-[10px] font-semibold text-indigo-700">{{ $e('вся смена') }}</span>
+                            <span v-if="l.role === 'foreman'" class="rounded bg-indigo-50 px-1.5 py-px text-xs font-semibold text-indigo-700">{{ $e('вся смена') }}</span>
                             <span class="tabular-nums text-slate-500">
                                 <template v-if="l.qty_m2">{{ num(l.qty_m2) }} {{ $e('м²') }}</template>
                                 <template v-if="l.qty_pcs">{{ num(l.qty_pcs) }} {{ $e('штук') }}</template>
                             </span>
                             <span class="ml-auto tabular-nums font-semibold text-slate-700">{{ money(l.amount) }}</span>
                         </div>
-                        <div class="mt-1.5 text-[11px] text-slate-400">
+                        <div class="mt-1.5 text-xs text-slate-400">
                             <span v-if="o.created_by">{{ $e('внёс') }}: {{ o.created_by }}</span>
                             <span v-if="o.confirmed_by" class="ml-3">{{ $e('подтвердил') }}: {{ o.confirmed_by }}</span>
                         </div>

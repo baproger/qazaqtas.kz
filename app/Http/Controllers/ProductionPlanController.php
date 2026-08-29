@@ -74,7 +74,8 @@ class ProductionPlanController extends Controller
     public function index(Request $request, ProductionProgressService $progress): Response
     {
         abort_unless(
-            $request->user()->hasAnyRole(['admin', 'director', 'production_head', 'financist', 'foreman', 'assistant']),
+            $request->user()->hasAnyRole(['admin', 'director', 'production_head', 'financist', 'foreman', 'assistant'])
+            && $request->user()->can('project.viewAny'),
             403,
             'Страница плана — для бригадиров и руководства.'
         );

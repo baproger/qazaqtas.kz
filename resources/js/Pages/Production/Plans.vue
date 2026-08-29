@@ -283,15 +283,15 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
               <section v-if="queue.length">
                   <div class="mb-3 flex flex-wrap items-baseline gap-x-3">
                       <span class="text-sm font-semibold text-amber-800">{{ $e('Ждёт бригаду') }}</span>
-                      <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-amber-800">{{ queue.length }}</span>
+                      <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-amber-800">{{ queue.length }}</span>
                       <span class="text-xs text-slate-400">{{ $e('пришло из сделок — назначьте, кто делает') }}</span>
                   </div>
                   <div class="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-soft">
                       <div class="divide-y divide-amber-100/70">
                           <div v-for="row in queue" :key="row.id" class="flex flex-wrap items-center gap-x-4 gap-y-2 px-6 py-3.5">
                               <div class="min-w-0 flex-1">
-                                  <div class="text-[13px] font-medium text-slate-900">🧱 {{ row.product }}</div>
-                                  <div v-if="row.deal" class="text-[11px] text-slate-400">
+                                  <div class="text-sm font-medium text-slate-900">🧱 {{ row.product }}</div>
+                                  <div v-if="row.deal" class="text-xs text-slate-400">
                                       <Link :href="route('deals.show', row.deal.id)" class="font-semibold text-indigo-600 hover:underline">{{ row.deal.number }}</Link>
                                       · {{ row.deal.client }}
                                       <span v-if="row.deal.deadline"> · {{ $e('срок') }} {{ row.deal.deadline }}</span>
@@ -331,7 +331,7 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                         {{ section.title }}
                     </span>
-                    <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+                    <span class="rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums"
                         :class="section.tone === 'emerald' ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'">
                         {{ section.sum?.count ?? 0 }}
                     </span>
@@ -352,7 +352,7 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
                     <Link :href="route('production.brigade', { brigade: b.id, month })"
                         class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-slate-100 px-6 py-4 transition-colors duration-150 hover:bg-slate-50">
                         <div class="min-w-0">
-                            <span class="text-[15px] font-semibold text-slate-900">👷 {{ b.name }}</span>
+                            <span class="text-base font-semibold text-slate-900">👷 {{ b.name }}</span>
                             <span class="ml-2 text-xs text-slate-400">
                                 {{ b.foreman || $e('бригадир не назначен') }}<template v-if="b.workshop"> · {{ b.workshop }}</template>
                                 · {{ b.plans }} {{ b.plans === 1 ? $e('план') : $e('планов') }}
@@ -455,8 +455,8 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
                     </div>
                     <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-soft">
                         <div class="overflow-x-auto">
-                            <table class="min-w-full text-[13px]">
-                                <thead class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
                                     <tr>
                                         <th class="px-6 py-2.5 text-left font-medium">{{ $e('Бригада') }}</th>
                                         <th class="px-4 py-2.5 text-right font-medium">{{ $e('Смен') }}</th>
@@ -470,7 +470,7 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
                                     <tr v-for="b in brigadeOutput" :key="b.id" class="transition-colors duration-150 hover:bg-slate-50/60">
                                         <td class="px-6 py-2.5">
                                             <Link :href="route('production.brigade', { brigade: b.id, month })" class="font-medium text-slate-800 hover:text-indigo-600">👷 {{ b.name }}</Link>
-                                            <span v-if="b.workshop" class="ml-1.5 text-[11px] text-slate-400">{{ b.workshop }}</span>
+                                            <span v-if="b.workshop" class="ml-1.5 text-xs text-slate-400">{{ b.workshop }}</span>
                                         </td>
                                         <td class="px-4 py-2.5 text-right tabular-nums text-slate-500">{{ b.shifts }}</td>
                                         <td class="px-4 py-2.5 text-right tabular-nums text-slate-600">{{ b.m2 ? num(b.m2) : '—' }}</td>
@@ -479,7 +479,7 @@ const barClass = (row) => (row.over ? 'bg-amber-400' : row.percent >= 100 ? 'bg-
                                         <td class="px-6 py-2.5 text-right font-semibold tabular-nums text-emerald-600">{{ money(b.amount) }}</td>
                                     </tr>
                                 </tbody>
-                                <tfoot class="border-t border-slate-100 bg-slate-50/60 text-[12px]">
+                                <tfoot class="border-t border-slate-100 bg-slate-50/60 text-xs">
                                     <tr>
                                         <td class="px-6 py-2.5 font-medium text-slate-500">{{ $e('Итого') }}</td>
                                         <td class="px-4 py-2.5 text-right tabular-nums text-slate-500">{{ outputTotals.shifts }}</td>

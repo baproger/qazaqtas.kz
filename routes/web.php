@@ -26,6 +26,7 @@ use App\Http\Controllers\DebtController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmployeeDebtController;
+use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpensesBoardController;
@@ -47,6 +48,7 @@ use App\Http\Controllers\SiteOrderController;
 use App\Http\Controllers\SiteProjectController;
 use App\Http\Controllers\SiteSettingsController;
 use App\Http\Controllers\StageController;
+use App\Http\Controllers\StageRobotController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\UserController;
@@ -223,6 +225,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     // Notifications
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
 
@@ -295,6 +298,14 @@ Route::middleware('auth')->group(function () {
     // Порядок воронки задаётся целиком: одно действие и для стрелок, и для перетаскивания.
     Route::patch('settings/stages/{kind}/reorder', [StageController::class, 'reorder'])->name('stages.reorder');
     Route::delete('settings/stages/{kind}/{id}', [StageController::class, 'destroy'])->name('stages.destroy');
+    Route::post('settings/stages/{kind}/{id}/duplicate', [StageController::class, 'duplicate'])->name('stages.duplicate');
+    // Роботы этапов (автоматизация)
+    Route::get('settings/robots', [StageRobotController::class, 'index'])->name('robots.index');
+    Route::post('settings/robots', [StageRobotController::class, 'store'])->name('robots.store');
+    Route::put('settings/robots/{robot}', [StageRobotController::class, 'update'])->name('robots.update');
+    Route::post('settings/robots/{robot}/toggle', [StageRobotController::class, 'toggle'])->name('robots.toggle');
+    Route::post('settings/robots/{robot}/duplicate', [StageRobotController::class, 'duplicate'])->name('robots.duplicate');
+    Route::delete('settings/robots/{robot}', [StageRobotController::class, 'destroy'])->name('robots.destroy');
 
     // Custom fields
     // UI translations editor
@@ -346,6 +357,11 @@ Route::middleware('auth')->group(function () {
 
     // Audit log
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
+    // Журнал ошибок — только админ (guard внутри контроллера).
+    Route::get('errors', [ErrorLogController::class, 'index'])->name('errors.index');
+    Route::patch('errors/{error}/resolve', [ErrorLogController::class, 'resolve'])->name('errors.resolve');
+    Route::post('errors/resolve-all', [ErrorLogController::class, 'resolveAll'])->name('errors.resolveAll');
+    Route::delete('errors/purge', [ErrorLogController::class, 'purge'])->name('errors.purge');
 
     // Comments
     Route::post('comments', [CommentController::class, 'store'])->name('comments.store');

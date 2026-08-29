@@ -74,7 +74,7 @@ const allTime = computed(() => Number(props.totals.cash || 0) + Number(props.tot
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         <tr v-for="r in receiptsToday" :key="r.id" class="hover:bg-slate-50">
-                            <td class="px-6 py-3 text-slate-500">{{ formatDate(r.date) }}<span class="block text-[10px] text-slate-400">{{ $e('внесено') }} {{ formatDateTime(r.created_at) }}</span></td>
+                            <td class="px-6 py-3 text-slate-500">{{ formatDate(r.date) }}<span class="block text-xs text-slate-400">{{ $e('внесено') }} {{ formatDateTime(r.created_at) }}</span></td>
                             <td class="px-4 py-3 text-right font-semibold tabular-nums text-emerald-600">+ {{ money(r.amount) }}</td>
                             <td class="px-4 py-3">
                                 <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="r.method === 'cash' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'">{{ r.method === 'cash' ? $e('наличные') : $e('банк (счёт)') }}</span>
@@ -115,7 +115,7 @@ const allTime = computed(() => Number(props.totals.cash || 0) + Number(props.tot
                         <table class="min-w-full whitespace-nowrap divide-y divide-slate-100 text-sm">
                             <tbody class="divide-y divide-slate-50">
                                 <tr v-for="r in receiptsPast" :key="r.id" class="hover:bg-slate-50">
-                                    <td class="px-6 py-3 text-slate-500">{{ formatDate(r.date) }}<span class="block text-[10px] text-slate-400">{{ $e('внесено') }} {{ formatDateTime(r.created_at) }}</span></td>
+                                    <td class="px-6 py-3 text-slate-500">{{ formatDate(r.date) }}<span class="block text-xs text-slate-400">{{ $e('внесено') }} {{ formatDateTime(r.created_at) }}</span></td>
                                     <td class="px-4 py-3 text-right font-semibold tabular-nums text-emerald-600">+ {{ money(r.amount) }}</td>
                                     <td class="px-4 py-3">
                                         <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="r.method === 'cash' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'">{{ r.method === 'cash' ? $e('наличные') : $e('банк (счёт)') }}</span>

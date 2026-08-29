@@ -32,7 +32,7 @@ class ExpensesBoardController extends Controller
         StickyFilters::apply($request, 'expenses', ['kind', 'method']);
 
         $user = $request->user();
-        abort_unless($user->hasAnyRole(['admin', 'director', 'financist']), 403, 'Страница расходов — для бухгалтерии и руководства.');
+        abort_unless($user->hasAnyRole(['admin', 'director', 'financist']) && $user->can('expense.viewAny'), 403, 'Страница расходов — для бухгалтерии и руководства.');
 
         $companyId = CurrentCompany::id() ?: null;
         $scoped = fn (): Builder => app(FinanceService::class)

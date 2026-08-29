@@ -53,22 +53,22 @@ const monthLabel = computed(() => monthActive.value
              «Кредиторка (мы должны)» скрыта по просьбе владельца (24.07.2026). -->
         <div class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Общая сумма договоров') }}</div>
+                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Общая сумма договоров') }}</div>
                 <div class="mt-1 text-xl font-bold tabular-nums text-slate-800">{{ money(summary.contracts) }}</div>
             </div>
             <div class="rounded-xl border p-5 shadow-sm" :class="summary.receivablesTotal > 0 ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'">
-                <div class="text-[11px] uppercase tracking-wide" :class="summary.receivablesTotal > 0 ? 'text-rose-500' : 'text-slate-400'">{{ $e('Дебиторка (нам должны)') }}</div>
+                <div class="text-xs uppercase tracking-wide" :class="summary.receivablesTotal > 0 ? 'text-rose-500' : 'text-slate-400'">{{ $e('Дебиторка (нам должны)') }}</div>
                 <div class="mt-1 text-xl font-bold tabular-nums" :class="summary.receivablesTotal > 0 ? 'text-rose-600' : 'text-slate-800'">{{ money(summary.receivablesTotal) }}</div>
-                <div class="mt-0.5 text-[11px]" :class="summary.receivablesTotal > 0 ? 'text-rose-400' : 'text-slate-400'">{{ $e('счета') }} {{ money(summary.receivables) }} {{ $e('· вручную') }} {{ money(summary.receivablesManual) }}</div>
+                <div class="mt-0.5 text-xs" :class="summary.receivablesTotal > 0 ? 'text-rose-400' : 'text-slate-400'">{{ $e('счета') }} {{ money(summary.receivables) }} {{ $e('· вручную') }} {{ money(summary.receivablesManual) }}</div>
             </div>
             <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="flex items-center justify-between">
-                    <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Остаток в кассе') }}</div>
+                    <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Остаток в кассе') }}</div>
                     <button v-if="isAdmin" @click="openCashFix" :title="$e('Корректировка кассы (инвентаризация): задать фактический остаток')"
                         class="text-slate-300 hover:text-indigo-500">✎</button>
                 </div>
                 <div class="mt-1 text-xl font-bold tabular-nums" :class="summary.cash >= 0 ? 'text-slate-800' : 'text-rose-600'">{{ money(summary.cash) }}</div>
-                <div class="mt-0.5 text-[11px] text-slate-400">
+                <div class="mt-0.5 text-xs text-slate-400">
                     {{ $e('наличные ОБЩИЕ по всем фирмам') }}
                     <span v-if="summary.cashCorrection" class="text-amber-500" :title="$e('Корректировка: ') + money(summary.cashCorrection)">{{ $e('· скорректировано') }}</span>
                 </div>
@@ -80,9 +80,9 @@ const monthLabel = computed(() => monthActive.value
                 </div>
             </div>
             <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Остаток в банке') }}</div>
+                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Остаток в банке') }}</div>
                 <div class="mt-1 text-xl font-bold tabular-nums" :class="summary.bank >= 0 ? 'text-slate-800' : 'text-rose-600'">{{ money(summary.bank) }}</div>
-                <div class="mt-0.5 text-[11px] text-slate-400">{{ $e('безнал своей компании: поступило − потрачено') }}</div>
+                <div class="mt-0.5 text-xs text-slate-400">{{ $e('безнал своей компании: поступило − потрачено') }}</div>
             </div>
         </div>
 
@@ -100,28 +100,28 @@ const monthLabel = computed(() => monthActive.value
         </div>
         <div class="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-3">
             <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
-                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Доход') }} <span class="normal-case text-slate-300">{{ $e('— итог Сводного отчёта') }}</span></div>
+                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Доход') }} <span class="normal-case text-slate-300">{{ $e('— итог Сводного отчёта') }}</span></div>
                 <div class="mt-1 text-2xl font-bold tabular-nums text-emerald-600">{{ money(summary.dealsIncome) }}</div>
-                <div class="mt-0.5 text-[11px] text-slate-400">{{ $e('по сделкам: остаток − бонус (как в отчёте)') }}{{ monthActive ? $e(' · сделки за ') + monthLabel + $e(' (по дате договора)') : '' }}</div>
-                <div class="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+                <div class="mt-0.5 text-xs text-slate-400">{{ $e('по сделкам: остаток − бонус (как в отчёте)') }}{{ monthActive ? $e(' · сделки за ') + monthLabel + $e(' (по дате договора)') : '' }}</div>
+                <div class="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-400">
                     {{ $e('Оборот') }} {{ monthActive ? $e('за ') + monthLabel : $e('(движение денег)') }}: <b class="tabular-nums text-slate-600">{{ money(summary.income) }}</b>
                     {{ $e('· счета') }} {{ money(summary.incomeInvoices) }} {{ $e('· поступления') }} {{ money(summary.incomeManual) }}
                 </div>
             </div>
             <div class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm">
                 <div class="flex items-baseline justify-between">
-                    <span class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Расходы —') }} {{ monthActive ? monthLabel : $e('всего') }}</span>
+                    <span class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Расходы —') }} {{ monthActive ? monthLabel : $e('всего') }}</span>
                     <span class="text-xl font-bold tabular-nums text-rose-600">−{{ money(summary.expensesTotal) }}</span>
                 </div>
                 <div class="mt-2 space-y-1 text-sm">
                     <div v-if="!monthActive" class="flex justify-between"><span class="text-slate-500">{{ $e('Зарплата (оклады + бонусы)') }}</span><span class="tabular-nums text-slate-700">{{ money(summary.payroll) }}</span></div>
                     <div v-if="!monthActive" class="flex justify-between"><span class="text-slate-500">{{ $e('Налог') }}</span><span class="tabular-nums text-slate-700">{{ money(summary.tax) }}</span></div>
-                    <div v-if="monthActive" class="text-[11px] text-slate-400">{{ $e('ЗП и налог считаются по сделкам — видны в режиме «за всё время»') }}</div>
+                    <div v-if="monthActive" class="text-xs text-slate-400">{{ $e('ЗП и налог считаются по сделкам — видны в режиме «за всё время»') }}</div>
                     <div class="flex justify-between"><span class="text-slate-500">{{ $e('По сделкам и цеху') }}</span><span class="tabular-nums text-slate-700">{{ money(summary.dealExpenses) }}</span></div>
                     <!-- Списания со склада показаны, но в итог не входят: эти
                          деньги уже посчитаны закупом. -->
                     <div v-if="summary.materialWriteoffs" class="flex justify-between text-slate-400">
-                        <span>{{ $e('Списано со склада') }} <span class="text-[11px]">{{ $e('· учтено в закупе') }}</span></span>
+                        <span>{{ $e('Списано со склада') }} <span class="text-xs">{{ $e('· учтено в закупе') }}</span></span>
                         <span class="tabular-nums">{{ money(summary.materialWriteoffs) }}</span>
                     </div>
                     <div v-for="c in summary.categories" :key="c.name" class="flex justify-between"
@@ -129,16 +129,16 @@ const monthLabel = computed(() => monthActive.value
                         <span :class="c.in_payroll ? '' : 'text-slate-500'">
                             {{ c.name }}
                             <!-- Выплаты сотрудникам уже посчитаны строкой «Зарплата». -->
-                            <span v-if="c.in_payroll" class="text-[11px]">{{ $e('· учтено в строке «Зарплата»') }}</span>
+                            <span v-if="c.in_payroll" class="text-xs">{{ $e('· учтено в строке «Зарплата»') }}</span>
                         </span>
                         <span class="tabular-nums" :class="c.in_payroll ? '' : 'text-slate-700'">{{ money(c.sum) }}</span>
                     </div>
                 </div>
             </div>
             <div class="rounded-xl p-5 shadow-md" style="background-color: #1A3B5C">
-                <div class="text-[11px] uppercase tracking-wide text-white/60">{{ monthActive ? $e('Итог за ') + monthLabel : $e('Чистая прибыль') }}</div>
+                <div class="text-xs uppercase tracking-wide text-white/60">{{ monthActive ? $e('Итог за ') + monthLabel : $e('Чистая прибыль') }}</div>
                 <div class="mt-1 text-2xl font-bold tabular-nums" :class="summary.net >= 0 ? 'text-emerald-300' : 'text-rose-300'">{{ money(summary.net) }}</div>
-                <div class="mt-0.5 text-[11px] text-white/60">{{ monthActive ? $e('оборот − расходы за месяц (без ЗП и налога)') : $e('оборот − все расходы') }}</div>
+                <div class="mt-0.5 text-xs text-white/60">{{ monthActive ? $e('оборот − расходы за месяц (без ЗП и налога)') : $e('оборот − все расходы') }}</div>
             </div>
         </div>
 

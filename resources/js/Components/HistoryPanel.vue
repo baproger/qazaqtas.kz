@@ -32,7 +32,7 @@ const fmt = (t) => new Date(t).toLocaleString('ru-RU');
                     <span class="mx-1">→</span>
                     <span class="text-emerald-600">{{ log.new_value ?? '∅' }}</span>
                 </div>
-                <div class="text-[11px] text-slate-400">{{ fmt(log.created_at) }}</div>
+                <div class="text-xs text-slate-400">{{ fmt(log.created_at) }}</div>
             </div>
         </div>
         <div v-if="!history.length" class="flex flex-col items-center gap-2 py-8 text-center">

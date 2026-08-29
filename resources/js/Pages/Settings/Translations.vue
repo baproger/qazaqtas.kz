@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 /**
@@ -66,8 +66,7 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
 
 <template>
     <Head :title="$e('Переводы')" />
-    <AppLayout>
-        <template #header>{{ $e('Переводы интерфейса') }}</template>
+    <SettingsLayout :title="$e('Переводы')" wide>
 
         <div class="mx-auto max-w-6xl space-y-5">
             <p class="text-sm text-slate-500">
@@ -115,7 +114,7 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
                         <tr v-for="row in items" :key="row.key" class="align-top hover:bg-slate-50/60">
                             <td class="px-4 py-2.5">
                                 <p class="break-words text-xs text-slate-600">{{ row.shipped[locales[0].code] || row.name }}</p>
-                                <p class="mt-0.5 break-all font-mono text-[10px] text-slate-300">{{ row.name }}</p>
+                                <p class="mt-0.5 break-all font-mono text-xs text-slate-300">{{ row.name }}</p>
                             </td>
 
                             <td v-for="l in locales" :key="l.code" class="px-4 py-2.5">
@@ -151,5 +150,5 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
                 <PrimaryButton :disabled="saveForm.processing" @click="save">{{ $e('Сохранить переводы') }}</PrimaryButton>
             </div>
         </div>
-    </AppLayout>
+    </SettingsLayout>
 </template>

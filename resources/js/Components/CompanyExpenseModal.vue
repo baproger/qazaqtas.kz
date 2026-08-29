@@ -63,7 +63,7 @@ const submit = () => form.post(route('expenses.store'), {
                                 class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all"
                                 :class="form.payment_method === 'bank' ? 'border-sky-500 bg-sky-100 text-sky-700 ring-1 ring-sky-500' : 'border-slate-200 bg-white text-slate-500'">{{ $e('Банк (счёт)') }}</button>
                         </div>
-                        <div class="mt-1.5 text-[11px]" :class="overBalance() ? 'font-semibold text-rose-600' : 'text-slate-400'">
+                        <div class="mt-1.5 text-xs" :class="overBalance() ? 'font-semibold text-rose-600' : 'text-slate-400'">
                             {{ $e('Доступно: касса') }} {{ money(cash) }} {{ $e('· счёт') }} {{ money(bank) }}
                             <template v-if="overBalance()"> {{ $e('— расход превышает остаток') }} {{ form.payment_method === 'cash' ? $e('кассы') : $e('счёта') }}!</template>
                         </div>

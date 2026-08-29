@@ -23,8 +23,8 @@ class OverdueListTest extends TestCase
         $admin->assignRole('admin');
 
         $first = DealStage::orderBy('order')->first();
-        $act = DealStage::create(['name' => 'Акт утверждение', 'type' => 'sale', 'order' => 90, 'is_active' => true, 'stage_type' => 'act', 'checklist' => []]);
-        $esf = DealStage::create(['name' => 'ЭСФ', 'type' => 'sale', 'order' => 91, 'is_active' => true, 'stage_type' => 'esf', 'checklist' => []]);
+        $act = DealStage::create(['name' => 'Акт утверждение', 'type' => 'sale', 'order' => 90, 'is_active' => true, 'is_closing' => true, 'checklist' => []]);
+        $esf = DealStage::create(['name' => 'ЭСФ', 'type' => 'sale', 'order' => 91, 'is_active' => true, 'is_closing' => true, 'ignores_deadline' => true, 'checklist' => []]);
         $won = DealStage::where('is_won', true)->first();
 
         $make = fn (string $n, int $stageId) => Deal::create([

@@ -79,7 +79,7 @@ class ProductionProgressService
      * источника задания, иначе «выполнено» в цехе и на производстве
      * считалось бы по-разному.
      *
-     * @param  \Illuminate\Support\Collection<int, ProductionPlan>|array<int, ProductionPlan>  $plans
+     * @param  Collection<int, ProductionPlan>|array<int, ProductionPlan>  $plans
      * @return array<int, array{measure: string, unit: ?string, plan: float, done: float, pending: float, left: float, percent: float, over: bool}>
      */
     public function forPlans($plans): array
@@ -151,6 +151,11 @@ class ProductionProgressService
     {
         $facts = [];
         foreach ($this->workerLines($itemIds) as $line) {
+            // Отклонённый наряд — ни сделано, ни ожидает (§4): бригадир
+            // подаёт объём заново, и считать его дважды нельзя.
+            if ($line->order->status === 'rejected') {
+                continue;
+            }
             $itemId = (int) $line->order->deal_item_id;
             $bucket = $line->order->status === 'confirmed' ? 'done' : 'pending';
 
@@ -183,6 +188,9 @@ class ProductionProgressService
 
         $facts = [];
         foreach ($lines as $line) {
+            if ($line->order->status === 'rejected') {
+                continue;
+            }
             $planId = (int) $line->order->production_plan_id;
             $bucket = $line->order->status === 'confirmed' ? 'done' : 'pending';
 

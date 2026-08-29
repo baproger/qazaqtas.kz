@@ -10,7 +10,7 @@ use App\Models\Setting;
 use App\Services\FinanceService;
 use App\Support\CurrentCompany;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,7 +32,7 @@ class CashBookController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        abort_unless($user->hasAnyRole(['admin', 'director', 'financist']), 403, 'Касса — для бухгалтерии и руководства.');
+        abort_unless($user->hasAnyRole(['admin', 'director', 'financist']) && $user->can('payment.viewAny'), 403, 'Касса — для бухгалтерии и руководства.');
 
         $date = preg_match('/^\d{4}-\d{2}-\d{2}$/', $request->string('date')->toString())
             ? $request->string('date')->toString()
@@ -60,7 +60,7 @@ class CashBookController extends Controller
         // бумажный отчёт кассира; порядок обязан быть определённым, иначе
         // промежуточный остаток скакал бы от запроса к запросу.
         $rows = $rows->sortBy([['at', 'asc'], ['order', 'asc'], ['seq', 'asc']])
-            ->map(fn (array $row) => \Illuminate\Support\Arr::except($row, ['order', 'seq']))
+            ->map(fn (array $row) => Arr::except($row, ['order', 'seq']))
             ->values();
 
         $income = round((float) $rows->where('sign', 1)->sum('amount'), 2);

@@ -50,6 +50,12 @@ class ProductionPlan extends Model
         return $this->belongsTo(Product::class);
     }
 
+    /** Вклады сделок в эту строку: по ним считается «уже отправлено». */
+    public function contributions(): HasMany
+    {
+        return $this->hasMany(ProductionPlanDeal::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

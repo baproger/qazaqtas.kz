@@ -38,7 +38,7 @@ class ReportController extends Controller
         // подставляем сохранённый набор (App\Support\StickyFilters).
         StickyFilters::apply($request, 'reports', ['search', 'from', 'to', 'manager', 'stage']);
 
-        abort_unless($request->user()->hasAnyRole(['admin', 'director']), 403);
+        abort_unless($request->user()->hasAnyRole(['admin', 'director']) && $request->user()->can('report.viewAny'), 403);
 
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
 
@@ -50,7 +50,7 @@ class ReportController extends Controller
 
         $dealQuery = Deal::forCurrentCompany()
             ->where('status', '!=', 'cancelled')
-            ->with(['responsible:id,name', 'stage:id,name,color,is_won,stage_type'])
+            ->with(['responsible:id,name', 'stage:id,name,color,is_won,stage_type,is_closing,ignores_deadline'])
             ->when($search, fn ($q, $s) => $q->where(fn ($w) => $w
                 ->where('number', 'like', "%{$s}%")->orWhere('company_name', 'like', "%{$s}%")
                 ->orWhere('client_name', 'like', "%{$s}%")->orWhere('bin', 'like', "%{$s}%")
@@ -210,8 +210,8 @@ class ReportController extends Controller
                 'is_won' => (bool) $d->stage?->is_won,
                 // Группы подсветки по stage_type (имя этапа ненадёжно):
                 // Акт/ЭСФ — зелёные как won; Логистика/Сборка — жёлтые.
-                'is_pending_won' => in_array($d->stage?->stage_type, ['act', 'esf'], true),
-                'is_esf' => $d->stage?->stage_type === 'esf',
+                'is_pending_won' => (bool) $d->stage?->is_closing,
+                'is_esf' => (bool) $d->stage?->ignores_deadline,
                 'is_logistics' => in_array($d->stage?->stage_type, ['logistics', 'assembly'], true),
             ];
         })->values();

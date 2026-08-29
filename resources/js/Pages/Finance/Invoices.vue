@@ -97,7 +97,7 @@ const resetInvFilters = () => { invSearch.value = ''; applyInvFilters(); };
                                 <tr v-for="inv in invoicesPast" :key="inv.id" class="hover:bg-slate-50">
                                     <td class="px-4 py-3">
                                         <span class="font-medium text-slate-900">{{ inv.number }}</span>
-                                        <span class="block text-[10px] text-slate-400">{{ formatDate(inv.date) }}</span>
+                                        <span class="block text-xs text-slate-400">{{ formatDate(inv.date) }}</span>
                                     </td>
                                     <td class="px-4 py-3">
                                         <Link v-if="inv.link && inv.link.id" :href="route(inv.link.type === 'project' ? 'projects.show' : 'deals.show', inv.link.id)"

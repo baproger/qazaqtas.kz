@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
+import ProjectsBento from '@/Components/site/ProjectsBento.vue';
 import { observeReveal } from '@/utils/site';
 
 defineProps({
@@ -27,37 +28,24 @@ onBeforeUnmount(() => stop());
         </section>
 
         <section class="ambient mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
-            <div class="grid gap-4 sm:grid-cols-2">
-                <article
-                    v-for="p in projects"
-                    :key="p.title"
-                    class="card card-hover reveal group overflow-hidden"
-                >
+            <ProjectsBento :projects="projects.slice(0, 4)" />
+
+            <!-- Остальные объекты — ровной сеткой под bento -->
+            <div v-if="projects.length > 4" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:mt-6 lg:grid-cols-3 lg:gap-6">
+                <article v-for="p in projects.slice(4)" :key="p.title" class="card card-hover reveal group overflow-hidden rounded-3xl">
                     <div class="relative aspect-[16/10] overflow-hidden">
-                        <img
-                            v-if="p.image"
-                            :src="p.image"
-                            :srcset="p.thumb ? `${p.thumb} 600w, ${p.image} 1600w` : undefined"
-                            sizes="(max-width: 640px) 100vw, 50vw"
-                            :alt="p.title"
-                            loading="lazy"
-                            decoding="async"
-                            class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105"
-                        />
+                        <img v-if="p.image" :src="p.thumb || p.image" :alt="p.title" loading="lazy" decoding="async"
+                            class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105" />
                         <div v-else class="paving-pattern flex h-full w-full items-center justify-center">
-                            <span class="text-[11px] uppercase tracking-[0.28em] text-sand-100/25">{{ $t('site.projects.photo_placeholder') }}</span>
+                            <span class="text-xs uppercase tracking-[0.28em] text-sand-100/25">{{ $t('site.projects.photo_placeholder') }}</span>
                         </div>
                         <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/20 to-transparent" />
-                        <p v-if="p.area" class="absolute bottom-5 left-6 display text-3xl text-sand-50 sm:text-4xl">{{ p.area }}</p>
+                        <p v-if="p.area" class="absolute bottom-4 left-5 display text-2xl text-sand-50">{{ p.area }}</p>
                     </div>
-
-                    <div class="p-7 sm:p-9">
-                        <p class="text-xs uppercase tracking-[0.24em] text-sand-300/60">
-                            {{ p.city }}<template v-if="p.year"> · {{ p.year }}</template>
-                        </p>
-                        <h2 class="display mt-3 text-2xl text-sand-50 sm:text-3xl">{{ p.title }}</h2>
-                        <p v-if="p.products" class="mt-4 text-sm leading-relaxed text-sand-100/50">{{ p.products }}</p>
-                        <p v-if="p.description" class="mt-3 text-sm leading-relaxed text-sand-100/40">{{ p.description }}</p>
+                    <div class="p-6">
+                        <p class="text-xs uppercase tracking-[0.24em] text-sand-300/60">{{ p.city }}<template v-if="p.year"> · {{ p.year }}</template></p>
+                        <h2 class="display mt-2 text-xl text-sand-50">{{ p.title }}</h2>
+                        <p v-if="p.products" class="mt-3 text-sm leading-relaxed text-sand-100/50">{{ p.products }}</p>
                     </div>
                 </article>
             </div>

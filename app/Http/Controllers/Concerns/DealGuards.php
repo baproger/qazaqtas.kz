@@ -26,23 +26,17 @@ trait DealGuards
             return;
         }
         $companyId = $deal->company_id ? (int) $deal->company_id : null;
-        $frozenIds = collect([
-            DealStage::actStage($companyId)?->id,
-            DealStage::esfStage($companyId)?->id,
-            DealStage::wonStage($companyId)?->id,
-        ])->filter();
+        $frozenIds = DealStage::closingIds($companyId)->push(DealStage::wonStage($companyId)?->id)->filter();
 
         abort_if(
             $frozenIds->contains($deal->deal_stage_id),
             403,
-            'После «Акт утверждение» сделку изменяет только бухгалтер или админ.'
+            'На этапе финальной проверки сделку изменяет только бухгалтер или админ.'
         );
     }
 
     /** Текущий этап сделки, если на нём настроен гейт (или null). */
     /** Подписи ролей гейт-задач (для сообщений и карточки сделки). */
-    private const GATE_ROLE_LABELS = ['financist' => 'бухгалтер', 'designer' => 'технолог', 'supplier' => 'снабженец', 'manager' => 'менеджер', 'director' => 'директор', 'admin' => 'админ'];
-
     private static function gateStage(Deal $deal): ?DealStage
     {
         $stage = $deal->stage ?? DealStage::find($deal->deal_stage_id);

@@ -287,7 +287,7 @@ const stats = computed(() => ({
                             :disabled="grantedByRole(permission)"
                             :title="grantedByRole(permission) ? $e('Даёт роль — снимается в «Настройки → Доступы»') : ''"
                             @click="togglePersonal(permission)"
-                            class="rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors duration-150"
+                            class="rounded-full px-2.5 py-1 text-xs font-semibold transition-colors duration-150"
                             :class="grantedByRole(permission) ? 'cursor-not-allowed bg-slate-100 text-slate-400'
                                 : grantedPersonally(permission) ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                                 : 'bg-white text-slate-500 ring-1 ring-slate-200 hover:ring-indigo-300'">

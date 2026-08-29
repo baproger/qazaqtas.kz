@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\Deal;
 use App\Models\ProductionPlan;
+use App\Models\ProductionPlanDeal;
 use App\Models\User;
 use App\Notifications\ProductionPlanQueued;
 use App\Support\RoleTraits;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -74,6 +76,13 @@ class ProductionPlanService
                     ]);
                 }
 
+                // Вклад ЭТОЙ сделки — отдельной записью: строка очереди общая
+                // на все сделки товара, а «уже отправлено» спрашивают по одной.
+                ProductionPlanDeal::firstOrCreate(
+                    ['production_plan_id' => $plan->id, 'deal_id' => $deal->id],
+                    ['qty' => 0],
+                )->increment('qty', $qty);
+
                 $created[] = $plan;
             }
         });
@@ -83,6 +92,25 @@ class ProductionPlanService
         }
 
         return $created;
+    }
+
+    /**
+     * Что по сделке УЖЕ ушло в производство: товар → объём.
+     *
+     * Считается по вкладам, а не по `production_plans.deal_id`: строка
+     * очереди одна на товар, и второй сделке она не принадлежит.
+     *
+     * @return Collection<int, float>
+     */
+    public function queuedByProduct(Deal $deal): Collection
+    {
+        return ProductionPlanDeal::query()
+            ->join('production_plans', 'production_plans.id', '=', 'production_plan_deals.production_plan_id')
+            ->where('production_plan_deals.deal_id', $deal->id)
+            ->groupBy('production_plans.product_id')
+            ->selectRaw('production_plans.product_id, sum(production_plan_deals.qty) as qty')
+            ->pluck('qty', 'product_id')
+            ->map(fn ($qty) => round((float) $qty, 2));
     }
 
     /**

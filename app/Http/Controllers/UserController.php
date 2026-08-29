@@ -370,7 +370,7 @@ class UserController extends Controller
 
     private function activeAdminCount(): int
     {
-        return User::where('is_active', true)->role('admin')->count();
+        return RoleTraits::users('admin')->where('is_active', true)->count();
     }
 
     public function destroy(Request $request, User $user): RedirectResponse

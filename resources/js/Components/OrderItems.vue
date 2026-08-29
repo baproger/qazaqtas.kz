@@ -72,12 +72,12 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
             <!-- Слева: что делать и сколько. -->
             <div class="min-w-0">
                 <div class="flex items-baseline gap-2">
-                    <span class="min-w-0 text-[15px] font-medium leading-snug" :class="it.finished_at ? 'text-slate-400 line-through' : 'text-slate-800'">🧱 {{ it.name }}</span>
-                    <span v-if="it.finished_at" class="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+                    <span class="min-w-0 text-base font-medium leading-snug" :class="it.finished_at ? 'text-slate-400 line-through' : 'text-slate-800'">🧱 {{ it.name }}</span>
+                    <span v-if="it.finished_at" class="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700"
                         :title="it.finisher?.name ? $e('отметил') + ': ' + it.finisher.name : ''">✓ {{ $e('закончен') }}</span>
                 </div>
                 <div class="mt-1 flex items-baseline gap-3 tabular-nums">
-                    <b class="text-[19px] font-bold leading-none text-slate-900">
+                    <b class="text-lg font-bold leading-none text-slate-900">
                         {{ qty(it.quantity) }} <span class="text-sm font-semibold text-slate-500">{{ it.unit }}</span>
                     </b>
                     <span v-if="showMoney && it.amount" class="text-sm text-slate-400">{{ money(it.amount) }}</span>
@@ -90,7 +90,7 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
                         <b :class="done(it).over ? 'text-amber-600' : done(it).left === 0 ? 'text-emerald-600' : 'text-slate-700'">
                             {{ qty(done(it).done) }} / {{ qty(done(it).plan) }} {{ it.unit }}
                         </b>
-                        <span v-if="done(it).pending" class="rounded bg-amber-50 px-1 py-px text-[10px] font-semibold text-amber-700"
+                        <span v-if="done(it).pending" class="rounded bg-amber-50 px-1 py-px text-xs font-semibold text-amber-700"
                             :title="$e('внесено, но мастер ещё не подтвердил')">+{{ qty(done(it).pending) }} {{ $e('ждёт') }}</span>
                     </div>
                     <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -134,8 +134,8 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
 
     <!-- Позиций нет: сделка заведена одной строкой «наименование + количество». -->
     <div v-else-if="fallbackName">
-        <div class="text-[15px] font-medium leading-snug text-slate-800">🧱 {{ fallbackName }}</div>
-        <b v-if="fallbackQuantity" class="text-[19px] font-bold tabular-nums text-slate-900">
+        <div class="text-base font-medium leading-snug text-slate-800">🧱 {{ fallbackName }}</div>
+        <b v-if="fallbackQuantity" class="text-lg font-bold tabular-nums text-slate-900">
             {{ qty(fallbackQuantity) }} <span class="text-sm font-semibold text-slate-500">{{ fallbackUnit }}</span>
         </b>
         <p class="mt-2 text-xs text-slate-400">{{ $e('Фото крепятся к позициям — добавьте товары в заказ') }}</p>

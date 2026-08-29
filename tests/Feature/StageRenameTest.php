@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Deal;
 use App\Models\DealStage;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -47,12 +48,12 @@ class StageRenameTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         $this->seed(StageSeeder::class);
         $admin = User::factory()->create();
-        $admin->assignRole("admin");
+        $admin->assignRole('admin');
 
-        $second = DealStage::orderBy("order")->skip(1)->first();
-        $this->actingAs($admin)->delete(route("stages.destroy", ["deal", $second->id]))->assertRedirect();
+        $second = DealStage::orderBy('order')->skip(1)->first();
+        $this->actingAs($admin)->delete(route('stages.destroy', ['deal', $second->id]))->assertRedirect();
 
-        $orders = DealStage::orderBy("order")->pluck("order")->all();
+        $orders = DealStage::orderBy('order')->pluck('order')->all();
         $this->assertEquals(range(1, count($orders)), $orders);
     }
 
@@ -64,16 +65,16 @@ class StageRenameTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        $stage = DealStage::where('stage_type', 'act')->firstOrFail();
+        $stage = DealStage::where('is_closing', true)->orderBy('order')->firstOrFail();
         $this->actingAs($admin)->put(route('stages.update', ['deal', $stage->id]), [
-            'stage_type' => 'act', 'gate_task_title' => 'Выставить акт', 'gate_task_role' => 'financist', 'gate_task_days' => 3,
+            'is_closing' => true, 'gate_task_title' => 'Выставить акт', 'gate_task_role' => 'financist', 'gate_task_days' => 3,
         ])->assertSessionHasNoErrors()->assertRedirect();
 
-        $this->assertSame($stage->id, DealStage::actStage()?->id);
+        $this->assertTrue(DealStage::closingIds()->contains($stage->id));
 
-        // Переименовали как угодно — тип и гейт остались, логика жива.
+        // Переименовали как угодно — свойства и гейт остались, логика жива.
         $this->actingAs($admin)->put(route('stages.update', ['deal', $stage->id]), ['name' => 'Финальная проверка'])->assertRedirect();
-        $this->assertSame($stage->id, DealStage::actStage()?->id);
+        $this->assertTrue(DealStage::closingIds()->contains($stage->id));
         $this->assertTrue(DealStage::find($stage->id)->hasGate());
     }
 
@@ -84,14 +85,14 @@ class StageRenameTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        // Тип «ЭСФ» уже занят сидерным этапом — освобождаем, чтобы проверить
-        // саму валидацию уникальности типа в воронке.
-        DealStage::where('stage_type', 'esf')->update(['stage_type' => null]);
+        // Роль «Возврат из цеха» уже занята сидерным этапом — освобождаем,
+        // чтобы проверить саму валидацию уникальности роли в воронке.
+        DealStage::where('stage_type', 'logistics')->update(['stage_type' => null]);
 
         [$a, $b] = DealStage::orderBy('order')->take(2)->get();
-        $this->actingAs($admin)->put(route('stages.update', ['deal', $a->id]), ['stage_type' => 'esf'])->assertSessionHasNoErrors();
-        // Второй «ЭСФ» в той же воронке — ошибка валидации.
-        $this->actingAs($admin)->put(route('stages.update', ['deal', $b->id]), ['stage_type' => 'esf'])
+        $this->actingAs($admin)->put(route('stages.update', ['deal', $a->id]), ['stage_type' => 'logistics'])->assertSessionHasNoErrors();
+        // Вторая такая же роль в той же воронке — ошибка валидации.
+        $this->actingAs($admin)->put(route('stages.update', ['deal', $b->id]), ['stage_type' => 'logistics'])
             ->assertSessionHasErrors('stage_type');
     }
 
@@ -121,7 +122,7 @@ class StageRenameTest extends TestCase
         $admin->assignRole('admin');
 
         [$a, $b] = DealStage::orderBy('order')->take(2)->get();
-        $deal = \App\Models\Deal::create([
+        $deal = Deal::create([
             'number' => 'QT-S-1', 'name' => 'Т', 'budget' => 1000, 'status' => 'active',
             'deal_stage_id' => $a->id, 'responsible_user_id' => $admin->id,
         ]);

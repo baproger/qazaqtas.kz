@@ -92,7 +92,7 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
                         :class="l.open ? 'bg-indigo-50' : 'bg-slate-50'">
                         <div class="flex items-center gap-2">
                             <span class="font-medium text-slate-800">{{ l.stage }}</span>
-                            <span v-if="l.open" class="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">{{ $e('сейчас') }}</span>
+                            <span v-if="l.open" class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ $e('сейчас') }}</span>
                         </div>
                         <div class="flex items-center gap-3 tabular-nums">
                             <span class="text-xs text-slate-400">{{ formatDateTime(l.entered_at) }}<template v-if="l.left_at"> → {{ formatDateTime(l.left_at) }}</template></span>
@@ -144,39 +144,39 @@ const sendToAct = () => router.post(route('projects.toAct', props.project.id), {
                              строк во всю ширину: в цехе это читают мельком. -->
                         <div class="grid grid-cols-2 gap-x-5 gap-y-3 sm:grid-cols-3">
                             <div>
-                                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Клиент') }}</div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Клиент') }}</div>
                                 <div class="mt-0.5 font-semibold text-slate-900">{{ project.client?.name ?? deal?.company_name ?? '—' }}</div>
                             </div>
                             <!-- Кто ведёт заказ: менеджер со стороны продаж, бригадир со стороны цеха. -->
                             <div>
-                                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Менеджер') }}</div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Менеджер') }}</div>
                                 <div class="mt-0.5 font-medium text-slate-900">{{ deal?.responsible?.name ?? project.responsible?.name ?? '—' }}</div>
                             </div>
                             <div>
-                                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Бригадир') }}</div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Бригадир') }}</div>
                                 <div class="mt-0.5 font-medium text-slate-900">{{ deal?.foreman?.name ?? '—' }}</div>
                             </div>
                             <div class="col-span-2">
-                                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Адрес') }}</div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Адрес') }}</div>
                                 <div class="mt-0.5 font-medium text-slate-900">📍 {{ deal?.address || '—' }}</div>
                             </div>
                             <div>
-                                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Срок') }}</div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Срок') }}</div>
                                 <div class="mt-0.5 font-medium text-slate-900">{{ formatDate(project.deadline ?? deal?.deadline) }}</div>
                             </div>
                             <div v-if="project.deal">
-                                <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Из сделки') }}</div>
+                                <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Из сделки') }}</div>
                                 <Link v-if="canOpenDeal" :href="route('deals.show', project.deal.id)" class="mt-0.5 block font-medium text-indigo-600 hover:underline">{{ project.deal.number }} →</Link>
                                 <div v-else class="mt-0.5 font-medium text-slate-900">{{ project.deal.number }}</div>
                             </div>
                         </div>
 
                         <div v-if="deal?.note" class="mt-4 rounded-xl bg-amber-50 px-4 py-2.5 ring-1 ring-inset ring-amber-100">
-                            <div class="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-700">{{ $e('Заметка менеджера') }}</div>
+                            <div class="mb-0.5 text-xs font-semibold uppercase tracking-wide text-amber-700">{{ $e('Заметка менеджера') }}</div>
                             <p class="whitespace-pre-line text-slate-700">{{ deal.note }}</p>
                         </div>
                         <div v-if="project.description || deal?.description" class="mt-4">
-                            <div class="text-[11px] uppercase tracking-wide text-slate-400">{{ $e('Описание') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Описание') }}</div>
                             <p class="mt-0.5 whitespace-pre-line text-slate-700">{{ project.description || deal?.description }}</p>
                         </div>
                     </div>

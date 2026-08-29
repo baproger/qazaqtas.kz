@@ -22,6 +22,7 @@ class SettingsTest extends TestCase
         $this->seed(StageSeeder::class);
         $u = User::factory()->create();
         $u->assignRole('admin');
+
         return $u;
     }
 
@@ -35,6 +36,22 @@ class SettingsTest extends TestCase
 
         $this->assertFalse(Setting::get('auto_create_project'));
         $this->assertEquals('$', Setting::get('currency'));
+    }
+
+    /** Размер шрифта ERP — из настроек; недопустимое значение отклоняется. */
+    public function test_ui_font_size_is_saved_and_shared(): void
+    {
+        $u = $this->admin();
+        $base = ['company_name' => 'QT', 'currency' => '₸', 'default_locale' => 'ru', 'tax_percent' => 3];
+
+        $this->actingAs($u)->put(route('settings.update'), $base + ['ui_font_size' => 'huge'])
+            ->assertSessionHasErrors('ui_font_size');
+        $this->actingAs($u)->put(route('settings.update'), $base + ['ui_font_size' => 'large'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('large', Setting::get('ui_font_size'));
+        $this->actingAs($u)->get(route('settings.index'))
+            ->assertInertia(fn ($p) => $p->where('uiFontSize', 'large')->where('settings.ui_font_size', 'large'));
     }
 
     public function test_disabling_auto_project_prevents_creation(): void

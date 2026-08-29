@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
+import { Head, router } from '@inertiajs/vue3';
+import SettingsLayout from '@/Layouts/SettingsLayout.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import { useE } from '@/composables/useTranslations';
 
@@ -25,18 +25,7 @@ const copy = (code) => navigator.clipboard?.writeText(code);
 
 <template>
     <Head :title="$e('Настройки · Экраны')" />
-    <AppLayout>
-        <template #header>{{ $e('Настройки · Экраны цехов') }}</template>
-
-        <div class="mb-5 flex gap-1 border-b border-slate-200">
-            <Link :href="route('settings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Общие') }}</Link>
-            <Link :href="route('stages.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Этапы') }}</Link>
-            <Link :href="route('screens.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">{{ $e('Экраны') }}</Link>
-            <Link :href="route('custom-fields.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Доп. поля') }}</Link>
-            <Link :href="route('siteSettings.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Сайт') }}</Link>
-            <Link v-if="$page.props.auth.user?.roles?.includes('admin')" :href="route('access.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Права доступа') }}</Link>
-            <Link :href="route('structure.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Структура') }}</Link>
-        </div>
+    <SettingsLayout :title="$e('Экраны цехов')" wide>
 
         <!-- Инструкция -->
         <div class="mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-5 py-4">
@@ -63,7 +52,7 @@ const copy = (code) => navigator.clipboard?.writeText(code);
                     <div v-for="r in c.rows" :key="r.label" class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-medium text-slate-800">{{ r.label }}</span>
-                            <span v-if="r.screen && !r.screen.is_active" class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-600">{{ $e('отключён') }}</span>
+                            <span v-if="r.screen && !r.screen.is_active" class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-600">{{ $e('отключён') }}</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <button v-if="r.screen" @click="copy(r.screen.code)" :title="$e('Скопировать код')"
@@ -82,7 +71,7 @@ const copy = (code) => navigator.clipboard?.writeText(code);
                     <div class="flex flex-wrap items-center justify-between gap-3 bg-indigo-50/40 px-5 py-3.5">
                         <div class="flex items-center gap-2">
                             <span class="text-sm font-medium text-slate-800">{{ $e('Офис') }} <span class="text-xs font-normal text-slate-400">{{ $e('— сделки и лидеры менеджеров') }}</span></span>
-                            <span v-if="c.office && !c.office.is_active" class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold text-rose-600">{{ $e('отключён') }}</span>
+                            <span v-if="c.office && !c.office.is_active" class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-600">{{ $e('отключён') }}</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <button v-if="c.office" @click="copy(c.office.code)" :title="$e('Скопировать код')"
@@ -99,5 +88,5 @@ const copy = (code) => navigator.clipboard?.writeText(code);
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </SettingsLayout>
 </template>

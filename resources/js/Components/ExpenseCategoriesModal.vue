@@ -65,7 +65,7 @@ const remove = async (c) => {
                         class="flex-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
                     <span v-else class="flex flex-1 items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500">
                         {{ c.name }}
-                        <span class="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
+                        <span class="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-500"
                             :title="$e('На этой категории держатся расчёты — менять её нельзя')">{{ $e('служебная') }}</span>
                     </span>
                     <button v-if="!c.code" @click="remove(c)" class="rounded p-1.5 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить категорию')">✕</button>

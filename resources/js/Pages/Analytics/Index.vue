@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Avatar from '@/Components/Avatar.vue';
@@ -36,15 +36,19 @@ let searchTimer = null;
 const onSearch = () => { clearTimeout(searchTimer); searchTimer = setTimeout(apply, 350); };
 const hasFilters = computed(() => search.value || manager.value || stageF.value);
 const resetFilters = () => { search.value = ''; from.value = ''; to.value = ''; manager.value = ''; stageF.value = ''; apply(); };
-const selected = ref(props.byEmployee?.[0] ?? null);
+// Храним ID выбранного, а объект берём из свежих props: страница
+// перезагружается каждую минуту, и снимок объекта показывал бы старые цифры.
+const selectedUid = ref(props.byEmployee?.[0]?.uid ?? null);
 // Фильтр по сотрудникам: поиск по имени, список и выбор обновляются сразу.
 const empSearch = ref('');
 const filteredEmployees = computed(() => {
     const s = empSearch.value.trim().toLowerCase();
-    const list = s ? props.byEmployee.filter((e) => (e.user ?? '').toLowerCase().includes(s)) : props.byEmployee;
-    if (list.length && (!selected.value || !list.some((e) => e.uid === selected.value.uid))) selected.value = list[0];
-    return list;
+    return s ? (props.byEmployee ?? []).filter((e) => (e.user ?? '').toLowerCase().includes(s)) : (props.byEmployee ?? []);
 });
+watch(filteredEmployees, (list) => {
+    if (list.length && !list.some((e) => e.uid === selectedUid.value)) selectedUid.value = list[0].uid;
+}, { immediate: true });
+const selected = computed(() => (props.byEmployee ?? []).find((e) => e.uid === selectedUid.value) ?? null);
 const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v ?? 0)) + ' ₸';
 // Рейтинг сотрудников: место по списку (он отсортирован) + шкала ЗП к лидеру.
 const maxBonus = computed(() => Math.max(...(props.byEmployee ?? []).map((e) => Number(e.bonus) || 0), 1));
@@ -175,7 +179,7 @@ const donut = computed(() => {
                 </select>
                 <button v-if="hasFilters || from !== filters.from || to !== filters.to" @click="resetFilters"
                     class="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">{{ $e('Сбросить ✕') }}</button>
-                <span class="ml-auto hidden text-[11px] text-slate-300 sm:block">{{ $e('фильтры действуют на воронку, «за период» и топ менеджеров') }}</span>
+                <span class="ml-auto hidden text-xs text-slate-300 sm:block">{{ $e('фильтры действуют на воронку, «за период» и топ менеджеров') }}</span>
             </div>
 
             <!-- Суммы в две колонки: слева договоры/расходы/прибыль, справа оплачено/налог/ЗП.
@@ -405,7 +409,7 @@ const donut = computed(() => {
                             <div class="flex items-center gap-2 text-sm"><span class="text-xs font-bold text-slate-300">{{ i + 1 }}</span><span class="font-medium text-slate-800">{{ m.user }}</span></div>
                             <div class="text-right">
                                 <div class="text-sm font-bold tabular-nums text-slate-800">{{ money(m.budget) }}</div>
-                                <div class="text-[11px] text-slate-400">{{ m.deals }} {{ $e('сделок') }}</div>
+                                <div class="text-xs text-slate-400">{{ m.deals }} {{ $e('сделок') }}</div>
                             </div>
                         </Link>
                         <div v-if="!topManagers.length" class="py-6 text-center text-sm text-slate-400">{{ $e('Нет сделок за период') }}</div>
@@ -418,7 +422,7 @@ const donut = computed(() => {
                     <p class="mb-3 text-xs text-slate-400">{{ $e('По фактическому доходу: A ≈ 30%, B ≈ 20%, C ≈ 10%') }}</p>
                     <div class="grid grid-cols-3 gap-2">
                         <div v-for="(s, cls) in abcSummary" :key="cls" class="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                            <div class="flex items-center gap-1.5"><span class="flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-bold text-white" :class="{ A: 'bg-emerald-600', B: 'bg-amber-500', C: 'bg-slate-400' }[cls]">{{ cls }}</span><span class="text-xs text-slate-500">{{ s.count }} {{ $e('сд.') }}</span></div>
+                            <div class="flex items-center gap-1.5"><span class="flex h-5 w-5 items-center justify-center rounded-md text-xs font-bold text-white" :class="{ A: 'bg-emerald-600', B: 'bg-amber-500', C: 'bg-slate-400' }[cls]">{{ cls }}</span><span class="text-xs text-slate-500">{{ s.count }} {{ $e('сд.') }}</span></div>
                             <div class="mt-1.5 text-sm font-semibold tabular-nums text-slate-900">{{ money(s.value) }}</div>
                         </div>
                     </div>
@@ -434,7 +438,7 @@ const donut = computed(() => {
                             </thead>
                             <tbody class="divide-y divide-slate-50">
                                 <tr v-for="row in abc" :key="row.number" class="hover:bg-slate-50">
-                                    <td class="px-5 py-2.5"><span class="flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-bold text-white" :class="{ A: 'bg-emerald-600', B: 'bg-amber-500', C: 'bg-slate-400' }[row.class]">{{ row.class }}</span></td>
+                                    <td class="px-5 py-2.5"><span class="flex h-5 w-5 items-center justify-center rounded-md text-xs font-bold text-white" :class="{ A: 'bg-emerald-600', B: 'bg-amber-500', C: 'bg-slate-400' }[row.class]">{{ row.class }}</span></td>
                                     <td class="px-5 py-2.5"><span class="text-slate-400">{{ row.number }}</span> <span class="text-slate-700">{{ row.name }}</span></td>
                                     <td class="px-5 py-2.5 font-medium tabular-nums text-slate-900">{{ money(row.value) }}</td>
                                     <td class="px-5 py-2.5 tabular-nums text-slate-500">{{ row.share }}%</td>
@@ -457,7 +461,7 @@ const donut = computed(() => {
                     <input v-model="empSearch" type="text" :placeholder="$e('Фильтр по сотруднику…')"
                         class="w-full rounded-xl border-slate-200 py-2 pl-9 pr-3 text-sm shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
                 </div>
-                <button v-for="e in filteredEmployees" :key="e.uid" @click="selected = e"
+                <button v-for="e in filteredEmployees" :key="e.uid" @click="selectedUid = e.uid"
                     :class="selected && selected.uid===e.uid
                         ? 'border-indigo-400 bg-gradient-to-br from-indigo-50 to-white ring-2 ring-indigo-400/60 shadow-md'
                         : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md'"
@@ -466,19 +470,19 @@ const donut = computed(() => {
                         <div class="relative shrink-0">
                             <Avatar :name="e.user" :src="e.avatar" :size="44" />
                             <!-- Место в рейтинге: 👑 лидер, 🥈🥉, дальше номер -->
-                            <span class="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold shadow ring-1 ring-slate-200"
+                            <span class="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-xs font-bold shadow ring-1 ring-slate-200"
                                 :class="rankOf(e.uid) <= 3 ? '' : 'text-slate-400'">{{ rankBadge(rankOf(e.uid)) }}</span>
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="truncate font-semibold text-slate-900">{{ e.user }}</div>
                             <div class="mt-0.5 flex items-center gap-1.5">
-                                <span class="rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset" :class="marginClass(e.margin)">{{ $e('маржа') }} {{ e.margin }}%</span>
-                                <span class="text-[11px] text-slate-400">{{ $e('успешных') }} {{ e.closed }}</span>
+                                <span class="rounded-md px-1.5 py-0.5 text-xs font-semibold ring-1 ring-inset" :class="marginClass(e.margin)">{{ $e('маржа') }} {{ e.margin }}%</span>
+                                <span class="text-xs text-slate-400">{{ $e('успешных') }} {{ e.closed }}</span>
                             </div>
                         </div>
                         <div class="text-right">
                             <div class="text-sm font-bold tabular-nums text-emerald-600">{{ money(e.bonus) }}</div>
-                            <div class="text-[10px] uppercase tracking-wide text-slate-400">{{ $e('ЗП') }}</div>
+                            <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('ЗП') }}</div>
                         </div>
                     </div>
                     <!-- Шкала ЗП относительно лидера — видно разрыв с первым местом -->
@@ -500,14 +504,14 @@ const donut = computed(() => {
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="truncate text-lg font-bold text-white">{{ selected.user }}</div>
-                            <div class="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                            <div class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
                                 <span class="rounded-full bg-white/10 px-2 py-0.5 font-semibold text-indigo-200 ring-1 ring-white/20">{{ rankBadge(rankOf(selected.uid)) }} {{ $e('место в рейтинге') }}</span>
                                 <span class="rounded-full bg-white/10 px-2 py-0.5 font-semibold text-emerald-300 ring-1 ring-white/20">{{ $e('маржа') }} {{ selected.margin }}%</span>
                                 <span class="rounded-full bg-white/10 px-2 py-0.5 font-semibold text-white/80 ring-1 ring-white/20">{{ $e('успешных:') }} {{ selected.closed }}</span>
                             </div>
                         </div>
                         <div class="hidden text-right sm:block">
-                            <div class="text-[10px] font-semibold uppercase tracking-wide text-white/50">{{ $e('ЗП (бонус)') }}</div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-white/50">{{ $e('ЗП (бонус)') }}</div>
                             <div class="text-xl font-bold tabular-nums text-emerald-300">{{ money(selected.bonus) }}</div>
                         </div>
                     </div>
@@ -521,7 +525,7 @@ const donut = computed(() => {
                                 { l: $e('Маржа'), v: selected.margin + '%', c: 'text-sky-700', g: 'from-sky-50 to-cyan-50/60 border-sky-100', i: '📊' },
                                 { l: $e('ЗП'), v: money(selected.bonus), c: 'text-emerald-700', g: 'from-emerald-50 to-lime-50/60 border-emerald-100', i: '💵' },
                             ]" :key="k.l" class="rounded-xl border bg-gradient-to-br p-3 transition hover:shadow-sm" :class="k.g">
-                            <div class="flex items-center justify-between text-[11px] uppercase tracking-wide text-slate-500">{{ k.l }} <span>{{ k.i }}</span></div>
+                            <div class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500">{{ k.l }} <span>{{ k.i }}</span></div>
                             <div class="mt-1 font-semibold tabular-nums" :class="k.c">{{ k.v }}</div>
                         </div>
                     </div>
@@ -534,13 +538,13 @@ const donut = computed(() => {
                             { t: $e('Просроченные'), items: selected.overdue_deals, dot: 'bg-rose-500', top: 'border-t-rose-400', head: 'bg-rose-50 text-rose-600' },
                         ]" :key="col.t" class="rounded-2xl border border-slate-200 border-t-4 bg-white p-4 shadow-sm" :class="col.top">
                         <h4 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900"><span class="h-2 w-2 rounded-full" :class="col.dot"></span>{{ col.t }}
-                            <span class="ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums" :class="col.head">{{ col.items.length }}</span></h4>
+                            <span class="ml-auto rounded-full px-2 py-0.5 text-xs font-bold tabular-nums" :class="col.head">{{ col.items.length }}</span></h4>
                         <div class="space-y-1.5">
                             <Link v-for="d in col.items" :key="d.id" :href="route('deals.show', d.id)"
                                 class="block rounded-xl border border-slate-100 px-3 py-2 text-xs transition-all hover:border-indigo-300 hover:bg-indigo-50/40 hover:shadow-sm">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="min-w-0 flex-1 truncate font-medium text-slate-800">{{ d.company || d.number }}</span>
-                                    <span class="flex-shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset" :class="marginClass(d.margin)">{{ d.margin }}%</span>
+                                    <span class="flex-shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold ring-1 ring-inset" :class="marginClass(d.margin)">{{ d.margin }}%</span>
                                 </div>
                                 <div class="mt-1 flex items-center justify-between tabular-nums">
                                     <span class="text-slate-400">{{ money(d.budget) }}<span v-if="d.overdue_days" class="font-medium text-rose-500"> · {{ d.overdue_days }} {{ $e('дн.') }}</span></span>

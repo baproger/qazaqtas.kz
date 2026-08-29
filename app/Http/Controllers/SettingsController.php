@@ -34,7 +34,13 @@ class SettingsController extends Controller
         'foreman_rate_pcs' => 35,
         // 3D-конфигуратор двора на сайте: пока выключен, включается здесь.
         'configurator_enabled' => false,
+        // Размер шрифта ERP: одна ручка на всё приложение. Вся вёрстка в rem,
+        // поэтому меняется корневой размер — и за ним всё остальное.
+        'ui_font_size' => 'normal',
     ];
+
+    /** Допустимые размеры шрифта: ключ → px корня (см. resources/css/soft.css). */
+    public const FONT_SIZES = ['compact', 'normal', 'large', 'xlarge'];
 
     private function authorizeManage(Request $request): void
     {
@@ -71,6 +77,7 @@ class SettingsController extends Controller
             'foreman_rate_m2' => ['sometimes', 'numeric', 'min:0'],
             'foreman_rate_pcs' => ['sometimes', 'numeric', 'min:0'],
             'configurator_enabled' => ['boolean'],
+            'ui_font_size' => ['sometimes', Rule::in(self::FONT_SIZES)],
         ]);
 
         foreach ($validated as $key => $value) {

@@ -137,7 +137,7 @@ const total = computed(() => props.modelValue.reduce((sum, r) => sum + lineTotal
                     {{ $e('Сумма заказа:') }} <b class="text-base tabular-nums text-slate-900">{{ money(total) }}</b>
                 </span>
             </div>
-            <p class="mt-1 text-right text-[11px] text-slate-400">{{ $e('Сумма считается по строкам — вручную её не вводят.') }}</p>
+            <p class="mt-1 text-right text-xs text-slate-400">{{ $e('Сумма считается по строкам — вручную её не вводят.') }}</p>
         </div>
     </div>
 </template>

@@ -119,13 +119,13 @@ const delExpense = async (e) => { if (await confirmDialog({ title: tr('Удал�
 
             <div class="grid grid-cols-2 gap-3">
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ $e('Факт (по оплатам)') }}</div>
+                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Факт (по оплатам)') }}</div>
                     <div class="mt-1 flex justify-between text-sm"><span class="text-slate-500">{{ $e('Прибыль') }}</span><span class="font-bold tabular-nums" :class="finance.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ money(finance.profit) }}</span></div>
                     <div class="flex justify-between text-sm"><span class="text-slate-500">{{ $e('Маржа') }}</span><span class="font-bold tabular-nums">{{ finance.margin }}%</span></div>
                     <div class="flex justify-between text-sm"><span class="text-slate-500">{{ $e('Доля расходов') }}</span><span class="tabular-nums">{{ finance.expenseRatio }}%</span></div>
                 </div>
                 <div class="rounded-xl border border-slate-200 p-4">
-                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{{ $e('План (по сумме сделки)') }}</div>
+                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('План (по сумме сделки)') }}</div>
                     <div class="mt-1 flex justify-between text-sm"><span class="text-slate-500">{{ $e('Выгода') }}</span><span class="font-bold tabular-nums" :class="finance.plannedProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ money(finance.plannedProfit) }}</span></div>
                     <div class="flex justify-between text-sm"><span class="text-slate-500">{{ $e('Маржа') }}</span><span class="font-bold tabular-nums">{{ finance.plannedMargin }}%</span></div>
                     <div v-if="finance.plannedProfit < 0" class="mt-1 flex items-center gap-1 text-xs font-medium text-rose-600">
@@ -257,7 +257,7 @@ const delExpense = async (e) => { if (await confirmDialog({ title: tr('Удал�
                         :class="expenseForm.payment_method === 'bank' ? 'border-sky-500 bg-sky-100 text-sky-700 ring-1 ring-sky-500' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'">{{ $e('Банк (счёт)') }}</button>
                 </div>
                 <!-- Остатки из поступлений (видит бухгалтер): расход списывается отсюда -->
-                <div v-if="balances" class="mt-1.5 text-[11px]" :class="overBalance ? 'font-semibold text-rose-600' : 'text-slate-400'">
+                <div v-if="balances" class="mt-1.5 text-xs" :class="overBalance ? 'font-semibold text-rose-600' : 'text-slate-400'">
                     {{ $e('Доступно: касса') }} {{ money(balances.cash) }} {{ $e('· счёт') }} {{ money(balances.bank) }}
                     <template v-if="overBalance"> {{ $e('— расход превышает остаток') }} {{ expenseForm.payment_method === 'cash' ? $e('кассы') : $e('счёта') }}!</template>
                 </div>
@@ -276,7 +276,7 @@ const delExpense = async (e) => { if (await confirmDialog({ title: tr('Удал�
                         <div>
                             <div>
                                 <span class="font-medium tabular-nums text-slate-900">{{ money(e.amount) }}</span>
-                                <span v-if="expenseTypeLabels[e.type]" class="ml-2 rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 ring-1 ring-sky-200">{{ expenseTypeLabels[e.type] }}</span>
+                                <span v-if="expenseTypeLabels[e.type]" class="ml-2 rounded bg-sky-50 px-1.5 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-sky-200">{{ expenseTypeLabels[e.type] }}</span>
                                 <span class="ml-2 text-slate-500">{{ e.description }}</span>
                             </div>
                             <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-400">

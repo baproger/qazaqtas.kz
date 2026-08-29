@@ -106,12 +106,12 @@ const remove = async (p) => {
                         {{ $e('Нет фото — объект не попадёт на главную') }}
                     </div>
 
-                    <label class="absolute bottom-2 right-2 cursor-pointer rounded-lg bg-slate-900/80 px-2.5 py-1.5 text-[11px] font-semibold text-white backdrop-blur transition hover:bg-slate-900">
+                    <label class="absolute bottom-2 right-2 cursor-pointer rounded-lg bg-slate-900/80 px-2.5 py-1.5 text-xs font-semibold text-white backdrop-blur transition hover:bg-slate-900">
                         {{ p.image ? $e('Заменить фото') : $e('Загрузить фото') }}
                         <input :ref="(el) => (fileInputs[p.id] = el)" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadImage(p, $event)" />
                     </label>
 
-                    <span v-if="!p.is_active" class="absolute left-2 top-2 rounded bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold text-white">{{ $e('скрыт') }}</span>
+                    <span v-if="!p.is_active" class="absolute left-2 top-2 rounded bg-slate-900/80 px-2 py-0.5 text-xs font-semibold text-white">{{ $e('скрыт') }}</span>
                 </div>
 
                 <div class="p-4">
@@ -174,7 +174,7 @@ const remove = async (p) => {
                     />
                 </div>
 
-                <p class="mt-3 text-[11px] text-slate-400">
+                <p class="mt-3 text-xs text-slate-400">
                     {{ $e('Фотография загружается на карточке объекта после сохранения. Для главной лучше горизонтальный снимок объекта целиком — он показывается во весь экран.') }}
                 </p>
 

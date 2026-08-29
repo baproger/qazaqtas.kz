@@ -104,15 +104,15 @@ const removeDocument = async (index) => {
                     <div class="group relative">
                         <img :src="img.thumb ?? img.path" :alt="img.alt ?? product.name" loading="lazy" class="aspect-[4/3] w-full object-cover" />
 
-                        <span v-if="i === 0" class="absolute left-1.5 top-1.5 rounded bg-slate-900/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">{{ $e('главное') }}</span>
-                        <span v-if="product.texture_path === img.path" class="absolute right-1.5 top-1.5 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">3D</span>
+                        <span v-if="i === 0" class="absolute left-1.5 top-1.5 rounded bg-slate-900/80 px-1.5 py-0.5 text-xs font-semibold text-white">{{ $e('главное') }}</span>
+                        <span v-if="product.texture_path === img.path" class="absolute right-1.5 top-1.5 rounded bg-emerald-600 px-1.5 py-0.5 text-xs font-semibold text-white">3D</span>
 
                         <div class="absolute inset-x-0 bottom-0 flex justify-center gap-1 bg-slate-900/80 p-1 opacity-0 transition group-hover:opacity-100">
-                            <button v-if="i !== 0" class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-white/20" :title="$e('Сделать главным')" @click="makeMain(i)">★</button>
-                            <button class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-white/20"
+                            <button v-if="i !== 0" class="rounded px-1.5 py-0.5 text-xs text-white hover:bg-white/20" :title="$e('Сделать главным')" @click="makeMain(i)">★</button>
+                            <button class="rounded px-1.5 py-0.5 text-xs text-white hover:bg-white/20"
                                 :title="product.texture_path === img.path ? $e('Снять текстуру 3D') : $e('Использовать как текстуру 3D')"
                                 @click="setTexture(product.texture_path === img.path ? null : i)">3D</button>
-                            <button class="rounded px-1.5 py-0.5 text-[10px] text-white hover:bg-rose-500" :title="$e('Удалить')" @click="removeImage(i)">✕</button>
+                            <button class="rounded px-1.5 py-0.5 text-xs text-white hover:bg-rose-500" :title="$e('Удалить')" @click="removeImage(i)">✕</button>
                         </div>
                     </div>
 
@@ -120,7 +120,7 @@ const removeDocument = async (index) => {
                     <select
                         v-if="product.colors?.length"
                         :value="img.color ?? ''"
-                        class="w-full border-0 border-t border-slate-100 bg-white py-1.5 text-[11px] text-slate-600 focus:ring-0"
+                        class="w-full border-0 border-t border-slate-100 bg-white py-1.5 text-xs text-slate-600 focus:ring-0"
                         @change="setColor(i, $event.target.value)"
                     >
                         <option value="">{{ $e('— для всех цветов —') }}</option>
@@ -132,10 +132,10 @@ const removeDocument = async (index) => {
                 {{ $e('Пока нет фото — витрина рисует схему изделия по типу и цвету') }}
             </p>
 
-            <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+            <p class="mt-2 text-xs leading-relaxed text-slate-400">
                 {{ $e('Под каждым снимком —') }} <b>{{ $e('цвет изделия') }}</b> {{ $e('на фото. Когда покупатель выбирает цвет в карточке, галерея переключается на снимки этого цвета. Фото без привязки («для всех цветов») показываются всегда.') }}
             </p>
-            <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+            <p class="mt-2 text-xs leading-relaxed text-slate-400">
                 {{ $e('Кнопка') }} <b>3D</b> {{ $e('помечает снимок как текстуру: этим фото 3D-сцена красит изделие на главной и в конфигураторе. Лучше всего подходит фрагмент поверхности, снятый сверху при ровном свете.') }}
             </p>
         </section>
@@ -154,13 +154,13 @@ const removeDocument = async (index) => {
 
             <label v-else class="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center hover:border-indigo-300">
                 <span class="text-xs font-medium text-slate-500">{{ $e('Перетащите или выберите файлы (до 24 МБ каждый)') }}</span>
-                <span class="mt-1 text-[11px] text-slate-400">
+                <span class="mt-1 text-xs text-slate-400">
                     {{ $e('.glb — одним файлом · .obj — вместе с .mtl и текстурами, выделите всё сразу') }}
                 </span>
                 <input ref="modelInput" type="file" accept=".glb,.gltf,.obj,.mtl,.bin,image/*" multiple class="hidden" @change="uploadModel" />
             </label>
 
-            <p class="mt-2 text-[11px] leading-relaxed text-slate-400">
+            <p class="mt-2 text-xs leading-relaxed text-slate-400">
                 {{ $e('У OBJ материалы и текстуры лежат в отдельных файлах, поэтому загружать нужно') }}
                 <b>{{ $e('весь комплект сразу') }}</b> {{ $e('— иначе изделие в сцене будет серым. Если модель есть только в OBJ, надёжнее один раз пересохранить её в GLB (Blender: File → Export → glTF 2.0) — это один файл со всеми материалами.') }}
             </p>

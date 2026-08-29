@@ -82,7 +82,7 @@ const remove = async (d) => {
                 <img :src="route('documents.preview', p.id)" :alt="p.name" loading="lazy"
                     class="h-full w-full cursor-zoom-in object-cover transition-transform duration-200 group-hover:scale-105"
                     @click="zoomed = p" />
-                <span v-if="p.user?.name && !compact" class="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-slate-900/70 to-transparent px-1.5 pb-1 pt-4 text-[10px] text-white">{{ p.user.name }}</span>
+                <span v-if="p.user?.name && !compact" class="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-slate-900/70 to-transparent px-1.5 pb-1 pt-4 text-xs text-white">{{ p.user.name }}</span>
                 <button v-if="canDelete(p)" class="chip chip-glass absolute right-1 top-1 !px-1.5 !py-1 text-slate-500 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-rose-600"
                     :title="$e('Удалить')" @click.stop="remove(p)">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>

@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Company;
+use App\Models\Deal;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Setting;
 use App\Models\User;
+use App\Notifications\SiteOrderReceived;
 use Database\Seeders\CatalogSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StageSeeder;
@@ -52,7 +56,7 @@ class SiteShopTest extends TestCase
         $this->get(route('site.home'))
             ->assertInertia(fn (Assert $p) => $p->where('site.configurator', false));
 
-        \App\Models\Setting::set('configurator_enabled', true);
+        Setting::set('configurator_enabled', true);
 
         $this->get(route('site.configurator'))->assertOk();
         $this->get(route('site.home'))
@@ -195,7 +199,7 @@ class SiteShopTest extends TestCase
         $this->assertCount(1, $order->items);
         $this->assertStringStartsWith('ZT-', $order->number);
 
-        Notification::assertSentTo($manager, \App\Notifications\SiteOrderReceived::class);
+        Notification::assertSentTo($manager, SiteOrderReceived::class);
 
         // Корзина очищается — повторная отправка того же заказа невозможна.
         $this->get(route('site.cart'))->assertInertia(fn (Assert $p) => $p->where('cart.count', 0));
@@ -217,6 +221,9 @@ class SiteShopTest extends TestCase
     {
         $manager = User::factory()->create();
         $manager->assignRole('manager');
+        // Заказ витрины принадлежит фирме — переводить его в сделку может
+        // только сотрудник этой фирмы.
+        $manager->companies()->attach(Company::orderBy('id')->value('id'));
 
         $this->post(route('site.cart.add', $this->paving()->slug), ['quantity' => 120]);
         $this->post(route('site.checkout.store'), [
@@ -240,7 +247,7 @@ class SiteShopTest extends TestCase
 
         // Повторная конвертация не плодит сделки.
         $this->actingAs($manager)->post(route('siteOrders.convert', $order))->assertSessionHas('error');
-        $this->assertSame(1, \App\Models\Deal::count());
+        $this->assertSame(1, Deal::count());
     }
 
     public function test_orders_page_is_closed_for_workshop_employees(): void

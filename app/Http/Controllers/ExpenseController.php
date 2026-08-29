@@ -4,13 +4,32 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ExpenseRequest;
 use App\Models\Deal;
+use App\Models\EmployeeDebt;
 use App\Models\Expense;
+use App\Models\Material;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
+use App\Notifications\CompanyExpensePaid;
+use App\Notifications\CompanyExpenseSubmitted;
+use App\Notifications\ExpenseConfirmed;
+use App\Notifications\ExpenseHandled;
+use App\Notifications\ExpensePending;
+use App\Notifications\ExpenseThresholdExceeded;
+use App\Services\MediaService;
+use App\Support\CurrentCompany;
+use App\Support\FinanceAudit;
+use App\Support\NotificationResolver;
+use App\Support\RoleTraits;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExpenseController extends Controller
@@ -69,9 +88,9 @@ class ExpenseController extends Controller
      * Сохранить чек: приватный диск + сжатие фотографии (PDF — как есть).
      * Единая точка для создания, правки и подтверждения расхода.
      */
-    private function storeReceipt(\Illuminate\Http\UploadedFile $file): string
+    private function storeReceipt(UploadedFile $file): string
     {
-        return app(\App\Services\MediaService::class)->storeReceipt($file, 'receipts');
+        return app(MediaService::class)->storeReceipt($file, 'receipts');
     }
 
     private function resolve(?string $type, ?int $id): ?Model
@@ -103,8 +122,8 @@ class ExpenseController extends Controller
 
         $limit = (float) $deal->budget * 0.6;
         if ($spent > $limit && ($spent - $addedAmount) <= $limit) {
-            User::where('is_active', true)->role('financist')->get()
-                ->each(fn (User $u) => $u->notify(new \App\Notifications\ExpenseThresholdExceeded($deal, $spent)));
+            RoleTraits::users('financist')->where('is_active', true)->get()
+                ->each(fn (User $u) => $u->notify(new ExpenseThresholdExceeded($deal, $spent)));
         }
     }
 
@@ -139,32 +158,32 @@ class ExpenseController extends Controller
             }
 
             if (empty($data['category_id'])) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'category_id' => 'Выберите категорию расхода (аренда, интернет, бензин…).',
                 ]);
             }
             if (! empty($data['material_id'])) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'material_id' => 'Списание со склада делается из карточки сделки/заказа.',
                 ]);
             }
-            $data['company_id'] = \App\Support\CurrentCompany::id() ?: null;
+            $data['company_id'] = CurrentCompany::id() ?: null;
         }
 
         // Расход по материалам: списываем остаток со склада компании сделки.
         if (! empty($data['material_id'])) {
-            $material = \App\Models\Material::findOrFail($data['material_id']);
+            $material = Material::findOrFail($data['material_id']);
 
             $entityCompanyId = $entity instanceof Project ? $entity->deal?->company_id : $entity?->company_id;
             if ($material->company_id && (int) $material->company_id !== (int) $entityCompanyId) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'material_id' => 'Материал со склада другой компании.',
                 ]);
             }
             // Первичная проверка (быстрый отказ + подсказка остатка); финальная,
             // защищённая от гонки, — под блокировкой строки внутри транзакции.
             if ((float) $material->quantity < (float) $data['qty']) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'qty' => 'Недостаточно на складе: остаток '.rtrim(rtrim(number_format((float) $material->quantity, 2, '.', ' '), '0'), '.').' '.$material->unit.'.',
                 ]);
             }
@@ -176,7 +195,7 @@ class ExpenseController extends Controller
             if ((float) $material->price > 0) {
                 $data['amount'] = round((float) $data['qty'] * (float) $material->price, 2);
             } elseif ((float) ($data['amount'] ?? 0) <= 0) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'amount' => 'У материала не заведена закупочная цена — укажите сумму расхода вручную.',
                 ]);
             }
@@ -200,12 +219,12 @@ class ExpenseController extends Controller
                 ? $data['description']
                 : 'Материал: '.$material->name.' × '.rtrim(rtrim(number_format((float) $data['qty'], 2, '.', ''), '0'), '.').' '.$material->unit;
 
-            \Illuminate\Support\Facades\DB::transaction(function () use ($data, $material) {
+            DB::transaction(function () use ($data, $material) {
                 // Блокируем строку материала и перечитываем остаток ВНУТРИ
                 // транзакции: два параллельных списания не уведут склад в минус.
-                $locked = \App\Models\Material::whereKey($material->id)->lockForUpdate()->first();
+                $locked = Material::whereKey($material->id)->lockForUpdate()->first();
                 if ((float) $locked->quantity < (float) $data['qty']) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'qty' => 'Недостаточно на складе: остаток '.rtrim(rtrim(number_format((float) $locked->quantity, 2, '.', ' '), '0'), '.').' '.$locked->unit.'.',
                     ]);
                 }
@@ -228,7 +247,7 @@ class ExpenseController extends Controller
             ->where('created_at', '>=', now()->subMinute())
             ->exists();
         if ($duplicate) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'amount' => 'Похоже на повторную отправку — такой расход уже создан минуту назад.',
             ]);
         }
@@ -272,7 +291,7 @@ class ExpenseController extends Controller
             User::where('is_active', true)
                 ->whereHas('roles', fn ($q) => $q->whereIn('name', ['admin', 'financist']))
                 ->get()
-                ->each(fn (User $u) => $u->notify(new \App\Notifications\CompanyExpenseSubmitted($expense)));
+                ->each(fn (User $u) => $u->notify(new CompanyExpenseSubmitted($expense)));
 
             return;
         }
@@ -280,21 +299,22 @@ class ExpenseController extends Controller
         $title = 'Подтвердить расход #'.$expense->id.' — '.number_format((float) $expense->amount, 0, '.', ' ').' ₸'
             .($entity?->number ? ' ('.$entity->number.')' : '');
 
-        $financists = User::where('is_active', true)->role('financist')->get();
-        foreach ($financists as $fin) {
-            if ($entity && method_exists($entity, 'tasks')) {
-                $entity->tasks()->create([
-                    'title' => $title,
-                    'status' => 'new',
-                    'priority' => 'high',
-                    'assignee_id' => $fin->id,
-                    'creator_id' => $expense->responsible_user_id ?? $fin->id,
-                    'start_date' => now(),
-                    'due_date' => now()->addDays(3),
-                ]);
-            }
-            $fin->notify(new \App\Notifications\ExpensePending($expense));
+        // Уведомление — всем бухгалтерам, задача — ОДНА (первому активному):
+        // раньше каждый получал свою копию, и одну работу «делали» трижды.
+        $financists = RoleTraits::users('financist')->where('is_active', true)->orderBy('id')->get();
+        $owner = $financists->first();
+        if ($owner && $entity && method_exists($entity, 'tasks')) {
+            $entity->tasks()->create([
+                'title' => $title,
+                'status' => 'new',
+                'priority' => 'high',
+                'assignee_id' => $owner->id,
+                'creator_id' => $expense->responsible_user_id ?? $owner->id,
+                'start_date' => now(),
+                'due_date' => now()->addDays(3),
+            ]);
         }
+        $financists->each(fn (User $fin) => $fin->notify(new ExpensePending($expense)));
     }
 
     /**
@@ -311,7 +331,7 @@ class ExpenseController extends Controller
         }
 
         $data = $request->validate([
-            'payment_method' => ['required', \Illuminate\Validation\Rule::in(['cash', 'bank'])],
+            'payment_method' => ['required', Rule::in(['cash', 'bank'])],
             'file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:10240'],
         ], ['payment_method.required' => 'Выберите способ оплаты: наличные или банк.']);
 
@@ -322,7 +342,7 @@ class ExpenseController extends Controller
             $expense->file_path = $this->storeReceipt($request->file('file'));
         }
         if (! $expense->file_path) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'file' => 'Без чека расход не подтверждается — прикрепите фото или PDF.',
             ]);
         }
@@ -337,31 +357,31 @@ class ExpenseController extends Controller
 
         // Работа сделана — «ждёт проверки» гаснет у ВСЕХ бухгалтеров само.
         // Гасим ДО новых уведомлений: иначе прочитанными стали бы и они.
-        \App\Support\NotificationResolver::expenseHandled($expense->id);
+        NotificationResolver::expenseHandled($expense->id);
 
         // Закрываем задачи «Подтвердить расход #N …» у бухгалтеров.
-        \App\Models\Task::where('title', 'like', 'Подтвердить расход #'.$expense->id.' %')
+        Task::where('title', 'like', 'Подтвердить расход #'.$expense->id.' %')
             ->where('status', '!=', 'done')
             ->get()->each(function ($t) {
                 $t->update(['status' => 'done', 'completed_at' => now()]);
-                \App\Support\NotificationResolver::taskDone($t);
+                NotificationResolver::taskDone($t);
             });
 
         // Автору — уведомление о подтверждении. У заявки компании оно ведёт
         // в «Мои расходы»: там сотрудник видит статус и способ оплаты, а
         // сделки, на которую могла бы вести обычная ссылка, у заявки нет.
         $expense->responsible?->notify($expense->expenseable_id === null
-            ? new \App\Notifications\CompanyExpensePaid($expense)
-            : new \App\Notifications\ExpenseConfirmed($expense));
+            ? new CompanyExpensePaid($expense)
+            : new ExpenseConfirmed($expense));
         $this->checkExpenseThreshold($expense->expenseable, (float) $expense->amount);
 
         // Остальным бухгалтерам — «расход уже подтверждён (Имя)», чтобы не
         // подтверждали повторно. Кроме того, кто подтвердил, и автора.
-        User::where('is_active', true)->role('financist')
+        RoleTraits::users('financist')->where('is_active', true)
             ->where('id', '!=', $request->user()->id)
             ->where('id', '!=', $expense->responsible_user_id)
             ->get()
-            ->each(fn ($fin) => $fin->notify(new \App\Notifications\ExpenseHandled($expense, $request->user())));
+            ->each(fn ($fin) => $fin->notify(new ExpenseHandled($expense, $request->user())));
 
         return back()->with('success', 'Расход подтверждён ('.($data['payment_method'] === 'cash' ? 'наличные' : 'банк').').');
     }
@@ -395,7 +415,7 @@ class ExpenseController extends Controller
         // игнор с флешем «Расход обновлён».
         if ($expense->material_id && (float) ($expense->material?->price ?? 0) > 0) {
             if (isset($data['amount']) && abs((float) $data['amount'] - (float) $expense->amount) > 0.005) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'amount' => 'Сумма расхода по материалам считается автоматически (количество × цена) и не редактируется — удалите расход (остаток вернётся) и создайте заново.',
                 ]);
             }
@@ -422,12 +442,12 @@ class ExpenseController extends Controller
 
         abort_unless($expense->file_path && Storage::disk('local')->exists($expense->file_path), 404);
 
-        $name = 'чек-' . $expense->id . '.' . pathinfo($expense->file_path, PATHINFO_EXTENSION);
+        $name = 'чек-'.$expense->id.'.'.pathinfo($expense->file_path, PATHINFO_EXTENSION);
 
         // Отдаём inline — чек открывается в браузере на просмотр, без скачивания.
         // nosniff: файл загружен пользователем, запрещаем браузеру угадывать тип (защита от XSS).
         return Storage::disk('local')->response($expense->file_path, $name, [
-            'Content-Disposition' => 'inline; filename="' . $name . '"',
+            'Content-Disposition' => 'inline; filename="'.$name.'"',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
@@ -445,25 +465,25 @@ class ExpenseController extends Controller
         // Расход-выдача долга неотделим от самого долга: удалив его здесь,
         // мы вернули бы деньги в кассу, оставив сотруднику долг, который
         // нечем гасить. Отменяется он с ведомости ЗП — вместе с долгом.
-        if (\App\Models\EmployeeDebt::where('expense_id', $expense->id)->exists()) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+        if (EmployeeDebt::where('expense_id', $expense->id)->exists()) {
+            throw ValidationException::withMessages([
                 'expense' => 'Это выдача долга — отмените её в ведомости ЗП, там уйдут и долг, и расход.',
             ]);
         }
 
         // Расхода больше нет — уведомления о нём тоже не нужны.
-        \App\Support\NotificationResolver::expenseHandled($expense->id);
+        NotificationResolver::expenseHandled($expense->id);
 
         // Удаление расхода по материалам возвращает количество на склад.
-        \Illuminate\Support\Facades\DB::transaction(function () use ($expense) {
+        DB::transaction(function () use ($expense) {
             if ($expense->material_id && $expense->qty && $expense->material) {
                 $expense->material->increment('quantity', $expense->qty);
             }
             $expense->delete();
         });
 
-        \App\Support\FinanceAudit::notifyDeleted(
-            'Расход на '.number_format((float) $expense->amount, 0, '.', ' ').' ₸'.($expense->description ? ' («'.\Illuminate\Support\Str::limit($expense->description, 60).'»)' : ''),
+        FinanceAudit::notifyDeleted(
+            'Расход на '.number_format((float) $expense->amount, 0, '.', ' ').' ₸'.($expense->description ? ' («'.Str::limit($expense->description, 60).'»)' : ''),
             $expense->expenseable_type,
             $expense->expenseable_id,
         );

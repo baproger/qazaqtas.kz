@@ -103,9 +103,9 @@ const printPage = () => window.print();
                                 <td class="px-6 py-2.5 text-slate-400 tabular-nums">{{ time(r.at) }}</td>
                                 <td class="px-4 py-2.5">
                                     <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="typeClass(r)">{{ typeLabel(r) }}</span>
-                                    <span v-if="r.payout" class="ml-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                    <span v-if="r.payout" class="ml-1 rounded-full px-2 py-0.5 text-xs font-medium"
                                         :class="r.payout === 'debt' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-700'">{{ payoutLabel(r.payout) }}</span>
-                                    <span v-if="mode === 'all'" class="ml-1 text-[11px] text-slate-400">{{ kindLabel(r.kind) }}</span>
+                                    <span v-if="mode === 'all'" class="ml-1 text-xs text-slate-400">{{ kindLabel(r.kind) }}</span>
                                     <div class="mt-0.5 text-slate-600">
                                         <Link v-if="r.link" :href="r.link" class="hover:text-indigo-600 hover:underline">{{ r.title }}</Link>
                                         <template v-else>{{ r.title }}</template>

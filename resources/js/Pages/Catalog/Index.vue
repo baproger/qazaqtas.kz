@@ -181,7 +181,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                             <td class="px-4 py-2">
                                 <img v-if="p.images?.length" :src="p.images[0].thumb ?? p.images[0].path" :alt="p.name" loading="lazy"
                                     class="h-11 w-14 rounded-lg object-cover ring-1 ring-slate-200" />
-                                <span v-else class="grid h-11 w-14 place-items-center rounded-lg bg-slate-100 text-[10px] text-slate-400">{{ $e('нет') }}</span>
+                                <span v-else class="grid h-11 w-14 place-items-center rounded-lg bg-slate-100 text-xs text-slate-400">{{ $e('нет') }}</span>
                             </td>
                             <td class="px-4 py-3">
                                 <span class="font-medium text-slate-800">{{ p.name }}</span>
@@ -191,7 +191,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                             <td class="px-4 py-3 text-slate-400">{{ p.code ?? '—' }}</td>
                             <td class="px-4 py-3 text-right font-semibold tabular-nums text-slate-900">{{ money(p.price) }} <span class="text-xs font-normal text-slate-400">/ {{ p.unit }}</span></td>
                             <td class="px-4 py-3 text-center">
-                                <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
+                                <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
                                     {{ p.is_active ? $e('опубликована') : $e('скрыта') }}
                                 </span>
                                 <span v-if="p.is_featured" class="ml-1 text-amber-500" :title="$e('Показывается на главной')">★</span>
@@ -261,7 +261,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                     <div>
                         <InputLabel :value="$e('Минимальный остаток')" />
                         <TextInput v-model="form.min_stock" type="number" min="0" step="any" class="mt-1 w-full" :placeholder="$e('не следим')" />
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Ниже этого остатка склад пометит товар «мало»') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ $e('Ниже этого остатка склад пометит товар «мало»') }}</p>
                     </div>
                     <div><InputLabel :value="$e('Цена, ₸ *')" /><TextInput v-model="form.price" type="number" min="0" class="mt-1 w-full" /><InputError :message="form.errors.price" class="mt-1" /></div>
                     <div><InputLabel :value="$e('Старая цена')" /><TextInput v-model="form.old_price" type="number" min="0" class="mt-1 w-full" /></div>
@@ -274,12 +274,12 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                     <div>
                         <InputLabel :value="$e('Характеристики (ключ: значение)')" />
                         <textarea v-model="specsText" rows="5" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm" :placeholder="$e('size: 300 × 300 × 60 мм') + '\n' + 'pieces_per_m2: 11.1'"></textarea>
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('pieces_per_m2 нужен калькулятору площади и конфигуратору.') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ $e('pieces_per_m2 нужен калькулятору площади и конфигуратору.') }}</p>
                     </div>
                     <div>
                         <InputLabel :value="$e('Цвета (Название #HEX)')" />
                         <textarea v-model="colorsText" rows="5" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm" :placeholder="$e('Мрамор белый #E8E6E1')"></textarea>
-                        <p class="mt-1 text-[11px] text-slate-400">{{ $e('Первый цвет — основной, им рисуется превью.') }}</p>
+                        <p class="mt-1 text-xs text-slate-400">{{ $e('Первый цвет — основной, им рисуется превью.') }}</p>
                     </div>
                 </div>
 

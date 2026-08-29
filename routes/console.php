@@ -18,3 +18,5 @@ Schedule::command('debts:charge')->monthlyOn(1, '09:00');
 // Заявка сотрудника, застрявшая в очереди бухгалтера, — это его деньги.
 // Через три дня напоминаем бухгалтерии (однократно на заявку).
 Schedule::command('expenses:notify-stale')->dailyAt('09:30');
+// Роботы этапов: отложенные («через N часов») и цепочки — каждую минуту.
+Schedule::command('robots:run-due')->everyMinute();

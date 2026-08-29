@@ -13,7 +13,6 @@ use App\Models\DealStageLog;
 use App\Models\Department;
 use App\Models\Material;
 use App\Models\Product;
-use App\Models\ProductionPlan;
 use App\Models\Project;
 use App\Models\ProjectStage;
 use App\Models\Setting;
@@ -78,17 +77,21 @@ class DealController extends Controller
      */
     private function scopeForViewer($query, User $user): void
     {
-        $gateTypes = [];
-        if ($user->hasRole('designer')) {
-            $gateTypes[] = 'design';
-        }
-        if ($user->hasRole('supplier')) {
-            $gateTypes[] = 'shop_gate';
-        }
-        if ($gateTypes) {
-            $query->whereHas('stage', fn ($s) => $s->whereIn('stage_type', $gateTypes));
+        // Роли «своего этапа» (технолог, снабженец и любые, что заведёт
+        // владелец): не ведут сделки сами, но видят те, что стоят на этапах,
+        // где их роль — адресат гейта или ей разрешено «Далее». Раньше это
+        // держалось на зашитых метках design/shop_gate.
+        if (! $user->can('deal.create') && ! RoleTraits::isLeadership($user)) {
+            $roles = $user->getRoleNames()->all();
+            $gateStageIds = DealStage::funnel(CurrentCompany::id())
+                ->filter(fn ($s) => in_array($s->gate_task_role, $roles, true)
+                    || array_intersect($roles, $s->effectiveRules()['extra_movers']) !== [])
+                ->pluck('id');
+            if ($gateStageIds->isNotEmpty()) {
+                $query->whereIn('deal_stage_id', $gateStageIds);
 
-            return;
+                return;
+            }
         }
 
         // Бригадир — только сделки, на которые его назначил директор.
@@ -261,6 +264,11 @@ class DealController extends Controller
         $data = $request->validated();
         // Название сделки = название компании (поле «Название сделки» убрано из UI).
         $data['name'] = $data['company_name'];
+        // Доля партнёра уменьшает остаток, из которого считается бонус, —
+        // писать её может только тот, кто видит деньги.
+        if (! $this->seesMoney($request->user())) {
+            unset($data['partner_pct']);
+        }
 
         // Deal belongs to a firm: the one picked in the form if the
         // user is a member of it, otherwise the current session company.
@@ -358,10 +366,7 @@ class DealController extends Controller
         // Что по этой сделке УЖЕ ушло в производство. Без этого числа кнопка
         // «Добавить недостающее» удваивала бы план при втором нажатии: склад
         // от заявки не меняется, и нехватка остаётся видна как была.
-        $queued = ProductionPlan::where('deal_id', $deal->id)
-            ->selectRaw('product_id, sum(plan_qty) as qty')
-            ->groupBy('product_id')
-            ->pluck('qty', 'product_id');
+        $queued = app(ProductionPlanService::class)->queuedByProduct($deal);
 
         $rows = $short->map(function ($row) use ($queued) {
             $already = round((float) ($queued[$row['product']->id] ?? 0), 2);
@@ -422,10 +427,7 @@ class DealController extends Controller
         // Вычитаем то, что по этой сделке уже отправлено: второе нажатие не
         // должно удваивать задание цеху. Склад от заявки не меняется, поэтому
         // нехватка остаётся видна и кнопку легко нажать снова.
-        $already = ProductionPlan::where('deal_id', $deal->id)
-            ->selectRaw('product_id, sum(plan_qty) as qty')
-            ->groupBy('product_id')
-            ->pluck('qty', 'product_id');
+        $already = $plans->queuedByProduct($deal);
 
         $toSend = $short->map(fn ($row) => [
             'product_id' => $row['product']->id,
@@ -518,13 +520,14 @@ class DealController extends Controller
         $stageTask = null;
         if ($gateStage) {
             $openTask = $deal->tasks()->where('title', 'like', $gateStage->gate_task_title.'%')->where('status', '!=', 'done')->orderBy('due_date')->first();
-            $gateRole = $gateStage->gate_task_role ?: 'financist';
             $stageTask = [
                 'label' => $gateStage->gate_task_title.' — выполнено',
                 'done' => $openTask === null,
                 'due' => optional($openTask?->due_date)->toDateTimeString(),
-                'role' => $gateRole,
-                'roleLabel' => self::GATE_ROLE_LABELS[$gateRole] ?? $gateRole,
+                'role' => $gateStage->gate_task_role ?: 'responsible',
+                'roleLabel' => mb_strtolower($gateStage->gateRoleLabel()),
+                // Галочку ставит тот, кому адресована задача (или админ) — считает сервер.
+                'allowed' => $gateStage->gateAllowedFor(request()->user(), $deal),
             ];
         }
 
@@ -612,6 +615,11 @@ class DealController extends Controller
         $data = $request->validated();
         // Название сделки зеркалит название компании (поле убрано из UI).
         $data['name'] = $data['company_name'];
+        // Доля партнёра — деньги: без права на суммы менять её нельзя, иначе
+        // менеджер обнулил бы её и поднял себе бонус.
+        if (! $this->seesMoney($request->user())) {
+            unset($data['partner_pct']);
+        }
 
         // `items` присылают только формы, где товары редактируются: отсутствие
         // ключа означает «не трогать позиции», пустой массив — «удалить все».
@@ -679,7 +687,7 @@ class DealController extends Controller
             ->whereNotIn('status', ['closed', 'cancelled'])
             // ЭСФ и «Оплата успешно» — не просрочка; на «Акт утверждение»
             // просроченная сделка ПОКАЗЫВАЕТСЯ (по stage_type, имя ненадёжно).
-            ->whereDoesntHave('stage', fn ($s) => $s->where('is_won', true)->orWhere('stage_type', 'esf'))
+            ->whereDoesntHave('stage', fn ($s) => $s->where('is_won', true)->orWhere('ignores_deadline', true))
             ->tap(fn ($q) => $this->scopeForViewer($q, $request->user()))
             ->orderBy('deadline')
             ->get()

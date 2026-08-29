@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Deal;
+use App\Support\RoleTraits;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -44,14 +45,16 @@ class BinLookupController extends Controller
             $match = ['company_name' => $deal->company_name, 'bin' => $deal->customer_bin ?: $deal->bin, 'phone' => $deal->contact_phone, 'address' => $deal->address];
         }
 
-        // История по БИН — тоже только текущая компания.
+        // История по БИН — тоже только текущая компания. Суммы — только тем,
+        // кто видит деньги (тот же фильтр, что у списка и карточки сделки).
+        $money = RoleTraits::seesMoney($request->user());
         $history = Deal::forCurrentCompany()->tap($byBin)->with('stage:id,name,color')
             ->latest()->limit(30)
             ->get(['id', 'number', 'company_name', 'client_name', 'budget', 'deadline', 'deal_stage_id', 'created_at'])
             ->map(fn ($d) => [
                 'id' => $d->id, 'number' => $d->number,
                 'company' => $d->company_name, 'client' => $d->client_name,
-                'budget' => (float) $d->budget, 'deadline' => optional($d->deadline)->toDateString(),
+                'budget' => $money ? (float) $d->budget : null, 'deadline' => optional($d->deadline)->toDateString(),
                 'stage' => optional($d->stage)->name, 'color' => optional($d->stage)->color,
                 'created' => optional($d->created_at)->toDateString(),
             ]);

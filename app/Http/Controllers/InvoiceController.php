@@ -321,8 +321,39 @@ class InvoiceController extends Controller
         $payables = (clone $base)->where('type', 'payable')->get();
         $invoiceTotals = $this->invoiceTotals();
 
+        // Долг по счетам — ПО СДЕЛКАМ, а не одной цифрой: бухгалтеру нужно
+        // видеть, кто именно должен и по какому счёту, и пройти в сделку.
+        $openInvoices = $this->invoiceScope()->where('status', '!=', 'cancelled')
+            ->with(['invoiceable', 'payments:id,invoice_id,amount'])
+            ->orderBy('due_date')->orderBy('issue_date')->get()
+            ->map(function (Invoice $inv) {
+                $paid = (float) $inv->payments->sum('amount');
+                $left = round((float) $inv->amount - $paid, 2);
+                $entity = $inv->invoiceable;
+                $isDeal = $inv->invoiceable_type === 'deal' && $entity;
+                $overdue = $left > 0 && $inv->due_date && $inv->due_date->isPast();
+
+                return [
+                    'id' => $inv->id,
+                    'number' => $inv->number,
+                    'deal' => $isDeal ? ['id' => $entity->id, 'number' => $entity->number, 'company' => $entity->company_name, 'client' => $entity->client_name]
+                        : ($entity ? ['id' => null, 'number' => $entity->number ?? null, 'company' => $entity->name ?? null, 'client' => null] : null),
+                    'amount' => (float) $inv->amount,
+                    'paid' => $paid,
+                    'left' => $left,
+                    'issue_date' => $inv->issue_date?->toDateString(),
+                    'due_date' => $inv->due_date?->toDateString(),
+                    'overdue' => $overdue,
+                    'days_overdue' => $overdue ? (int) $inv->due_date->diffInDays(now()) : 0,
+                    'status' => $inv->status,
+                ];
+            })
+            ->filter(fn ($row) => $row['left'] > 0)
+            ->values();
+
         return Inertia::render('Finance/Debts', [
             'debts' => ['receivables' => $receivables, 'payables' => $payables],
+            'invoiceDebts' => $openInvoices,
             'totals' => [
                 // Долг по счетам считается системой, ручные строки — сверху него.
                 'invoices' => $invoiceTotals['debt'],
@@ -376,6 +407,11 @@ class InvoiceController extends Controller
 
         $data = $request->validated();
         $data['number'] = $numbers->generate();
+        // Как и в update(): paid/partially_paid/overdue ставит только
+        // FinanceService по реальным платежам, вручную — draft/sent/cancelled.
+        if (! in_array($data['status'] ?? 'draft', ['draft', 'sent', 'cancelled'], true)) {
+            $data['status'] = 'draft';
+        }
         $data['status'] ??= 'draft';
         $data['issue_date'] ??= now()->toDateString();
 

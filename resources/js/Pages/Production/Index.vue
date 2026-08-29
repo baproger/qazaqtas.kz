@@ -204,9 +204,9 @@ const removeOrder = async (order) => {
                             <div class="flex items-baseline gap-2 text-sm tabular-nums">
                                 <b :class="row.over ? 'text-amber-600' : 'text-slate-900'">{{ num(row.done) }}</b>
                                 <span class="text-slate-400">/ {{ num(row.plan) }} {{ row.unit }}</span>
-                                <span v-if="row.pending" class="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700"
+                                <span v-if="row.pending" class="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-semibold text-amber-700"
                                     :title="$e('внесено, но мастер ещё не подтвердил')">+{{ num(row.pending) }} {{ $e('ждёт') }}</span>
-                                <span v-if="row.over" class="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">{{ $e('перевыполнение') }}</span>
+                                <span v-if="row.over" class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800">{{ $e('перевыполнение') }}</span>
                             </div>
                         </div>
                         <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -309,7 +309,7 @@ const removeOrder = async (order) => {
                                                 <tr v-for="l in o.lines" :key="l.id">
                                                     <td class="py-1.5 pr-4 text-slate-700">
                                                         {{ l.user || '—' }}
-                                                        <span v-if="l.role === 'foreman'" class="ml-1 rounded bg-indigo-50 px-1.5 py-px text-[10px] font-semibold text-indigo-700">{{ $e('бригадир · вся смена') }}</span>
+                                                        <span v-if="l.role === 'foreman'" class="ml-1 rounded bg-indigo-50 px-1.5 py-px text-xs font-semibold text-indigo-700">{{ $e('бригадир · вся смена') }}</span>
                                                     </td>
                                                     <td class="py-1.5 pr-4 text-right tabular-nums text-slate-500">
                                                         <span v-if="l.qty_m2">{{ num(l.qty_m2) }} {{ $e('м²') }}</span>
@@ -320,7 +320,7 @@ const removeOrder = async (order) => {
                                                 </tr>
                                             </tbody>
                                         </table>
-                                        <div class="mt-2 text-[11px] text-slate-400">
+                                        <div class="mt-2 text-xs text-slate-400">
                                             <span v-if="o.created_by">{{ $e('внёс') }}: {{ o.created_by }}</span>
                                             <span v-if="o.confirmed_by" class="ml-3">{{ $e('подтвердил') }}: {{ o.confirmed_by }} · {{ o.confirmed_at }}</span>
                                             <span v-if="o.note" class="ml-3">📝 {{ o.note }}</span>
@@ -375,7 +375,7 @@ const removeOrder = async (order) => {
                         <span v-if="pickedItem.pending">{{ $e('ждёт подтверждения:') }} <b>{{ num(pickedItem.pending) }}</b></span>
                         <span class="font-semibold">{{ $e('Осталось:') }} {{ num(pickedItem.left) }} {{ pickedItem.unit }}</span>
                     </div>
-                    <p v-else class="mt-1 text-[11px] text-slate-400">{{ $e('Без позиции наряд в план по сделке не попадёт') }}</p>
+                    <p v-else class="mt-1 text-xs text-slate-400">{{ $e('Без позиции наряд в план по сделке не попадёт') }}</p>
                 </div>
 
                 <div class="mt-4 space-y-2">

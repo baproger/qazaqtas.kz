@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\UiTranslation;
 use App\Services\CartService;
 use App\Support\CurrentCompany;
@@ -91,6 +92,8 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
             'locale' => app()->getLocale(),
+            // Размер шрифта ERP из Настроек → Общие; AppLayout ставит его на <html>.
+            'uiFontSize' => $user ? (string) Setting::get('ui_font_size', 'normal') : 'normal',
             'translations' => fn () => UiTranslation::map(app()->getLocale()),
             // Язык страницы и её адреса на других языках: из этого фронт
             // собирает переключатель, hreflang и имена маршрутов витрины
