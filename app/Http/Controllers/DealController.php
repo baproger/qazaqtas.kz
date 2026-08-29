@@ -521,7 +521,7 @@ class DealController extends Controller
         if ($gateStage) {
             $openTask = $deal->tasks()->where('title', 'like', $gateStage->gate_task_title.'%')->where('status', '!=', 'done')->orderBy('due_date')->first();
             $stageTask = [
-                'label' => $gateStage->gate_task_title.' — выполнено',
+                'label' => $gateStage->gate_task_title,
                 'done' => $openTask === null,
                 'due' => optional($openTask?->due_date)->toDateTimeString(),
                 'role' => $gateStage->gate_task_role ?: 'responsible',
