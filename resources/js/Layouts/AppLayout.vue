@@ -37,6 +37,20 @@ const perms = computed(() => page.props.auth.user?.permissions ?? []);
 const roles = computed(() => page.props.auth.user?.roles ?? []);
 const isLeadership = computed(() => roles.value.some((r) => ['admin', 'director', 'financist'].includes(r)));
 const flash = computed(() => page.props.flash || {});
+
+// Тосты вместо баннера во всю ширину: сообщение всплывает справа сверху
+// и уходит само (успех — 4 с, ошибка — 7 с); крестик закрывает раньше.
+const toasts = ref([]);
+let toastId = 0;
+const dismissToast = (id) => { toasts.value = toasts.value.filter((t) => t.id !== id); };
+const pushToast = (type, text) => {
+    if (!text) return;
+    const ms = type === 'error' ? 7000 : 4000;
+    const id = ++toastId;
+    toasts.value.push({ id, type, text, ms });
+    setTimeout(() => dismissToast(id), ms);
+};
+watch(() => [flash.value.success, flash.value.error, page.url], ([ok, err]) => { pushToast('success', ok); pushToast('error', err); }, { immediate: true });
 const notifications = computed(() => page.props.notifications || { unread: 0, items: [] });
 const locale = computed(() => page.props.locale || 'ru');
 
@@ -584,10 +598,20 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 </div>
             </header>
 
-            <transition enter-active-class="transition duration-300" enter-from-class="opacity-0 -translate-y-1" enter-to-class="opacity-100">
-                <div v-if="flash.success" class="mx-4 mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800 ring-1 ring-green-200 sm:mx-6">{{ flash.success }}</div>
-            </transition>
-            <div v-if="flash.error" class="mx-4 mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200 sm:mx-6">{{ flash.error }}</div>
+            <!-- Тосты: системные сообщения справа сверху, уходят сами -->
+            <div class="pointer-events-none fixed right-4 top-4 z-[70] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2">
+                <transition-group enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 translate-x-6" enter-to-class="opacity-100 translate-x-0"
+                    leave-active-class="transition duration-200 ease-in" leave-to-class="opacity-0 translate-x-6">
+                    <div v-for="tst in toasts" :key="tst.id"
+                        class="pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-sm shadow-soft-lg backdrop-blur-md"
+                        :class="tst.type === 'error' ? 'border-rose-200/70 bg-rose-50/90 text-rose-800' : 'border-emerald-200/70 bg-emerald-50/90 text-emerald-800'">
+                        <span class="mt-0.5 text-base leading-none">{{ tst.type === 'error' ? '⛔' : '✅' }}</span>
+                        <div class="min-w-0 flex-1 leading-snug">{{ tst.text }}</div>
+                        <button type="button" class="-mr-1 rounded-md px-1 text-lg leading-none opacity-50 hover:opacity-100" @click="dismissToast(tst.id)">×</button>
+                        <span class="absolute inset-x-3 bottom-0 h-0.5 origin-left rounded-full" :class="tst.type === 'error' ? 'bg-rose-400/60' : 'bg-emerald-400/60'" :style="{ animation: `toast-bar ${tst.ms}ms linear forwards` }"></span>
+                    </div>
+                </transition-group>
+            </div>
 
             <div v-show="loading" class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 overflow-hidden bg-indigo-100">
                 <div class="loadbar h-full w-2/5 bg-indigo-600"></div>
@@ -630,4 +654,8 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
     0% { transform: translateX(-100%); }
     100% { transform: translateX(350%); }
 }
+</style>
+
+<style>
+@keyframes toast-bar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 </style>
