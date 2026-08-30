@@ -38,20 +38,23 @@ class ServiceModerationController extends Controller
             'filters' => ['status' => $status],
             'statuses' => Service::STATUSES,
             // Категории — управляются здесь же: добавить, переименовать, скрыть.
-            'categories' => ServiceCategory::withCount('services')->orderBy('sort')->get(['id', 'name', 'slug', 'sort', 'is_active']),
+            'categories' => ServiceCategory::with('translations')->withCount('services')->orderBy('sort')->get()
+                ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'slug' => $c->slug, 'is_active' => $c->is_active, 'services_count' => $c->services_count,
+                    'name_kk' => $c->translationsPayload()['kk']['name'] ?? null]),
         ]);
     }
 
     public function storeCategory(Request $request): RedirectResponse
     {
         $this->guard($request);
-        $data = $request->validate(['name' => ['required', 'string', 'min:2', 'max:100']]);
-        ServiceCategory::create([
+        $data = $request->validate(['name' => ['required', 'string', 'min:2', 'max:100'], 'name_kk' => ['nullable', 'string', 'max:100']]);
+        $category = ServiceCategory::create([
             'name' => strip_tags($data['name']),
             'slug' => Seo::slug($data['name'], ServiceCategory::class),
             'sort' => (int) ServiceCategory::max('sort') + 1,
             'is_active' => true,
         ]);
+        $category->saveTranslations(['kk' => ['name' => strip_tags((string) ($data['name_kk'] ?? ''))]]);
 
         return back()->with('success', 'Категория добавлена.');
     }
@@ -59,9 +62,13 @@ class ServiceModerationController extends Controller
     public function updateCategory(Request $request, ServiceCategory $category): RedirectResponse
     {
         $this->guard($request);
-        $data = $request->validate(['name' => ['sometimes', 'required', 'string', 'min:2', 'max:100'], 'is_active' => ['sometimes', 'boolean']]);
+        $data = $request->validate(['name' => ['sometimes', 'required', 'string', 'min:2', 'max:100'], 'name_kk' => ['sometimes', 'nullable', 'string', 'max:100'], 'is_active' => ['sometimes', 'boolean']]);
         if (isset($data['name'])) {
             $data['name'] = strip_tags($data['name']);
+        }
+        if (array_key_exists('name_kk', $data)) {
+            $category->saveTranslations(['kk' => ['name' => strip_tags((string) $data['name_kk'])]]);
+            unset($data['name_kk']);
         }
         $category->update($data);
 

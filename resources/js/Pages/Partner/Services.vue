@@ -4,20 +4,21 @@ import { ref } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import TranslationTabs from '@/Components/TranslationTabs.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
 import { usePage } from '@inertiajs/vue3';
-const props = defineProps({ services: Array, categories: Array });
+const props = defineProps({ services: Array, categories: Array, locales: Array });
 const isModerator = (usePage().props.auth.user?.roles ?? []).some((r) => ['assistant', 'admin'].includes(r));
 
 const editing = ref(null); // null | 'new' | service
-const form = useForm({ title: '', category_id: '', description: '', price: '', contact_name: '', contact_phone: '', city: '', photo: null });
+const form = useForm({ title: '', category_id: '', description: '', price: '', contact_name: '', contact_phone: '', city: '', photo: null, translations: {} });
 const open = (s = null) => {
     form.clearErrors(); form.reset();
-    if (s) Object.assign(form, { title: s.title, category_id: s.category_id, description: s.description_raw, price: s.price_raw ?? '', contact_name: s.contact_name, contact_phone: s.contact_phone, city: s.city ?? '', photo: null });
+    if (s) Object.assign(form, { title: s.title, category_id: s.category_id, description: s.description_raw, price: s.price_raw ?? '', contact_name: s.contact_name, contact_phone: s.contact_phone, city: s.city ?? '', photo: null, translations: JSON.parse(JSON.stringify(s.translations_map ?? {})) });
     editing.value = s ?? 'new';
 };
 const save = () => {
@@ -101,6 +102,13 @@ const field = 'w-full rounded-xl border-white/60 bg-white/70 text-sm shadow-soft
                     <div>
                         <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Город') }}</label>
                         <input v-model="form.city" type="text" :class="field" />
+                    </div>
+                    <div class="sm:col-span-2 rounded-2xl bg-white/60 p-3">
+                        <div class="text-xs font-semibold text-slate-600">🌐 {{ $e('Переводы (kk / ru)') }}</div>
+                        <p class="mt-0.5 text-xs text-slate-400">{{ $e('Пустое поле — на сайте покажется основной текст.') }}</p>
+                        <TranslationTabs :key="`tr-${editing === 'new' ? 'new' : editing.id}`" v-model="form.translations" class="mt-2"
+                            :locales="locales" :base="{ title: form.title, description: form.description }"
+                            :fields="[{ key: 'title', label: $e('Название услуги'), type: 'text' }, { key: 'description', label: $e('Описание'), type: 'textarea', rows: 3 }]" />
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Фото (одно, JPG/PNG/WebP до 8 МБ)') }}<span v-if="editing === 'new'"> *</span></label>

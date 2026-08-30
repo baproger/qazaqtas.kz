@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\ServiceCategory;
 use App\Notifications\ServiceSubmitted;
 use App\Services\MediaService;
+use App\Support\Locales;
 use App\Support\RoleTraits;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,8 +35,14 @@ class PartnerServiceController extends Controller
                     'category_id' => $s->category_id, 'contact_name' => $s->contact_name,
                     'contact_phone' => $s->contact_phone, 'description_raw' => $s->description,
                     'public_url' => $s->status === 'approved' ? route('site.service', $s->slug) : null,
+                    'translations_map' => $s->translationsPayload(),
                 ]),
             'categories' => ServiceCategory::where('is_active', true)->orderBy('sort')->get(['id', 'name']),
+            // Вкладки языков в форме — как в каталоге.
+            'locales' => collect(Locales::ALL)->map(fn ($code) => [
+                'code' => $code, 'name' => Locales::NAMES[$code], 'short' => Locales::SHORT[$code],
+                'is_default' => $code === Locales::default(),
+            ])->values(),
         ]);
     }
 
@@ -48,6 +55,7 @@ class PartnerServiceController extends Controller
         $this->applyStatus($service, $request);
         $this->attachPhoto($service, $request, $media);
         $service->save();
+        $service->saveTranslations($this->cleanTranslations($request));
 
         if ($service->status === 'pending') {
             $this->notifyModerators($service);
@@ -66,6 +74,7 @@ class PartnerServiceController extends Controller
         $this->attachPhoto($service, $request, $media);
         $this->applyStatus($service, $request);
         $service->save();
+        $service->saveTranslations($this->cleanTranslations($request));
 
         if ($service->status === 'pending') {
             $this->notifyModerators($service);
@@ -91,9 +100,17 @@ class PartnerServiceController extends Controller
         // Описание — простой текст: HTML/скрипты вычищаются целиком.
         $data['description'] = trim(strip_tags((string) $data['description']));
         $data['title'] = trim(strip_tags((string) $data['title']));
-        unset($data['photo']);
+        unset($data['photo'], $data['translations']);
 
         return $data;
+    }
+
+    /** Переводы тоже чистятся от HTML — тем же правилом, что базовые поля. */
+    private function cleanTranslations(ServiceRequest $request): array
+    {
+        return collect((array) $request->input('translations'))
+            ->map(fn ($row) => collect((array) $row)->map(fn ($v) => is_string($v) ? trim(strip_tags($v)) : $v)->all())
+            ->all();
     }
 
     private function attachPhoto(Service $service, ServiceRequest $request, MediaService $media): void

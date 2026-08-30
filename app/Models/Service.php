@@ -4,10 +4,12 @@ namespace App\Models;
 
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\HasSeoMeta;
+use App\Models\Concerns\HasTranslations;
 use App\Support\Seo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Услуга партнёра. Публикуется только после модерации (status = approved);
@@ -16,7 +18,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Service extends Model
 {
-    use Auditable, HasSeoMeta;
+    use Auditable, HasSeoMeta, HasTranslations;
+
+    protected static function translatable(): array
+    {
+        return ['title', 'description'];
+    }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(ServiceTranslation::class);
+    }
 
     public const STATUSES = ['pending' => 'На проверке', 'approved' => 'Опубликована', 'rejected' => 'Отклонена'];
 
@@ -57,14 +69,15 @@ class Service extends Model
         return $this->belongsTo(User::class, 'moderated_by');
     }
 
-    /** @return array<string, mixed> карточка для витрины */
+    /** @return array<string, mixed> карточка для витрины: тексты на языке страницы */
     public function toCard(): array
     {
         return [
-            'id' => $this->id, 'title' => $this->title, 'slug' => $this->slug,
-            'description' => Seo::text($this->description, 140),
+            'id' => $this->id, 'title' => $this->tr('title'), 'slug' => $this->slug,
+            'description' => Seo::text($this->tr('description'), 140),
             'price' => $this->price !== null ? (float) $this->price : null,
-            'city' => $this->city, 'category' => $this->category?->only(['name', 'slug']),
+            'city' => $this->city,
+            'category' => $this->category ? ['name' => $this->category->tr('name'), 'slug' => $this->category->slug] : null,
             'photo' => $this->photo, 'photo_webp' => $this->photo_webp, 'thumb' => $this->photo_thumb,
         ];
     }

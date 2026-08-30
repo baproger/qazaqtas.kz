@@ -13,8 +13,10 @@ const props = defineProps({ services: Object, counts: Object, filters: Object, s
 // Категории услуг: добавить, переименовать, скрыть/показать, удалить.
 const catsOpen = ref(false);
 const newCat = ref('');
-const addCat = () => { if (newCat.value.trim().length < 2) return; router.post(route('moderation.serviceCategories.store'), { name: newCat.value }, { preserveScroll: true, onSuccess: () => (newCat.value = '') }); };
+const addCat = () => { if (newCat.value.trim().length < 2) return; router.post(route('moderation.serviceCategories.store'), { name: newCat.value, name_kk: newCatKk.value || null }, { preserveScroll: true, onSuccess: () => { newCat.value = ''; newCatKk.value = ''; } }); };
 const renameCat = (c, name) => { if (name.trim().length >= 2 && name !== c.name) router.put(route('moderation.serviceCategories.update', c.id), { name }, { preserveScroll: true }); };
+const renameCatKk = (c, name_kk) => { if (name_kk !== (c.name_kk ?? '')) router.put(route('moderation.serviceCategories.update', c.id), { name_kk }, { preserveScroll: true }); };
+const newCatKk = ref('');
 const toggleCat = (c) => router.put(route('moderation.serviceCategories.update', c.id), { is_active: !c.is_active }, { preserveScroll: true });
 const delCat = (c) => router.delete(route('moderation.serviceCategories.destroy', c.id), { preserveScroll: true });
 
@@ -71,12 +73,14 @@ const fmt = (t) => t ? new Date(t).toLocaleString('ru-RU', { day: '2-digit', mon
                 <h2 class="text-lg font-semibold text-slate-900">{{ $e('Категории услуг') }}</h2>
                 <p class="mt-0.5 text-xs text-slate-500">{{ $e('Их видят партнёры в форме и посетители в каталоге. Удаление не трогает услуги — они остаются «без категории».') }}</p>
                 <div class="mt-3 flex gap-2">
-                    <input v-model="newCat" @keydown.enter="addCat" type="text" :placeholder="$e('Новая категория')" class="flex-1 rounded-xl border-slate-200 text-sm" />
+                    <input v-model="newCat" @keydown.enter="addCat" type="text" :placeholder="$e('Название (рус)')" class="flex-1 rounded-xl border-slate-200 text-sm" />
+                    <input v-model="newCatKk" @keydown.enter="addCat" type="text" :placeholder="$e('Атауы (каз)')" class="flex-1 rounded-xl border-slate-200 text-sm" />
                     <PrimaryButton :disabled="newCat.trim().length < 2" @click="addCat">+ {{ $e('Добавить') }}</PrimaryButton>
                 </div>
                 <div class="mt-3 divide-y divide-slate-100">
                     <div v-for="c in categories" :key="c.id" class="flex items-center gap-2 py-2" :class="c.is_active ? '' : 'opacity-50'">
-                        <input :value="c.name" @change="renameCat(c, $event.target.value)" class="flex-1 rounded-lg border-0 bg-transparent p-1 text-sm font-medium text-slate-800 focus:bg-slate-50 focus:ring-1 focus:ring-indigo-300" />
+                        <input :value="c.name" @change="renameCat(c, $event.target.value)" :title="$e('Название (рус)')" class="flex-1 rounded-lg border-0 bg-transparent p-1 text-sm font-medium text-slate-800 focus:bg-slate-50 focus:ring-1 focus:ring-indigo-300" />
+                        <input :value="c.name_kk ?? ''" @change="renameCatKk(c, $event.target.value)" :placeholder="$e('қаз…')" :title="$e('Атауы (каз)')" class="w-32 rounded-lg border-0 bg-transparent p-1 text-sm text-slate-600 focus:bg-slate-50 focus:ring-1 focus:ring-indigo-300" />
                         <span class="text-xs text-slate-400">{{ c.services_count }} {{ $e('усл.') }}</span>
                         <button type="button" @click="toggleCat(c)" class="rounded-lg px-2 py-1 text-xs font-medium" :class="c.is_active ? 'text-slate-500 hover:bg-slate-100' : 'text-emerald-600 hover:bg-emerald-50'">{{ c.is_active ? $e('Скрыть') : $e('Показать') }}</button>
                         <button type="button" @click="delCat(c)" class="rounded-lg px-2 py-1 text-xs font-medium text-slate-400 hover:bg-rose-50 hover:text-rose-600">×</button>

@@ -169,4 +169,25 @@ class ServicesModuleTest extends TestCase
         $partner = $this->user('partner');
         $this->actingAs($partner)->post(route('moderation.serviceCategories.store'), ['name' => 'Взлом'])->assertForbidden();
     }
+
+    /** Переводы: витрина показывает текст языка страницы, пустой перевод падает на базовый. */
+    public function test_service_and_category_translations_reach_the_site(): void
+    {
+        $assistant = $this->user('assistant');
+        $this->actingAs($assistant)->post(route('partner.services.store'), $this->payload([
+            'translations' => ['kk' => ['title' => 'Брусчатка төсеу «кілт тапсыру»', 'description' => 'Толық цикл: негіз дайындау, төсеу.'], 'ru' => ['title' => '', 'description' => '']],
+        ]))->assertSessionHasNoErrors();
+        $s = Service::firstOrFail();
+        $this->assertSame('Брусчатка төсеу «кілт тапсыру»', $s->tr('title', 'kk'));
+
+        $this->actingAs($assistant)->put(route('moderation.serviceCategories.update', $this->cat), ['name_kk' => 'Төсеу және монтаж'])->assertRedirect();
+
+        // KZ (язык по умолчанию, без префикса): казахские тексты.
+        $this->get(route('site.service', $s->slug))->assertOk()
+            ->assertInertia(fn ($p) => $p->where('service.title', 'Брусчатка төсеу «кілт тапсыру»')
+                ->where('service.category.name', 'Төсеу және монтаж'));
+        // RU-версия: перевода нет — базовый русский текст.
+        $this->get('/ru'.parse_url(route('site.service', $s->slug), PHP_URL_PATH))->assertOk()
+            ->assertInertia(fn ($p) => $p->where('service.title', $s->title));
+    }
 }

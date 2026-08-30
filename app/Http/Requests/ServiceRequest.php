@@ -31,6 +31,10 @@ class ServiceRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:100'],
             'photo' => [$this->route('service') ? 'nullable' : 'required', 'file', 'image',
                 'mimetypes:image/jpeg,image/png,image/webp', 'max:8192'],
+            // Переводы: { kk: {title, description}, ru: {…} } — пустое поле = базовый текст.
+            'translations' => ['nullable', 'array'],
+            'translations.*.title' => ['nullable', 'string', 'max:120'],
+            'translations.*.description' => ['nullable', 'string', 'max:3000'],
         ];
     }
 }
