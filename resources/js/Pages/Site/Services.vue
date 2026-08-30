@@ -1,15 +1,23 @@
 <script setup>
 /** Публичный каталог услуг: категории, поиск, сетка карточек. */
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
+import { siteRoute } from '@/i18n';
+import { observeReveal } from '@/utils/site';
 
 const props = defineProps({ services: Object, categories: Array, filters: Object, seo: Object });
 const search = ref(props.filters.search ?? '');
 let timer = null;
-const apply = (extra = {}) => router.get(route('site.services'), { category: props.filters.category || undefined, search: search.value || undefined, ...extra }, { preserveState: true, preserveScroll: true, replace: true });
+const apply = (extra = {}) => router.get(siteRoute('site.services'), { category: props.filters.category || undefined, search: search.value || undefined, ...extra }, { preserveState: true, preserveScroll: true, replace: true });
 const onSearch = () => { clearTimeout(timer); timer = setTimeout(apply, 350); };
 const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v));
+
+// Класс .reveal прячет карточки до появления в кадре — без наблюдателя они
+// оставались прозрачными навсегда.
+let stopReveal = () => {};
+onMounted(() => (stopReveal = observeReveal()));
+onBeforeUnmount(() => stopReveal());
 </script>
 
 <template>
@@ -24,16 +32,16 @@ const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v));
 
         <section class="ambient mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24">
             <div class="mb-8 flex flex-wrap items-center gap-2">
-                <Link :href="route('site.services')" class="rounded-full border px-4 py-1.5 text-sm transition"
+                <Link :href="$r('site.services')" class="rounded-full border px-4 py-1.5 text-sm transition"
                     :class="!filters.category ? 'border-sand-300 bg-sand-300/15 text-sand-50' : 'border-sand-100/15 text-sand-100/60 hover:text-sand-50'">{{ $t('site.services.all') }}</Link>
-                <Link v-for="c in categories" :key="c.id" :href="route('site.services', { category: c.slug })" class="rounded-full border px-4 py-1.5 text-sm transition"
+                <Link v-for="c in categories" :key="c.id" :href="$r('site.services', { category: c.slug })" class="rounded-full border px-4 py-1.5 text-sm transition"
                     :class="filters.category === c.slug ? 'border-sand-300 bg-sand-300/15 text-sand-50' : 'border-sand-100/15 text-sand-100/60 hover:text-sand-50'">{{ c.name }} <span class="opacity-50">{{ c.n }}</span></Link>
                 <input v-model="search" @input="onSearch" type="search" :placeholder="$t('site.services.search')"
                     class="ml-auto w-56 rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-sm text-sand-50 placeholder-sand-100/30 focus:border-sand-300 focus:ring-sand-300" />
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                <Link v-for="s in services.data" :key="s.id" :href="route('site.service', s.slug)" class="card card-hover reveal group overflow-hidden rounded-3xl">
+                <Link v-for="s in services.data" :key="s.id" :href="$r('site.service', s.slug)" class="card card-hover reveal group overflow-hidden rounded-3xl">
                     <div class="relative aspect-[16/10] overflow-hidden">
                         <picture v-if="s.photo">
                             <source v-if="s.photo_webp" :srcset="s.photo_webp" type="image/webp" />
