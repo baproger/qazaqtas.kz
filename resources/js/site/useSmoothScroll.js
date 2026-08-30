@@ -9,6 +9,7 @@ import { onBeforeUnmount, onMounted } from 'vue';
  */
 export function useSmoothScroll(enabled = true) {
     let lenis = null;
+    let onVisibility = null;
     let rafId = null;
     let scrollTrigger = null;
 
@@ -33,9 +34,18 @@ export function useSmoothScroll(enabled = true) {
             rafId = requestAnimationFrame(raf);
         };
         rafId = requestAnimationFrame(raf);
+
+        // Вкладка скрыта — кадры не нужны: вечный rAF грел процессор,
+        // даже когда сайт просто открыт в фоне.
+        onVisibility = () => {
+            if (document.hidden) { if (rafId) cancelAnimationFrame(rafId); rafId = null; }
+            else if (!rafId) rafId = requestAnimationFrame(raf);
+        };
+        document.addEventListener('visibilitychange', onVisibility);
     });
 
     onBeforeUnmount(() => {
+        if (onVisibility) document.removeEventListener('visibilitychange', onVisibility);
         if (rafId) cancelAnimationFrame(rafId);
         lenis?.destroy();
         scrollTrigger?.getAll().forEach((t) => t.kill());

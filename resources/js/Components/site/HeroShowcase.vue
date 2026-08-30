@@ -150,9 +150,15 @@ const startAutoplay = () => {
     stopAutoplay();
 
     let start = performance.now();
+    let lastPaint = 0;
     const tick = (now) => {
-        progress.value = Math.min(1, (now - start) / AUTOPLAY);
-        if (progress.value >= 1) {
+        // Полоска обновляется 10 раз в секунду, а не каждый кадр: рендер
+        // Vue 60 раз/с ради прогресс-бара грел ноутбук на открытой вкладке.
+        if (now - lastPaint > 100) {
+            lastPaint = now;
+            progress.value = Math.min(1, (now - start) / AUTOPLAY);
+        }
+        if (now - start >= AUTOPLAY) {
             start = now;
             goTo(index.value + 1, 1);
         }
