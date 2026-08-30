@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\Auditable;
 use App\Support\AccessScope;
+use App\Support\LiveStamp;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +53,12 @@ class Task extends Model
                 default => 'corporate',
             };
         });
+        // Живые обновления: сдвигаем штамп у всех, кого задача касается
+        // (и у прежнего исполнителя, если его сменили).
+        $bump = fn (Task $t) => LiveStamp::bump(
+            [$t->assignee_id, $t->creator_id, $t->getOriginal('assignee_id')], 'tasks');
+        static::saved($bump);
+        static::deleted($bump);
     }
 
     public function isClosed(): bool

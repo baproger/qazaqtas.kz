@@ -2,31 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Task;
+use App\Support\LiveStamp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * «Живые» обновления без WebSocket-сервера: браузер раз в 10 с спрашивает
- * короткий штамп «что изменилось у меня», и только при изменении догружает
- * данные страницы. Один запрос — одна строка JSON, три индексных запроса к
- * БД; кеш браузера через ETag: без изменений ответ 304 и пустое тело.
+ * «Живые» обновления без WebSocket-сервера и без нагрузки: браузер спрашивает
+ * штамп (одно чтение из кеша, к БД не обращаемся), при совпадении ETag —
+ * 304 с пустым телом. Данные догружаются только когда штамп сдвинулся.
+ * Интервал задаёт браузер: 30 с, при тишине замедляется до 2 мин, в фоне — 5.
  */
 class LiveController extends Controller
 {
     public function version(Request $request): JsonResponse
     {
-        $user = $request->user();
-
-        $tasks = Task::where(fn ($q) => $q->where('assignee_id', $user->id)->orWhere('creator_id', $user->id))
-            ->max('updated_at');
-        $notifications = $user->notifications()->latest()->value('id');
-        $unread = $user->unreadNotifications()->count();
-
-        $stamp = [
-            'tasks' => $tasks ? strtotime($tasks) : 0,
-            'notifications' => (string) $notifications.':'.$unread,
-        ];
+        $stamp = LiveStamp::get($request->user()->id);
         $etag = '"'.md5(json_encode($stamp)).'"';
 
         if ($request->headers->get('If-None-Match') === $etag) {

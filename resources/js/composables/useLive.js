@@ -1,17 +1,24 @@
 /**
- * Живые обновления без WebSocket: опрашиваем /live/version (одна строка
- * JSON, 304 если ничего не менялось) раз в 10 с при открытой вкладке и раз в
- * 60 с при скрытой; при изменении штампа перезагружаем только нужные props.
+ * Живые обновления без WebSocket и без нагрузки на сервер.
+ *
+ * Опрашиваем /live/version — одно чтение из кеша на сервере, 304 без тела,
+ * если ничего не менялось. Интервал адаптивный: 30 с; каждая «тихая» проверка
+ * удлиняет его в 1,5 раза до 2 мин; любое изменение или действие
+ * пользователя (клик, клавиша, возврат на вкладку) возвращает к 30 с.
+ * В скрытой вкладке — раз в 5 мин.
  *
  *   useLive({ tasks: ['tasks', 'counts'] })  — ключ штампа → props для reload
  */
 import { onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 
-export function useLive(map, { active = 10000, idle = 60000 } = {}) {
+const BASE = 30000, MAX = 120000, HIDDEN = 300000;
+
+export function useLive(map) {
     let timer = null;
     let etag = null;
     let last = null;
+    let interval = BASE;
     let stopped = false;
 
     const tick = async () => {
@@ -23,16 +30,28 @@ export function useLive(map, { active = 10000, idle = 60000 } = {}) {
                 const stamp = await res.json();
                 if (last) {
                     const only = Object.entries(map).filter(([k]) => stamp[k] !== last[k]).flatMap(([, props]) => props);
-                    if (only.length) router.reload({ only: [...new Set(only)], preserveScroll: true });
+                    if (only.length) { router.reload({ only: [...new Set(only)], preserveScroll: true }); interval = BASE; }
                 }
                 last = stamp;
+            } else if (res.status === 304) {
+                interval = Math.min(MAX, Math.round(interval * 1.5));
             }
-        } catch { /* сеть моргнула — попробуем в следующий раз */ }
+        } catch { interval = MAX; /* сеть моргнула — не долбим сервер */ }
         schedule();
     };
-    const schedule = () => { clearTimeout(timer); timer = setTimeout(tick, document.hidden ? idle : active); };
-    const onVisible = () => { if (!document.hidden) { clearTimeout(timer); tick(); } };
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(tick, document.hidden ? HIDDEN : interval); };
+    let lastActivity = 0;
+    const onActivity = () => { const now = Date.now(); if (now - lastActivity > 5000) { lastActivity = now; interval = BASE; } };
+    const onVisible = () => { if (!document.hidden) { interval = BASE; clearTimeout(timer); tick(); } };
 
-    onMounted(() => { tick(); document.addEventListener('visibilitychange', onVisible); });
-    onUnmounted(() => { stopped = true; clearTimeout(timer); document.removeEventListener('visibilitychange', onVisible); });
+    onMounted(() => {
+        tick();
+        document.addEventListener('visibilitychange', onVisible);
+        ['click', 'keydown'].forEach((e) => document.addEventListener(e, onActivity, { passive: true }));
+    });
+    onUnmounted(() => {
+        stopped = true; clearTimeout(timer);
+        document.removeEventListener('visibilitychange', onVisible);
+        ['click', 'keydown'].forEach((e) => document.removeEventListener(e, onActivity));
+    });
 }

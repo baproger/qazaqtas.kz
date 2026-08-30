@@ -8,6 +8,7 @@ use App\Models\DealStage;
 use App\Models\Role;
 use App\Models\Task;
 use App\Models\User;
+use App\Notifications\TaskAssigned;
 use App\Services\StageTransitionService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -119,7 +120,13 @@ class TasksEngineTest extends TestCase
         $this->assertNotEmpty($etag);
         $this->actingAs($mgr)->getJson(route('live.version'), ['If-None-Match' => $etag])->assertStatus(304);
 
+        // Новая задача сдвигает штамп через событие модели — без запросов к БД при опросе.
         Task::create(['title' => 'N', 'assignee_id' => $mgr->id, 'creator_id' => $mgr->id, 'status' => 'new']);
-        $this->actingAs($mgr)->getJson(route('live.version'), ['If-None-Match' => $etag])->assertOk();
+        $r2 = $this->actingAs($mgr)->getJson(route('live.version'), ['If-None-Match' => $etag])->assertOk();
+        $this->assertGreaterThan(0, $r2->json('tasks'));
+        // Уведомление — тоже.
+        $etag2 = $r2->headers->get('ETag');
+        $mgr->notify(new TaskAssigned(Task::first()));
+        $this->actingAs($mgr)->getJson(route('live.version'), ['If-None-Match' => $etag2])->assertOk();
     }
 }

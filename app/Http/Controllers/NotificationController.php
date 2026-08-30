@@ -8,6 +8,7 @@ use App\Models\StageRobotRun;
 use App\Models\Task;
 use App\Support\AccessScope;
 use App\Support\CurrentCompany;
+use App\Support\LiveStamp;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -108,6 +109,7 @@ class NotificationController extends Controller
     public function markRead(Request $request, string $id): RedirectResponse
     {
         $request->user()->notifications()->where('id', $id)->update(['read_at' => now()]);
+        LiveStamp::bump($request->user()->id, 'notifications');
 
         return back();
     }
@@ -119,6 +121,7 @@ class NotificationController extends Controller
     public function markAllRead(Request $request): RedirectResponse
     {
         $request->user()->unreadNotifications->markAsRead();
+        LiveStamp::bump($request->user()->id, 'notifications');
 
         return $request->boolean('silent')
             ? back()
