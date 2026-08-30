@@ -13,6 +13,7 @@ use App\Services\EmployeeDebtService;
 use App\Services\PayrollService;
 use App\Support\CurrentCompany;
 use App\Support\FinanceAudit;
+use App\Support\ReportCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -33,6 +34,15 @@ class PayrollController extends Controller
     {
         $user = $request->user();
         abort_unless($user->can('payroll.view'), 403);
+
+        // Тяжёлый отчёт — из кеша (5 мин, сброс при изменении денег): см. ReportCache.
+        return Inertia::render('Payroll/Index', ReportCache::remember($request, 'payroll', fn () => $this->build($request, $payroll)));
+    }
+
+    /** @return array<string, mixed> */
+    private function build(Request $request, PayrollService $payroll): array
+    {
+        $user = $request->user();
 
         $leadership = $user->hasAnyRole(['admin', 'director', 'financist']);
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
@@ -135,7 +145,7 @@ class PayrollController extends Controller
             return $r;
         });
 
-        return Inertia::render('Payroll/Index', [
+        return [
             'rows' => $rows,
             'leadership' => $leadership,
             'canManage' => $this->canManage($request),
@@ -166,7 +176,7 @@ class PayrollController extends Controller
                 'final' => (float) $rows->sum('final'),
                 'company' => (float) $rows->sum('company'),
             ],
-        ]);
+        ];
     }
 
     /**

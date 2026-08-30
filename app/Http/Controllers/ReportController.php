@@ -12,6 +12,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\PayrollService;
 use App\Support\CurrentCompany;
+use App\Support\ReportCache;
 use App\Support\StickyFilters;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -39,6 +40,14 @@ class ReportController extends Controller
         StickyFilters::apply($request, 'reports', ['search', 'from', 'to', 'manager', 'stage']);
 
         abort_unless($request->user()->hasAnyRole(['admin', 'director']) && $request->user()->can('report.viewAny'), 403);
+
+        // Тяжёлый отчёт — из кеша (5 мин, сброс при изменении денег): см. ReportCache.
+        return Inertia::render('Reports/Deals', ReportCache::remember($request, 'deals', fn () => $this->build($request)));
+    }
+
+    /** @return array<string, mixed> */
+    private function build(Request $request): array
+    {
 
         $taxRate = ((float) Setting::get('tax_percent', 3)) / 100;
 
@@ -92,7 +101,7 @@ class ReportController extends Controller
             ->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName().(! $companyId && $s->company_id ? ' · '.($companyNames[$s->company_id] ?? '') : '')])
             ->values();
 
-        return Inertia::render('Reports/Deals', [
+        return [
             'rows' => $rows,
             // Ссылки страниц: сама таблица показывает сотню строк, итоги под
             // ней — по всему периоду.
@@ -112,7 +121,7 @@ class ReportController extends Controller
                     'department' => $u->department?->name,
                 ])->values(),
             'stageOptions' => $stageOptions,
-        ]);
+        ];
     }
 
     /**

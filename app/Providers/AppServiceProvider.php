@@ -2,12 +2,26 @@
 
 namespace App\Providers;
 
+use App\Models\BonusPayout;
+use App\Models\CashReceipt;
 use App\Models\Deal;
 use App\Models\DealItem;
+use App\Models\DealStage;
+use App\Models\Debt;
+use App\Models\EmployeeDebt;
+use App\Models\EmployeeDebtPayment;
+use App\Models\Expense;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\PayrollAdjustment;
 use App\Models\Project;
+use App\Models\Setting;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\WorkHour;
 use App\Models\WorkOrder;
+use App\Models\WorkOrderLine;
+use App\Support\ReportCache;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -34,6 +48,15 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn (User $user, string $ability) => $user->hasRole('admin') ? true : null);
 
         // Stable polymorphic aliases used across tasks/documents/comments/etc.
+        // Деньги изменились → отчёты пересчитать (Support\ReportCache).
+        foreach ([Deal::class, DealItem::class, Invoice::class, Payment::class, Expense::class,
+            WorkOrder::class, WorkOrderLine::class, BonusPayout::class, PayrollAdjustment::class,
+            EmployeeDebt::class, EmployeeDebtPayment::class, WorkHour::class, Setting::class,
+            DealStage::class, Debt::class, CashReceipt::class, User::class] as $model) {
+            $model::saved(fn () => ReportCache::bump());
+            $model::deleted(fn () => ReportCache::bump());
+        }
+
         Relation::enforceMorphMap([
             'deal' => Deal::class,
             'deal_item' => DealItem::class,

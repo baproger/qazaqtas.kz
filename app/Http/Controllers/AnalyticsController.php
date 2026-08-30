@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\FinanceService;
 use App\Services\PayrollService;
 use App\Support\CurrentCompany;
+use App\Support\ReportCache;
 use App\Support\StickyFilters;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -43,6 +44,14 @@ class AnalyticsController extends Controller
 
         // financist — как на бывшем Дашборде: видит деньги, но без report.viewAny.
         abort_unless($request->user()->can('report.viewAny') || $request->user()->hasAnyRole(['admin', 'financist']), 403);
+
+        // Тяжёлый отчёт — из кеша (5 мин, сброс при изменении денег): см. ReportCache.
+        return Inertia::render('Analytics/Index', ReportCache::remember($request, 'analytics', fn () => $this->build($request)));
+    }
+
+    /** @return array<string, mixed> */
+    private function build(Request $request): array
+    {
 
         // ---- Фильтры: период (для «за период» и топа менеджеров), менеджер,
         // этап, поиск (№ / контрагент / договор). Применяются к воронке,
@@ -355,7 +364,7 @@ class AnalyticsController extends Controller
             ->with('responsible:id,name')->get()
             ->map(fn ($r) => ['uid' => $r->responsible_user_id, 'user' => $r->responsible?->name ?? '—', 'deals' => (int) $r->deals, 'budget' => (float) $r->budget]);
 
-        return Inertia::render('Analytics/Index', [
+        return [
             'byEmployee' => $byEmployee,
             'monthsFilter' => $monthsCount,
             'funnel' => $funnel,
@@ -389,6 +398,6 @@ class AnalyticsController extends Controller
             'filters' => ['from' => $from, 'to' => $to, 'manager' => $managerId, 'stage' => $stageId, 'search' => $search],
             'managers' => User::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'stageOptions' => $stages->map(fn ($s) => ['id' => $s->id, 'name' => $s->translatedName().(! $companyId && $s->company_id ? ' · '.($companyNames[$s->company_id] ?? '') : '')])->values(),
-        ]);
+        ];
     }
 }
