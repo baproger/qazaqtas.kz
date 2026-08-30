@@ -43,8 +43,19 @@ const scrolled = ref(false);
 const menuOpen = ref(false);
 const onScroll = () => (scrolled.value = window.scrollY > 24);
 
+// Полотно за пределами .site: внизу страницы и при «резиновом» скролле
+// браузер красит html/body — по умолчанию они белые, и под тёмным подвалом
+// светилась чужая полоса. Пока открыта витрина, красим их в цвет полотна.
+const syncCanvas = () => {
+    const bg = theme.value === 'light' ? 'rgb(248 249 250)' : 'rgb(20 23 28)';
+    document.documentElement.style.backgroundColor = bg;
+    document.body.style.backgroundColor = bg;
+};
+watch(theme, syncCanvas);
+
 onMounted(() => {
     initTheme();
+    syncCanvas();
 
     // Пришли со сменой языка — возвращаем посетителя туда, где он читал.
     restoreScroll();
@@ -52,7 +63,12 @@ onMounted(() => {
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 });
-onBeforeUnmount(() => window.removeEventListener('scroll', onScroll));
+onBeforeUnmount(() => {
+    window.removeEventListener('scroll', onScroll);
+    // Уходим в ERP — возвращаем браузеру его фон.
+    document.documentElement.style.backgroundColor = '';
+    document.body.style.backgroundColor = '';
+});
 
 // Мобильное меню не должно оставлять страницу заблокированной при переходе.
 watch(menuOpen, (open) => {
