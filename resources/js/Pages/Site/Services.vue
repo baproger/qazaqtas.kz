@@ -41,27 +41,54 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
         </section>
 
         <section class="ambient mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24">
-            <!-- Фильтры -->
-            <div class="card mb-8 rounded-3xl p-4">
-                <div class="flex flex-wrap items-center gap-2">
-                    <Link :href="$r('site.services')" class="rounded-full border px-4 py-1.5 text-sm transition"
-                        :class="!filters.category ? 'border-sand-300 bg-sand-300/15 text-sand-50' : 'border-sand-100/15 text-sand-100/60 hover:text-sand-50'">{{ $t('site.services.all') }}</Link>
-                    <Link v-for="c in categories" :key="c.id" :href="$r('site.services', { category: c.slug })" class="rounded-full border px-4 py-1.5 text-sm transition"
-                        :class="filters.category === c.slug ? 'border-sand-300 bg-sand-300/15 text-sand-50' : 'border-sand-100/15 text-sand-100/60 hover:text-sand-50'">{{ c.name }} <span class="opacity-50">{{ c.n }}</span></Link>
+            <!-- Фильтры: стеклянная панель, сегменты и подписанные контролы -->
+            <div class="card mb-8 rounded-3xl p-5 backdrop-blur-xl">
+                <!-- Категории: скролл-лента чипов -->
+                <div class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                    <Link :href="$r('site.services')" class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
+                        :class="!filters.category ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ $t('site.services.all') }}</Link>
+                    <Link v-for="c in categories" :key="c.id" :href="$r('site.services', { category: c.slug })"
+                        class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
+                        :class="filters.category === c.slug ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">
+                        {{ c.name }} <span class="ml-1 text-xs opacity-60">{{ c.n }}</span>
+                    </Link>
                 </div>
-                <div class="mt-3 flex flex-wrap items-center gap-2">
-                    <select v-if="cities.length" v-model="city" @change="apply()" :class="field">
-                        <option value="" class="bg-ink-800">📍 {{ $t('site.services.any_city') }}</option>
-                        <option v-for="c in cities" :key="c" :value="c" class="bg-ink-800">{{ c }}</option>
-                    </select>
-                    <select v-model="sort" @change="apply()" :class="field">
-                        <option value="new" class="bg-ink-800">{{ $t('site.services.sort_new') }}</option>
-                        <option value="cheap" class="bg-ink-800">{{ $t('site.services.sort_cheap') }}</option>
-                        <option value="expensive" class="bg-ink-800">{{ $t('site.services.sort_expensive') }}</option>
-                    </select>
-                    <input v-model="priceMax" @input="debounced" type="number" min="0" step="1000" :placeholder="$t('site.services.price_to')" :class="field + ' w-36'" />
-                    <input v-model="search" @input="debounced" type="search" :placeholder="$t('site.services.search')" :class="field + ' min-w-48 flex-1'" />
-                    <button v-if="hasFilters()" type="button" @click="reset" class="rounded-full px-3 py-1.5 text-xs text-sand-100/50 transition hover:text-sand-50">✕ {{ $t('site.services.reset') }}</button>
+
+                <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto_auto_auto]">
+                    <!-- Поиск -->
+                    <label class="relative block">
+                        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-sand-100/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input v-model="search" @input="debounced" type="search" :placeholder="$t('site.services.search')"
+                            class="h-11 w-full rounded-xl border-0 bg-sand-100/5 pl-10 pr-4 text-sm text-sand-50 placeholder-sand-100/30 ring-1 ring-inset ring-sand-100/10 transition focus:bg-sand-100/10 focus:ring-2 focus:ring-sand-300/60" />
+                    </label>
+                    <!-- Город -->
+                    <label v-if="cities.length" class="relative block">
+                        <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm">📍</span>
+                        <select v-model="city" @change="apply()"
+                            class="h-11 w-full appearance-none rounded-xl border-0 bg-sand-100/5 pl-9 pr-9 text-sm text-sand-50 ring-1 ring-inset ring-sand-100/10 transition focus:ring-2 focus:ring-sand-300/60 sm:w-44">
+                            <option value="" class="bg-ink-800">{{ $t('site.services.any_city') }}</option>
+                            <option v-for="c in cities" :key="c" :value="c" class="bg-ink-800">{{ c }}</option>
+                        </select>
+                        <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sand-100/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </label>
+                    <!-- Цена до -->
+                    <label class="relative block">
+                        <input v-model="priceMax" @input="debounced" type="number" min="0" step="1000" :placeholder="$t('site.services.price_to')"
+                            class="h-11 w-full rounded-xl border-0 bg-sand-100/5 px-4 pr-9 text-sm text-sand-50 placeholder-sand-100/30 ring-1 ring-inset ring-sand-100/10 transition focus:ring-2 focus:ring-sand-300/60 sm:w-40" />
+                        <span class="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-sand-100/40">₸</span>
+                    </label>
+                    <!-- Сортировка: сегменты -->
+                    <div class="flex h-11 items-center rounded-xl bg-sand-100/5 p-1 ring-1 ring-inset ring-sand-100/10">
+                        <button v-for="o in [['new', $t('site.services.sort_new')], ['cheap', '₸↑'], ['expensive', '₸↓']]" :key="o[0]" type="button"
+                            @click="sort = o[0]; apply()" :title="o[0] === 'cheap' ? $t('site.services.sort_cheap') : o[0] === 'expensive' ? $t('site.services.sort_expensive') : ''"
+                            class="h-full rounded-lg px-3 text-sm font-medium transition"
+                            :class="sort === o[0] ? 'bg-sand-300 text-ink-900' : 'text-sand-100/50 hover:text-sand-50'">{{ o[1] }}</button>
+                    </div>
+                    <!-- Итог + сброс -->
+                    <div class="flex h-11 items-center justify-end gap-3 text-sm text-sand-100/40">
+                        <span>{{ services.total ?? services.data.length }} {{ $t('site.services.found') }}</span>
+                        <button v-if="hasFilters()" type="button" @click="reset" class="rounded-lg px-2 py-1 text-xs text-sand-100/50 transition hover:bg-sand-100/10 hover:text-sand-50">✕ {{ $t('site.services.reset') }}</button>
+                    </div>
                 </div>
             </div>
 
