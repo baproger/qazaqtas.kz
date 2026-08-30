@@ -3,7 +3,7 @@
  * Каталог услуг: фильтры (категория, город, цена, сортировка, поиск) и
  * плотная сетка в 4 колонки с акцентом на цену.
  */
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import { siteRoute } from '@/i18n';
@@ -28,6 +28,14 @@ const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v));
 let stopReveal = () => {};
 onMounted(() => (stopReveal = observeReveal()));
 onBeforeUnmount(() => stopReveal());
+// Фильтры меняют список без перемонтирования (preserveState): новые карточки
+// появляются ПОСЛЕ привязки наблюдателя и оставались прозрачными — казалось,
+// что «Сбросить» показывает старые данные. Перепривязываем на каждое обновление.
+watch(() => props.services.data, async () => {
+    await nextTick();
+    stopReveal();
+    stopReveal = observeReveal();
+});
 const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-sm text-sand-50 focus:border-sand-300 focus:ring-sand-300';
 </script>
 
