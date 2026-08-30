@@ -23,7 +23,6 @@ class PartnerServiceController extends Controller
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Service::class);
-        abort_unless($request->user()->hasRole('partner') || $request->user()->hasRole('admin'), 403);
 
         return Inertia::render('Partner/Services', [
             'services' => Service::with('category:id,name')
@@ -46,13 +45,17 @@ class PartnerServiceController extends Controller
 
         $service = new Service($this->clean($request->validated()));
         $service->partner_id = $request->user()->id;
-        $service->status = 'pending';
+        $this->applyStatus($service, $request);
         $this->attachPhoto($service, $request, $media);
         $service->save();
 
-        $this->notifyModerators($service);
+        if ($service->status === 'pending') {
+            $this->notifyModerators($service);
 
-        return back()->with('success', 'Услуга отправлена на проверку — ответим в течение 24 часов.');
+            return back()->with('success', 'Услуга отправлена на проверку — ответим в течение 24 часов.');
+        }
+
+        return back()->with('success', 'Услуга опубликована в каталоге.');
     }
 
     public function update(ServiceRequest $request, Service $service, MediaService $media): RedirectResponse
@@ -61,15 +64,16 @@ class PartnerServiceController extends Controller
 
         $service->fill($this->clean($request->validated()));
         $this->attachPhoto($service, $request, $media);
-        // Любая правка возвращает услугу на модерацию: опубликованное нельзя
-        // подменить содержимым, которого ассистент не видел.
-        $service->status = 'pending';
-        $service->rejection_reason = null;
+        $this->applyStatus($service, $request);
         $service->save();
 
-        $this->notifyModerators($service);
+        if ($service->status === 'pending') {
+            $this->notifyModerators($service);
 
-        return back()->with('success', 'Изменения отправлены на проверку — ответим в течение 24 часов.');
+            return back()->with('success', 'Изменения отправлены на проверку — ответим в течение 24 часов.');
+        }
+
+        return back()->with('success', 'Изменения опубликованы.');
     }
 
     public function destroy(Request $request, Service $service): RedirectResponse
@@ -112,6 +116,25 @@ class PartnerServiceController extends Controller
         $service->photo = $stored['path'];
         $service->photo_thumb = $stored['webp_thumb'] ?? $stored['thumb'];
         $service->photo_webp = $stored['webp'] ?? null;
+    }
+
+    /**
+     * Партнёрская услуга идёт через модерацию; услуга ассистента/админа —
+     * сразу в каталог (они сами и есть модерация).
+     */
+    private function applyStatus(Service $service, ServiceRequest $request): void
+    {
+        if ($request->user()->hasAnyRole(['assistant', 'admin'])) {
+            $service->status = 'approved';
+            $service->rejection_reason = null;
+            $service->moderated_at = now();
+            $service->moderated_by = $request->user()->id;
+        } else {
+            // Любая правка партнёра возвращает услугу на проверку: опубликованное
+            // нельзя подменить содержимым, которого ассистент не видел.
+            $service->status = 'pending';
+            $service->rejection_reason = null;
+        }
     }
 
     private function notifyModerators(Service $service): void

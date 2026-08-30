@@ -128,7 +128,7 @@ const allNav = [
         ],
     },
     { key: 'nav.tasks', name: tr('Задачи'), route: 'tasks.index', icon: '✓', perm: 'task.viewAny' },
-    { key: 'nav.partnerServices', name: tr('Мои услуги'), route: 'partner.services', icon: '◆', onlyRoles: ['partner'] },
+    { key: 'nav.partnerServices', name: tr('Мои услуги'), route: 'partner.services', icon: '◆', roles: ['partner', 'assistant', 'admin'] },
     { key: 'nav.moderation', name: tr('Модерация услуг'), route: 'moderation.services', icon: '☑', roles: ['assistant', 'admin'] },
     { key: 'nav.chat', name: tr('Чат'), route: 'chat.index', icon: '✉' },
     {

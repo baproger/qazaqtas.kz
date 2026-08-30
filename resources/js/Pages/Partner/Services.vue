@@ -9,7 +9,9 @@ import { confirmDialog } from '@/composables/useConfirm';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
+import { usePage } from '@inertiajs/vue3';
 const props = defineProps({ services: Array, categories: Array });
+const isModerator = (usePage().props.auth.user?.roles ?? []).some((r) => ['assistant', 'admin'].includes(r));
 
 const editing = ref(null); // null | 'new' | service
 const form = useForm({ title: '', category_id: '', description: '', price: '', contact_name: '', contact_phone: '', city: '', photo: null });
@@ -35,7 +37,7 @@ const field = 'w-full rounded-xl border-white/60 bg-white/70 text-sm shadow-soft
         <div class="mb-4 flex flex-wrap items-center gap-3 rounded-3xl border border-white/60 bg-gradient-to-br from-white/85 via-indigo-50/60 to-violet-50/50 p-4 shadow-soft-lg backdrop-blur-xl">
             <div class="min-w-0 flex-1">
                 <div class="text-sm font-semibold text-slate-800">{{ $e('Ваши услуги на витрине QAZAQ TAS') }}</div>
-                <p class="mt-0.5 text-xs text-slate-500">{{ $e('Каждая заявка проходит проверку — ответим в течение 24 часов. Опубликованное видно в каталоге услуг сайта.') }}</p>
+                <p class="mt-0.5 text-xs text-slate-500">{{ isModerator ? $e('Ваши услуги публикуются сразу, без модерации. Категории — на странице «Модерация услуг».') : $e('Каждая заявка проходит проверку — ответим в течение 24 часов. Опубликованное видно в каталоге услуг сайта.') }}</p>
             </div>
             <PrimaryButton @click="open()">+ {{ $e('Услуга') }}</PrimaryButton>
         </div>

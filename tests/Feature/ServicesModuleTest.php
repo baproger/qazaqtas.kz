@@ -144,4 +144,29 @@ class ServicesModuleTest extends TestCase
             ->assertSee('<?xml', false)->assertSee(route('site.service', $s->slug), false)->assertSee(route('site.catalog'), false);
         $this->get('/robots.txt')->assertOk()->assertSee('Sitemap: '.route('seo.sitemap'))->assertSee('Disallow: /korzina');
     }
+
+    /** Ассистент и админ публикуют услуги сразу и управляют категориями. */
+    public function test_assistant_publishes_directly_and_manages_categories(): void
+    {
+        $assistant = $this->user('assistant');
+        $this->actingAs($assistant)->post(route('partner.services.store'), $this->payload())->assertSessionHasNoErrors();
+        $s = Service::firstOrFail();
+        $this->assertSame('approved', $s->status);
+        $this->get(route('site.service', $s->slug))->assertOk();
+
+        // Категории: добавить, переименовать, скрыть, удалить (услуги остаются).
+        $this->actingAs($assistant)->post(route('moderation.serviceCategories.store'), ['name' => 'Реставрация камня'])->assertRedirect();
+        $cat = ServiceCategory::where('name', 'Реставрация камня')->firstOrFail();
+        $this->assertSame('restavraciia-kamnia', $cat->slug);
+        $this->actingAs($assistant)->put(route('moderation.serviceCategories.update', $cat), ['name' => 'Реставрация', 'is_active' => false])->assertRedirect();
+        $this->assertFalse($cat->fresh()->is_active);
+
+        $this->actingAs($assistant)->delete(route('moderation.serviceCategories.destroy', $this->cat))->assertRedirect();
+        $this->assertNull($s->fresh()->category_id);
+        $this->assertSame('approved', $s->fresh()->status, 'Удаление категории не трогает услугу.');
+
+        // Партнёру категории недоступны.
+        $partner = $this->user('partner');
+        $this->actingAs($partner)->post(route('moderation.serviceCategories.store'), ['name' => 'Взлом'])->assertForbidden();
+    }
 }

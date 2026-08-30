@@ -167,6 +167,9 @@ Route::middleware('auth')->group(function () {
     Route::get('moderation/services', [ServiceModerationController::class, 'index'])->name('moderation.services');
     Route::patch('moderation/services/{service}/approve', [ServiceModerationController::class, 'approve'])->name('moderation.services.approve');
     Route::patch('moderation/services/{service}/reject', [ServiceModerationController::class, 'reject'])->name('moderation.services.reject');
+    Route::post('moderation/service-categories', [ServiceModerationController::class, 'storeCategory'])->name('moderation.serviceCategories.store');
+    Route::put('moderation/service-categories/{category}', [ServiceModerationController::class, 'updateCategory'])->name('moderation.serviceCategories.update');
+    Route::delete('moderation/service-categories/{category}', [ServiceModerationController::class, 'destroyCategory'])->name('moderation.serviceCategories.destroy');
 
     // Tasks (managed inline inside deal/project cards — no standalone board)
     Route::get('tasks', [TaskController::class, 'index'])->name('tasks.index');

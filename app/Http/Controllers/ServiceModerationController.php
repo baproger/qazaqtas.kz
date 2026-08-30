@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Models\ServiceCategory;
 use App\Notifications\ServiceModerated;
+use App\Support\Seo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -35,7 +37,45 @@ class ServiceModerationController extends Controller
             'counts' => Service::selectRaw('status, count(*) n')->groupBy('status')->pluck('n', 'status'),
             'filters' => ['status' => $status],
             'statuses' => Service::STATUSES,
+            // Категории — управляются здесь же: добавить, переименовать, скрыть.
+            'categories' => ServiceCategory::withCount('services')->orderBy('sort')->get(['id', 'name', 'slug', 'sort', 'is_active']),
         ]);
+    }
+
+    public function storeCategory(Request $request): RedirectResponse
+    {
+        $this->guard($request);
+        $data = $request->validate(['name' => ['required', 'string', 'min:2', 'max:100']]);
+        ServiceCategory::create([
+            'name' => strip_tags($data['name']),
+            'slug' => Seo::slug($data['name'], ServiceCategory::class),
+            'sort' => (int) ServiceCategory::max('sort') + 1,
+            'is_active' => true,
+        ]);
+
+        return back()->with('success', 'Категория добавлена.');
+    }
+
+    public function updateCategory(Request $request, ServiceCategory $category): RedirectResponse
+    {
+        $this->guard($request);
+        $data = $request->validate(['name' => ['sometimes', 'required', 'string', 'min:2', 'max:100'], 'is_active' => ['sometimes', 'boolean']]);
+        if (isset($data['name'])) {
+            $data['name'] = strip_tags($data['name']);
+        }
+        $category->update($data);
+
+        return back()->with('success', 'Категория обновлена.');
+    }
+
+    public function destroyCategory(Request $request, ServiceCategory $category): RedirectResponse
+    {
+        $this->guard($request);
+        // Услуги не удаляются: остаются «без категории» (FK nullOnDelete).
+        $n = $category->services()->count();
+        $category->delete();
+
+        return back()->with('success', 'Категория удалена.'.($n ? " Услуг без категории: {$n}." : ''));
     }
 
     public function approve(Request $request, Service $service): RedirectResponse

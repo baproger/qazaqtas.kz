@@ -23,7 +23,8 @@ class ServicePolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('partner');
+        // Партнёр — через модерацию; ассистент и админ публикуют сразу.
+        return $user->hasAnyRole(['partner', 'assistant', 'admin']);
     }
 
     public function update(User $user, Service $service): bool
