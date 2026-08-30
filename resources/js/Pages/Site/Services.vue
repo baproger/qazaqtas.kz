@@ -103,33 +103,34 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
             <!-- Сетка 4 колонки, акцент на цену -->
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 <Link v-for="s in services.data" :key="s.id" :href="$r('site.service', s.slug)" class="card card-hover reveal group overflow-hidden rounded-3xl">
-                    <div class="relative aspect-[4/3] overflow-hidden">
+                    <!-- Фото: чистое, без плашек поверх — только категория -->
+                    <div class="relative m-2 aspect-[4/3] overflow-hidden rounded-2xl">
                         <picture v-if="s.photo">
                             <source v-if="s.photo_webp" :srcset="s.photo_webp" type="image/webp" />
-                            <img :src="s.thumb || s.photo" :alt="s.title" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105" />
+                            <img :src="s.thumb || s.photo" :alt="s.title" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-[1.04]" />
                         </picture>
                         <div v-else class="paving-pattern h-full w-full" />
-                        <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900/80 via-transparent to-transparent" />
-                        <span v-if="s.category" class="absolute left-3 top-3 rounded-full bg-ink-900/60 px-2.5 py-0.5 text-[11px] text-sand-100/80 backdrop-blur">{{ s.category.name }}</span>
-                        <!-- Цена — главный акцент карточки -->
-                        <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
-                            <!-- Цена — «стеклянная» плашка с градиентной рамкой, как у кнопок -->
-                            <span class="rounded-full bg-gradient-to-r from-sand-300/90 via-sand-300/40 to-sand-500/60 p-px shadow-lg shadow-ink-900/40">
-                                <span class="flex items-baseline gap-1.5 rounded-full bg-ink-900/85 px-3.5 py-1.5 backdrop-blur">
-                                    <template v-if="s.price">
-                                        <span class="text-[11px] uppercase tracking-wide text-sand-100/60">{{ $t('site.services.price_from') }}</span>
-                                        <span class="display text-lg leading-none text-sand-300">{{ money(s.price) }}</span>
-                                        <span class="text-sm text-sand-300/80">₸</span>
-                                    </template>
-                                    <span v-else class="text-sm text-sand-100/80">{{ $t('site.services.negotiable') }}</span>
-                                </span>
-                            </span>
-                            <span v-if="s.city" class="rounded-full bg-ink-900/60 px-2.5 py-1 text-[11px] text-sand-100/60 backdrop-blur">📍 {{ s.city }}</span>
-                        </div>
+                        <span v-if="s.category" class="absolute left-2.5 top-2.5 rounded-lg bg-ink-900/55 px-2 py-1 text-[11px] font-medium text-sand-100/85 backdrop-blur-md">{{ s.category.name }}</span>
                     </div>
-                    <div class="p-4">
-                        <h2 class="line-clamp-2 text-sm font-semibold leading-snug text-sand-50">{{ s.title }}</h2>
-                        <p class="mt-1 line-clamp-1 text-xs text-sand-100/40">{{ s.description }}</p>
+
+                    <div class="px-4 pb-4 pt-1">
+                        <h2 class="line-clamp-2 min-h-[2.5rem] text-[15px] font-semibold leading-tight text-sand-50">{{ s.title }}</h2>
+                        <p class="mt-1 line-clamp-1 text-xs text-sand-100/35">
+                            <template v-if="s.city">📍 {{ s.city }} · </template>{{ s.description }}
+                        </p>
+
+                        <!-- Цена: типографика, а не плашка. Разделитель + стрелка-действие -->
+                        <div class="mt-3 flex items-center justify-between border-t border-sand-100/10 pt-3">
+                            <span v-if="s.price" class="flex items-baseline gap-1">
+                                <span class="text-[11px] text-sand-100/40">{{ $t('site.services.price_from') }}</span>
+                                <span class="display text-[22px] leading-none tracking-tight text-sand-50">{{ money(s.price) }}</span>
+                                <span class="text-sm font-medium text-sand-300">₸</span>
+                            </span>
+                            <span v-else class="text-sm font-medium text-sand-100/60">{{ $t('site.services.negotiable') }}</span>
+                            <span class="flex h-8 w-8 items-center justify-center rounded-full border border-sand-100/15 text-sand-100/50 transition duration-300 group-hover:border-sand-300 group-hover:bg-sand-300 group-hover:text-ink-900">
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+                            </span>
+                        </div>
                     </div>
                 </Link>
             </div>
