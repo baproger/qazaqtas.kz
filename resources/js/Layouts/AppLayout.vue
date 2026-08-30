@@ -316,7 +316,23 @@ onUnmounted(() => clearTimeout(bellTimer));
 const setLocale = (l) => router.patch(route('locale.update'), { locale: l }, { preserveScroll: true });
 const i18n = useLocale();
 // Иконка/цвет уведомления по смыслу заголовка (просрочка, назначение, этап).
+// Вкладки колокольчика: задачи отдельно от остального.
+const TASK_TYPES = ['task_assigned', 'task_overdue', 'department_task_overdue'];
+const notifTab = ref('tasks');
+const isTaskNotif = (n) => TASK_TYPES.includes(n.data?.type);
+const notifTabs = computed(() => [
+    { key: 'tasks', label: tr('Задачи'), unread: notifications.value.items.filter((n) => !n.read_at && isTaskNotif(n)).length },
+    { key: 'other', label: tr('Остальные'), unread: notifications.value.items.filter((n) => !n.read_at && !isTaskNotif(n)).length },
+]);
+const notifList = computed(() => notifications.value.items.filter((n) => (notifTab.value === 'tasks') === isTaskNotif(n)));
+const NOTIF_ICONS = { task_assigned: ['✅', 'bg-emerald-100 text-emerald-700'], task_overdue: ['⏰', 'bg-rose-100 text-rose-600'], department_task_overdue: ['⏰', 'bg-rose-100 text-rose-600'],
+    deal_stage_changed: ['📊', 'bg-indigo-100 text-indigo-600'], robot: ['🤖', 'bg-violet-100 text-violet-700'], expense_pending: ['🧾', 'bg-amber-100 text-amber-700'], expense_confirmed: ['✅', 'bg-emerald-100 text-emerald-700'],
+    expense_handled: ['🧾', 'bg-slate-100 text-slate-600'], expense_threshold: ['⚠️', 'bg-rose-100 text-rose-600'], company_expense_submitted: ['🧾', 'bg-amber-100 text-amber-700'], company_expense_paid: ['💸', 'bg-emerald-100 text-emerald-700'],
+    company_expense_stale: ['⏳', 'bg-amber-100 text-amber-700'], finance_deleted: ['🗑️', 'bg-rose-100 text-rose-600'], product_shortage: ['📦', 'bg-amber-100 text-amber-700'], production_plan_queued: ['🏭', 'bg-sky-100 text-sky-700'],
+    site_order: ['🛒', 'bg-indigo-100 text-indigo-600'], chat_mention: ['💬', 'bg-sky-100 text-sky-700'], birthday: ['🎂', 'bg-pink-100 text-pink-700'] };
 const notifMeta = (n) => {
+    const byType = NOTIF_ICONS[n.data?.type];
+    if (byType) return { icon: byType[0], cls: byType[1] };
     const s = ((n.data?.title || '') + ' ' + (n.data?.message || '')).toLowerCase();
     if (s.includes(tr('просроч')) || s.includes('overdue')) return { icon: '⏰', cls: 'bg-red-100 text-red-600' };
     if (s.includes(tr('задач')) || s.includes(tr('назнач'))) return { icon: '✅', cls: 'bg-emerald-100 text-emerald-600' };
@@ -540,41 +556,41 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                             </button>
                         </template>
                         <template #content>
-                            <div class="w-72 sm:w-80">
-                                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-semibold text-slate-800">{{ t('header.notifications', 'Уведомления') }}</span>
-                                        <span v-if="notifications.unread > 0" class="rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-bold text-red-600">{{ notifications.unread }}</span>
-                                    </div>
-                                    <button v-if="notifications.unread > 0" class="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="markAllRead">
-                                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l3 3 4-5M9 13l3 3 5-7"/></svg>
-                                        {{ t('header.read_all', 'Прочитать все') }}
+                            <div class="w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-white/60 bg-white/80 shadow-soft-lg backdrop-blur-xl">
+                                <!-- Шапка + вкладки -->
+                                <div class="flex items-center justify-between gap-2 px-4 pt-3">
+                                    <span class="text-sm font-semibold text-slate-800">{{ t('header.notifications', 'Уведомления') }}</span>
+                                    <button v-if="notifications.unread > 0" class="text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="markAllRead">{{ t('header.read_all', 'Прочитать все') }}</button>
+                                </div>
+                                <div class="mx-4 mt-2 flex rounded-xl bg-slate-100/80 p-0.5 text-xs font-medium">
+                                    <button v-for="tab in notifTabs" :key="tab.key" type="button" @click="notifTab = tab.key"
+                                        class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 transition"
+                                        :class="notifTab === tab.key ? 'bg-white text-slate-900 shadow-soft' : 'text-slate-500 hover:text-slate-800'">
+                                        {{ tab.label }}
+                                        <span v-if="tab.unread" class="rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white">{{ tab.unread }}</span>
                                     </button>
                                 </div>
-                                <div class="max-h-96 overflow-y-auto">
-                                    <div v-for="n in notifications.items" :key="n.id"
-                                        class="relative flex cursor-pointer gap-3 border-b border-slate-50 px-4 py-3 transition-colors hover:bg-slate-50"
-                                        :class="!n.read_at ? 'bg-indigo-50/40' : ''" @click="openNotification(n)">
-                                        <span v-if="!n.read_at" class="absolute left-0 top-0 h-full w-0.5 bg-indigo-500"></span>
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm" :class="notifMeta(n).cls">{{ notifMeta(n).icon }}</span>
+                                <!-- Список -->
+                                <div class="mt-2 max-h-[22rem] overflow-y-auto px-2 pb-2">
+                                    <div v-for="n in notifList" :key="n.id"
+                                        class="group/n relative flex cursor-pointer gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white"
+                                        :class="!n.read_at ? 'bg-indigo-50/60' : ''" @click="openNotification(n)">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base" :class="notifMeta(n).cls">{{ notifMeta(n).icon }}</span>
                                         <div class="min-w-0 flex-1">
                                             <div class="flex items-start justify-between gap-2">
-                                                <span class="text-sm font-semibold text-slate-800" :class="n.read_at ? 'text-slate-600' : ''">{{ n.data.title }}</span>
-                                                <span v-if="!n.read_at" class="mt-1 h-2 w-2 shrink-0 rounded-full bg-indigo-500"></span>
+                                                <span class="truncate text-sm" :class="n.read_at ? 'font-medium text-slate-600' : 'font-semibold text-slate-900'">{{ n.data.title }}</span>
+                                                <span class="shrink-0 text-xs text-slate-400">{{ relTime(n.created_at) }}</span>
                                             </div>
-                                            <div class="mt-0.5 text-xs leading-snug text-slate-500">{{ n.data.message }}</div>
-                                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                                                <span>{{ relTime(n.created_at) }}</span>
-                                                <span v-if="n.data.url" class="font-medium text-indigo-500">→ {{ n.data.deal_number || $e('Открыть') }}</span>
-                                            </div>
+                                            <div class="mt-0.5 line-clamp-2 text-xs leading-snug text-slate-500">{{ n.data.message }}</div>
                                         </div>
+                                        <span v-if="!n.read_at" class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-indigo-500"></span>
                                     </div>
-                                    <div v-if="!notifications.items.length" class="flex flex-col items-center gap-2 px-4 py-10 text-center">
+                                    <div v-if="!notifList.length" class="flex flex-col items-center gap-2 px-4 py-10 text-center">
                                         <span class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-2xl">🔕</span>
                                         <span class="text-sm text-slate-400">{{ t('header.no_notifications', 'Нет уведомлений') }}</span>
                                     </div>
                                 </div>
-                                <Link :href="route('notifications.index')" class="block border-t border-slate-100 px-4 py-2.5 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50">{{ tr('Все уведомления и события →') }}</Link>
+                                <Link :href="route('notifications.index')" class="block border-t border-slate-100/80 px-4 py-2.5 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50/60">{{ tr('Все уведомления и события →') }}</Link>
                             </div>
                         </template>
                     </Dropdown>
