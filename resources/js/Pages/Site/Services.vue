@@ -112,12 +112,19 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
                         <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900/80 via-transparent to-transparent" />
                         <span v-if="s.category" class="absolute left-3 top-3 rounded-full bg-ink-900/60 px-2.5 py-0.5 text-[11px] text-sand-100/80 backdrop-blur">{{ s.category.name }}</span>
                         <!-- Цена — главный акцент карточки -->
-                        <div class="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-                            <span class="display text-xl leading-none text-sand-300">
-                                <template v-if="s.price"><span class="text-xs text-sand-100/60">{{ $t('site.services.price_from') }} </span>{{ money(s.price) }} ₸</template>
-                                <template v-else><span class="text-sm">{{ $t('site.services.negotiable') }}</span></template>
+                        <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+                            <!-- Цена — «стеклянная» плашка с градиентной рамкой, как у кнопок -->
+                            <span class="rounded-full bg-gradient-to-r from-sand-300/90 via-sand-300/40 to-sand-500/60 p-px shadow-lg shadow-ink-900/40">
+                                <span class="flex items-baseline gap-1.5 rounded-full bg-ink-900/85 px-3.5 py-1.5 backdrop-blur">
+                                    <template v-if="s.price">
+                                        <span class="text-[11px] uppercase tracking-wide text-sand-100/60">{{ $t('site.services.price_from') }}</span>
+                                        <span class="display text-lg leading-none text-sand-300">{{ money(s.price) }}</span>
+                                        <span class="text-sm text-sand-300/80">₸</span>
+                                    </template>
+                                    <span v-else class="text-sm text-sand-100/80">{{ $t('site.services.negotiable') }}</span>
+                                </span>
                             </span>
-                            <span v-if="s.city" class="text-[11px] text-sand-100/50">📍 {{ s.city }}</span>
+                            <span v-if="s.city" class="rounded-full bg-ink-900/60 px-2.5 py-1 text-[11px] text-sand-100/60 backdrop-blur">📍 {{ s.city }}</span>
                         </div>
                     </div>
                     <div class="p-4">
