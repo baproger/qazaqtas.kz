@@ -103,7 +103,7 @@ onBeforeUnmount(() => stopReveal());
     <SiteLayout :seo="seo">
         <!-- Шапка раздела -->
         <section>
-            <div class="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
+            <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
                 <nav class="flex items-center gap-2 text-xs text-sand-100/40" :aria-label="$t('site.a11y.breadcrumbs')">
                     <Link :href="$r('site.home')" class="transition hover:text-sand-300">{{ $t('site.nav.home') }}</Link>
                     <span>/</span>
@@ -113,7 +113,7 @@ onBeforeUnmount(() => stopReveal());
                     </template>
                 </nav>
 
-                <h1 class="display mt-6 max-w-3xl text-[clamp(2.25rem,6vw,4.5rem)] text-sand-50">
+                <h1 class="display mt-5 max-w-3xl text-[clamp(2rem,5vw,3.5rem)] text-sand-50">
                     {{ currentCategory?.name ?? $t('site.catalog.title') }}
                 </h1>
                 <p class="mt-5 max-w-2xl text-sm leading-relaxed text-sand-100/55 sm:text-base">
@@ -129,59 +129,48 @@ onBeforeUnmount(() => stopReveal());
             </div>
         </div>
 
-        <section class="ambient mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
-            <div class="grid gap-10 lg:grid-cols-[260px_1fr]">
-                <!-- Фильтры -->
-                <aside class="lg:sticky lg:top-40 lg:self-start">
-                    <button
-                        class="btn-ghost w-full lg:hidden"
-                        :aria-expanded="filtersOpen"
-                        @click="filtersOpen = !filtersOpen"
-                    >{{ filtersOpen ? $t('site.catalog.filters_hide') : $t('site.catalog.filters_show') }}</button>
-
-                    <div :class="['card mt-4 space-y-8 p-6 lg:mt-0 lg:block', filtersOpen ? 'block' : 'hidden']">
-                        <div>
-                            <label for="q" class="eyebrow">{{ $t('site.catalog.search') }}</label>
-                            <input
-                                id="q"
-                                v-model="search"
-                                type="search"
-                                :placeholder="$t('site.catalog.search_hint')"
-                                class="mt-3 w-full rounded-xl border-white/12 bg-white/[0.04] px-4 py-3 text-sm text-sand-50 placeholder:text-sand-100/30 focus:border-sand-300 focus:ring-0"
-                            />
-                        </div>
-
-                        <div>
-                            <p class="eyebrow">{{ $t('site.catalog.price') }}</p>
-                            <div class="mt-3 flex items-center gap-2">
-                                <input v-model="min" type="number" :placeholder="String(Math.round(bounds.min))" class="w-full rounded-xl border-white/12 bg-white/[0.04] px-3 py-2.5 text-sm text-sand-50 focus:border-sand-300 focus:ring-0" />
-                                <span class="text-sand-100/30">—</span>
-                                <input v-model="max" type="number" :placeholder="String(Math.round(bounds.max))" class="w-full rounded-xl border-white/12 bg-white/[0.04] px-3 py-2.5 text-sm text-sand-50 focus:border-sand-300 focus:ring-0" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <p class="eyebrow">{{ $t('site.catalog.sort_label') }}</p>
-                            <div class="mt-3 space-y-1.5">
-                                <button
-                                    v-for="s in sorts"
-                                    :key="s.key"
-                                    class="block w-full rounded-lg px-3 py-2 text-left text-sm transition"
-                                    :class="sort === s.key ? 'bg-white/[0.07] text-sand-50' : 'text-sand-100/55 hover:text-sand-50'"
-                                    @click="sort = s.key"
-                                >{{ s.label }}</button>
-                            </div>
-                        </div>
-
-                        <button class="text-sm text-sand-300 underline-offset-4 hover:underline" @click="reset">{{ $t('site.catalog.reset_all') }}</button>
+        <section class="ambient mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+            <!-- Фильтры: одна стеклянная панель, как в «Услугах» -->
+            <div class="card mb-8 rounded-3xl p-5 backdrop-blur-xl">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto_auto]">
+                    <!-- Поиск -->
+                    <label class="relative block">
+                        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-sand-100/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input v-model="search" type="search" :placeholder="$t('site.catalog.search_hint')"
+                            class="h-11 w-full rounded-xl border-0 bg-sand-100/5 pl-10 pr-4 text-sm text-sand-50 placeholder-sand-100/30 ring-1 ring-inset ring-sand-100/10 transition focus:bg-sand-100/10 focus:ring-2 focus:ring-sand-300/60" />
+                    </label>
+                    <!-- Цена от—до -->
+                    <div class="flex items-center gap-2">
+                        <label class="relative block">
+                            <input v-model="min" type="number" min="0" :placeholder="String(Math.round(bounds.min))"
+                                class="h-11 w-28 rounded-xl border-0 bg-sand-100/5 px-3 pr-7 text-sm text-sand-50 placeholder-sand-100/30 ring-1 ring-inset ring-sand-100/10 transition focus:ring-2 focus:ring-sand-300/60" />
+                            <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-sand-100/40">₸</span>
+                        </label>
+                        <span class="text-sand-100/30">—</span>
+                        <label class="relative block">
+                            <input v-model="max" type="number" min="0" :placeholder="String(Math.round(bounds.max))"
+                                class="h-11 w-28 rounded-xl border-0 bg-sand-100/5 px-3 pr-7 text-sm text-sand-50 placeholder-sand-100/30 ring-1 ring-inset ring-sand-100/10 transition focus:ring-2 focus:ring-sand-300/60" />
+                            <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-sand-100/40">₸</span>
+                        </label>
                     </div>
-                </aside>
+                    <!-- Сортировка: сегменты -->
+                    <div class="flex h-11 items-center overflow-x-auto rounded-xl bg-sand-100/5 p-1 ring-1 ring-inset ring-sand-100/10">
+                        <button v-for="sOpt in sorts" :key="sOpt.key" type="button" @click="sort = sOpt.key"
+                            class="h-full shrink-0 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition"
+                            :class="sort === sOpt.key ? 'bg-sand-300 text-ink-900' : 'text-sand-100/50 hover:text-sand-50'">{{ sOpt.label }}</button>
+                    </div>
+                    <!-- Итог + сброс -->
+                    <div class="flex h-11 items-center justify-end gap-3 text-sm text-sand-100/40">
+                        <span>{{ $t('site.catalog.found', null, { count: products.total }) }}</span>
+                        <button v-if="search || min || max || sort !== 'popular' || filters.category" type="button" @click="reset"
+                            class="rounded-lg px-2 py-1 text-xs text-sand-100/50 transition hover:bg-sand-100/10 hover:text-sand-50">✕ {{ $t('site.catalog.reset') }}</button>
+                    </div>
+                </div>
+            </div>
 
-                <!-- Товары -->
-                <div>
-                    <p class="mb-6 text-sm text-sand-100/45">{{ $t('site.catalog.found', null, { count: products.total }) }}</p>
-
-                    <div v-if="products.data.length" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <!-- Товары: 4 колонки -->
+            <div>
+                    <div v-if="products.data.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 lg:gap-5">
                         <div v-for="p in products.data" :key="p.id" class="reveal flex flex-col">
                             <ProductCard
                                 :product="p"
@@ -221,11 +210,10 @@ onBeforeUnmount(() => stopReveal());
                     <!-- Недавно смотрели -->
                     <section v-if="recentProducts.length" class="mt-20">
                         <h2 class="display text-2xl text-sand-50">{{ $t('site.catalog.recent') }}</h2>
-                        <div class="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                            <ProductCard v-for="p in recentProducts.slice(0, 3)" :key="p.id" :product="p" compact />
+                        <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            <ProductCard v-for="p in recentProducts.slice(0, 4)" :key="p.id" :product="p" compact />
                         </div>
                     </section>
-                </div>
             </div>
         </section>
     </SiteLayout>
