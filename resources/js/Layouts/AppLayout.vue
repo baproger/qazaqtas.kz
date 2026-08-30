@@ -560,9 +560,9 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                 <!-- Шапка + вкладки -->
                                 <div class="flex items-center justify-between gap-2 px-4 pt-3">
                                     <span class="text-sm font-semibold text-slate-800">{{ t('header.notifications', 'Уведомления') }}</span>
-                                    <button v-if="notifications.unread > 0" class="text-xs font-medium text-indigo-600 hover:text-indigo-700" @click="markAllRead">{{ t('header.read_all', 'Прочитать все') }}</button>
+                                    <button v-if="notifications.unread > 0" class="text-xs font-medium text-indigo-600 hover:text-indigo-700" @click.stop="markAllRead">{{ t('header.read_all', 'Прочитать все') }}</button>
                                 </div>
-                                <div class="mx-4 mt-2 flex rounded-xl bg-slate-100/80 p-0.5 text-xs font-medium">
+                                <div class="mx-4 mt-2 flex rounded-xl bg-slate-100/80 p-0.5 text-xs font-medium" @click.stop>
                                     <button v-for="tab in notifTabs" :key="tab.key" type="button" @click="notifTab = tab.key"
                                         class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 transition"
                                         :class="notifTab === tab.key ? 'bg-white text-slate-900 shadow-soft' : 'text-slate-500 hover:text-slate-800'">
