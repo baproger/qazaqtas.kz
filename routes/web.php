@@ -156,6 +156,8 @@ Route::middleware('auth')->group(function () {
     // Tasks (managed inline inside deal/project cards — no standalone board)
     Route::get('tasks', [TaskController::class, 'index'])->name('tasks.index');
     Route::post('tasks', [TaskController::class, 'store'])->name('tasks.store');
+    Route::get('tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    Route::patch('tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
     Route::patch('tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
     Route::patch('tasks/{task}/autosave', [TaskController::class, 'autosave'])->name('tasks.autosave');
     Route::put('tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');

@@ -3,10 +3,14 @@
 namespace App\Providers;
 
 use App\Models\Deal;
+use App\Models\DealItem;
 use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
+use App\Models\WorkOrder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Прод за HTTPS: генерим только https-ссылки (mixed content / редиректы).
         if ($this->app->isProduction()) {
-            \Illuminate\Support\Facades\URL::forceScheme('https');
+            URL::forceScheme('https');
         }
 
         Vite::prefetch(concurrency: 3);
@@ -32,11 +36,12 @@ class AppServiceProvider extends ServiceProvider
         // Stable polymorphic aliases used across tasks/documents/comments/etc.
         Relation::enforceMorphMap([
             'deal' => Deal::class,
-            'deal_item' => \App\Models\DealItem::class,
+            'deal_item' => DealItem::class,
             'project' => Project::class,
             // Наряд — источник движения склада: подтверждённая выработка.
-            'work_order' => \App\Models\WorkOrder::class,
+            'work_order' => WorkOrder::class,
             'user' => User::class,
+            'task' => Task::class,
         ]);
     }
 }

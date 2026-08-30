@@ -7,12 +7,15 @@ use Illuminate\Validation\Rule;
 
 class DocumentRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
         return [
-            'documentable_type' => ['required', Rule::in(['deal', 'project', 'deal_item'])],
+            'documentable_type' => ['required', Rule::in(['deal', 'project', 'deal_item', 'task'])],
             'documentable_id' => ['required', 'integer'],
             'name' => ['nullable', 'string', 'max:255'],
             'file' => ['required', 'file', 'max:20480', // 20MB

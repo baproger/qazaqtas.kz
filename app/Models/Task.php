@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -29,7 +30,7 @@ class Task extends Model
     protected $fillable = [
         'taskable_type', 'taskable_id', 'type', 'title', 'description', 'note',
         'assignee_id', 'creator_id', 'priority', 'status',
-        'start_date', 'due_date', 'parent_task_id', 'checklist', 'completed_at', 'overdue_notified_at',
+        'position', 'start_date', 'due_date', 'parent_task_id', 'checklist', 'completed_at', 'overdue_notified_at',
     ];
 
     protected $casts = [
@@ -98,5 +99,15 @@ class Task extends Model
     public function subtasks(): HasMany
     {
         return $this->hasMany(Task::class, 'parent_task_id');
+    }
+
+    public function comments(): MorphMany
+    {
+        return $this->morphMany(Comment::class, 'commentable');
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
     }
 }

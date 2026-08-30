@@ -7,6 +7,7 @@ use App\Models\Deal;
 use App\Models\DealItem;
 use App\Models\Document;
 use App\Models\Project;
+use App\Models\Task;
 use App\Services\ImageCompressor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -31,6 +32,7 @@ class DocumentController extends Controller
 
         return match ($type) {
             'project' => Project::find($id),
+            'task' => Task::find($id),
             // Позиция сделки: фото товара. Права ей даёт её сделка — см.
             // DealItemPolicy, поэтому проверка доступа ниже общая.
             'deal_item' => DealItem::with('deal')->find($id),

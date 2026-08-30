@@ -87,4 +87,26 @@ class TasksEngineTest extends TestCase
         $this->actingAs($mgr)->patch(route('tasks.toggle', $task))->assertRedirect();
         $this->assertSame($b->id, $deal->fresh()->deal_stage_id);
     }
+
+    public function test_task_page_kanban_move_and_comment(): void
+    {
+        $mgr = $this->user('manager');
+        $a = Task::create(['title' => 'A', 'assignee_id' => $mgr->id, 'creator_id' => $mgr->id, 'status' => 'new']);
+        $b = Task::create(['title' => 'B', 'assignee_id' => $mgr->id, 'creator_id' => $mgr->id, 'status' => 'in_progress']);
+
+        $this->actingAs($mgr)->get(route('tasks.show', $a))->assertOk()
+            ->assertInertia(fn ($p) => $p->component('Tasks/Show')->where('task.title', 'A')->where('canEdit', true));
+
+        // Перенос A в колонку «В работе» перед B.
+        $this->actingAs($mgr)->patch(route('tasks.move', $a), ['status' => 'in_progress', 'order' => [$a->id, $b->id]])->assertRedirect();
+        $this->assertSame('in_progress', $a->fresh()->status);
+        $this->assertSame([0, 1], [$a->fresh()->position, $b->fresh()->position]);
+
+        $this->actingAs($mgr)->post(route('comments.store'), ['commentable_type' => 'task', 'commentable_id' => $a->id, 'body' => 'Готово?'])->assertRedirect();
+        $this->assertSame(1, $a->comments()->count());
+
+        // Чужую задачу без права смотреть нельзя.
+        $stranger = $this->user('foreman');
+        $this->actingAs($stranger)->get(route('tasks.show', $a))->assertForbidden();
+    }
 }

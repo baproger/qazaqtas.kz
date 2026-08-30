@@ -7,9 +7,21 @@ use App\Models\User;
 
 class TaskPolicy
 {
-    public function viewAny(User $user): bool { return $user->can('task.viewAny'); }
-    public function view(User $user, Task $t): bool { return $user->can('task.view'); }
-    public function create(User $user): bool { return $user->can('task.create'); }
+    public function viewAny(User $user): bool
+    {
+        return $user->can('task.viewAny');
+    }
+
+    // Исполнитель и автор видят свою задачу всегда; остальным — право.
+    public function view(User $user, Task $t): bool
+    {
+        return $t->assignee_id === $user->id || $t->creator_id === $user->id || $user->can('task.view');
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->can('task.create');
+    }
 
     // Исполнитель/автор — всегда; иначе право + доступ к родительской сделке/
     // заказу (изоляция фирм). Без этого через custom-fields можно было бы

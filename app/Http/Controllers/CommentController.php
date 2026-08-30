@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CommentRequest;
 use App\Models\Comment;
+use App\Models\Deal;
+use App\Models\Project;
+use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -12,9 +15,11 @@ class CommentController extends Controller
     public function store(CommentRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $entity = $data['commentable_type'] === 'deal'
-            ? \App\Models\Deal::find($data['commentable_id'])
-            : \App\Models\Project::find($data['commentable_id']);
+        $entity = match ($data['commentable_type']) {
+            'deal' => Deal::find($data['commentable_id']),
+            'task' => Task::find($data['commentable_id']),
+            default => Project::find($data['commentable_id']),
+        };
         abort_unless($entity && $request->user()->can('view', $entity), 403);
         $data['user_id'] = $request->user()->id;
 

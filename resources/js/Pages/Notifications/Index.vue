@@ -37,7 +37,7 @@ const iconOf = (type) => ({ deal_stage_changed: '📊', task_assigned: '✅', ta
 const kindMeta = { stage: { icon: '📊', label: tr('Этапы'), cls: 'bg-indigo-100 text-indigo-700' }, task: { icon: '✅', label: tr('Задачи'), cls: 'bg-emerald-100 text-emerald-700' }, robot: { icon: '🤖', label: tr('Роботы'), cls: 'bg-violet-100 text-violet-700' } };
 const openN = (n) => { if (!n.read_at) router.patch(route('notifications.read', n.id), {}, { preserveScroll: true }); if (n.url) router.get(n.url); };
 const markAll = () => router.patch(route('notifications.readAll'), {}, { preserveScroll: true });
-const extras = (n) => Object.entries(n.data ?? {}).filter(([k]) => !['type', 'title', 'message', 'url', 'deal_id', 'deal_number'].includes(k));
+const extras = (n) => Object.entries(n.data ?? {}).filter(([k, v]) => !['type', 'title', 'message', 'url', 'deal_number', 'from'].includes(k) && !k.endsWith('_id') && typeof v !== 'object');
 </script>
 
 <template>

@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Events\TaskStatusUpdated;
 use App\Http\Requests\TaskRequest;
+use App\Models\AuditLog;
 use App\Models\Deal;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Notifications\TaskAssigned;
 use App\Support\AccessScope;
+use App\Support\AuditDictionary;
+use App\Support\AuditFormatter;
 use App\Support\NotificationResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,10 +46,11 @@ class TaskController extends Controller
             ->when($type !== '', fn ($q) => $q->where('type', $type))
             ->when($search !== '', fn ($q) => $q->where('title', 'like', "%{$search}%"))
             ->orderByRaw("case when status in ('done','canceled') then 1 else 0 end")
-            ->orderByRaw('case when due_date is null then 1 else 0 end')->orderBy('due_date')->orderByDesc('id')
-            ->paginate(50)->withQueryString()
+            ->orderBy('position')->orderByRaw('case when due_date is null then 1 else 0 end')->orderBy('due_date')->orderByDesc('id')
+            ->paginate($request->string('mode')->toString() === 'board' ? 300 : 50)->withQueryString()
             ->through(fn (Task $t) => [
-                'id' => $t->id, 'title' => $t->title, 'description' => $t->description, 'status' => $t->status, 'priority' => $t->priority, 'type' => $t->type,
+                'id' => $t->id, 'title' => $t->title, 'description' => $t->description, 'status' => $t->status, 'priority' => $t->priority, 'type' => $t->type, 'position' => $t->position,
+                'checklist' => $t->checklist ? ['done' => count(array_filter((array) $t->checklist, fn ($c) => ! empty($c['done']))), 'total' => count((array) $t->checklist)] : null,
                 'due_date' => $t->due_date?->toDateString(), 'completed_at' => $t->completed_at?->toIso8601String(), 'created_at' => $t->created_at?->toIso8601String(),
                 'assignee' => $t->assignee ? ['id' => $t->assignee->id, 'name' => $t->assignee->name, 'avatar' => $t->assignee->avatar] : null,
                 'creator' => $t->creator?->name,
@@ -58,7 +62,7 @@ class TaskController extends Controller
 
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
-            'filters' => ['view' => $view, 'status' => $status ?: 'open', 'type' => $type, 'search' => $search],
+            'filters' => ['view' => $view, 'status' => $status ?: 'open', 'type' => $type, 'search' => $search, 'mode' => $request->string('mode')->toString() ?: 'list'],
             'counts' => [
                 'mine' => (clone $mineOpen)->count(),
                 'overdue' => (clone $mineOpen)->whereNotNull('due_date')->whereDate('due_date', '<', now())->count(),
@@ -78,6 +82,69 @@ class TaskController extends Controller
             'project' => $t->taskable ? ['label' => $t->taskable->number ?? ('#'.$t->taskable_id), 'url' => route('projects.show', $t->taskable_id)] : null,
             default => null,
         };
+    }
+
+    /** Страница задачи: контекст, автосохранение, комментарии, файлы, история. */
+    public function show(Request $request, Task $task): Response
+    {
+        $this->authorize('view', $task);
+        $this->assertTaskAccess($task);
+        $task->load(['assignee:id,name,avatar', 'creator:id,name,avatar', 'taskable', 'comments.user:id,name,avatar', 'documents.user:id,name']);
+
+        $people = User::pluck('name', 'id');
+        $history = AuditFormatter::humanize(
+            AuditLog::where('table_name', 'tasks')->where('record_id', $task->id)->with('user:id,name')->latest()->limit(50)->get(),
+            ['assignee_id' => $people, 'creator_id' => $people],
+        )->map(fn ($l) => [
+            'id' => $l->id, 'at' => $l->created_at?->toIso8601String(), 'user' => $l->user?->name, 'action' => $l->action,
+            'field' => $l->field_name && $l->field_name !== AuditLog::SNAPSHOT ? AuditDictionary::field($l->field_name) : null,
+            'old' => $l->field_name === AuditLog::SNAPSHOT ? null : AuditDictionary::value($l->field_name, $l->old_value),
+            'new' => $l->field_name === AuditLog::SNAPSHOT ? null : AuditDictionary::value($l->field_name, $l->new_value),
+        ]);
+
+        $context = null;
+        if ($task->taskable_type === 'deal' && $task->taskable) {
+            $d = $task->taskable;
+            $context = ['kind' => 'deal', 'label' => 'Сделка', 'number' => $d->number, 'title' => $d->company_name, 'sub' => $d->stage?->name, 'url' => route('deals.show', $d->id)];
+        } elseif ($task->taskable_type === 'project' && $task->taskable) {
+            $p = $task->taskable;
+            $context = ['kind' => 'project', 'label' => 'Заказ цеха', 'number' => $p->number ?? ('#'.$p->id), 'title' => $p->name ?? null, 'sub' => $p->stage?->name ?? null, 'url' => route('projects.show', $p->id)];
+        }
+
+        return Inertia::render('Tasks/Show', [
+            'task' => [
+                'id' => $task->id, 'title' => $task->title, 'description' => $task->description, 'status' => $task->status, 'priority' => $task->priority, 'type' => $task->type,
+                'due_date' => $task->due_date?->toDateString(), 'created_at' => $task->created_at?->toIso8601String(), 'completed_at' => $task->completed_at?->toIso8601String(),
+                'assignee' => $task->assignee, 'creator' => $task->creator, 'checklist' => $task->checklist ?? [],
+            ],
+            'context' => $context,
+            'comments' => $task->comments->sortBy('created_at')->values(),
+            'documents' => $task->documents,
+            'history' => $history,
+            'canEdit' => $request->user()->can('update', $task),
+            'statuses' => Task::STATUSES, 'types' => Task::TYPES, 'priorities' => Task::PRIORITIES,
+            'users' => User::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    /** Канбан: перенос карточки в колонку и новый порядок колонки. */
+    public function move(Request $request, Task $task): RedirectResponse
+    {
+        $this->authorize('update', $task);
+        $this->assertTaskAccess($task);
+        $data = $request->validate([
+            'status' => ['required', Rule::in(array_keys(Task::STATUSES))],
+            'order' => ['nullable', 'array'], 'order.*' => ['integer'],
+        ]);
+
+        DB::transaction(function () use ($task, $data, $request) {
+            $this->changeStatus($task, $data['status'], $request->user()->id);
+            foreach (array_values($data['order'] ?? []) as $i => $id) {
+                Task::where('id', $id)->where('status', $data['status'])->update(['position' => $i]);
+            }
+        });
+
+        return back();
     }
 
     /** Быстрое переключение: открыта ↔ готово. */
@@ -101,8 +168,13 @@ class TaskController extends Controller
             'due_date' => ['sometimes', 'nullable', 'date'],
             'priority' => ['sometimes', Rule::in(array_keys(Task::PRIORITIES))],
             'assignee_id' => ['sometimes', 'nullable', 'exists:users,id'],
+            'checklist' => ['sometimes', 'nullable', 'array'], 'checklist.*.text' => ['required', 'string', 'max:255'], 'checklist.*.done' => ['nullable', 'boolean'],
         ]);
+        $reassigned = array_key_exists('assignee_id', $data) && (int) $data['assignee_id'] !== (int) $task->assignee_id;
         $task->update($data);
+        if ($reassigned && $task->assignee_id && $task->assignee_id !== $request->user()->id) {
+            $task->assignee?->notify(new TaskAssigned($task->fresh(['creator'])));
+        }
 
         return back();
     }
@@ -114,6 +186,7 @@ class TaskController extends Controller
         if ($from === $to) {
             return;
         }
+        // Изменение изнутри другой транзакции (move) — вложится, снаружи — своя.
         DB::transaction(function () use ($task, $to) {
             $task->status = $to;
             $task->completed_at = $to === 'done' ? now() : null;

@@ -28,8 +28,10 @@ class TaskAssigned extends Notification
         return [
             'type' => 'task_assigned',
             'title' => 'Вам назначена задача',
-            'message' => $this->task->title,
+            'message' => $this->task->title.($this->task->creator ? ' — от '.$this->task->creator->name : ''),
             'task_id' => $this->task->id,
+            'url' => route('tasks.show', $this->task->id),
+            'from' => $this->task->creator?->name,
         ];
     }
 }
