@@ -108,18 +108,19 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
 
                     <div class="flex shrink-0 items-center gap-1.5">
                         <!-- В корзину: компактная, текст + галочка-подтверждение -->
+                        <!-- Только иконка: подпись — в title/aria, цене остаётся вся ширина -->
                         <button
-                            class="btn-cart !px-3.5 !py-2.5 text-[13px]"
+                            class="btn-cart grid h-10 w-10 place-items-center !p-0"
                             :class="state === 'added' ? 'is-added' : ''"
                             :disabled="state === 'adding'"
-                            :aria-label="$t('site.product.to_cart')"
+                            :aria-label="state === 'added' ? $t('site.product.in_cart') : $t('site.product.to_cart')"
+                            :title="state === 'added' ? $t('site.product.in_cart') : $t('site.product.to_cart')"
                             @click="addToCart"
                         >
                             <svg v-if="state !== 'added'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.6 11.2a1.5 1.5 0 0 0 1.47 1.16h7.9a1.5 1.5 0 0 0 1.46-1.13L20.5 8H6"/>
                             </svg>
                             <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg>
-                            <span class="hidden sm:inline">{{ state === 'added' ? $t('site.product.in_cart') : $t('site.product.to_cart') }}</span>
                         </button>
                         <!-- Перейти к товару -->
                         <Link
