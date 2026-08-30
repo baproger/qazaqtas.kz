@@ -52,13 +52,13 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
              не «прыгала» при разной высоте фото. -->
         <!-- Зона снимка: своя подложка с внутренней тенью, чтобы изделие
              стояло в нише, а не лежало на плоскости. -->
-        <div class="media-well relative">
+        <div class="relative m-2 overflow-hidden rounded-2xl">
             <Link :href="$r('site.product', product.slug)" class="block overflow-hidden" :aria-label="product.name">
                 <ProductVisual :product="product" :ratio="compact ? 'aspect-[16/10]' : 'aspect-[4/3]'" shape="rounded-none" />
             </Link>
 
             <button
-                class="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-xl border border-white/15 bg-ink-900/70 backdrop-blur transition hover:border-sand-300/60"
+                class="absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-ink-900/55 backdrop-blur-md transition hover:border-sand-300/60"
                 :aria-pressed="favorite"
                 :aria-label="favorite ? $t('site.product.fav_remove') : $t('site.product.fav_add')"
                 @click.prevent="favorite = !favorite; emit('favorite', product.id)"
@@ -69,21 +69,21 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             </button>
 
             <!-- Наличие: важно для решения, поэтому видно сразу на снимке -->
-            <span class="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-ink-900/75 px-2.5 py-1 text-[11px] font-medium text-sand-50 backdrop-blur">
+            <span class="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-lg bg-ink-900/55 px-2 py-1 text-[11px] font-medium text-sand-100/85 backdrop-blur-md">
                 <span class="h-1.5 w-1.5 rounded-full" :class="product.in_stock ? 'bg-emerald-400' : 'bg-amber-400'" />
                 {{ product.in_stock ? $t('site.product.in_stock') : $t('site.product.on_order') }}
             </span>
         </div>
 
-        <div class="flex flex-1 flex-col p-5 sm:p-6">
+        <div class="flex flex-1 flex-col px-4 pb-4 pt-1">
             <p v-if="product.category" class="eyebrow">{{ product.category.name }}</p>
 
-            <h3 class="mt-2.5 text-[17px] font-medium leading-snug text-sand-50">
+            <h3 class="mt-1.5 line-clamp-2 text-[15px] font-semibold leading-tight text-sand-50">
                 <Link :href="$r('site.product', product.slug)" class="transition hover:text-sand-300">{{ product.name }}</Link>
             </h3>
 
             <!-- Размер чипом: сравнивать позиции удобнее, чем в строке текста -->
-            <p v-if="size" class="mt-3 inline-flex w-fit rounded-lg bg-white/[0.06] px-2.5 py-1 text-[11px] text-sand-100/60">
+            <p v-if="size" class="mt-2 inline-flex w-fit rounded-lg bg-white/[0.06] px-2.5 py-1 text-[11px] text-sand-100/60">
                 {{ size }}
             </p>
 
@@ -91,9 +91,10 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                  заканчиваются на одной линии независимо от длины названия. -->
             <div class="flex-1" />
 
-            <div class="divider-top mt-5 pt-4">
-                <div class="flex items-baseline gap-2">
-                    <span class="text-xl font-semibold text-sand-50">{{ money(product.price) }}</span>
+            <div class="mt-4 border-t border-sand-100/10 pt-3">
+                <div class="flex items-baseline gap-1.5">
+                    <span class="display text-[22px] leading-none tracking-tight text-sand-50">{{ money(product.price).replace(' ₸', '') }}</span>
+                    <span class="text-sm font-medium text-sand-300">₸</span>
                     <span class="text-sm text-sand-100/45">/ {{ product.unit }}</span>
                     <span v-if="product.old_price > 0" class="ml-auto text-xs text-sand-100/35 line-through">{{ money(product.old_price) }}</span>
                 </div>
