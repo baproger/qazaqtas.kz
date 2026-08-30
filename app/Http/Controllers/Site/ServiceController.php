@@ -17,12 +17,22 @@ class ServiceController extends Controller
     {
         $category = $request->string('category')->toString();
         $search = trim($request->string('search')->toString());
+        $city = $request->string('city')->toString();
+        $priceMax = $request->integer('price_max') ?: null;
+        $sort = in_array($request->string('sort')->toString(), ['new', 'cheap', 'expensive'], true)
+            ? $request->string('sort')->toString() : 'new';
 
         $services = Service::approved()->with(['translations', 'category:id,name,slug', 'category.translations'])
             ->when($category !== '', fn ($q) => $q->whereHas('category', fn ($c) => $c->where('slug', $category)))
+            ->when($city !== '', fn ($q) => $q->where('city', $city))
+            ->when($priceMax, fn ($q) => $q->where(fn ($w) => $w->whereNull('price')->orWhere('price', '<=', $priceMax)))
             ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
                 ->where('title', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%")->orWhere('city', 'like', "%{$search}%")))
-            ->latest('moderated_at')->paginate(24)->withQueryString()
+            ->when($sort === 'new', fn ($q) => $q->latest('moderated_at'))
+            // Договорная цена (NULL) — в конец любой ценовой сортировки.
+            ->when($sort === 'cheap', fn ($q) => $q->orderByRaw('price is null')->orderBy('price'))
+            ->when($sort === 'expensive', fn ($q) => $q->orderByRaw('price is null')->orderByDesc('price'))
+            ->paginate(24)->withQueryString()
             ->through(fn (Service $s) => $s->toCard());
 
         return Inertia::render('Site/Services', [
@@ -31,7 +41,8 @@ class ServiceController extends Controller
                 ->with('translations')->withCount(['services as n' => fn ($q) => $q->approved()])->get()
                 ->filter(fn ($c) => $c->n > 0)
                 ->map(fn ($c) => ['id' => $c->id, 'name' => $c->tr('name'), 'slug' => $c->slug, 'n' => $c->n])->values(),
-            'filters' => ['category' => $category, 'search' => $search],
+            'filters' => ['category' => $category, 'search' => $search, 'city' => $city, 'price_max' => $priceMax, 'sort' => $sort],
+            'cities' => Service::approved()->whereNotNull('city')->where('city', '!=', '')->distinct()->orderBy('city')->pluck('city'),
             'seo' => Seo::for(null, __('site.services.seo_title'), __('site.services.seo_description'), null, route('site.services')),
         ]);
     }

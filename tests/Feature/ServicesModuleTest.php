@@ -190,4 +190,23 @@ class ServicesModuleTest extends TestCase
         $this->get('/ru'.parse_url(route('site.service', $s->slug), PHP_URL_PATH))->assertOk()
             ->assertInertia(fn ($p) => $p->where('service.title', $s->title));
     }
+
+    /** Фильтры каталога: город, цена «до», сортировка по цене. */
+    public function test_public_filters_city_price_and_sort(): void
+    {
+        $assistant = $this->user('assistant');
+        $mk = fn ($t, $price, $city) => $this->actingAs($assistant)->post(route('partner.services.store'), $this->payload([
+            'title' => $t, 'price' => $price, 'city' => $city]));
+        $mk('Укладка брусчатки премиум', 9000, 'Алматы');
+        $mk('Доставка камня по городу', 3000, 'Шымкент');
+        $mk('Проект двора под ключ здесь', null, 'Шымкент');
+
+        $this->get(route('site.services', ['city' => 'Шымкент']))
+            ->assertInertia(fn ($p) => $p->has('services.data', 2)->where('cities', fn ($c) => count($c) === 2));
+        $this->get(route('site.services', ['price_max' => 5000, 'city' => 'Шымкент']))
+            ->assertInertia(fn ($p) => $p->has('services.data', 2)); // 3000 + договорная
+        $this->get(route('site.services', ['sort' => 'cheap']))
+            ->assertInertia(fn ($p) => $p->where('services.data.0.price', 3000)
+                ->where('services.data.2.price', null)); // договорная в конце
+    }
 }
