@@ -3,7 +3,6 @@ import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { Link, router } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
-import CategoryNav from '@/Components/site/CategoryNav.vue';
 import { favorites, recent, observeReveal } from '@/utils/site';
 import { usePageLinks } from '@/utils/pagination';
 import { useT, useSiteRoute } from '@/composables/useTranslations';
@@ -122,16 +121,17 @@ onBeforeUnmount(() => stopReveal());
             </div>
         </section>
 
-        <!-- Категории: плавающая панель, а не строка ссылок -->
-        <div class="sticky top-16 z-30 px-5 py-4 sm:top-20 sm:px-8">
-            <div class="mx-auto max-w-7xl">
-                <CategoryNav :categories="categories" :current="filters.category ?? ''" />
-            </div>
-        </div>
-
         <section class="ambient mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
             <!-- Фильтры: одна стеклянная панель, как в «Услугах» -->
             <div class="card mb-8 rounded-3xl p-5 backdrop-blur-xl">
+                <!-- Категории: сегменты в скролл-ленте, единый стиль с «Услугами» -->
+                <div class="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
+                    <Link :href="$r('site.catalog')" class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
+                        :class="!filters.category ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ $t('site.catalog.all') }}</Link>
+                    <Link v-for="c in categories" :key="c.slug" :href="$r('site.catalog', { category: c.slug })"
+                        class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
+                        :class="filters.category === c.slug ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ c.name }}</Link>
+                </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto_auto]">
                     <!-- Поиск -->
                     <label class="relative block">
