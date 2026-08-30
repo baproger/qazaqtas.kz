@@ -23,7 +23,7 @@ class NotificationController extends Controller
         'expense_handled' => 'Расход обработан', 'expense_threshold' => 'Превышен лимит расходов', 'company_expense_submitted' => 'Заявка на расход',
         'company_expense_paid' => 'Заявка оплачена', 'company_expense_stale' => 'Заявка зависла', 'finance_deleted' => 'Удалена финансовая запись',
         'product_shortage' => 'Нехватка на складе', 'production_plan_queued' => 'План производства', 'site_order' => 'Заказ с сайта',
-        'chat_mention' => 'Упоминание в чате', 'birthday' => 'День рождения', 'robot' => 'Робот этапа',
+        'service_submitted' => 'Услуга на модерацию', 'service_moderated' => 'Итог модерации', 'chat_mention' => 'Упоминание в чате', 'birthday' => 'День рождения', 'robot' => 'Робот этапа',
     ];
 
     /**

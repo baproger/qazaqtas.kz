@@ -35,6 +35,7 @@ use App\Http\Controllers\LiveController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MyExpensesController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PartnerServiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ProductionController;
@@ -44,6 +45,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ServiceModerationController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SiteOrderController;
 use App\Http\Controllers\SiteProjectController;
@@ -153,6 +155,18 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:60,1')->name('projects.items.output');
     Route::post('projects/{project}/items/{item}/finish', [ProjectItemController::class, 'finish'])
         ->middleware('throttle:60,1')->name('projects.items.finish');
+
+    // Услуги: кабинет партнёра (только свои, ServicePolicy) и модерация.
+    Route::get('partner/services', [PartnerServiceController::class, 'index'])->name('partner.services');
+    // Лимит: не больше 5 заявок в час с аккаунта — спам-защита.
+    Route::post('partner/services', [PartnerServiceController::class, 'store'])
+        ->middleware('throttle:5,60')->name('partner.services.store');
+    Route::put('partner/services/{service}', [PartnerServiceController::class, 'update'])
+        ->middleware('throttle:10,60')->name('partner.services.update');
+    Route::delete('partner/services/{service}', [PartnerServiceController::class, 'destroy'])->name('partner.services.destroy');
+    Route::get('moderation/services', [ServiceModerationController::class, 'index'])->name('moderation.services');
+    Route::patch('moderation/services/{service}/approve', [ServiceModerationController::class, 'approve'])->name('moderation.services.approve');
+    Route::patch('moderation/services/{service}/reject', [ServiceModerationController::class, 'reject'])->name('moderation.services.reject');
 
     // Tasks (managed inline inside deal/project cards — no standalone board)
     Route::get('tasks', [TaskController::class, 'index'])->name('tasks.index');

@@ -7,6 +7,8 @@ use App\Http\Controllers\Site\CheckoutController;
 use App\Http\Controllers\Site\ConfiguratorController;
 use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\QuotationController;
+use App\Http\Controllers\Site\SeoController;
+use App\Http\Controllers\Site\ServiceController;
 use App\Support\Locales;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +34,9 @@ $routes = function (): void {
     Route::get('/katalog/{product}', [CatalogController::class, 'show'])->name('product');
     Route::get('/api/recent-products', [CatalogController::class, 'recent'])
         ->middleware('throttle:60,1')->name('recent');
+
+    Route::get('/uslugi', [ServiceController::class, 'index'])->name('services');
+    Route::get('/uslugi/{slug}', [ServiceController::class, 'show'])->name('service');
 
     Route::get('/konfigurator', [ConfiguratorController::class, 'show'])->name('configurator');
 
@@ -59,6 +64,10 @@ Route::name('site.')->group($routes);
 foreach (Locales::ALL as $locale) {
     Route::prefix($locale)->name("$locale.site.")->group($routes);
 }
+
+// SEO: карта сайта и robots — вне языкового цикла, адрес один.
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 
 // Ошибки из браузера (сайт и ERP): без входа, с лимитом.
 Route::post('errors/browser', [ErrorLogController::class, 'browser'])

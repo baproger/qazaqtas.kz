@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolePermissionSeeder::class,
             StageSeeder::class,
+            ServiceCategorySeeder::class,
             MaterialSeeder::class,
             CatalogSeeder::class,
             SiteProjectSeeder::class,
@@ -55,7 +56,7 @@ class DatabaseSeeder extends Seeder
         $password = (string) env('ADMIN_PASSWORD', '');
         if ($password === '') {
             $password = Str::password(16);
-            $this->command?->warn("Пароль администратора не задан в ADMIN_PASSWORD.");
+            $this->command?->warn('Пароль администратора не задан в ADMIN_PASSWORD.');
             $this->command?->warn("Сгенерирован: {$password}");
             $this->command?->warn('Сохраните его — второй раз он показан не будет.');
         }

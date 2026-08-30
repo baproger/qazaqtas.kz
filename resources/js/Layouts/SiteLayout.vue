@@ -29,6 +29,7 @@ const cartCount = computed(() => site.value.cartCount ?? 0);
 const nav = computed(() => [
     { label: t('site.nav.catalog'), route: 'site.catalog' },
     ...(site.value.configurator ? [{ label: t('site.nav.configurator'), route: 'site.configurator' }] : []),
+    { label: t('site.nav.services'), route: 'site.services' },
     { label: t('site.nav.about'), route: 'site.about' },
     { label: t('site.nav.projects'), route: 'site.projects' },
     { label: t('site.nav.contacts'), route: 'site.contacts' },
@@ -87,6 +88,8 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
         <meta property="og:title" :content="seo.title ?? 'QAZAQ TAS'" />
         <meta property="og:description" :content="seo.description ?? ''" />
         <meta property="og:type" content="website" />
+        <meta v-if="seo.image" property="og:image" :content="seo.image" />
+        <link v-if="seo.canonical" rel="canonical" :href="seo.canonical" />
         <meta name="theme-color" :content="theme === 'dark' ? '#08090B' : '#FAF8F5'" />
     </Head>
 

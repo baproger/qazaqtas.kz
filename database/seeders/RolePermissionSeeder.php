@@ -81,7 +81,7 @@ class RolePermissionSeeder extends Seeder
         // «Финансист-Бухгалтер» = financist.
         // Бригадир — уровень сотрудника плюс своя страница производства:
         // он ведёт наряды своей бригады (доступ проверяется в контроллере).
-        foreach (['lawyer', 'cook', 'designer', 'supplier', 'foreman', 'production_head', 'assistant'] as $job) {
+        foreach (['lawyer', 'cook', 'designer', 'supplier', 'foreman', 'production_head', 'assistant', 'partner'] as $job) {
             $perms = [
                 'project.viewAny', 'project.view',
                 'task.viewAny', 'task.view', 'task.update',
@@ -147,7 +147,7 @@ class RolePermissionSeeder extends Seeder
     {
         return ['admin', 'director', 'financist', 'manager', 'employee',
             'foreman', 'designer', 'supplier', 'lawyer', 'cook',
-            'production_head', 'assistant'];
+            'production_head', 'assistant', 'partner'];
     }
 
     private function applyTraits(): void
@@ -168,6 +168,8 @@ class RolePermissionSeeder extends Seeder
             'production_head' => ['Начальник производства', false, false, true],
             // Ассистент — наблюдатель руководства: видит всех, сумм не видит.
             'assistant' => ['Ассистент', true, false, false],
+            // Партнёр размещает услуги на витрине; внутренняя ERP ему закрыта.
+            'partner' => ['Партнёр', false, false, false],
         ];
 
         foreach ($traits as $name => [$label, $leadership, $money, $workshop]) {

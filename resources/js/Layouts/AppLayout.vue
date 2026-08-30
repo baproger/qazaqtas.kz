@@ -128,6 +128,8 @@ const allNav = [
         ],
     },
     { key: 'nav.tasks', name: tr('Задачи'), route: 'tasks.index', icon: '✓', perm: 'task.viewAny' },
+    { key: 'nav.partnerServices', name: tr('Мои услуги'), route: 'partner.services', icon: '◆', onlyRoles: ['partner'] },
+    { key: 'nav.moderation', name: tr('Модерация услуг'), route: 'moderation.services', icon: '☑', roles: ['assistant', 'admin'] },
     { key: 'nav.chat', name: tr('Чат'), route: 'chat.index', icon: '✉' },
     {
         key: 'nav.admin', name: tr('Управление'), icon: '⚙', children: [
@@ -334,7 +336,7 @@ const NOTIF_ICONS = { task_assigned: ['✅', 'bg-emerald-100 text-emerald-700'],
     deal_stage_changed: ['📊', 'bg-indigo-100 text-indigo-600'], robot: ['🤖', 'bg-violet-100 text-violet-700'], expense_pending: ['🧾', 'bg-amber-100 text-amber-700'], expense_confirmed: ['✅', 'bg-emerald-100 text-emerald-700'],
     expense_handled: ['🧾', 'bg-slate-100 text-slate-600'], expense_threshold: ['⚠️', 'bg-rose-100 text-rose-600'], company_expense_submitted: ['🧾', 'bg-amber-100 text-amber-700'], company_expense_paid: ['💸', 'bg-emerald-100 text-emerald-700'],
     company_expense_stale: ['⏳', 'bg-amber-100 text-amber-700'], finance_deleted: ['🗑️', 'bg-rose-100 text-rose-600'], product_shortage: ['📦', 'bg-amber-100 text-amber-700'], production_plan_queued: ['🏭', 'bg-sky-100 text-sky-700'],
-    site_order: ['🛒', 'bg-indigo-100 text-indigo-600'], chat_mention: ['💬', 'bg-sky-100 text-sky-700'], birthday: ['🎂', 'bg-pink-100 text-pink-700'] };
+    site_order: ['🛒', 'bg-indigo-100 text-indigo-600'], service_submitted: ['◆', 'bg-amber-100 text-amber-700'], service_moderated: ['◆', 'bg-emerald-100 text-emerald-700'], chat_mention: ['💬', 'bg-sky-100 text-sky-700'], birthday: ['🎂', 'bg-pink-100 text-pink-700'] };
 const notifMeta = (n) => {
     const byType = NOTIF_ICONS[n.data?.type];
     if (byType) return { icon: byType[0], cls: byType[1] };

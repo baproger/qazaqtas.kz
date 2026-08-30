@@ -1,0 +1,147 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Service;
+use App\Models\ServiceCategory;
+use App\Models\User;
+use App\Notifications\ServiceModerated;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\ServiceCategorySeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
+
+/** Модуль услуг: кабинет партнёра, модерация, публичный каталог, безопасность. */
+class ServicesModuleTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private ServiceCategory $cat;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(ServiceCategorySeeder::class);
+        $this->cat = ServiceCategory::firstOrFail();
+        Storage::fake('public');
+    }
+
+    private function user(string $role): User
+    {
+        $u = User::factory()->create();
+        $u->assignRole($role);
+
+        return $u;
+    }
+
+    /** @return array<string, mixed> */
+    private function payload(array $extra = []): array
+    {
+        return array_merge([
+            'title' => 'Укладка брусчатки под ключ', 'category_id' => $this->cat->id,
+            'description' => 'Полный цикл: подготовка основания, укладка, виброплита. Опыт 10 лет.',
+            'price' => 4500, 'contact_name' => 'Арман', 'contact_phone' => '+7 701 000 00 00', 'city' => 'Шымкент',
+            'photo' => UploadedFile::fake()->image('foto.jpg', 1200, 800),
+        ], $extra);
+    }
+
+    public function test_partner_creates_service_with_slug_and_webp_and_it_waits_moderation(): void
+    {
+        $partner = $this->user('partner');
+        $this->actingAs($partner)->post(route('partner.services.store'), $this->payload([
+            'description' => 'Полный цикл <script>alert(1)</script> укладки и уход.',
+        ]))->assertSessionHasNoErrors();
+
+        $s = Service::firstOrFail();
+        $this->assertSame('pending', $s->status);
+        $this->assertSame('ukladka-bruscatki-pod-kliuc', $s->slug); // ЧПУ с транслитерацией (Str::slug)
+        $this->assertStringNotContainsString('<script>', $s->description); // XSS вычищен
+        $this->assertNotNull($s->photo_webp); // авто-WebP
+        // На витрине до одобрения не видна ни в списке, ни по прямому ЧПУ.
+        $this->get(route('site.services'))->assertInertia(fn ($p) => $p->has('services.data', 0));
+        $this->get(route('site.service', $s->slug))->assertNotFound();
+    }
+
+    public function test_partner_sees_only_own_services_and_idor_is_closed(): void
+    {
+        $a = $this->user('partner');
+        $b = $this->user('partner');
+        $this->actingAs($a)->post(route('partner.services.store'), $this->payload());
+        $mine = Service::firstOrFail();
+
+        $this->actingAs($b)->get(route('partner.services'))
+            ->assertInertia(fn ($p) => $p->has('services', 0));
+        $this->actingAs($b)->post(route('partner.services.update', $mine->id), array_merge($this->payload(['photo' => null]), ['_method' => 'PUT']))->assertForbidden();
+        $this->actingAs($b)->delete(route('partner.services.destroy', $mine->id))->assertForbidden();
+        // Менеджер в кабинет партнёра не попадает.
+        $this->actingAs($this->user('manager'))->get(route('partner.services'))->assertForbidden();
+    }
+
+    public function test_moderation_approve_reject_and_public_catalog(): void
+    {
+        Notification::fake();
+        $partner = $this->user('partner');
+        $assistant = $this->user('assistant');
+        $this->actingAs($partner)->post(route('partner.services.store'), $this->payload());
+        $s = Service::firstOrFail();
+
+        // Партнёру модерация закрыта.
+        $this->actingAs($partner)->patch(route('moderation.services.approve', $s->id))->assertForbidden();
+
+        $this->actingAs($assistant)->patch(route('moderation.services.approve', $s->id))->assertRedirect();
+        $this->assertSame('approved', $s->fresh()->status);
+        Notification::assertSentTo($partner, ServiceModerated::class);
+
+        // Публичный каталог: видна, фильтр по категории и ЧПУ работают.
+        $this->get(route('site.services', ['category' => $this->cat->slug]))
+            ->assertInertia(fn ($p) => $p->component('Site/Services')->has('services.data', 1));
+        $this->get(route('site.service', $s->slug))->assertOk()
+            ->assertInertia(fn ($p) => $p->component('Site/Service')
+                ->where('service.title', $s->title)
+                ->where('seo.canonical', route('site.service', $s->slug)));
+
+        // Отклонение с причиной; правка возвращает на модерацию.
+        $this->actingAs($assistant)->patch(route('moderation.services.reject', $s->id), ['reason' => 'Добавьте детали цены'])->assertRedirect();
+        $this->assertSame('rejected', $s->fresh()->status);
+        $this->actingAs($partner)->post(route('partner.services.update', $s->id), array_merge($this->payload(['photo' => null]), ['_method' => 'PUT']))->assertSessionHasNoErrors();
+        $this->assertSame('pending', $s->fresh()->status);
+    }
+
+    public function test_upload_security_mime_checked_on_server(): void
+    {
+        $partner = $this->user('partner');
+        // PHP-файл с расширением jpg: MIME проверяется по содержимому — отказ.
+        $fake = UploadedFile::fake()->createWithContent('shell.jpg', '<?php echo 1;');
+        $this->actingAs($partner)->post(route('partner.services.store'), $this->payload(['photo' => $fake]))
+            ->assertSessionHasErrors('photo');
+        $this->assertSame(0, Service::count());
+    }
+
+    public function test_store_is_rate_limited_five_per_hour(): void
+    {
+        $partner = $this->user('partner');
+        for ($i = 1; $i <= 5; $i++) {
+            $this->actingAs($partner)->post(route('partner.services.store'), $this->payload(['title' => "Услуга номер {$i} подлиннее"]))->assertRedirect();
+        }
+        $this->actingAs($partner)->post(route('partner.services.store'), $this->payload(['title' => 'Шестая услуга за час — спам']))->assertStatus(429);
+    }
+
+    public function test_sitemap_and_robots(): void
+    {
+        $partner = $this->user('partner');
+        $this->actingAs($partner)->post(route('partner.services.store'), $this->payload());
+        $s = Service::firstOrFail();
+
+        // В карте — только одобренные.
+        $this->get('/sitemap.xml')->assertOk()->assertDontSee(route('site.service', $s->slug));
+        $s->update(['status' => 'approved']);
+        cache()->forget('seo:sitemap');
+        $this->get('/sitemap.xml')->assertOk()
+            ->assertSee('<?xml', false)->assertSee(route('site.service', $s->slug), false)->assertSee(route('site.catalog'), false);
+        $this->get('/robots.txt')->assertOk()->assertSee('Sitemap: '.route('seo.sitemap'))->assertSee('Disallow: /korzina');
+    }
+}

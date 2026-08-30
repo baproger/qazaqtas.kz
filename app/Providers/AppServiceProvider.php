@@ -15,6 +15,8 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PayrollAdjustment;
 use App\Models\Project;
+use App\Models\Service;
+use App\Models\ServiceCategory;
 use App\Models\Setting;
 use App\Models\Task;
 use App\Models\User;
@@ -65,6 +67,8 @@ class AppServiceProvider extends ServiceProvider
             'work_order' => WorkOrder::class,
             'user' => User::class,
             'task' => Task::class,
+            'service' => Service::class,
+            'service_category' => ServiceCategory::class,
         ]);
     }
 }
