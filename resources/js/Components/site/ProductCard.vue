@@ -92,43 +92,44 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             <div class="flex-1" />
 
             <div class="mt-4 border-t border-sand-100/10 pt-3">
-                <div class="flex items-baseline gap-1.5">
-                    <span class="display text-[22px] leading-none tracking-tight text-sand-50">{{ money(product.price).replace(' ₸', '') }}</span>
-                    <span class="text-sm font-medium text-sand-300">₸</span>
-                    <span class="text-sm text-sand-100/45">/ {{ product.unit }}</span>
-                    <span v-if="product.old_price > 0" class="ml-auto text-xs text-sand-100/35 line-through">{{ money(product.old_price) }}</span>
-                </div>
+                <!-- Одна линия: цена слева, действия справа -->
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="display text-[21px] leading-none tracking-tight text-sand-50">{{ money(product.price).replace(' ₸', '') }}</span>
+                            <span class="text-sm font-medium text-sand-300">₸</span>
+                            <span class="text-xs text-sand-100/45">/ {{ product.unit }}</span>
+                        </div>
+                        <p class="mt-1 truncate text-[11px] leading-none text-sand-100/35">
+                            <span v-if="product.old_price > 0" class="mr-1.5 line-through">{{ money(product.old_price) }}</span>
+                            <template v-if="product.min_order > 0">{{ $t('site.product.min', null, { count: Number(product.min_order), unit: product.unit }) }}</template>
+                        </p>
+                    </div>
 
-                <p v-if="product.min_order > 0" class="mt-1 text-[11px] text-sand-100/35">
-                    {{ $t('site.product.min', null, { count: Number(product.min_order), unit: product.unit }) }}
-                </p>
-
-                <!-- Действие видно всегда: скрывать его до наведения — значит
-                     терять покупателей на телефоне и на первом взгляде. -->
-                <div class="mt-4 flex gap-2">
-                    <button
-                        class="btn-cart flex-1 !px-4 !py-2.5 text-[13px]"
-                        :class="state === 'added' ? 'is-added' : ''"
-                        :disabled="state === 'adding'"
-                        @click="addToCart"
-                    >
-                        <span>{{ state === 'added' ? $t('site.product.in_cart') : $t('site.product.to_cart') }}</span>
-                        <!-- Стрелка ведёт взгляд вперёд; когда товар уже в
-                             корзине, вести некуда — на её месте галочка. -->
-                        <svg v-if="state !== 'added'" class="btn-cart-arrow h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14M13 6l6 6-6 6" />
-                        </svg>
-                        <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 12.5 9.5 18 20 6.5" />
-                        </svg>
-                    </button>
-                    <Link
-                        :href="$r('site.product', product.slug)"
-                        class="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl border border-white/12 text-sand-100/70 transition hover:border-sand-300/60 hover:text-sand-50"
-                        :aria-label="$t('site.product.more')"
-                    >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-                    </Link>
+                    <div class="flex shrink-0 items-center gap-1.5">
+                        <!-- В корзину: компактная, текст + галочка-подтверждение -->
+                        <button
+                            class="btn-cart !px-3.5 !py-2.5 text-[13px]"
+                            :class="state === 'added' ? 'is-added' : ''"
+                            :disabled="state === 'adding'"
+                            :aria-label="$t('site.product.to_cart')"
+                            @click="addToCart"
+                        >
+                            <svg v-if="state !== 'added'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M3 4h2l2.6 11.2a1.5 1.5 0 0 0 1.47 1.16h7.9a1.5 1.5 0 0 0 1.46-1.13L20.5 8H6"/>
+                            </svg>
+                            <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg>
+                            <span class="hidden sm:inline">{{ state === 'added' ? $t('site.product.in_cart') : $t('site.product.to_cart') }}</span>
+                        </button>
+                        <!-- Перейти к товару -->
+                        <Link
+                            :href="$r('site.product', product.slug)"
+                            class="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl border border-white/12 text-sand-100/60 transition hover:border-sand-300/60 hover:bg-sand-300 hover:text-ink-900"
+                            :aria-label="$t('site.product.more')"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
