@@ -4,13 +4,14 @@
  * (debounce 500 мс), чек-лист, справа — контекст (сделка / заказ), люди, срок,
  * приоритет; внизу — комментарии, файлы и история изменений.
  */
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Avatar from '@/Components/Avatar.vue';
 import CommentPanel from '@/Components/CommentPanel.vue';
 import DocumentPanel from '@/Components/DocumentPanel.vue';
 import { useE } from '@/composables/useTranslations';
+import { useLive } from '@/composables/useLive';
 
 const tr = useE();
 const props = defineProps({ task: Object, context: Object, comments: Array, documents: Array, history: Array, canEdit: Boolean, statuses: Object, types: Object, priorities: Object, users: Array });
@@ -44,13 +45,7 @@ const statusCls = { new: 'bg-sky-100 text-sky-700', in_progress: 'bg-amber-100 t
 const prioCls = { high: 'text-rose-600', medium: 'text-slate-600', low: 'text-sky-600' };
 const field = 'w-full rounded-xl border-white/60 bg-white/70 text-sm shadow-soft backdrop-blur focus:border-indigo-400 focus:ring-indigo-400';
 
-let poll = null;
-onMounted(() => {
-    poll = setInterval(() => router.reload({ only: ['task', 'comments', 'history'] }), 30000);
-    const uid = usePage().props.auth.user?.id;
-    if (window.Echo && uid) window.Echo.private(`user.${uid}`).listen('.task.status', () => router.reload({ only: ['task', 'history'] }));
-});
-onUnmounted(() => clearInterval(poll));
+useLive({ tasks: ['task', 'comments', 'history'] });
 </script>
 
 <template>

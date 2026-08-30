@@ -31,6 +31,7 @@ use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpensesBoardController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\LiveController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MyExpensesController;
 use App\Http\Controllers\NotificationController;
@@ -230,6 +231,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     // Notifications
+    // Штамп «что изменилось у меня» для живых обновлений (см. useLive.js).
+    Route::get('live/version', [LiveController::class, 'version'])->middleware('throttle:600,1')->name('live.version');
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');

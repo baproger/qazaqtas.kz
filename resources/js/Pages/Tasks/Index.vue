@@ -4,13 +4,14 @@
  * названия и срока (debounce 600 мс), обновление раз в 30 с (и по WebSocket,
  * если подключён Echo).
  */
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import Avatar from '@/Components/Avatar.vue';
 import { useE } from '@/composables/useTranslations';
+import { useLive } from '@/composables/useLive';
 
 const tr = useE();
 const props = defineProps({ tasks: Object, filters: Object, counts: Object, canSeeAll: Boolean, statuses: Object, types: Object, priorities: Object, users: Array });
@@ -70,16 +71,8 @@ const adding = ref(false);
 const form = useForm({ title: '', assignee_id: '', due_date: '', priority: 'medium', description: '' });
 const create = () => form.post(route('tasks.store'), { preserveScroll: true, onSuccess: () => { form.reset(); adding.value = false; } });
 
-// ---- обновление: WebSocket, если есть, иначе опрос ----
-let poll = null;
-onMounted(() => {
-    poll = setInterval(() => router.reload({ only: ['tasks', 'counts'] }), 30000);
-    const uid = usePageUser();
-    if (window.Echo && uid) window.Echo.private(`user.${uid}`).listen('.task.status', () => router.reload({ only: ['tasks', 'counts'] }));
-});
-onUnmounted(() => clearInterval(poll));
-import { usePage } from '@inertiajs/vue3';
-const usePageUser = () => usePage().props.auth.user?.id;
+// Живые обновления: штамп раз в 10 с, данные — только когда что-то изменилось.
+useLive({ tasks: ['tasks', 'counts'] });
 
 const prioCls = { high: 'bg-rose-100 text-rose-700', medium: 'bg-slate-100 text-slate-600', low: 'bg-sky-100 text-sky-700' };
 const typeCls = { crm_deal: 'bg-indigo-100 text-indigo-700', erp_process: 'bg-amber-100 text-amber-700', corporate: 'bg-emerald-100 text-emerald-700' };

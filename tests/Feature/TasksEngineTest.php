@@ -109,4 +109,17 @@ class TasksEngineTest extends TestCase
         $stranger = $this->user('foreman');
         $this->actingAs($stranger)->get(route('tasks.show', $a))->assertForbidden();
     }
+
+    public function test_live_version_stamp_changes_and_supports_etag(): void
+    {
+        $this->get(route('live.version'))->assertRedirect(); // гость — на вход
+        $mgr = $this->user('manager');
+        $r1 = $this->actingAs($mgr)->getJson(route('live.version'))->assertOk();
+        $etag = $r1->headers->get('ETag');
+        $this->assertNotEmpty($etag);
+        $this->actingAs($mgr)->getJson(route('live.version'), ['If-None-Match' => $etag])->assertStatus(304);
+
+        Task::create(['title' => 'N', 'assignee_id' => $mgr->id, 'creator_id' => $mgr->id, 'status' => 'new']);
+        $this->actingAs($mgr)->getJson(route('live.version'), ['If-None-Match' => $etag])->assertOk();
+    }
 }

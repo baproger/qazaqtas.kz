@@ -9,6 +9,7 @@ import { useT } from '@/composables/useTranslations';
 import { useChatAlerts } from '@/composables/useChatAlerts';
 import { useLocale } from '@/composables/useTranslations';
 import { useE } from '@/composables/useTranslations';
+import { useLive } from '@/composables/useLive';
 
 const tr = useE();
 
@@ -37,6 +38,8 @@ const perms = computed(() => page.props.auth.user?.permissions ?? []);
 const roles = computed(() => page.props.auth.user?.roles ?? []);
 const isLeadership = computed(() => roles.value.some((r) => ['admin', 'director', 'financist'].includes(r)));
 const flash = computed(() => page.props.flash || {});
+// Колокольчик обновляется сам: штамп раз в 10 с, список — только при изменении.
+useLive({ notifications: ['notifications'] });
 
 // Тосты вместо баннера во всю ширину: сообщение всплывает справа сверху
 // и уходит само (успех — 4 с, ошибка — 7 с); крестик закрывает раньше.
