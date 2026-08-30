@@ -286,6 +286,7 @@ class StageController extends Controller
             'enter_roles' => $onlyRoles($rules['enter_roles'] ?? []),
             'extra_movers' => $onlyRoles($rules['extra_movers'] ?? []),
             'from_stages' => array_values(array_intersect(array_map('intval', (array) ($rules['from_stages'] ?? [])), $funnelIds)),
+            'advance_on_gate' => (bool) ($rules['advance_on_gate'] ?? false),
             'require' => [
                 'invoice' => (bool) ($req['invoice'] ?? false),
                 'payment' => in_array($req['payment'] ?? 'none', ['none', 'partial', 'full'], true) ? $req['payment'] : 'none',
@@ -399,6 +400,7 @@ class StageController extends Controller
             'rules.enter_roles' => ['nullable', 'array'], 'rules.enter_roles.*' => ['string'],
             'rules.extra_movers' => ['nullable', 'array'], 'rules.extra_movers.*' => ['string'],
             'rules.from_stages' => ['nullable', 'array'], 'rules.from_stages.*' => ['integer'],
+            'rules.advance_on_gate' => ['nullable', 'boolean'],
             'rules.require' => ['nullable', 'array'],
             'rules.require.invoice' => ['nullable', 'boolean'],
             'rules.require.items_done' => ['nullable', 'boolean'],

@@ -141,12 +141,13 @@ const formRuleSummary = computed(() => {
     if (r.require?.payment === 'partial') out.push(tr('нужна частичная оплата'));
     if (r.require?.payment === 'full') out.push(tr('нужна полная оплата'));
     if (r.require?.items_done) out.push(tr('все позиции сделаны'));
+    if (r.advance_on_gate) out.push(tr('автопереход после гейта'));
     return out;
 });
 // Тип, который этап держал на момент открытия формы: его нужно оставить в
 // списке, иначе собственный тип этапа пропал бы из выбора.
 const editingType = ref('');
-const emptyRules = () => ({ leave_roles: [], enter_roles: [], extra_movers: [], from_stages: [], require: { invoice: false, payment: 'none', items_done: false } });
+const emptyRules = () => ({ leave_roles: [], enter_roles: [], extra_movers: [], from_stages: [], require: { invoice: false, payment: 'none', items_done: false }, advance_on_gate: false });
 const editForm = useForm({ name: '', color: '#6366F1', stage_type: '', gate_task_title: '', gate_task_role: 'responsible', gate_task_days: '', is_completed: false, requires_document: false, is_closing: false, ignores_deadline: false, workshop: '', rules: emptyRules() });
 // Переключатель роли в списке правила (leave_roles / enter_roles / …).
 const toggleIn = (list, value) => { const i = list.indexOf(value); i >= 0 ? list.splice(i, 1) : list.push(value); };
@@ -519,6 +520,9 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                                             <button type="button" @click="editForm.rules.require.invoice = !editForm.rules.require.invoice"
                                                 class="rounded-full border px-3 py-1 text-xs font-medium transition"
                                                 :class="editForm.rules.require.invoice ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 bg-white/70 text-slate-600 hover:bg-white'">{{ $e('Выставлен счёт') }}</button>
+                                            <button type="button" @click="editForm.rules.advance_on_gate = !editForm.rules.advance_on_gate"
+                                                class="rounded-full border px-3 py-1 text-xs font-medium transition"
+                                                :class="editForm.rules.advance_on_gate ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 bg-white/70 text-slate-600 hover:bg-white'" :title="$e('Гейт-задача закрыта — сделка сама уходит дальше')">{{ $e('Автопереход после гейта') }}</button>
                                             <button type="button" @click="editForm.rules.require.items_done = !editForm.rules.require.items_done"
                                                 class="rounded-full border px-3 py-1 text-xs font-medium transition"
                                                 :class="editForm.rules.require.items_done ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 bg-white/70 text-slate-600 hover:bg-white'">{{ $e('Все позиции сделаны') }}</button>

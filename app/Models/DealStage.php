@@ -63,6 +63,8 @@ class DealStage extends Model
         'extra_movers' => [],
         'from_stages' => [],
         'require' => ['invoice' => false, 'payment' => 'none', 'items_done' => false],
+        // Гейт-задача закрыта → сделка сама уходит на следующий этап.
+        'advance_on_gate' => false,
     ];
 
     protected $casts = [

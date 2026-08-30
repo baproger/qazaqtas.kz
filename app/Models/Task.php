@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
-
+use App\Support\AccessScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,8 +17,17 @@ class Task extends Model
     use Auditable;
     use HasFactory, SoftDeletes;
 
+    public const STATUSES = ['new' => 'Новая', 'in_progress' => 'В работе', 'review' => 'Проверка', 'done' => 'Готово', 'canceled' => 'Отменена'];
+
+    public const TYPES = ['crm_deal' => 'По сделке', 'erp_process' => 'Процесс ERP', 'corporate' => 'Корпоративная'];
+
+    public const PRIORITIES = ['low' => 'Низкий', 'medium' => 'Обычный', 'high' => 'Высокий'];
+
+    /** Статусы, в которых задача закрыта и не держит гейт. */
+    public const CLOSED = ['done', 'canceled'];
+
     protected $fillable = [
-        'taskable_type', 'taskable_id', 'title', 'description', 'note',
+        'taskable_type', 'taskable_id', 'type', 'title', 'description', 'note',
         'assignee_id', 'creator_id', 'priority', 'status',
         'start_date', 'due_date', 'parent_task_id', 'checklist', 'completed_at', 'overdue_notified_at',
     ];
@@ -29,6 +39,41 @@ class Task extends Model
         'completed_at' => 'datetime',
         'overdue_notified_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        // Тип задачи следует за привязкой: сделка → CRM, заказ цеха → процесс ERP,
+        // без привязки (или личная) → корпоративная.
+        static::saving(function (Task $task) {
+            $task->type = match ($task->taskable_type) {
+                'deal' => 'crm_deal',
+                'project' => 'erp_process',
+                default => 'corporate',
+            };
+        });
+    }
+
+    public function isClosed(): bool
+    {
+        return in_array($this->status, self::CLOSED, true);
+    }
+
+    /**
+     * Задачи, которые человек видит на странице задач: свои (исполнитель или
+     * автор) всегда; шире — по области права task.viewAny (отдел / все).
+     */
+    public function scopeVisibleTo(Builder $q, User $user): Builder
+    {
+        $scope = AccessScope::for($user, 'task.viewAny');
+        if ($scope === AccessScope::ALL) {
+            return $q;
+        }
+        $ids = in_array($scope, [AccessScope::DEPARTMENT, AccessScope::DEPARTMENT_TREE], true)
+            ? AccessScope::peerIds($user, $scope)
+            : [$user->id];
+
+        return $q->where(fn ($w) => $w->whereIn('assignee_id', $ids)->orWhere('creator_id', $user->id));
+    }
 
     public function taskable(): MorphTo
     {
