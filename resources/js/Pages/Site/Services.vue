@@ -110,7 +110,7 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
                             <img :src="s.thumb || s.photo" :alt="s.title" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-[1.04]" />
                         </picture>
                         <div v-else class="paving-pattern h-full w-full" />
-                        <span v-if="s.category" class="absolute left-2.5 top-2.5 rounded-lg bg-ink-900/55 px-2 py-1 text-[11px] font-medium text-sand-100/85 backdrop-blur-md">{{ s.category.name }}</span>
+                        <span v-if="s.category" class="absolute left-2.5 top-2.5 rounded-lg bg-black/50 px-2 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md">{{ s.category.name }}</span>
                     </div>
 
                     <div class="px-4 pb-4 pt-1">

@@ -17,7 +17,7 @@ const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v));
                         <source v-if="service.photo_webp" :srcset="service.photo_webp" type="image/webp" />
                         <img :src="service.photo" :alt="service.title" class="h-full w-full object-cover" />
                     </picture>
-                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900/70 to-transparent" />
+                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 </div>
                 <div class="p-7 sm:p-10">
                     <div class="flex flex-wrap items-center gap-3">

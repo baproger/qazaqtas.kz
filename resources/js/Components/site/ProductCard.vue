@@ -58,7 +58,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             </Link>
 
             <button
-                class="absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-ink-900/55 backdrop-blur-md transition hover:border-sand-300/60"
+                class="absolute right-2.5 top-2.5 grid h-9 w-9 place-items-center rounded-full border border-white/20 bg-black/45 backdrop-blur-md transition hover:border-sand-300/60"
                 :aria-pressed="favorite"
                 :aria-label="favorite ? $t('site.product.fav_remove') : $t('site.product.fav_add')"
                 @click.prevent="favorite = !favorite; emit('favorite', product.id)"
@@ -69,7 +69,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             </button>
 
             <!-- Наличие: важно для решения, поэтому видно сразу на снимке -->
-            <span class="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-lg bg-ink-900/55 px-2 py-1 text-[11px] font-medium text-sand-100/85 backdrop-blur-md">
+            <span class="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-lg bg-black/45 px-2 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md">
                 <span class="h-1.5 w-1.5 rounded-full" :class="product.in_stock ? 'bg-emerald-400' : 'bg-amber-400'" />
                 {{ product.in_stock ? $t('site.product.in_stock') : $t('site.product.on_order') }}
             </span>

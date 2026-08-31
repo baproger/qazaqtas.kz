@@ -41,12 +41,12 @@ const fmt = (n) => new Intl.NumberFormat('ru-RU').format(n);
                 sizes="(max-width: 768px) 100vw, 50vw" :alt="top.title" loading="lazy" decoding="async"
                 class="absolute inset-0 h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105" />
             <div v-else class="paving-pattern absolute inset-0" />
-            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/40 to-transparent" />
+            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
             <div class="relative flex h-full flex-col justify-end p-7 sm:p-9">
-                <p class="text-xs uppercase tracking-[0.24em] text-sand-300/70">{{ top.city }}<template v-if="top.year"> · {{ top.year }}</template></p>
-                <h3 class="display mt-3 text-3xl text-sand-50 sm:text-4xl">{{ top.title }}</h3>
-                <p v-if="top.products" class="mt-3 max-w-md text-sm leading-relaxed text-sand-100/60">{{ top.products }}</p>
-                <p v-if="top.area" class="display mt-5 text-4xl text-sand-50 sm:text-5xl">{{ top.area }}</p>
+                <p class="text-xs uppercase tracking-[0.24em] text-white/70">{{ top.city }}<template v-if="top.year"> · {{ top.year }}</template></p>
+                <h3 class="display mt-3 text-3xl text-white sm:text-4xl">{{ top.title }}</h3>
+                <p v-if="top.products" class="mt-3 max-w-md text-sm leading-relaxed text-white/75">{{ top.products }}</p>
+                <p v-if="top.area" class="display mt-5 text-4xl text-white sm:text-5xl">{{ top.area }}</p>
             </div>
         </article>
 
@@ -56,11 +56,11 @@ const fmt = (n) => new Intl.NumberFormat('ru-RU').format(n);
                 sizes="(max-width: 768px) 100vw, 25vw" :alt="tall.title" loading="lazy" decoding="async"
                 class="absolute inset-0 h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105" />
             <div v-else class="paving-pattern absolute inset-0" />
-            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/30 to-transparent" />
+            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
             <div class="relative flex h-full flex-col justify-end p-6 sm:p-7">
-                <p class="text-xs uppercase tracking-[0.24em] text-sand-300/70">{{ tall.city }}<template v-if="tall.year"> · {{ tall.year }}</template></p>
-                <h3 class="display mt-2 text-2xl text-sand-50">{{ tall.title }}</h3>
-                <p v-if="tall.area" class="display mt-3 text-3xl text-sand-50">{{ tall.area }}</p>
+                <p class="text-xs uppercase tracking-[0.24em] text-white/70">{{ tall.city }}<template v-if="tall.year"> · {{ tall.year }}</template></p>
+                <h3 class="display mt-2 text-2xl text-white">{{ tall.title }}</h3>
+                <p v-if="tall.area" class="display mt-3 text-3xl text-white">{{ tall.area }}</p>
             </div>
         </article>
 
@@ -69,11 +69,11 @@ const fmt = (n) => new Intl.NumberFormat('ru-RU').format(n);
             <img v-if="p.image" :src="p.thumb || p.image" :alt="p.title" loading="lazy" decoding="async"
                 class="absolute inset-0 h-full w-full object-cover transition duration-700 ease-premium group-hover:scale-105" />
             <div v-else class="paving-pattern absolute inset-0" />
-            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/30 to-transparent" />
+            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
             <div class="relative flex h-full flex-col justify-end p-6">
-                <p class="text-xs uppercase tracking-[0.24em] text-sand-300/70">{{ p.city }}<template v-if="p.year"> · {{ p.year }}</template></p>
-                <h3 class="display mt-2 text-xl text-sand-50">{{ p.title }}</h3>
-                <p v-if="p.area" class="mt-1 text-sm text-sand-100/60">{{ p.area }}</p>
+                <p class="text-xs uppercase tracking-[0.24em] text-white/70">{{ p.city }}<template v-if="p.year"> · {{ p.year }}</template></p>
+                <h3 class="display mt-2 text-xl text-white">{{ p.title }}</h3>
+                <p v-if="p.area" class="mt-1 text-sm text-white/75">{{ p.area }}</p>
             </div>
         </article>
         <!-- 3. Материалы и цифры 2×1 -->
