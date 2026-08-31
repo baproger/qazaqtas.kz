@@ -5,14 +5,12 @@
  *   ┌───────────┬─────┬─────┐   1 — главный объект (2×2)
  *   │     1     │  2  │  4  │   2 — вертикальная карточка (1×2)
  *   │           │     │  5  │   4, 5 — обычные (1×1)
- *   ├───────────┼─────┴─────┤   3 — материалы и цифры (2×1)
- *   │     3     │     6     │   6 — призыв «посчитаем объект» (2×1)
+ *   └───────────┴─────┴─────┘   (цифры и призыв убраны: CTA уже идёт ниже)
  *
  * Данные те же, что были: объекты из ERP. Карточка 3 считается из них же —
  * отдельного хранилища для цифр не заводим.
  */
 import { computed } from 'vue';
-import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
     projects: { type: Array, default: () => [] },
@@ -23,14 +21,6 @@ const top = computed(() => props.projects[0] ?? null);
 const tall = computed(() => props.projects[1] ?? null);
 const small = computed(() => props.projects.slice(2, 4));
 
-// Цифры по объектам: площадь суммируем из строк вида «4 200 м²».
-const stats = computed(() => {
-    const area = props.projects.reduce((sum, p) => sum + (parseInt(String(p.area ?? '').replace(/[^\d]/g, ''), 10) || 0), 0);
-    const cities = [...new Set(props.projects.map((p) => p.city).filter(Boolean))];
-    const products = [...new Set(props.projects.flatMap((p) => String(p.products ?? '').split(/[,;·]/).map((s) => s.trim()).filter(Boolean)))].slice(0, 6);
-    return { count: props.projects.length, area, cities, products };
-});
-const fmt = (n) => new Intl.NumberFormat('ru-RU').format(n);
 </script>
 
 <template>
@@ -74,36 +64,6 @@ const fmt = (n) => new Intl.NumberFormat('ru-RU').format(n);
                 <p class="text-xs uppercase tracking-[0.24em] text-white/70">{{ p.city }}<template v-if="p.year"> · {{ p.year }}</template></p>
                 <h3 class="display mt-2 text-xl text-white">{{ p.title }}</h3>
                 <p v-if="p.area" class="mt-1 text-sm text-white/75">{{ p.area }}</p>
-            </div>
-        </article>
-        <!-- 3. Материалы и цифры 2×1 -->
-        <article class="card reveal rounded-3xl p-7 sm:p-8 md:col-span-2 md:row-span-1">
-            <p class="eyebrow">{{ $t('site.projects.bento_materials') }}</p>
-            <div class="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                    <p class="display text-3xl text-sand-50 sm:text-4xl">{{ stats.count }}</p>
-                    <p class="mt-1 text-xs uppercase tracking-[0.2em] text-sand-300/60">{{ $t('site.projects.bento_objects') }}</p>
-                </div>
-                <div v-if="stats.area">
-                    <p class="display text-3xl text-sand-50 sm:text-4xl">{{ fmt(stats.area) }} <span class="text-xl">м²</span></p>
-                    <p class="mt-1 text-xs uppercase tracking-[0.2em] text-sand-300/60">{{ $t('site.projects.bento_area') }}</p>
-                </div>
-            </div>
-            <div v-if="stats.products.length" class="mt-5 flex flex-wrap gap-2">
-                <span v-for="m in stats.products" :key="m" class="rounded-full border border-sand-100/15 px-3 py-1 text-xs text-sand-100/70">{{ m }}</span>
-            </div>
-            <p v-if="stats.cities.length" class="mt-4 text-xs text-sand-100/45">{{ stats.cities.join(' · ') }}</p>
-        </article>
-
-        <!-- 6. Призыв 2×1: добивает третий ряд, иначе в нём были бы две пустые клетки -->
-        <article class="card reveal flex flex-col justify-between rounded-3xl p-7 sm:p-8 md:col-span-2 md:row-span-1">
-            <div>
-                <p class="eyebrow">{{ $t('site.projects.eyebrow') }}</p>
-                <h3 class="display mt-3 text-2xl text-sand-50 sm:text-3xl">{{ $t('site.projects.cta_title') }}</h3>
-                <p class="mt-3 text-sm leading-relaxed text-sand-100/55">{{ $t('site.projects.cta_lead') }}</p>
-            </div>
-            <div class="mt-6 flex flex-wrap gap-3">
-                <Link :href="$r('site.contacts')" class="btn-sand">{{ $t('site.cta.write') }}</Link>
             </div>
         </article>
     </div>
