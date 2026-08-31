@@ -40,7 +40,7 @@ const sorts = computed(() => [
 
 const apply = (extra = {}) => {
     router.get(siteRoute('site.catalog'), {
-        category: props.filters.category || undefined,
+        category: 'category' in extra ? extra.category : (props.filters.category || undefined),
         search: search.value || undefined,
         sort: sort.value !== 'popular' ? sort.value : undefined,
         min: min.value || undefined,
@@ -126,11 +126,13 @@ onBeforeUnmount(() => stopReveal());
             <div class="card mb-8 rounded-3xl p-5 backdrop-blur-xl">
                 <!-- Категории: сегменты в скролл-ленте, единый стиль с «Услугами» -->
                 <div class="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
-                    <Link :href="$r('site.catalog')" class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
-                        :class="!filters.category ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ $t('site.catalog.all') }}</Link>
-                    <Link v-for="c in categories" :key="c.slug" :href="$r('site.catalog', { category: c.slug })"
+                    <!-- Кнопки, а не ссылки: фильтр меняется без «перезагрузки» —
+                         прокрутка и состояние страницы остаются на месте. -->
+                    <button type="button" @click="apply({ category: undefined })" class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
+                        :class="!filters.category ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ $t('site.catalog.all') }}</button>
+                    <button v-for="c in categories" :key="c.slug" type="button" @click="apply({ category: c.slug })"
                         class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
-                        :class="filters.category === c.slug ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ c.name }}</Link>
+                        :class="filters.category === c.slug ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ c.name }}</button>
                 </div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto_auto]">
                     <!-- Поиск -->

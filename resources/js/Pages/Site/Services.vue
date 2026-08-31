@@ -16,7 +16,7 @@ const sort = ref(props.filters.sort ?? 'new');
 const priceMax = ref(props.filters.price_max ?? '');
 let timer = null;
 const apply = (extra = {}) => router.get(siteRoute('site.services'), {
-    category: props.filters.category || undefined, search: search.value || undefined,
+    category: 'category' in extra ? extra.category : (props.filters.category || undefined), search: search.value || undefined,
     city: city.value || undefined, sort: sort.value !== 'new' ? sort.value : undefined,
     price_max: priceMax.value || undefined, ...extra,
 }, { preserveState: true, preserveScroll: true, replace: true });
@@ -53,13 +53,13 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
             <div class="card mb-8 rounded-3xl p-5 backdrop-blur-xl">
                 <!-- Категории: скролл-лента чипов -->
                 <div class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-                    <Link :href="$r('site.services')" class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
-                        :class="!filters.category ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ $t('site.services.all') }}</Link>
-                    <Link v-for="c in categories" :key="c.id" :href="$r('site.services', { category: c.slug })"
+                    <button type="button" @click="apply({ category: undefined })" class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
+                        :class="!filters.category ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">{{ $t('site.services.all') }}</button>
+                    <button v-for="c in categories" :key="c.id" type="button" @click="apply({ category: c.slug })"
                         class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
                         :class="filters.category === c.slug ? 'bg-sand-300 text-ink-900' : 'bg-sand-100/5 text-sand-100/60 hover:bg-sand-100/10 hover:text-sand-50'">
                         {{ c.name }} <span class="ml-1 text-xs opacity-60">{{ c.n }}</span>
-                    </Link>
+                    </button>
                 </div>
 
                 <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[1fr_auto_auto_auto_auto]">
