@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { loadSilhouette } from '@/utils/silhouette';
 
 /**
  * Витрина изделий на первом экране: нижняя лента карточек переключает слайды,
@@ -33,6 +34,82 @@ const railItems = ref([]);
 const current = computed(() => props.slides[index.value] ?? null);
 
 /* ------------------------------------------------------------------ */
+/* Выноски: точка — на предмете                                        */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Позиции выносок в CSS — четыре фиксированных места под «средний» кадр.
+ * Силуэты у снимков разные (низкий бордюр против урны во весь кадр), и на
+ * фиксированных местах точка попадала в пустоту рядом с предметом. Поэтому
+ * по альфа-каналу снимка один раз считается силуэт, и каждая точка
+ * дотягивается до кромки предмета на своей высоте. Пока силуэт не готов
+ * (или canvas недоступен) — работают запасные позиции из CSS.
+ */
+const silhouettes = ref({});
+const specsBox = ref(null);
+/** Размер слоя выносок: без него не восстановить contain-раскладку снимка. */
+const boxSize = ref({ w: 1, h: 1 });
+let boxObserver = null;
+
+/** Слот → сторона подписи и высота точки в долях силуэта (0 — макушка). */
+const SPEC_SLOTS = {
+    'top-right': { side: 'right', at: 0.18 },
+    left: { side: 'left', at: 0.45 },
+    right: { side: 'right', at: 0.65 },
+    bottom: { side: 'left', at: 0.88 },
+};
+/** Точка стоит чуть внутри предмета, а не на самом срезе кромки. */
+const DOT_INSET = 0.035;
+
+const analyzeSlide = (slide) => {
+    const src = slide?.image?.path;
+    if (!src || src in silhouettes.value) return;
+    silhouettes.value = { ...silhouettes.value, [src]: null };
+    loadSilhouette(src).then((sil) => {
+        if (sil) silhouettes.value = { ...silhouettes.value, [src]: sil };
+    });
+};
+watch(current, analyzeSlide, { immediate: true });
+
+/** Инлайн-позиция выноски; null — остаёмся на запасной позиции из CSS. */
+const specStyle = (spec) => {
+    const sil = silhouettes.value[current.value?.image?.path];
+    const slot = SPEC_SLOTS[spec.pos];
+    if (!sil || !slot) return null;
+
+    const edge = sil.edgeAt(slot.at);
+    if (!edge) return null;
+
+    // Снимок лежит в слое по object-fit: contain — восстанавливаем его
+    // реальный прямоугольник, чтобы доли кадра стали долями слоя.
+    const { w: boxW, h: boxH } = boxSize.value;
+    const scale = Math.min(boxW / sil.width, boxH / sil.height);
+    const offX = (boxW - sil.width * scale) / 2;
+    const offY = (boxH - sil.height * scale) / 2;
+    const toX = (frac) => ((offX + frac * sil.width * scale) / boxW) * 100;
+
+    // Полоса тянется от края слоя ровно до кромки. Плашка при этом не
+    // сжимается (см. .is-anchored в hero.css): если кромка у самого края и
+    // места мало, содержимое переполняет полосу в сторону предмета — точка
+    // сама уходит чуть глубже на изделие, а текст остаётся читаемым.
+    const width = slot.side === 'right'
+        ? 100 - toX(edge.right - DOT_INSET)
+        : toX(edge.left + DOT_INSET);
+    const y = ((offY + edge.y * sil.height * scale) / boxH) * 100;
+
+    const base = {
+        top: `${y.toFixed(2)}%`,
+        bottom: 'auto',
+        transform: 'translateY(-50%)',
+        maxWidth: 'none',
+        width: `${width.toFixed(2)}%`,
+    };
+    return slot.side === 'right'
+        ? { ...base, right: '0', left: 'auto' }
+        : { ...base, left: '0', right: 'auto' };
+};
+
+/* ------------------------------------------------------------------ */
 /* Покупка                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -51,7 +128,9 @@ const countTo = (to) => {
     }
     const start = performance.now();
     const step = (now) => {
-        const t = Math.min(1, (now - start) / 420);
+        // Нижняя граница — страховка от скачка часов назад: при t < 0
+        // кубическая кривая уводила цену в сотни миллионов.
+        const t = Math.min(1, Math.max(0, (now - start) / 420));
         const eased = 1 - Math.pow(1 - t, 3);
         shownPrice.value = from + (to - from) * eased;
         if (t < 1) priceRaf = requestAnimationFrame(step);
@@ -132,39 +211,19 @@ const syncUrl = (id) => {
 /* Автопрокрутка                                                       */
 /* ------------------------------------------------------------------ */
 
-const progress = ref(0);
 let autoTimer = null;
-let progressRaf = null;
 let resumeTimer = null;
 const paused = ref(false);
 
 const stopAutoplay = () => {
     clearInterval(autoTimer);
-    cancelAnimationFrame(progressRaf);
     autoTimer = null;
-    progress.value = 0;
 };
 
 const startAutoplay = () => {
     if (reduced.value || paused.value || props.slides.length < 2 || document.hidden) return;
     stopAutoplay();
-
-    let start = performance.now();
-    let lastPaint = 0;
-    const tick = (now) => {
-        // Полоска обновляется 10 раз в секунду, а не каждый кадр: рендер
-        // Vue 60 раз/с ради прогресс-бара грел ноутбук на открытой вкладке.
-        if (now - lastPaint > 100) {
-            lastPaint = now;
-            progress.value = Math.min(1, (now - start) / AUTOPLAY);
-        }
-        if (now - start >= AUTOPLAY) {
-            start = now;
-            goTo(index.value + 1, 1);
-        }
-        progressRaf = requestAnimationFrame(tick);
-    };
-    progressRaf = requestAnimationFrame(tick);
+    autoTimer = window.setInterval(() => goTo(index.value + 1, 1), AUTOPLAY);
 };
 
 /** Ручное переключение отодвигает автопрокрутку, а не выключает навсегда. */
@@ -213,11 +272,19 @@ onMounted(() => {
     props.slides.slice(0, 3).forEach(preload);
     nextTick(() => scrollRailTo(index.value));
 
+    if (specsBox.value && 'ResizeObserver' in window) {
+        boxObserver = new ResizeObserver(([entry]) => {
+            boxSize.value = { w: entry.contentRect.width || 1, h: entry.contentRect.height || 1 };
+        });
+        boxObserver.observe(specsBox.value);
+    }
+
     document.addEventListener('visibilitychange', onVisibility);
     startAutoplay();
 });
 
 onBeforeUnmount(() => {
+    boxObserver?.disconnect();
     stopAutoplay();
     clearTimeout(resumeTimer);
     cancelAnimationFrame(priceRaf);
@@ -296,15 +363,15 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
                     />
                 </picture>
 
-                <ul class="hero-specs" aria-hidden="true">
+                <ul ref="specsBox" class="hero-specs" aria-hidden="true">
                     <li
                         v-for="(spec, i) in current.specs"
                         :key="`${current.id}-${spec.label}`"
                         class="hero-spec"
-                        :class="`is-${spec.pos}`"
-                        :style="{ '--d': `${i * 70}ms` }"
+                        :class="[`is-${spec.pos}`, specStyle(spec) ? 'is-anchored' : '']"
+                        :style="[{ '--d': `${i * 70}ms` }, specStyle(spec)]"
                     >
-                        <span class="hero-spec-pill">
+                        <span class="hero-spec-pill" :class="{ 'is-short': String(spec.value).length <= 20 }">
                             <b>{{ spec.value }}</b>
                             <em>{{ spec.label }}</em>
                         </span>
@@ -345,9 +412,6 @@ watch(() => props.slides.length, () => nextTick(() => scrollRailTo(index.value))
                 </button>
             </div>
 
-            <div class="hero-progress" aria-hidden="true">
-                <i :style="{ transform: `scaleX(${progress})` }" />
-            </div>
         </div>
     </section>
 </template>
