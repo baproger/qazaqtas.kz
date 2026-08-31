@@ -41,6 +41,9 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
+        // Демо с известным из репозитория паролем — никогда на проде.
+        abort_if(app()->environment('production'), 403, 'DemoSeeder запрещён в production.');
+
         $this->clear();
 
         $companyId = Company::query()->value('id');

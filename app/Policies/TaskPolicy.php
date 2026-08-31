@@ -12,10 +12,20 @@ class TaskPolicy
         return $user->can('task.viewAny');
     }
 
-    // Исполнитель и автор видят свою задачу всегда; остальным — право.
+    // Исполнитель и автор видят свою задачу всегда; остальным — право ПЛЮС
+    // доступ к родительской сделке/заказу, как в update(). Без этого документ
+    // или комментарий задачи чужой компании читался бы по прямому id (IDOR):
+    // DocumentPolicy и CommentController доверяют именно этой проверке.
     public function view(User $user, Task $t): bool
     {
-        return $t->assignee_id === $user->id || $t->creator_id === $user->id || $user->can('task.view');
+        if ($t->assignee_id === $user->id || $t->creator_id === $user->id) {
+            return true;
+        }
+        $entity = $t->taskable;
+
+        return $entity
+            ? ($user->can('task.view') && $user->can('view', $entity))
+            : $user->can('task.view');
     }
 
     public function create(User $user): bool

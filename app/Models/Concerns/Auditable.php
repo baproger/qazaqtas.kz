@@ -12,7 +12,10 @@ trait Auditable
      *
      * @var array<int, string>
      */
-    protected array $auditExclude = ['updated_at', 'created_at', 'deleted_at', 'remember_token', 'password'];
+    // access_code — хэш кода входа (User): даже хэшированному секрету не
+    // место на странице «Журнал действий». PHP не даёт модели переопределить
+    // свойство трейта другим значением, поэтому исключение живёт здесь.
+    protected array $auditExclude = ['updated_at', 'created_at', 'deleted_at', 'remember_token', 'password', 'access_code'];
 
     public static function bootAuditable(): void
     {

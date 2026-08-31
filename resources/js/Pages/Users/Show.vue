@@ -19,7 +19,17 @@ const props = defineProps({
     can: { type: Object, default: () => ({ manage: false }) },
     // Личные доступы: приходят только админу и только для не-админа.
     access: { type: Object, default: null },
+    // Только что выданный код входа: сервер отдаёт его один раз через flash.
+    issuedCode: { type: String, default: null },
 });
+
+// ---- код входа: второй шаг для ключевых сотрудников, выдаёт админ ----
+const issueCode = () => router.post(route('users.accessCode.issue', props.person.id), {}, { preserveScroll: true });
+const revokeCode = () => {
+    if (confirm(tr('Отозвать код входа? Сотрудник будет входить только по паролю.'))) {
+        router.delete(route('users.accessCode.revoke', props.person.id), { preserveScroll: true });
+    }
+};
 
 /*
  * Личные доступы — ДОБАВКА к роли, а не замена.
@@ -121,6 +131,27 @@ const stats = computed(() => ({
                         <span v-if="person.birth_date">🎂 {{ fmtDate(person.birth_date) }}</span>
                         <span v-if="person.hired_at">{{ $e('🗓 в компании с') }} {{ fmtDate(person.hired_at) }} ({{ tenure }})</span>
                         <a v-if="person.has_contract" :href="route('users.contract', person.id)" class="text-indigo-600 hover:underline">{{ $e('📄 Договор') }}</a>
+                    </div>
+
+                    <!-- Код входа: ключевой сотрудник входит в два шага -->
+                    <div v-if="can.issue_code || person.code_required" class="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm ring-1 ring-slate-100">
+                        <template v-if="person.code_required">
+                            <span class="font-medium text-emerald-700">🔐 {{ $e('Вход в два шага: пароль и персональный код.') }}</span>
+                            <span v-if="person.code_issued_at" class="text-xs text-slate-400">{{ $e('выдан') }} {{ fmtDate(person.code_issued_at) }}</span>
+                        </template>
+                        <span v-else class="text-slate-500">{{ $e('Код не требуется — вход только по паролю.') }}</span>
+                        <template v-if="can.issue_code">
+                            <button type="button" @click="issueCode" class="ml-auto rounded-lg bg-slate-900 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-700">
+                                {{ person.code_required ? $e('Перевыпустить') : $e('Выдать код') }}
+                            </button>
+                            <button v-if="person.code_required" type="button" @click="revokeCode" class="rounded-lg px-3 py-1 text-xs font-semibold text-rose-600 ring-1 ring-rose-200 transition hover:bg-rose-50">
+                                {{ $e('Отозвать') }}
+                            </button>
+                        </template>
+                    </div>
+                    <div v-if="issuedCode" class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                        <p class="text-xs font-medium text-emerald-700">{{ $e('Код показывается один раз — передайте его сотруднику лично.') }}</p>
+                        <p class="mt-1 font-mono text-3xl font-bold tracking-[0.35em] text-emerald-800">{{ issuedCode }}</p>
                     </div>
                 </div>
             </div>

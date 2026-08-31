@@ -347,7 +347,9 @@ class ChatController extends Controller
         $a = ($message->attachments ?? [])[$index] ?? abort(404);
         abort_unless(! empty($a['path']) && Storage::disk('local')->exists($a['path']), 404);
 
-        return Storage::disk('local')->response($a['path'], $a['name'] ?? 'file');
+        // Скачивание вложением + nosniff: файл из чата не должен исполняться
+        // как страница, даже если внутри картинки спрятана разметка.
+        return Storage::disk('local')->download($a['path'], $a['name'] ?? 'file', ['X-Content-Type-Options' => 'nosniff']);
     }
 
     /** All files ever sent in a chat — for the «Вложения» tab. */

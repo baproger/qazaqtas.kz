@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\LoginCodeController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
@@ -16,6 +17,11 @@ Route::middleware('guest')->group(function () {
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
+    // Второй шаг входа: персональный код ключевого сотрудника.
+    Route::get('login/code', [LoginCodeController::class, 'create'])->name('login.code');
+    Route::post('login/code', [LoginCodeController::class, 'store'])->name('login.code.store');
+    Route::delete('login/code', [LoginCodeController::class, 'destroy'])->name('login.code.cancel');
 });
 
 Route::middleware('auth')->group(function () {
@@ -33,9 +39,12 @@ Route::middleware('auth')->group(function () {
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');
 
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+    // Throttle: с угнанной сессией здесь можно было бы перебирать пароль.
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])
+        ->middleware('throttle:6,1');
 
-    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    Route::put('password', [PasswordController::class, 'update'])
+        ->middleware('throttle:6,1')->name('password.update');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');

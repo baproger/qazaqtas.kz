@@ -53,12 +53,22 @@ class CheckoutController extends Controller
         $order = $this->orders->createFromCart($contents, $data);
         $this->cart->clear();
 
+        // Пропуск на страницу «спасибо»: состав заказа видит только тот, кто
+        // его только что оформил. Номера последовательные (ZT-2026-NNN) — без
+        // этой метки чужие заказы читались бы простым перебором адреса.
+        $request->session()->put('site.last_order', $order->number);
+
         return redirect()->route('site.thanks', ['order' => $order->number]);
     }
 
     public function thanks(Request $request): Response
     {
-        $order = Order::where('number', (string) $request->query('order'))->with('items')->first();
+        $number = (string) $request->query('order');
+        // Показываем заказ только его автору (метка в сессии) — иначе
+        // страница остаётся общим «спасибо» без состава и сумм.
+        $order = $number !== '' && $number === $request->session()->get('site.last_order')
+            ? Order::where('number', $number)->with('items')->first()
+            : null;
 
         return Inertia::render('Site/Thanks', [
             'order' => $order ? [

@@ -30,14 +30,29 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        $user = $request->validateCredentials();
 
+        // Ключевые сотрудники входят в два шага: пароль, затем персональный
+        // код, выданный администратором (LoginCodeController). Сессия пока
+        // гостевая — в ней лежит лишь отметка «пароль пройден» на 5 минут.
+        if ($user->access_code) {
+            $request->session()->put('login.pending', [
+                'id' => $user->id,
+                'remember' => $request->boolean('remember'),
+                'company_id' => (int) $request->input('company_id'),
+                'at' => now()->getTimestamp(),
+            ]);
+
+            return redirect()->route('login.code');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         // The chosen firm sticks only if the user actually belongs to it;
         // otherwise SetCurrentCompany falls back to their first company.
         $companyId = (int) $request->input('company_id');
-        if ($companyId && $request->user()->companies()->where('companies.id', $companyId)->exists()) {
+        if ($companyId && $user->companies()->where('companies.id', $companyId)->exists()) {
             \App\Support\CurrentCompany::set($companyId);
         }
 

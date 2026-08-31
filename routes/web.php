@@ -89,6 +89,9 @@ Route::middleware('auth')->group(function () {
     // export — до resource: иначе GET users/export сматчится как users/{user}.
     Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::get('users/{user}/contract', [UserController::class, 'contract'])->name('users.contract');
+    // Код входа ключевого сотрудника: выдаёт и отзывает только администратор.
+    Route::post('users/{user}/access-code', [UserController::class, 'issueAccessCode'])->name('users.accessCode.issue');
+    Route::delete('users/{user}/access-code', [UserController::class, 'revokeAccessCode'])->name('users.accessCode.revoke');
     Route::resource('users', UserController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 
     // Reference data

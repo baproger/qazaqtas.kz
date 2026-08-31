@@ -2,10 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -34,15 +35,22 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Проверить учётные данные, НЕ создавая сессию.
+     *
+     * Возвращает пользователя, а решение — впустить сразу или сначала
+     * спросить персональный код входа — принимает контроллер. Отключённый
+     * сотрудник получает тот же ответ, что и при неверном пароле: по тексту
+     * ошибки нельзя понять, существует ли аккаунт и почему отказано.
      *
      * @throws ValidationException
      */
-    public function authenticate(): void
+    public function validateCredentials(): User
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $user = User::where('email', $this->string('email')->toString())->first();
+
+        if (! $user || ! $user->is_active || ! Hash::check($this->string('password'), (string) $user->getAuthPassword())) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -51,6 +59,8 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        return $user;
     }
 
     /**

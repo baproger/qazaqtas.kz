@@ -187,6 +187,8 @@ class UserController extends Controller
                 'salary' => $seesMoney ? (float) $user->salary : null,
                 'bonus_percent' => $seesMoney && $user->bonus_percent !== null ? (float) $user->bonus_percent : null,
                 'has_contract' => (bool) $user->contract_path,
+                'code_required' => (bool) $user->access_code,
+                'code_issued_at' => $user->access_code_issued_at?->toDateString(),
             ],
             'deals' => $deals,
             'projects' => $projects,
@@ -195,7 +197,9 @@ class UserController extends Controller
             'adjustments' => $adjustments,
             'debt' => $debt,
             'month' => $month,
-            'can' => ['manage' => $viewer->can('update', $user)],
+            'can' => ['manage' => $viewer->can('update', $user), 'issue_code' => $viewer->hasRole('admin')],
+            // Только что выданный код: показывается один раз, в базе — хэш.
+            'issuedCode' => session('issued_access_code'),
             // Личные доступы СВЕРХ роли — только админу и только для не-админа.
             // У админа полный доступ через Gate::before, и галочки там лгали бы.
             'access' => $viewer->hasRole('admin') && ! $user->hasRole('admin')
@@ -371,6 +375,35 @@ class UserController extends Controller
     private function activeAdminCount(): int
     {
         return RoleTraits::users('admin')->where('is_active', true)->count();
+    }
+
+    /**
+     * Выдать (или перевыпустить) персональный код входа.
+     *
+     * Код — второй шаг входа ключевого сотрудника, выдаёт его ТОЛЬКО
+     * администратор. В базе остаётся хэш; сам код администратор видит один
+     * раз и передаёт сотруднику лично.
+     */
+    public function issueAccessCode(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('admin'), 403, 'Код входа выдаёт только администратор.');
+
+        $code = (string) random_int(100000, 999999);
+        $user->forceFill(['access_code' => Hash::make($code), 'access_code_issued_at' => now()])->save();
+
+        return back()
+            ->with('issued_access_code', $code)
+            ->with('success', 'Код входа выдан. Передайте его сотруднику лично.');
+    }
+
+    /** Отозвать код: сотрудник снова входит только по паролю. */
+    public function revokeAccessCode(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('admin'), 403, 'Код входа отзывает только администратор.');
+
+        $user->forceFill(['access_code' => null, 'access_code_issued_at' => null])->save();
+
+        return back()->with('success', 'Код входа отозван — вход только по паролю.');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse

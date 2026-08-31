@@ -105,6 +105,15 @@ class ErrorLog extends Model
     {
         $message = mb_substr((string) ($data['message'] ?? 'Ошибка в браузере'), 0, 2000);
         $file = mb_substr((string) ($data['file'] ?? ''), 0, 500) ?: null;
+        $fingerprint = hash('sha256', 'browser|'.$message.'|'.$file.'|'.($data['line'] ?? ''));
+
+        // Потолок незнакомых браузерных ошибок: повторы и так схлопываются по
+        // отпечатку (count++), а распределённый флуд УНИКАЛЬНЫМИ сообщениями
+        // не должен раздувать таблицу на шаред-хостинге. Эндпоинт публичный.
+        if (! self::open()->where('fingerprint', $fingerprint)->exists()
+            && self::where('source', 'browser')->count() >= 2000) {
+            return null;
+        }
 
         return self::record([
             'level' => 'warning',
@@ -115,7 +124,7 @@ class ErrorLog extends Model
             'file' => $file,
             'line' => isset($data['line']) ? (int) $data['line'] : null,
             'trace' => isset($data['stack']) ? mb_substr((string) $data['stack'], 0, 8000) : null,
-            'fingerprint' => hash('sha256', 'browser|'.$message.'|'.$file.'|'.($data['line'] ?? '')),
+            'fingerprint' => $fingerprint,
             'url' => mb_substr((string) ($data['url'] ?? $request->headers->get('referer', '')), 0, 2000) ?: null,
         ], $request);
     }

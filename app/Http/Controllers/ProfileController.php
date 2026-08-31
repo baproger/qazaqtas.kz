@@ -119,7 +119,8 @@ class ProfileController extends Controller
         $path = $user->getRawOriginal('avatar');
         abort_unless($path && \Illuminate\Support\Facades\Storage::disk('local')->exists($path), 404);
 
-        return \Illuminate\Support\Facades\Storage::disk('local')->response($path);
+        // nosniff: браузер не должен «угадать» в картинке HTML.
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($path, null, ['X-Content-Type-Options' => 'nosniff']);
     }
 
     private function userData(\App\Models\User $u): array

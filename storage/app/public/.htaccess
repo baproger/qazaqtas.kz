@@ -1,0 +1,13 @@
+# Файлы из этого каталога загружают пользователи. Даже если сюда каким-то
+# образом попадёт .php или .html — исполняться и открываться как страница
+# он не должен. На шаред-хостинге (Apache) это единственный барьер такого
+# рода: PHP-ответы получают заголовки в middleware, а статику Apache
+# отдаёт напрямую, мимо Laravel.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
