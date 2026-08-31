@@ -50,7 +50,6 @@ const clearCart = () => router.delete(siteRoute('site.cart.clear'), { preserveSc
                 <p class="mt-3 text-sm text-sand-100/50">{{ $t('site.cart.empty_lead') }}</p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
                     <Link :href="$r('site.catalog')" class="btn-sand">{{ $t('site.cart.to_catalog') }}</Link>
-                    <Link v-if="$page.props.site?.configurator" :href="$r('site.configurator')" class="btn-ghost">{{ $t('site.nav.configurator') }}</Link>
                 </div>
             </div>
 

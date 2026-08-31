@@ -86,10 +86,6 @@ class CatalogMediaTest extends TestCase
         $this->get(route('site.home'))
             ->assertInertia(fn ($p) => $p->where('scene.textures.paving', $texture));
 
-        // Конфигуратор выключен по умолчанию — включаем, чтобы проверить.
-        \App\Models\Setting::set('configurator_enabled', true);
-        $this->get(route('site.configurator'))
-            ->assertInertia(fn ($p) => $p->where('collections.0.texture', $texture));
     }
 
     public function test_deleting_a_photo_clears_the_texture_and_the_files(): void

@@ -161,7 +161,7 @@ class SiteContent
             // Суффиксы наружу не отдаём: иначе они всплыли бы в вёрстке
             // и в составе заказа.
             foreach (array_keys($row) as $key) {
-                foreach (\App\Support\Locales::ALL as $suffix) {
+                foreach (Locales::ALL as $suffix) {
                     if (str_ends_with((string) $key, '_'.$suffix)) {
                         unset($row[$key]);
                     }
@@ -234,15 +234,6 @@ class SiteContent
     }
 
     /**
-     * Показывать ли 3D-конфигуратор двора. Пока выключен: включается в
-     * ERP → Настройки. Проверяется и в меню, и на самом маршруте.
-     */
-    public static function configuratorEnabled(): bool
-    {
-        return (bool) Setting::get('configurator_enabled', false);
-    }
-
-    /**
      * Строки как есть, с языковыми суффиксами — для формы настроек в ERP.
      * Витрине они не нужны, а форме без них негде править перевод.
      */
@@ -270,7 +261,6 @@ class SiteContent
         return [
             'contacts' => self::contacts(),
             'branches' => self::branches(),
-            'configurator' => self::configuratorEnabled(),
         ];
     }
 }

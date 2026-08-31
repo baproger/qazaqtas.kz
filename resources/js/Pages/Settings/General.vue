@@ -15,7 +15,6 @@ const form = useForm({
     company_name: props.settings.company_name,
     currency: props.settings.currency,
     auto_create_project: !!props.settings.auto_create_project,
-    configurator_enabled: !!props.settings.configurator_enabled,
     default_locale: props.settings.default_locale,
     tax_percent: props.settings.tax_percent,
     material_markup_percent: props.settings.material_markup_percent,
@@ -92,9 +91,6 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
             <SettingSection :title="$e('Автоматизация')">
                 <SettingRow :title="$e('Автоматически создавать проект при переходе сделки в «Оплата успешно»')">
                     <Toggle v-model="form.auto_create_project" />
-                </SettingRow>
-                <SettingRow :title="$e('Показывать 3D-конфигуратор двора на сайте')" :description="$e('Пока выключен, пункт скрыт в меню, а страница отдаёт 404')">
-                    <Toggle v-model="form.configurator_enabled" />
                 </SettingRow>
             </SettingSection>
 

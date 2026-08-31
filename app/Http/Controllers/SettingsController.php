@@ -32,8 +32,6 @@ class SettingsController extends Controller
         // владельцем; ставку рабочего он задаёт сам — выдумывать её нельзя.
         'foreman_rate_m2' => 450,
         'foreman_rate_pcs' => 35,
-        // 3D-конфигуратор двора на сайте: пока выключен, включается здесь.
-        'configurator_enabled' => false,
         // Размер шрифта ERP: одна ручка на всё приложение. Вся вёрстка в rem,
         // поэтому меняется корневой размер — и за ним всё остальное.
         'ui_font_size' => 'normal',
@@ -76,7 +74,6 @@ class SettingsController extends Controller
             'bonus_resale_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'foreman_rate_m2' => ['sometimes', 'numeric', 'min:0'],
             'foreman_rate_pcs' => ['sometimes', 'numeric', 'min:0'],
-            'configurator_enabled' => ['boolean'],
             'ui_font_size' => ['sometimes', Rule::in(self::FONT_SIZES)],
         ]);
 

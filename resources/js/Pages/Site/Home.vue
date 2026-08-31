@@ -31,7 +31,6 @@ const props = defineProps({
 useSmoothScroll();
 
 // Конфигуратор включается в ERP → Настройки.
-const configuratorEnabled = computed(() => usePage().props.site?.configurator ?? false);
 
 const canvas = ref(null);
 const storyEl = ref(null);
@@ -184,10 +183,7 @@ onBeforeUnmount(() => {
                         </p>
                         <div class="mt-10 flex flex-wrap gap-3">
                             <Link :href="$r('site.catalog')" class="btn-sand">{{ $t('site.cta.catalog') }}</Link>
-                            <Link
-                                :href="configuratorEnabled ? $r('site.configurator') : $r('site.contacts')"
-                                class="btn-ghost"
-                            >{{ configuratorEnabled ? $t('site.cta.build_yard_3d') : $t('site.cta.estimate') }}</Link>
+                            <Link :href="$r('site.contacts')" class="btn-ghost">{{ $t('site.cta.estimate') }}</Link>
                         </div>
                     </div>
                 </div>
@@ -290,7 +286,6 @@ onBeforeUnmount(() => {
                         <p class="eyebrow">{{ $t('site.home.featured_eyebrow') }}</p>
                         <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.home.featured_title') }}</h2>
                     </div>
-                    <Link v-if="configuratorEnabled" :href="$r('site.configurator')" class="btn-ghost">{{ $t('site.cta.estimate_yard') }}</Link>
                 </div>
 
                 <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -364,16 +359,10 @@ onBeforeUnmount(() => {
                     {{ $t('site.home.cta_title') }}
                 </h2>
                 <p class="mx-auto mt-5 max-w-md text-pretty text-sm leading-relaxed text-sand-100/55">
-                    <template v-if="configuratorEnabled">
-                        {{ $t('site.home.cta_lead_3d') }}
-                    </template>
-                    <template v-else>
-                        {{ $t('site.home.cta_lead') }}
-                    </template>
+                    {{ $t('site.home.cta_lead') }}
                 </p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
-                    <Link v-if="configuratorEnabled" :href="$r('site.configurator')" class="btn-sand">{{ $t('site.home.open_configurator') }}</Link>
-                    <Link :href="$r('site.contacts')" :class="configuratorEnabled ? 'btn-ghost' : 'btn-sand'">
+                    <Link :href="$r('site.contacts')" class="btn-sand">
                         {{ $t('site.home.contact_sales') }}
                     </Link>
                 </div>

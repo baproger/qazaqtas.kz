@@ -4,7 +4,6 @@ use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\Site\CartController;
 use App\Http\Controllers\Site\CatalogController;
 use App\Http\Controllers\Site\CheckoutController;
-use App\Http\Controllers\Site\ConfiguratorController;
 use App\Http\Controllers\Site\PageController;
 use App\Http\Controllers\Site\QuotationController;
 use App\Http\Controllers\Site\SeoController;
@@ -37,8 +36,6 @@ $routes = function (): void {
 
     Route::get('/uslugi', [ServiceController::class, 'index'])->name('services');
     Route::get('/uslugi/{slug}', [ServiceController::class, 'show'])->name('service');
-
-    Route::get('/konfigurator', [ConfiguratorController::class, 'show'])->name('configurator');
 
     Route::get('/korzina', [CartController::class, 'show'])->name('cart');
     Route::post('/korzina/{product}', [CartController::class, 'add'])->middleware('throttle:60,1')->name('cart.add');

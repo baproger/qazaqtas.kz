@@ -7,7 +7,6 @@ use App\Models\Deal;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductCategory;
-use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\SiteOrderReceived;
 use Database\Seeders\CatalogSeeder;
@@ -46,37 +45,6 @@ class SiteShopTest extends TestCase
         foreach (['site.home', 'site.catalog', 'site.cart', 'site.about', 'site.projects', 'site.contacts'] as $name) {
             $this->get(route($name))->assertOk();
         }
-    }
-
-    public function test_configurator_is_hidden_until_enabled_in_erp(): void
-    {
-        // По умолчанию выключен: страница недоступна даже по прямой ссылке,
-        // и витрина не показывает пункт меню.
-        $this->get(route('site.configurator'))->assertNotFound();
-        $this->get(route('site.home'))
-            ->assertInertia(fn (Assert $p) => $p->where('site.configurator', false));
-
-        Setting::set('configurator_enabled', true);
-
-        $this->get(route('site.configurator'))->assertOk();
-        $this->get(route('site.home'))
-            ->assertInertia(fn (Assert $p) => $p->where('site.configurator', true));
-    }
-
-    public function test_admin_switches_the_configurator_from_settings(): void
-    {
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-
-        $this->actingAs($admin)->put(route('settings.update'), [
-            'company_name' => 'QAZAQ TAS',
-            'currency' => '₸',
-            'default_locale' => 'ru',
-            'tax_percent' => 3,
-            'configurator_enabled' => true,
-        ])->assertRedirect();
-
-        $this->get(route('site.configurator'))->assertOk();
     }
 
     public function test_catalog_shows_only_published_products(): void
@@ -146,7 +114,8 @@ class SiteShopTest extends TestCase
             ->assertInertia(fn (Assert $p) => $p->where('cart.items.0.quantity', 10));
     }
 
-    public function test_configurator_adds_several_positions_at_once(): void
+    /** Массовое добавление позиций (route cart.addMany) живёт и без конфигуратора. */
+    public function test_add_many_positions_at_once(): void
     {
         $paving = $this->paving();
         $curb = Product::where('code', 'QT-B-1000')->firstOrFail();

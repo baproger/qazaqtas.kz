@@ -28,7 +28,6 @@ const cartCount = computed(() => site.value.cartCount ?? 0);
 // ни в меню, ни в подвале, а сам маршрут отдаёт 404.
 const nav = computed(() => [
     { label: t('site.nav.catalog'), route: 'site.catalog' },
-    ...(site.value.configurator ? [{ label: t('site.nav.configurator'), route: 'site.configurator' }] : []),
     { label: t('site.nav.services'), route: 'site.services' },
     { label: t('site.nav.about'), route: 'site.about' },
     { label: t('site.nav.projects'), route: 'site.projects' },
