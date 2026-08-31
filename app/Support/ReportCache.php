@@ -28,7 +28,20 @@ final class ReportCache
             md5(json_encode($request->query())),
         ]);
 
-        return Cache::remember($key, self::TTL, $build);
+        // Результат приводится к чистым массивам ДО записи: Collection внутри
+        // кеша при unserialize может вернуться как __PHP_Incomplete_Class —
+        // страница тогда получает мусор вместо данных и падает белым экраном.
+        $fresh = fn () => json_decode(json_encode($build()), true);
+
+        $data = Cache::remember($key, self::TTL, $fresh);
+
+        // Страховка от записей, сделанных до этой нормализации.
+        if (! is_array($data) || str_contains(serialize($data), '__PHP_Incomplete_Class')) {
+            Cache::forget($key);
+            $data = Cache::remember($key, self::TTL, $fresh);
+        }
+
+        return $data;
     }
 
     /** Деньги изменились — все отчёты устарели. */

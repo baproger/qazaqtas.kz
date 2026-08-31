@@ -46,6 +46,23 @@ createInertiaApp({
         syncI18n(props.initialPage.props);
         const app = createApp({ render: () => h(App, props) });
 
+        // Ошибка рендера с ИМЕНЕМ компонента: голый stack в проде минифицирован
+        // и не говорит, где упало, а __name у SFC переживает минификацию.
+        // Цепочка родителей отвечает на вопрос «в каком именно месте страницы».
+        app.config.errorHandler = (err, instance, info) => {
+            const chain = [];
+            let node = instance?.$ ?? instance;
+            while (node && chain.length < 8) {
+                const n = node.type?.__name || node.type?.name;
+                if (n) chain.unshift(n);
+                node = node.parent;
+            }
+            const where = chain.join(' > ') || 'неизвестный компонент';
+            window.__vueCrash = { where, info, msg: String(err) };
+            console.error(`[vue] ${where} (${info}):`, err);
+            reportBrowserError({ kind: err?.name ?? 'VueError', message: `[${where}] ${err?.message ?? err}`, stack: err?.stack });
+        };
+
         // Доступно в любом шаблоне без импортов:
         //   $t('site.nav.catalog')      — текст на текущем языке
         //   $tc('site.catalog.found', 5) — форма слова при числе

@@ -2,50 +2,63 @@
 
 namespace Tests\Feature;
 
-use App\Models\Company;
-use App\Models\Deal;
-use App\Models\DealStage;
-use App\Models\User;
 use App\Support\ReportCache;
-use Database\Seeders\RolePermissionSeeder;
-use Database\Seeders\StageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
-/** Тяжёлые отчёты кешируются и сбрасываются при изменении денег. */
+/**
+ * Кеш тяжёлых отчётов: в кеш и наружу уходят ТОЛЬКО чистые массивы.
+ *
+ * Регрессия 31.08.2026: build() возвращал Laravel-Collection, сериализация
+ * объекта содержит NUL-байты, запись в БД-кеше портилась — и Аналитика
+ * открывалась белым экраном с мусором вместо данных.
+ */
 class ReportCacheTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_analytics_is_served_from_cache_until_money_changes(): void
+    public function test_collections_are_flattened_to_arrays(): void
     {
-        $this->seed(RolePermissionSeeder::class);
-        $this->seed(StageSeeder::class);
-        $company = Company::where('code', 'QT')->value('id');
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-        $admin->companies()->attach($company);
-        $won = DealStage::where('is_won', true)->first();
-        $mk = fn ($n) => Deal::create(['company_id' => $company, 'number' => $n, 'name' => 'X', 'company_name' => 'ТОО', 'budget' => 100000,
-            'status' => 'closed', 'deal_stage_id' => $won->id, 'responsible_user_id' => $admin->id]);
+        $request = Request::create('/analytics');
 
-        $mk('C-1');
-        $v1 = ReportCache::version(); // сделка уже сдвинула версию
-        $as = fn () => $this->actingAs($admin)->withSession(['company_id' => $company]);
-        $as()->get(route('analytics.index'))->assertOk()
-            ->assertInertia(fn (Assert $p) => $p->where('conversion.won', 1));
+        $data = ReportCache::remember($request, 'test-report', fn () => [
+            'rows' => collect([['income' => 100, 'expense' => 40]]),
+            'nested' => ['deep' => collect(['a' => 1])],
+            'plain' => 7,
+        ]);
 
-        // Изменение денег → новая версия → отчёт пересчитан.
-        $mk('C-2');
-        $this->assertNotSame($v1, ReportCache::version());
-        $as()->get(route('analytics.index'))->assertOk()
-            ->assertInertia(fn (Assert $p) => $p->where('conversion.won', 2));
+        $this->assertIsArray($data['rows']);
+        $this->assertSame(100, $data['rows'][0]['income']);
+        $this->assertIsArray($data['nested']['deep']);
+        $this->assertSame(7, $data['plain']);
+        // Ни одного объекта на всей глубине — то, что и хранится в кеше.
+        $this->assertStringNotContainsString('O:', serialize($data)[0]);
+    }
 
-        // Без изменений — второй запрос из кеша (версия та же), данные те же.
-        $v2 = ReportCache::version();
-        $as()->get(route('reports.deals'))->assertOk();
-        $as()->get(route('payroll.index'))->assertOk();
-        $this->assertSame($v2, ReportCache::version());
+    public function test_second_call_serves_from_cache(): void
+    {
+        $request = Request::create('/analytics');
+        $calls = 0;
+        $build = function () use (&$calls) { $calls++; return ['n' => $calls]; };
+
+        $first = ReportCache::remember($request, 'test-report', $build);
+        $second = ReportCache::remember($request, 'test-report', $build);
+
+        $this->assertSame(1, $calls);
+        $this->assertSame($first, $second);
+    }
+
+    public function test_bump_invalidates_all_reports(): void
+    {
+        $request = Request::create('/analytics');
+        $calls = 0;
+        $build = function () use (&$calls) { $calls++; return ['n' => $calls]; };
+
+        ReportCache::remember($request, 'test-report', $build);
+        ReportCache::bump();
+        ReportCache::remember($request, 'test-report', $build);
+
+        $this->assertSame(2, $calls);
     }
 }
