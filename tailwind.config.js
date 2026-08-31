@@ -4,6 +4,11 @@ import colors from 'tailwindcss/colors';
 
 /** @type {import('tailwindcss').Config} */
 export default {
+    // Тёмная тема ERP включается классом .dark на <html> (см. app.blade.php
+    // и composables/useErpTheme.js). Витрина живёт на своих CSS-переменных
+    // (.site[data-theme]) и dark:-утилит не использует.
+    darkMode: 'class',
+
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',

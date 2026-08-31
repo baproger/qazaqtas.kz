@@ -73,21 +73,21 @@ const total = computed(() => props.modelValue.reduce((sum, r) => sum + lineTotal
 </script>
 
 <template>
-    <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+    <div class="rounded-xl border border-slate-200 bg-slate-50/60 dark:bg-slate-800/40 p-4 dark:border-slate-800/80 dark:bg-slate-800/50">
         <!-- 1. Категории: множественный выбор -->
-        <div class="mb-1 text-xs font-medium text-slate-500">{{ $e('1. Категории') }}</div>
+        <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('1. Категории') }}</div>
         <div class="flex flex-wrap gap-1.5">
             <button v-for="c in categories" :key="c.id" type="button" @click="toggleCategory(c.id)"
                 class="rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150"
                 :class="openCategories.includes(c.id)
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100'">{{ c.name }}</button>
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300'
+                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100 dark:border-slate-800/80 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'">{{ c.name }}</button>
             <span v-if="!categories.length" class="text-xs text-slate-400">{{ $e('В каталоге пока нет товаров') }}</span>
         </div>
 
         <!-- 2. Товары выбранных категорий: множественный выбор -->
         <div class="mt-3 flex items-center justify-between gap-2">
-            <div class="text-xs font-medium text-slate-500">{{ $e('2. Товары') }}</div>
+            <div class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('2. Товары') }}</div>
             <input v-model="search" type="search" :placeholder="$e('поиск по названию…')"
                 class="w-44 rounded-lg border-slate-300 py-1 text-xs shadow-sm" />
         </div>
@@ -95,8 +95,8 @@ const total = computed(() => props.modelValue.reduce((sum, r) => sum + lineTotal
             <button v-for="p in visibleProducts" :key="p.id" type="button" @click="toggleProduct(p)"
                 class="rounded-lg border px-2.5 py-1 text-xs transition-colors duration-150"
                 :class="isChosen(p.id)
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'">
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-800/80 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'">
                 {{ isChosen(p.id) ? '✓ ' : '' }}{{ p.name }}
                 <span class="text-slate-400">· {{ p.unit || $e('ед') }}</span>
             </button>
@@ -105,18 +105,18 @@ const total = computed(() => props.modelValue.reduce((sum, r) => sum + lineTotal
 
         <!-- 3. Строки заказа: у каждой своя единица из каталога -->
         <div v-if="modelValue.length" class="mt-4">
-            <div class="mb-1 text-xs font-medium text-slate-500">{{ $e('3. Количество и цена') }}</div>
+            <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('3. Количество и цена') }}</div>
             <div class="space-y-2">
                 <div v-for="(row, i) in modelValue" :key="row.product_id ?? i"
-                    class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
-                    <span class="min-w-0 flex-1 truncate text-sm text-slate-700">{{ row.name }}</span>
+                    class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-800/80 dark:bg-slate-800">
+                    <span class="min-w-0 flex-1 truncate text-sm text-slate-700 dark:text-slate-300">{{ row.name }}</span>
 
                     <label class="flex items-center gap-1 text-xs text-slate-400">
                         <input :value="row.quantity" @input="updateRow(i, 'quantity', $event.target.value)"
                             type="number" min="0" step="any" :placeholder="$e('кол-во')"
                             class="w-24 rounded-md border-slate-300 py-1 text-sm shadow-sm" />
                         <!-- Единица из каталога: менеджер её не выбирает -->
-                        <span class="w-12 font-medium text-slate-500">{{ row.unit || $e('ед') }}</span>
+                        <span class="w-12 font-medium text-slate-500 dark:text-slate-400">{{ row.unit || $e('ед') }}</span>
                     </label>
 
                     <label class="flex items-center gap-1 text-xs text-slate-400">
@@ -126,15 +126,15 @@ const total = computed(() => props.modelValue.reduce((sum, r) => sum + lineTotal
                             class="w-28 rounded-md border-slate-300 py-1 text-sm shadow-sm" />
                     </label>
 
-                    <span class="w-28 text-right text-sm font-semibold tabular-nums text-slate-800">{{ money(lineTotal(row)) }}</span>
+                    <span class="w-28 text-right text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">{{ money(lineTotal(row)) }}</span>
                     <button type="button" @click="removeRow(i)"
-                        class="rounded p-1 text-slate-300 transition-colors hover:text-rose-600" :title="$e('Убрать товар')">✕</button>
+                        class="rounded p-1 text-slate-300 transition-colors hover:text-rose-600 dark:text-slate-600 dark:hover:text-rose-400" :title="$e('Убрать товар')">✕</button>
                 </div>
             </div>
 
             <div class="mt-2 flex flex-wrap items-center justify-end gap-4 text-sm">
-                <span class="text-slate-500">
-                    {{ $e('Сумма заказа:') }} <b class="text-base tabular-nums text-slate-900">{{ money(total) }}</b>
+                <span class="text-slate-500 dark:text-slate-400">
+                    {{ $e('Сумма заказа:') }} <b class="text-base tabular-nums text-slate-900 dark:text-slate-100">{{ money(total) }}</b>
                 </span>
             </div>
             <p class="mt-1 text-right text-xs text-slate-400">{{ $e('Сумма считается по строкам — вручную её не вводят.') }}</p>

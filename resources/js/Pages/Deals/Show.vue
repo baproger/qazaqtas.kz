@@ -170,29 +170,29 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                     {{ $t('page.deals', 'Сделки') }}
                 </Link>
                 <!-- Длинные названия (НАО, ГУ…) обрезаются с многоточием, полное — в title -->
-                <span class="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl" :title="deal.company_name || deal.name">{{ deal.company_name || deal.name }}</span>
-                <span class="flex-shrink-0 whitespace-nowrap rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">{{ deal.number }}</span>
+                <span class="min-w-0 truncate text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-xl" :title="deal.company_name || deal.name">{{ deal.company_name || deal.name }}</span>
+                <span class="flex-shrink-0 whitespace-nowrap rounded-md bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{{ deal.number }}</span>
                 <span
                     v-if="deal.branch"
-                    class="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700"
+                    class="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-sky-50 dark:bg-sky-500/10 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:text-sky-400"
                     :title="$e('Филиал')"
                 >🏭 {{ deal.branch }}</span>
-                <span v-if="overdue" class="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
+                <span v-if="overdue" class="inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-rose-100 dark:bg-rose-500/20 px-2.5 py-0.5 text-xs font-semibold text-rose-700 dark:text-rose-400">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/></svg>
                     {{ $t('deal.overdue_badge', 'Просрочено') }}
                 </span>
             </div>
         </template>
 
-        <div class="mb-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
+        <div class="mb-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-5 shadow-card">
             <div class="flex items-center gap-2 overflow-x-auto pb-1">
                 <button v-for="(stage, idx) in stages" :key="stage.id" @click="moveStage(stage.id)" :disabled="!can.update || stageLocked(stage)"
                     :title="stageLocked(stage) ? lockHint(stage) : ''"
                     :class="stage.id === deal.deal_stage_id
                         ? 'text-white shadow-md'
                         : currentStageIndex >= 0 && idx < currentStageIndex
-                            ? 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-100 hover:bg-indigo-100'
-                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'"
+                            ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-100 hover:bg-indigo-100'
+                            : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:bg-slate-200 hover:text-slate-700'"
                     :style="stage.id === deal.deal_stage_id ? { backgroundColor: stage.color } : {}"
                     class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-40">
                     <svg v-if="currentStageIndex >= 0 && idx < currentStageIndex" class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -200,7 +200,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 </button>
             </div>
             <!-- Прогресс воронки -->
-            <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800/60">
                 <div class="h-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600 transition-all duration-500 ease-out" :style="{ width: funnelProgress + '%' }"></div>
             </div>
             <!-- Галочка бухгалтера на этапах «Акт утверждение» / «ЭСФ» -->
@@ -208,36 +208,36 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
             <div v-if="stageTask" class="mt-4 flex items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur-sm"
                 :class="stageTask.done ? 'border-emerald-200/70 bg-emerald-50/70' : 'border-amber-200/70 bg-amber-50/70'">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base"
-                    :class="stageTask.done ? 'bg-emerald-600 text-white' : 'bg-white text-amber-600 ring-1 ring-amber-200'">
+                    :class="stageTask.done ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-900/70 text-amber-600 dark:text-amber-400 ring-1 ring-amber-200'">
                     <svg v-if="stageTask.done" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                     <span v-else>🔒</span>
                 </span>
                 <div class="min-w-0 flex-1">
-                    <div class="truncate text-sm font-semibold" :class="stageTask.done ? 'text-emerald-800' : 'text-slate-900'">{{ stageTask.label }}</div>
-                    <div class="mt-0.5 text-xs" :class="stageTask.done ? 'text-emerald-700' : 'text-slate-500'">
+                    <div class="truncate text-sm font-semibold" :class="stageTask.done ? 'text-emerald-800' : 'text-slate-900 dark:text-slate-100'">{{ stageTask.label }}</div>
+                    <div class="mt-0.5 text-xs" :class="stageTask.done ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'">
                         <template v-if="stageTask.done">{{ $e('Выполнено — можно переводить дальше') }}</template>
                         <template v-else>{{ $e('Гейт этапа') }}<template v-if="stageTask.due"> · {{ $e('срок до') }} {{ formatDate(stageTask.due) }}</template> · {{ $e('подтверждает') }} {{ stageTask.roleLabel || $e('бухгалтер') }}</template>
                     </div>
                 </div>
                 <button v-if="!stageTask.done && canConfirmGate" @click="confirmStageTask"
-                    class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-300/60 bg-emerald-500/15 px-3.5 py-2 text-sm font-semibold text-emerald-700 backdrop-blur-md transition hover:bg-emerald-500/25">
+                    class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-300/60 bg-emerald-500/15 px-3.5 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400 backdrop-blur-md transition hover:bg-emerald-500/25">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                     {{ $e('Выполнено') }}
                 </button>
             </div>
 
-            <div class="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+            <div class="mt-4 flex flex-wrap gap-2 border-t border-slate-100 dark:border-slate-800 pt-4">
                 <PrimaryButton v-if="(can.advance ?? can.update) && !isWorkshopStage && !isLastStage && !managerFrozen" @click="advance">{{ $e('Далее →') }}</PrimaryButton>
                 <button v-if="can.update && isWorkshopStage && (!deal.project || deal.project.status === 'completed')" @click="sendToWorkshop()" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-150 hover:bg-emerald-700">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
                     {{ $e('Отправить в цех') }}
                 </button>
-                <Link v-if="deal.project && deal.project.status !== 'completed'" :href="route('projects.show', deal.project.id)" class="inline-flex items-center rounded-xl bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200 transition-colors duration-150 hover:bg-emerald-100">{{ $e('В цеху:') }} {{ deal.project.number }} →</Link>
-                <button v-if="can.update" @click="openEdit" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-200">
+                <Link v-if="deal.project && deal.project.status !== 'completed'" :href="route('projects.show', deal.project.id)" class="inline-flex items-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-200 transition-colors duration-150 hover:bg-emerald-100">{{ $e('В цеху:') }} {{ deal.project.number }} →</Link>
+                <button v-if="can.update" @click="openEdit" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors duration-150 hover:bg-slate-200">
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5l3 3L7 16l-3.5.5L4 13z"/></svg>
                     {{ $e('Изменить') }}
                 </button>
-                <button v-if="can.delete" @click="destroy" class="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-white px-4 py-2 text-sm font-medium text-rose-600 transition-colors duration-150 hover:border-rose-600 hover:bg-rose-600 hover:text-white">
+                <button v-if="can.delete" @click="destroy" class="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-white dark:bg-slate-900/70 px-4 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 transition-colors duration-150 hover:border-rose-600 hover:bg-rose-600 hover:text-white">
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M8 6V4h4v2M6 6l.5 10h7l.5-10M8.5 9v4M11.5 9v4"/></svg>
                     {{ $e('Удалить') }}
                 </button>
@@ -247,46 +247,46 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
         <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div class="lg:col-span-2 space-y-4">
                 <!-- Информация — компактная сетка -->
-                <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
+                <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-5 shadow-card">
                     <div class="grid grid-cols-2 gap-x-5 gap-y-3.5 sm:grid-cols-3">
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Компания') }}</div>
-                            <div class="mt-1 text-base font-semibold text-slate-900">{{ deal.company_name || '—' }}</div>
+                            <div class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">{{ deal.company_name || '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Адрес') }}</div>
-                            <div class="mt-1 text-base font-medium text-slate-900">📍 {{ deal.address || '—' }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">📍 {{ deal.address || '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Номер договора') }}</div>
-                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.bin || '—' }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">{{ deal.bin || '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('БИН / ИИН заказчика') }}</div>
-                            <div class="mt-1 text-base font-medium tabular-nums text-slate-900">{{ deal.customer_bin || '—' }}</div>
+                            <div class="mt-1 text-base font-medium tabular-nums text-slate-900 dark:text-slate-100">{{ deal.customer_bin || '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Контакт клиента') }}</div>
-                            <div class="mt-1 text-base font-medium text-slate-900">
+                            <div class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">
                                 {{ deal.contact_name || '—' }}
-                                <a v-if="deal.contact_phone" :href="'tel:' + deal.contact_phone" class="ml-1 font-semibold text-indigo-600 hover:underline">{{ deal.contact_phone }}</a>
+                                <a v-if="deal.contact_phone" :href="'tel:' + deal.contact_phone" class="ml-1 font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{{ deal.contact_phone }}</a>
                             </div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Наименование товара') }}</div>
-                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.client_name || deal.client?.name || '—' }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">{{ deal.client_name || deal.client?.name || '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Количество') }}</div>
-                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.lot_number ? `${deal.lot_number} ${deal.unit || ''}` : '—' }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">{{ deal.lot_number ? `${deal.lot_number} ${deal.unit || ''}` : '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Дата договора') }}</div>
-                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.contract_date ? formatDate(deal.contract_date) : '—' }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">{{ deal.contract_date ? formatDate(deal.contract_date) : '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Источник (портал)') }}</div>
-                            <div class="mt-1 text-base font-medium text-slate-900">{{ deal.source || '—' }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">{{ deal.source || '—' }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Срок') }}</div>
@@ -307,33 +307,33 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                                 <option value="">{{ $e('— не назначен —') }}</option>
                                 <option v-for="u in foremen" :key="u.id" :value="u.id">{{ u.name }}</option>
                             </select>
-                            <div v-else class="mt-1 text-base font-medium text-slate-900">{{ deal.foreman?.name || '—' }}</div>
+                            <div v-else class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">{{ deal.foreman?.name || '—' }}</div>
                         </div>
                         <div v-for="f in visibleFields" :key="f.id">
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ f.name }}</div>
-                            <div class="mt-1 text-base font-medium text-slate-900">{{ f.value }}</div>
+                            <div class="mt-1 text-base font-medium text-slate-900 dark:text-slate-100">{{ f.value }}</div>
                         </div>
                     </div>
-                    <div v-if="deal.note" class="mt-5 rounded-xl bg-amber-50 px-4 py-3 ring-1 ring-inset ring-amber-100">
-                        <div class="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                    <div v-if="deal.note" class="mt-5 rounded-xl bg-amber-50 dark:bg-amber-500/10 px-4 py-3 ring-1 ring-inset ring-amber-100">
+                        <div class="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
                             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 10.8V5a3 3 0 0 1 6 0v5.8l2.7 1.6a2 2 0 0 1 1 1.7V15H5.3v-.9a2 2 0 0 1 1-1.7z"/></svg>
                             {{ $e('Заметка') }}
                         </div>
-                        <p class="whitespace-pre-line text-sm text-slate-700">{{ deal.note }}</p>
+                        <p class="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300">{{ deal.note }}</p>
                     </div>
                     <div v-if="deal.description" class="mt-4">
                         <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Описание') }}</div>
-                        <p class="mt-1 whitespace-pre-line text-sm text-slate-700">{{ deal.description }}</p>
+                        <p class="mt-1 whitespace-pre-line text-sm text-slate-700 dark:text-slate-300">{{ deal.description }}</p>
                     </div>
                 </div>
 
                 <!-- Слева товар, справа его фото. Снимок принадлежит позиции:
                      в цехе по нему сверяют отливку именно этой плитки. Цены
                      приходят только тем, кто видит деньги. -->
-                <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
+                <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-5 shadow-card">
                     <div class="mb-3 flex items-baseline gap-2">
-                        <h3 class="text-sm font-semibold text-slate-900">{{ $e('Товары заказа') }}</h3>
-                        <span v-if="items.length" class="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-600">{{ items.length }}</span>
+                        <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $e('Товары заказа') }}</h3>
+                        <span v-if="items.length" class="rounded-full bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">{{ items.length }}</span>
                     </div>
                     <OrderItems :items="items" :progress="itemProgress" :show-money="!!can.money"
                         :fallback-name="deal.client_name" :fallback-quantity="deal.lot_number" :fallback-unit="deal.unit" />
@@ -353,25 +353,25 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                                 class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-amber-700 disabled:opacity-50">
                                 {{ toProductionBusy ? '…' : $e('Добавить недостающее в план производства') }}
                             </button>
-                            <span v-else-if="stock.queued_any" class="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                            <span v-else-if="stock.queued_any" class="inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-900/70 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200">
                                 ✓ {{ $e('Заявка отправлена в производство') }}
                             </span>
                         </div>
                         <div class="mt-2.5 space-y-1">
                             <div v-for="row in stock.short" :key="row.product_id"
                                 class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-sm">
-                                <span class="text-slate-700">🧱 {{ row.name }}</span>
-                                <span class="tabular-nums text-slate-500">
-                                    {{ $e('нужно') }} <b class="text-slate-800">{{ num(row.need) }}</b> ·
-                                    {{ $e('на складе') }} <b class="text-slate-800">{{ num(row.have) }}</b> ·
-                                    {{ $e('не хватает') }} <b class="text-amber-700">{{ num(row.short) }} {{ row.unit }}</b>
+                                <span class="text-slate-700 dark:text-slate-300">🧱 {{ row.name }}</span>
+                                <span class="tabular-nums text-slate-500 dark:text-slate-400">
+                                    {{ $e('нужно') }} <b class="text-slate-800 dark:text-slate-200">{{ num(row.need) }}</b> ·
+                                    {{ $e('на складе') }} <b class="text-slate-800 dark:text-slate-200">{{ num(row.have) }}</b> ·
+                                    {{ $e('не хватает') }} <b class="text-amber-700 dark:text-amber-400">{{ num(row.short) }} {{ row.unit }}</b>
                                     <template v-if="row.queued">
-                                        · {{ $e('в производстве') }} <b class="text-emerald-700">{{ num(row.queued) }}</b>
+                                        · {{ $e('в производстве') }} <b class="text-emerald-700 dark:text-emerald-400">{{ num(row.queued) }}</b>
                                     </template>
                                 </span>
                             </div>
                         </div>
-                        <p class="mt-2 text-xs text-amber-700">
+                        <p class="mt-2 text-xs text-amber-700 dark:text-amber-400">
                             {{ stock.can_send
                                 ? $e('Объём уйдёт в «План — факт»; бригаду назначит начальник производства.')
                                 : $e('Объём уже в «Плане — факт»; бригаду назначает начальник производства.') }}
@@ -383,7 +383,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                      не относится к одному товару. -->
                 <Accordion v-if="attachments.length || can.update" :title="$e('Общие фото и файлы')" :count="attachments.length">
                     <template #icon>
-                        <svg class="h-4 w-4 shrink-0 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                        <svg class="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
                     </template>
                     <PhotoPanel :documents="attachments" entity-type="deal" :entity-id="deal.id" />
                 </Accordion>
@@ -394,31 +394,31 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                      невыполненная задача — единственное, что требует действия. -->
                 <Accordion :title="$e('Задачи')" :count="deal.tasks.length" :open="deal.tasks.length > 0">
                     <template #icon>
-                        <svg class="h-4 w-4 shrink-0 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m4 16 2 2 4-4M11 6h10M11 11h10M11 18h10"/></svg>
+                        <svg class="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m4 16 2 2 4-4M11 6h10M11 11h10M11 18h10"/></svg>
                     </template>
                     <TaskPanel :tasks="deal.tasks" taskable-type="deal" :taskable-id="deal.id" :users="users" />
                 </Accordion>
 
                 <Accordion :title="$e('Документы')" :count="files.length">
                     <template #icon>
-                        <svg class="h-4 w-4 shrink-0 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        <svg class="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                     </template>
                     <DocumentPanel :documents="files" entity-type="deal" :entity-id="deal.id" />
                 </Accordion>
 
                 <Accordion :title="$e('Комментарии')" :count="deal.comments.length">
                     <template #icon>
-                        <svg class="h-4 w-4 shrink-0 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <svg class="h-4 w-4 shrink-0 text-indigo-500 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     </template>
                     <CommentPanel :comments="deal.comments" entity-type="deal" :entity-id="deal.id" />
                 </Accordion>
 
                 <!-- Второстепенное: Финансы / Доп. поля / История -->
-                <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-card">
-                    <div class="mb-4 flex flex-wrap gap-5 border-b border-slate-200 text-sm">
-                        <button v-if="can.money" :class="tab==='finance' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='finance'">{{ $e('Финансы') }}</button>
-                        <button :class="tab==='custom' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='custom'">{{ $e('Доп. поля') }}</button>
-                        <button :class="tab==='history' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600' : 'border-b-2 border-transparent font-medium text-slate-500 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='history'">{{ $e('История') }}</button>
+                <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-5 shadow-card">
+                    <div class="mb-4 flex flex-wrap gap-5 border-b border-slate-200 dark:border-slate-800/80 text-sm">
+                        <button v-if="can.money" :class="tab==='finance' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600 dark:text-indigo-400' : 'border-b-2 border-transparent font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='finance'">{{ $e('Финансы') }}</button>
+                        <button :class="tab==='custom' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600 dark:text-indigo-400' : 'border-b-2 border-transparent font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='custom'">{{ $e('Доп. поля') }}</button>
+                        <button :class="tab==='history' ? 'border-b-2 border-indigo-600 font-semibold text-indigo-600 dark:text-indigo-400' : 'border-b-2 border-transparent font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700'" class="pb-2 transition-colors duration-150" @click="tab='history'">{{ $e('История') }}</button>
                     </div>
                     <FinancePanel v-if="can.money && tab==='finance'" :entity-type="'deal'" :entity-id="deal.id" :client-id="deal.client_id" :invoices="deal.invoices" :expenses="deal.expenses" :finance="finance" :materials="materials" :balances="balances" />
                     <CustomFieldsPanel v-else-if="tab==='custom'" :fields="customFields" entity-type="deal" :entity-id="deal.id" />
@@ -428,15 +428,15 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                             <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('⏱ Тайминг этапов') }}</div>
                             <div class="space-y-1.5">
                                 <div v-for="(l, i) in stageLogs" :key="i" class="flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm"
-                                    :class="l.open ? 'bg-indigo-50' : 'bg-slate-50'">
+                                    :class="l.open ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'bg-slate-50 dark:bg-slate-800/50'">
                                     <div class="flex min-w-0 items-center gap-2">
-                                        <span class="font-medium text-slate-800">{{ l.stage }}</span>
-                                        <span v-if="l.open" class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ $e('сейчас') }}</span>
+                                        <span class="font-medium text-slate-800 dark:text-slate-200">{{ l.stage }}</span>
+                                        <span v-if="l.open" class="rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">{{ $e('сейчас') }}</span>
                                         <span v-if="l.mover" class="truncate text-xs text-slate-400">{{ $e('перевёл(а):') }} {{ l.mover }}</span>
                                     </div>
                                     <div class="flex items-center gap-3 tabular-nums">
                                         <span class="text-xs text-slate-400">{{ formatDateTime(l.entered_at) }}<template v-if="l.left_at"> → {{ formatDateTime(l.left_at) }}</template></span>
-                                        <b :class="l.open ? 'text-indigo-700' : 'text-slate-700'">{{ formatDuration(l.seconds) }}</b>
+                                        <b :class="l.open ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'">{{ formatDuration(l.seconds) }}</b>
                                     </div>
                                 </div>
                             </div>
@@ -449,35 +449,35 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
             <div class="space-y-4">
                 <!-- Деньги сделки. Бригадир их не видит: сервер не присылает
                      profit, и блок не рисуется вовсе. -->
-                <div v-if="profit" class="rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
+                <div v-if="profit" class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 shadow-card">
                     <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Сумма договора') }}</div>
-                    <div class="mt-1 text-2xl font-bold leading-tight tracking-tight text-indigo-600">{{ money(deal.budget) }}</div>
+                    <div class="mt-1 text-2xl font-bold leading-tight tracking-tight text-indigo-600 dark:text-indigo-400">{{ money(deal.budget) }}</div>
                     <div class="mt-4 space-y-2 text-sm">
-                        <div class="flex justify-between"><span class="text-slate-500">{{ $e('Статус') }}</span><StatusBadge :status="deal.status" /></div>
-                        <div class="flex justify-between"><span class="text-slate-500">{{ $e('Аванс (оплачено)') }}</span><span class="font-medium tabular-nums text-emerald-600">{{ money(finance.income) }}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">{{ $e('Остаток к оплате') }}</span><span class="font-bold tabular-nums" :class="remainder > 0 ? 'text-rose-600' : 'text-emerald-600'">{{ remainder > 0 ? money(remainder) : $e('оплачено ✓') }}</span></div>
-                        <div class="mt-2 border-t border-slate-100 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Расчёт прибыли') }}</div>
-                        <div class="flex justify-between"><span class="text-slate-500">{{ $e('Налог') }} {{ profit.taxRate }}%</span><span class="font-medium tabular-nums text-rose-600">− {{ money(profit.tax) }}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">{{ $e('Прочие расходы') }}</span><span class="font-medium tabular-nums text-rose-600">− {{ money(profit.expense) }}</span></div>
-                        <div v-if="profit.partnerPct != null" class="flex justify-between"><span class="text-slate-500">{{ $e('Доля партнёра') }} {{ profit.partnerPct }}%</span><span class="font-medium tabular-nums text-rose-600">− {{ money(profit.partner) }}</span></div>
-                        <div class="flex justify-between border-t border-slate-100 pt-2"><span class="text-slate-500">{{ $e('Остаток') }}</span><span class="font-semibold tabular-nums text-slate-800">{{ money(profit.remainder) }}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">{{ $e('Статус') }}</span><StatusBadge :status="deal.status" /></div>
+                        <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">{{ $e('Аванс (оплачено)') }}</span><span class="font-medium tabular-nums text-emerald-600 dark:text-emerald-400">{{ money(finance.income) }}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">{{ $e('Остаток к оплате') }}</span><span class="font-bold tabular-nums" :class="remainder > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">{{ remainder > 0 ? money(remainder) : $e('оплачено ✓') }}</span></div>
+                        <div class="mt-2 border-t border-slate-100 dark:border-slate-800 pt-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Расчёт прибыли') }}</div>
+                        <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">{{ $e('Налог') }} {{ profit.taxRate }}%</span><span class="font-medium tabular-nums text-rose-600 dark:text-rose-400">− {{ money(profit.tax) }}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">{{ $e('Прочие расходы') }}</span><span class="font-medium tabular-nums text-rose-600 dark:text-rose-400">− {{ money(profit.expense) }}</span></div>
+                        <div v-if="profit.partnerPct != null" class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">{{ $e('Доля партнёра') }} {{ profit.partnerPct }}%</span><span class="font-medium tabular-nums text-rose-600 dark:text-rose-400">− {{ money(profit.partner) }}</span></div>
+                        <div class="flex justify-between border-t border-slate-100 dark:border-slate-800 pt-2"><span class="text-slate-500 dark:text-slate-400">{{ $e('Остаток') }}</span><span class="font-semibold tabular-nums text-slate-800 dark:text-slate-200">{{ money(profit.remainder) }}</span></div>
                         <!-- Бонус менеджера: авто-ступень от маржи или ручной % финансиста -->
                         <div class="flex items-center justify-between">
-                            <span class="flex items-center gap-1.5 text-slate-500">
+                            <span class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                                 {{ $e('ЗП сотрудника') }} {{ profit.bonusRate }}%
-                                <span class="rounded px-1 py-px text-xs font-bold uppercase" :class="profit.bonusManual ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'">{{ profit.bonusManual ? $e('вручную') : $e('авто') }}</span>
-                                <button v-if="canAccounting" @click="openBonusEdit" :title="$e('Изменить % бонуса')" class="text-slate-300 hover:text-indigo-500">✎</button>
+                                <span class="rounded px-1 py-px text-xs font-bold uppercase" :class="profit.bonusManual ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400'">{{ profit.bonusManual ? $e('вручную') : $e('авто') }}</span>
+                                <button v-if="canAccounting" @click="openBonusEdit" :title="$e('Изменить % бонуса')" class="text-slate-300 dark:text-slate-600 hover:text-indigo-500">✎</button>
                             </span>
-                            <span class="font-medium tabular-nums text-emerald-600">− {{ money(profit.bonus) }}</span>
+                            <span class="font-medium tabular-nums text-emerald-600 dark:text-emerald-400">− {{ money(profit.bonus) }}</span>
                         </div>
-                        <div v-if="editBonusRate" class="rounded-lg bg-slate-50 p-2.5">
-                            <div class="mb-1.5 text-xs text-slate-500">{{ $e('Ручной % бонуса по этой сделке (пусто/«Авто» — по ступеням маржи):') }}</div>
+                        <div v-if="editBonusRate" class="rounded-lg bg-slate-50 dark:bg-slate-800/50 p-2.5">
+                            <div class="mb-1.5 text-xs text-slate-500 dark:text-slate-400">{{ $e('Ручной % бонуса по этой сделке (пусто/«Авто» — по ступеням маржи):') }}</div>
                             <div class="flex items-center gap-1.5">
                                 <input v-model="bonusRateInput" type="number" min="0" max="100" step="0.5"
                                     class="w-20 rounded-lg border-slate-200 py-1 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
-                                <span class="text-sm text-slate-500">%</span>
+                                <span class="text-sm text-slate-500 dark:text-slate-400">%</span>
                                 <button @click="saveBonusRate(false)" class="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-700">{{ $e('Сохранить') }}</button>
-                                <button @click="saveBonusRate(true)" class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-white">{{ $e('Авто') }}</button>
+                                <button @click="saveBonusRate(true)" class="rounded-lg border border-slate-200 dark:border-slate-800/80 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800">{{ $e('Авто') }}</button>
                                 <button @click="editBonusRate = false" class="ml-auto text-slate-400 hover:text-slate-600">✕</button>
                             </div>
                         </div>
@@ -499,9 +499,9 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
                 </div>
 
                 <!-- Чат сделки — сразу на виду -->
-                <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
-                    <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                        <svg class="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+                <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 shadow-card">
+                    <h3 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <svg class="h-4 w-4 text-indigo-500 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
                         {{ $e('Чат сделки') }}
                     </h3>
                     <DealChat :chat-id="chatId" />
@@ -512,7 +512,7 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
 
         <Modal :show="showEdit" @close="showEdit = false" max-width="2xl">
             <div class="p-6">
-                <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ $e('Изменить сделку') }}</h2>
+                <h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $e('Изменить сделку') }}</h2>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div><InputLabel :value="$e('Название компании *')" /><TextInput v-model="editForm.company_name" class="mt-1 w-full" /><InputError :message="editForm.errors.company_name" class="mt-1" /></div>
                     <div><InputLabel :value="$e('Номер договора')" /><TextInput v-model="editForm.bin" class="mt-1 w-full" /><InputError :message="editForm.errors.bin" class="mt-1" /></div>
@@ -568,11 +568,11 @@ const confirmStageTask = () => router.patch(route('deals.stageTask', props.deal.
         <!-- Выбор цеха (если их несколько) -->
         <Modal :show="showWorkshopPick" max-width="sm" @close="showWorkshopPick = false">
             <div class="p-6">
-                <h3 class="mb-1 text-base font-semibold text-slate-900">{{ $e('В какой цех отправить?') }}</h3>
+                <h3 class="mb-1 text-base font-semibold text-slate-900 dark:text-slate-100">{{ $e('В какой цех отправить?') }}</h3>
                 <p class="mb-4 text-xs text-slate-400">{{ $e('У компании несколько цехов — у каждого своя воронка этапов.') }}</p>
                 <div class="space-y-2">
                     <button v-for="w in workshops" :key="w" @click="sendToWorkshop(w)"
-                        class="w-full rounded-xl border border-slate-200 px-4 py-3 text-left text-sm font-semibold text-slate-800 transition hover:border-emerald-400 hover:bg-emerald-50">{{ w }}</button>
+                        class="w-full rounded-xl border border-slate-200 dark:border-slate-800/80 px-4 py-3 text-left text-sm font-semibold text-slate-800 dark:text-slate-200 transition hover:border-emerald-400 hover:bg-emerald-50">{{ w }}</button>
                 </div>
                 <div class="mt-4 text-right">
                     <SecondaryButton @click="showWorkshopPick = false">{{ $e('Отмена') }}</SecondaryButton>

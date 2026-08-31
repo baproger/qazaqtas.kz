@@ -20,7 +20,7 @@ const color = computed(() => {
 </script>
 
 <template>
-    <span :class="[color, ring ? 'ring-2 ring-white' : '']"
+    <span :class="[color, ring ? 'ring-2 ring-white dark:ring-slate-700' : '']"
         class="inline-flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-white"
         :style="{ width: size + 'px', height: size + 'px', fontSize: Math.round(size * 0.42) + 'px' }">
         <img v-if="src" :src="src" class="h-full w-full object-cover" alt="" />

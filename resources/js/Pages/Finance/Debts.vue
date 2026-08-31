@@ -64,33 +64,33 @@ const delDebt = async (d) => {
         <div class="grid grid-cols-1 items-start gap-4">
             <div v-for="acc in [
                     { type: 'receivable', title: $e('Дебиторская задолженность — кто нам должен'), list: debts.receivables, total: totals.receivablesTotal, color: 'rose' },
-                ]" :key="acc.type" class="rounded-2xl border border-slate-100 bg-white shadow-sm">
+                ]" :key="acc.type" class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
                 <!-- Шапка-аккордеон: клик сворачивает/разворачивает -->
                 <button type="button" @click="debtOpen[acc.type] = !debtOpen[acc.type]"
                     class="flex w-full items-center justify-between gap-3 px-5 py-4 text-left">
                     <div class="flex min-w-0 items-center gap-2">
                         <svg class="h-4 w-4 flex-shrink-0 text-slate-400 transition-transform" :class="debtOpen[acc.type] ? 'rotate-90' : ''" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l5 5-5 5"/></svg>
-                        <span class="truncate text-sm font-semibold text-slate-900">{{ acc.title }}</span>
+                        <span class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ acc.title }}</span>
                     </div>
-                    <span class="flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums"
-                        :class="acc.total > 0 ? (acc.color === 'rose' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700') : 'bg-slate-100 text-slate-400'">{{ money(acc.total) }}</span>
+                    <span class="flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums whitespace-nowrap"
+                        :class="acc.total > 0 ? (acc.color === 'rose' ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400') : 'bg-slate-100 dark:bg-slate-800/60 text-slate-400'">{{ money(acc.total) }}</span>
                 </button>
-                <div v-show="debtOpen[acc.type]" class="border-t border-slate-100 px-5 py-3">
+                <div v-show="debtOpen[acc.type]" class="border-t border-slate-100 dark:border-slate-800 px-5 py-3">
                     <!-- Дебиторка: автоматическая часть по счетам сделок -->
-                    <div v-if="acc.type === 'receivable'" class="mb-3 overflow-hidden rounded-xl border border-slate-100">
+                    <div v-if="acc.type === 'receivable'" class="mb-3 overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800">
                         <button type="button" @click="invoicesOpen = !invoicesOpen"
-                            class="flex w-full items-center justify-between gap-3 bg-slate-50 px-3 py-2 text-left text-sm">
-                            <span class="flex items-center gap-2 text-slate-600">
+                            class="flex w-full items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 text-left text-sm">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                                 <svg class="h-3.5 w-3.5 text-slate-400 transition-transform" :class="invoicesOpen ? 'rotate-90' : ''" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l5 5-5 5"/></svg>
                                 {{ $e('По счетам сделок (автоматически)') }}
-                                <span class="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500 ring-1 ring-slate-200">{{ invoiceDebts.length }}</span>
-                                <span v-if="overdueCount" class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">{{ $e('просрочено:') }} {{ overdueCount }}</span>
+                                <span class="rounded-full bg-white dark:bg-slate-900/70 px-2 py-0.5 text-xs text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-800">{{ invoiceDebts.length }}</span>
+                                <span v-if="overdueCount" class="rounded-full bg-rose-100 dark:bg-rose-500/20 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:text-rose-400">{{ $e('просрочено:') }} {{ overdueCount }}</span>
                             </span>
-                            <span class="font-semibold tabular-nums text-slate-700">{{ money(totals.invoices) }}</span>
+                            <span class="font-semibold tabular-nums whitespace-nowrap text-slate-700 dark:text-slate-300">{{ money(totals.invoices) }}</span>
                         </button>
                         <div v-show="invoicesOpen" class="overflow-x-auto">
-                            <table v-if="invoiceDebts.length" class="min-w-full divide-y divide-slate-100 text-sm">
-                                <thead class="bg-white text-left text-xs uppercase tracking-wide text-slate-400">
+                            <table v-if="invoiceDebts.length" class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                <thead class="bg-white dark:bg-slate-900/70 text-left text-xs uppercase tracking-wide text-slate-400">
                                     <tr>
                                         <th class="px-3 py-2">{{ $e('Сделка') }}</th>
                                         <th class="px-3 py-2">{{ $e('Заказчик') }}</th>
@@ -101,56 +101,56 @@ const delDebt = async (d) => {
                                         <th class="px-3 py-2">{{ $e('Срок оплаты') }}</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-50">
-                                    <tr v-for="i in invoiceDebts" :key="i.id" class="hover:bg-slate-50/60">
+                                <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+                                    <tr v-for="i in invoiceDebts" :key="i.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/60/60">
                                         <td class="whitespace-nowrap px-3 py-2">
-                                            <Link v-if="i.deal?.id" :href="route('deals.show', i.deal.id)" class="font-semibold text-indigo-600 hover:underline">{{ i.deal.number }}</Link>
+                                            <Link v-if="i.deal?.id" :href="route('deals.show', i.deal.id)" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{{ i.deal.number }}</Link>
                                             <span v-else class="text-slate-400">{{ i.deal?.number ?? '—' }}</span>
                                         </td>
                                         <td class="max-w-64 px-3 py-2">
-                                            <div class="truncate font-medium text-slate-800">{{ i.deal?.company ?? '—' }}</div>
+                                            <div class="truncate font-medium text-slate-800 dark:text-slate-200">{{ i.deal?.company ?? '—' }}</div>
                                             <div v-if="i.deal?.client" class="truncate text-xs text-slate-400">{{ i.deal.client }}</div>
                                         </td>
-                                        <td class="whitespace-nowrap px-3 py-2 text-slate-500">{{ i.number }}<span class="block text-xs text-slate-400">{{ formatDate(i.issue_date) }}</span></td>
-                                        <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums text-slate-600">{{ money(i.amount) }}</td>
-                                        <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums text-emerald-600">{{ money(i.paid) }}</td>
-                                        <td class="whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-rose-600">{{ money(i.left) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-2 text-slate-500 dark:text-slate-400">{{ i.number }}<span class="block text-xs text-slate-400">{{ formatDate(i.issue_date) }}</span></td>
+                                        <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums whitespace-nowrap text-slate-600 dark:text-slate-300">{{ money(i.amount) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-2 text-right tabular-nums whitespace-nowrap text-emerald-600 dark:text-emerald-400">{{ money(i.paid) }}</td>
+                                        <td class="whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums whitespace-nowrap text-rose-600 dark:text-rose-400">{{ money(i.left) }}</td>
                                         <td class="whitespace-nowrap px-3 py-2">
-                                            <span v-if="i.overdue" class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">{{ formatDate(i.due_date) }} · {{ i.days_overdue }} {{ $e('дн.') }}</span>
-                                            <span v-else-if="i.due_date" class="text-slate-500">{{ formatDate(i.due_date) }}</span>
-                                            <span v-else class="text-slate-300">—</span>
+                                            <span v-if="i.overdue" class="rounded-full bg-rose-100 dark:bg-rose-500/20 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:text-rose-400">{{ formatDate(i.due_date) }} · {{ i.days_overdue }} {{ $e('дн.') }}</span>
+                                            <span v-else-if="i.due_date" class="text-slate-500 dark:text-slate-400">{{ formatDate(i.due_date) }}</span>
+                                            <span v-else class="text-slate-300 dark:text-slate-600">—</span>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
-                            <div v-else class="py-3 text-center text-xs text-slate-300">{{ $e('Незакрытых счетов нет') }}</div>
+                            <div v-else class="py-3 text-center text-xs text-slate-300 dark:text-slate-600">{{ $e('Незакрытых счетов нет') }}</div>
                         </div>
                     </div>
                     <div class="px-1 pb-1 text-xs font-medium uppercase tracking-wide text-slate-400">{{ $e('Записи вручную') }}</div>
-                    <div class="divide-y divide-slate-50">
+                    <div class="divide-y divide-slate-50 dark:divide-slate-800">
                         <div v-for="d in acc.list" :key="d.id" class="flex items-center justify-between gap-3 py-2.5 text-sm">
                             <div class="min-w-0">
-                                <div class="truncate font-medium text-slate-800">{{ d.counterparty }}</div>
+                                <div class="truncate font-medium text-slate-800 dark:text-slate-200">{{ d.counterparty }}</div>
                                 <div class="text-xs text-slate-400">
                                     <template v-if="d.date">{{ formatDate(d.date) }} · </template>{{ d.note || '—' }}<template v-if="d.creator?.name"> · {{ d.creator.name }}</template> {{ $e('· внесено') }} {{ formatDateTime(d.created_at) }}
                                 </div>
                             </div>
                             <div class="flex flex-shrink-0 items-center gap-2">
-                                <span class="font-semibold tabular-nums" :class="acc.color === 'rose' ? 'text-rose-600' : 'text-amber-600'">{{ money(d.amount) }}</span>
+                                <span class="font-semibold tabular-nums whitespace-nowrap" :class="acc.color === 'rose' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'">{{ money(d.amount) }}</span>
                                 <template v-if="canManage">
-                                    <button class="rounded p-1 text-slate-300 transition hover:text-indigo-600" :title="$e('Редактировать')" @click="openDebt(acc.type, d)">
+                                    <button class="rounded p-1 text-slate-300 dark:text-slate-600 transition hover:text-indigo-600" :title="$e('Редактировать')" @click="openDebt(acc.type, d)">
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                     </button>
-                                    <button class="rounded p-1 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить (СЕО и директор получат уведомление)')" @click="delDebt(d)">
+                                    <button class="rounded p-1 text-slate-300 dark:text-slate-600 transition hover:text-rose-600" :title="$e('Удалить (СЕО и директор получат уведомление)')" @click="delDebt(d)">
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                                     </button>
                                 </template>
                             </div>
                         </div>
-                        <div v-if="!acc.list.length" class="py-3 text-center text-xs text-slate-300">{{ $e('Записей нет') }}</div>
+                        <div v-if="!acc.list.length" class="py-3 text-center text-xs text-slate-300 dark:text-slate-600">{{ $e('Записей нет') }}</div>
                     </div>
                     <button v-if="canManage" type="button" @click="openDebt(acc.type)"
-                        class="mt-2 w-full rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-slate-500 transition hover:border-indigo-400 hover:text-indigo-600">{{ $e('+ Добавить запись') }}</button>
+                        class="mt-2 w-full rounded-lg border border-dashed border-slate-300 dark:border-slate-600 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:border-indigo-400 hover:text-indigo-600">{{ $e('+ Добавить запись') }}</button>
                 </div>
             </div>
 
@@ -159,26 +159,26 @@ const delDebt = async (d) => {
         <!-- Модалка: запись задолженности -->
         <Modal :show="showDebt" @close="showDebt = false" max-width="lg">
             <div class="p-6">
-                <h2 class="mb-4 text-lg font-semibold text-slate-900">
+                <h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
                     {{ debtEditing ? $e('Изменить запись') : $e('Новая запись задолженности') }}
                 </h2>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Контрагент *') }}</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('Контрагент *') }}</label>
                         <input v-model="dForm.counterparty" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
-                        <div v-if="dForm.errors.counterparty" class="mt-1 text-xs text-red-600">{{ dForm.errors.counterparty }}</div>
+                        <div v-if="dForm.errors.counterparty" class="mt-1 text-xs text-red-600 dark:text-rose-400">{{ dForm.errors.counterparty }}</div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Сумма, ₸ *') }}</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('Сумма, ₸ *') }}</label>
                         <input v-model="dForm.amount" type="number" min="0.01" step="0.01" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
-                        <div v-if="dForm.errors.amount" class="mt-1 text-xs text-red-600">{{ dForm.errors.amount }}</div>
+                        <div v-if="dForm.errors.amount" class="mt-1 text-xs text-red-600 dark:text-rose-400">{{ dForm.errors.amount }}</div>
                     </div>
                     <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Дата') }}</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('Дата') }}</label>
                         <input v-model="dForm.date" type="date" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="mb-1 block text-xs font-medium text-slate-500">{{ $e('Комментарий') }}</label>
+                        <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('Комментарий') }}</label>
                         <input v-model="dForm.note" type="text" class="w-full rounded-md border-slate-300 text-sm shadow-sm" />
                     </div>
                 </div>

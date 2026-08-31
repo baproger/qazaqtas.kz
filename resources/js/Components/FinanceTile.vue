@@ -16,24 +16,24 @@ defineProps({
 });
 
 const BOX = {
-    default: 'border border-slate-200 bg-white',
-    good: 'border border-slate-200 bg-white',
-    bad: 'border border-rose-200 bg-rose-50',
-    warn: 'border border-amber-200 bg-amber-50',
+    default: 'border border-slate-200 bg-white dark:border-slate-800/80 dark:bg-slate-900',
+    good: 'border border-slate-200 bg-white dark:border-slate-800/80 dark:bg-slate-900',
+    bad: 'border border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10',
+    warn: 'border border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10',
     dark: 'border border-transparent',
 };
 const VALUE = {
-    default: 'text-slate-800',
-    good: 'text-emerald-600',
-    bad: 'text-rose-600',
-    warn: 'text-amber-700',
+    default: 'text-slate-800 dark:text-slate-200',
+    good: 'text-emerald-600 dark:text-emerald-400',
+    bad: 'text-rose-600 dark:text-rose-400',
+    warn: 'text-amber-700 dark:text-amber-400',
     dark: 'text-emerald-300',
 };
 const LABEL = {
     default: 'text-slate-400',
     good: 'text-slate-400',
-    bad: 'text-rose-500',
-    warn: 'text-amber-600',
+    bad: 'text-rose-500 dark:text-rose-400',
+    warn: 'text-amber-600 dark:text-amber-400',
     dark: 'text-white/60',
 };
 </script>

@@ -92,7 +92,7 @@ const filledCount = (locale) => props.fields.filter((f) => {
 </script>
 
 <template>
-    <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+    <div class="rounded-xl border border-slate-200 bg-slate-50/60 dark:bg-slate-800/40 p-4 dark:border-slate-800/80 dark:bg-slate-800/50">
         <div class="flex flex-wrap items-center gap-2">
             <button
                 v-for="locale in locales"
@@ -100,15 +100,15 @@ const filledCount = (locale) => props.fields.filter((f) => {
                 type="button"
                 class="rounded-lg px-3 py-1.5 text-xs font-semibold transition"
                 :class="active === locale.code
-                    ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200'
-                    : 'text-slate-500 hover:text-slate-700'"
+                    ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200 dark:bg-slate-700 dark:text-indigo-400 dark:ring-slate-800'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'"
                 @click="active = locale.code"
             >
                 {{ locale.short }}
                 <span class="ml-1 font-normal text-slate-400">{{ locale.name }}</span>
                 <span
                     v-if="filledCount(locale.code)"
-                    class="ml-1.5 rounded bg-emerald-100 px-1.5 text-xs font-semibold text-emerald-700"
+                    class="ml-1.5 rounded bg-emerald-100 px-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
                 >{{ filledCount(locale.code) }}</span>
             </button>
 

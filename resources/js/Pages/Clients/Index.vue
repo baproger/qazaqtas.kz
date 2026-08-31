@@ -55,9 +55,9 @@ const doSearch = () => router.get(route('clients.index'), { search: search.value
             <PrimaryButton v-if="can.create" @click="openCreate">{{ $e('+ Добавить контрагента') }}</PrimaryButton>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
-            <table class="min-w-full divide-y divide-slate-100 text-sm">
-                <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
+        <div class="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
+            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase text-slate-500 dark:text-slate-400">
                     <tr>
                         <th class="px-4 py-3">{{ $e('Название') }}</th>
                         <th class="px-4 py-3">{{ $e('Тип') }}</th>
@@ -67,19 +67,19 @@ const doSearch = () => router.get(route('clients.index'), { search: search.value
                         <th class="px-4 py-3 text-right">{{ $e('Действия') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
-                    <tr v-for="c in clients.data" :key="c.id" class="hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium text-slate-900">{{ c.name }}</td>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tr v-for="c in clients.data" :key="c.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                        <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{{ c.name }}</td>
                         <td class="px-4 py-3"><StatusBadge :status="c.type" /></td>
-                        <td class="px-4 py-3 text-slate-500">{{ c.inn }}</td>
-                        <td class="px-4 py-3 text-slate-500">
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ c.inn }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">
                             <div>{{ c.phone }}</div>
                             <div class="text-xs">{{ c.email }}</div>
                         </td>
-                        <td class="px-4 py-3 text-slate-500">{{ c.responsible?.name ?? '—' }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ c.responsible?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-right space-x-2">
-                            <button v-if="can.update" class="text-indigo-600 hover:underline" @click="openEdit(c)">{{ $e('Изменить') }}</button>
-                            <button v-if="can.delete" class="text-red-600 hover:underline" @click="destroy(c)">{{ $e('Удалить') }}</button>
+                            <button v-if="can.update" class="text-indigo-600 dark:text-indigo-400 hover:underline" @click="openEdit(c)">{{ $e('Изменить') }}</button>
+                            <button v-if="can.delete" class="text-red-600 dark:text-rose-400 hover:underline" @click="destroy(c)">{{ $e('Удалить') }}</button>
                         </td>
                     </tr>
                     <tr v-if="!clients.data.length"><td colspan="6" class="px-4 py-8 text-center text-slate-400">{{ $e('Нет данных') }}</td></tr>

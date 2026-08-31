@@ -41,11 +41,11 @@ const closeModal = () => {
 <template>
     <section class="space-y-6">
         <header>
-            <h2 class="text-lg font-medium text-slate-900">
+            <h2 class="text-lg font-medium text-slate-900 dark:text-slate-100">
                 {{ $e('Удаление аккаунта') }}
             </h2>
 
-            <p class="mt-1 text-sm text-slate-600">
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 {{ $e('После удаления аккаунта все связанные данные будут удалены безвозвратно. Перед удалением сохраните нужную информацию.') }}
             </p>
         </header>
@@ -55,12 +55,12 @@ const closeModal = () => {
         <Modal :show="confirmingUserDeletion" @close="closeModal">
             <div class="p-6">
                 <h2
-                    class="text-lg font-medium text-slate-900"
+                    class="text-lg font-medium text-slate-900 dark:text-slate-100"
                 >
                     {{ $e('Вы уверены, что хотите удалить аккаунт?') }}
                 </h2>
 
-                <p class="mt-1 text-sm text-slate-600">
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                     {{ $e('После удаления аккаунта все данные будут удалены безвозвратно. Введите пароль, чтобы подтвердить удаление.') }}
                 </p>
 

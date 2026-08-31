@@ -34,7 +34,7 @@ const modes = [
 ];
 
 const typeLabel = (r) => (r.type === 'invoice' ? tr('Счёт') : r.type === 'receipt' ? tr('Поступление') : tr('Расход'));
-const typeClass = (r) => (r.type === 'expense' ? 'bg-rose-50 text-rose-600' : r.type === 'receipt' ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700');
+const typeClass = (r) => (r.type === 'expense' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : r.type === 'receipt' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400');
 const payoutLabel = (p) => (p === 'debt' ? tr('Долг') : tr('Аванс'));
 const kindLabel = (k) => (k === 'cash' ? tr('наличные') : tr('банк'));
 const time = (at) => (at ? String(at).slice(11, 16) : '');
@@ -47,20 +47,20 @@ const printPage = () => window.print();
             <!-- Панель дня: печать снимает её вместе с меню (см. print-стили). -->
             <div class="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-1">
-                    <button @click="shiftDay(-1)" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-600 transition-colors duration-150 hover:bg-slate-50">←</button>
+                    <button @click="shiftDay(-1)" class="rounded-lg border border-slate-200 dark:border-slate-800/80 px-2.5 py-1.5 text-sm text-slate-600 dark:text-slate-300 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60">←</button>
                     <input :value="date" @change="go({ date: $event.target.value })" type="date"
                         class="rounded-lg border-slate-300 py-1.5 text-sm shadow-sm transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20" />
-                    <button @click="shiftDay(1)" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-600 transition-colors duration-150 hover:bg-slate-50">→</button>
-                    <button v-if="!isToday" @click="today" class="ml-1 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors duration-150 hover:bg-slate-100">{{ $e('Сегодня') }}</button>
+                    <button @click="shiftDay(1)" class="rounded-lg border border-slate-200 dark:border-slate-800/80 px-2.5 py-1.5 text-sm text-slate-600 dark:text-slate-300 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60">→</button>
+                    <button v-if="!isToday" @click="today" class="ml-1 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 transition-colors duration-150 hover:bg-slate-100 dark:hover:bg-slate-800/60">{{ $e('Сегодня') }}</button>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+                    <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/70 p-0.5">
                         <button v-for="m in modes" :key="m.key" @click="go({ mode: m.key })"
                             class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150"
-                            :class="mode === m.key ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-50'">{{ m.label }}</button>
+                            :class="mode === m.key ? 'bg-indigo-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'">{{ m.label }}</button>
                     </div>
                     <button @click="printPage"
-                        class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors duration-150 hover:bg-slate-50">🖨 {{ $e('Печать') }}</button>
+                        class="rounded-lg border border-slate-200 dark:border-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60">🖨 {{ $e('Печать') }}</button>
                 </div>
             </div>
 
@@ -78,9 +78,9 @@ const printPage = () => window.print();
                 <FinanceTile tone="dark" :label="$e('Доступно сейчас')" :value="money(totals.closing)" />
             </div>
 
-            <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
-                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-sm font-semibold text-slate-900">{{ $e('Операции за день') }}</h3>
+            <div class="mt-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $e('Операции за день') }}</h3>
                     <span class="no-print text-xs text-slate-400">{{ formatDate(date) }}</span>
                 </div>
 
@@ -89,7 +89,7 @@ const printPage = () => window.print();
                 </div>
                 <div v-else class="overflow-x-auto">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                        <thead class="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase tracking-wide text-slate-400">
                             <tr>
                                 <th class="px-6 py-2.5">{{ $e('Время') }}</th>
                                 <th class="px-4 py-2.5">{{ $e('Операция') }}</th>
@@ -98,35 +98,35 @@ const printPage = () => window.print();
                                 <th class="px-4 py-2.5 text-right">{{ $e('Остаток') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-50">
-                            <tr v-for="r in rows" :key="r.id" class="transition-colors duration-150 hover:bg-slate-50/60">
-                                <td class="px-6 py-2.5 text-slate-400 tabular-nums">{{ time(r.at) }}</td>
+                        <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+                            <tr v-for="r in rows" :key="r.id" class="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60/60">
+                                <td class="px-6 py-2.5 text-slate-400 tabular-nums whitespace-nowrap">{{ time(r.at) }}</td>
                                 <td class="px-4 py-2.5">
                                     <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" :class="typeClass(r)">{{ typeLabel(r) }}</span>
                                     <span v-if="r.payout" class="ml-1 rounded-full px-2 py-0.5 text-xs font-medium"
-                                        :class="r.payout === 'debt' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-700'">{{ payoutLabel(r.payout) }}</span>
+                                        :class="r.payout === 'debt' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'">{{ payoutLabel(r.payout) }}</span>
                                     <span v-if="mode === 'all'" class="ml-1 text-xs text-slate-400">{{ kindLabel(r.kind) }}</span>
-                                    <div class="mt-0.5 text-slate-600">
+                                    <div class="mt-0.5 text-slate-600 dark:text-slate-300">
                                         <Link v-if="r.link" :href="r.link" class="hover:text-indigo-600 hover:underline">{{ r.title }}</Link>
                                         <template v-else>{{ r.title }}</template>
                                     </div>
                                 </td>
-                                <td class="px-4 py-2.5 text-slate-500">
+                                <td class="px-4 py-2.5 text-slate-500 dark:text-slate-400">
                                     <Link v-if="r.employee" :href="route('users.show', r.employee.id)" class="hover:text-indigo-600 hover:underline">{{ r.employee.name }}</Link>
                                     <template v-else>{{ r.party || '—' }}</template>
                                 </td>
-                                <td class="px-4 py-2.5 text-right font-semibold tabular-nums"
-                                    :class="r.sign > 0 ? 'text-emerald-600' : 'text-rose-600'">{{ r.sign > 0 ? '+' : '−' }}{{ money(r.amount) }}</td>
-                                <td class="px-4 py-2.5 text-right tabular-nums text-slate-500">{{ money(r.balance) }}</td>
+                                <td class="px-4 py-2.5 text-right font-semibold tabular-nums whitespace-nowrap"
+                                    :class="r.sign > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">{{ r.sign > 0 ? '+' : '−' }}{{ money(r.amount) }}</td>
+                                <td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap text-slate-500 dark:text-slate-400">{{ money(r.balance) }}</td>
                             </tr>
                         </tbody>
-                        <tfoot class="border-t border-slate-200 bg-slate-50 text-sm font-semibold">
+                        <tfoot class="border-t border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-800/50 text-sm font-semibold">
                             <tr>
-                                <td class="px-6 py-3 text-slate-500" colspan="3">{{ $e('Остаток на конец дня') }}</td>
-                                <td class="px-4 py-3 text-right tabular-nums text-slate-400">
+                                <td class="px-6 py-3 text-slate-500 dark:text-slate-400" colspan="3">{{ $e('Остаток на конец дня') }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-400">
                                     +{{ money(totals.income) }} · −{{ money(totals.outcome) }}
                                 </td>
-                                <td class="px-4 py-3 text-right tabular-nums text-slate-900">{{ money(totals.closing) }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap text-slate-900 dark:text-slate-100">{{ money(totals.closing) }}</td>
                             </tr>
                         </tfoot>
                     </table>

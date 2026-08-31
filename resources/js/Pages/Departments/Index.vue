@@ -65,9 +65,9 @@ const doSearch = () => router.get(route('departments.index'), { search: search.v
             <PrimaryButton v-if="can.create" @click="openCreate">{{ $e('+ Добавить отдел') }}</PrimaryButton>
         </div>
 
-        <div class="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
-            <table class="min-w-full divide-y divide-slate-100 text-sm">
-                <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
+        <div class="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
+            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase text-slate-500 dark:text-slate-400">
                     <tr>
                         <th class="px-4 py-3">{{ $e('Название') }}</th>
                         <th class="px-4 py-3">{{ $e('Описание') }}</th>
@@ -77,23 +77,23 @@ const doSearch = () => router.get(route('departments.index'), { search: search.v
                         <th class="px-4 py-3 text-right">{{ $e('Действия') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
-                    <tr v-for="d in departments.data" :key="d.id" class="hover:bg-slate-50">
-                        <td class="px-4 py-3 font-medium text-slate-900">{{ d.name }}</td>
-                        <td class="px-4 py-3 text-slate-500">{{ d.description }}</td>
-                        <td class="px-4 py-3 text-slate-600">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tr v-for="d in departments.data" :key="d.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                        <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{{ d.name }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ d.description }}</td>
+                        <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
                             <span v-if="d.head">⭐ {{ d.head.name }}</span>
                             <span v-else class="text-slate-400">—</span>
                         </td>
                         <td class="px-4 py-3">{{ d.members_count }}</td>
                         <td class="px-4 py-3">
-                            <span :class="d.is_active ? 'text-green-600' : 'text-slate-400'">
+                            <span :class="d.is_active ? 'text-green-600 dark:text-green-400' : 'text-slate-400'">
                                 {{ d.is_active ? $e('Активен') : $e('Отключён') }}
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right space-x-2">
-                            <button v-if="can.update" class="text-indigo-600 hover:underline" @click="openEdit(d)">{{ $e('Изменить') }}</button>
-                            <button v-if="can.delete" class="text-red-600 hover:underline" @click="destroy(d)">{{ $e('Удалить') }}</button>
+                            <button v-if="can.update" class="text-indigo-600 dark:text-indigo-400 hover:underline" @click="openEdit(d)">{{ $e('Изменить') }}</button>
+                            <button v-if="can.delete" class="text-red-600 dark:text-rose-400 hover:underline" @click="destroy(d)">{{ $e('Удалить') }}</button>
                         </td>
                     </tr>
                     <tr v-if="!departments.data.length">

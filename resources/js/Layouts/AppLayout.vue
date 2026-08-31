@@ -10,8 +10,11 @@ import { useChatAlerts } from '@/composables/useChatAlerts';
 import { useLocale } from '@/composables/useTranslations';
 import { useE } from '@/composables/useTranslations';
 import { useLive } from '@/composables/useLive';
+import { useErpTheme } from '@/composables/useErpTheme';
 
 const tr = useE();
+
+const { dark, toggle: toggleTheme } = useErpTheme();
 
 const t = useT();
 
@@ -332,20 +335,20 @@ const notifTabs = computed(() => [
     { key: 'other', label: tr('Остальные'), unread: notifications.value.items.filter((n) => !n.read_at && !isTaskNotif(n)).length },
 ]);
 const notifList = computed(() => notifications.value.items.filter((n) => (notifTab.value === 'tasks') === isTaskNotif(n)));
-const NOTIF_ICONS = { task_assigned: ['✅', 'bg-emerald-100 text-emerald-700'], task_overdue: ['⏰', 'bg-rose-100 text-rose-600'], department_task_overdue: ['⏰', 'bg-rose-100 text-rose-600'],
-    deal_stage_changed: ['📊', 'bg-indigo-100 text-indigo-600'], robot: ['🤖', 'bg-violet-100 text-violet-700'], expense_pending: ['🧾', 'bg-amber-100 text-amber-700'], expense_confirmed: ['✅', 'bg-emerald-100 text-emerald-700'],
-    expense_handled: ['🧾', 'bg-slate-100 text-slate-600'], expense_threshold: ['⚠️', 'bg-rose-100 text-rose-600'], company_expense_submitted: ['🧾', 'bg-amber-100 text-amber-700'], company_expense_paid: ['💸', 'bg-emerald-100 text-emerald-700'],
-    company_expense_stale: ['⏳', 'bg-amber-100 text-amber-700'], finance_deleted: ['🗑️', 'bg-rose-100 text-rose-600'], product_shortage: ['📦', 'bg-amber-100 text-amber-700'], production_plan_queued: ['🏭', 'bg-sky-100 text-sky-700'],
-    site_order: ['🛒', 'bg-indigo-100 text-indigo-600'], service_submitted: ['◆', 'bg-amber-100 text-amber-700'], service_moderated: ['◆', 'bg-emerald-100 text-emerald-700'], chat_mention: ['💬', 'bg-sky-100 text-sky-700'], birthday: ['🎂', 'bg-pink-100 text-pink-700'] };
+const NOTIF_ICONS = { task_assigned: ['✅', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'], task_overdue: ['⏰', 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'], department_task_overdue: ['⏰', 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'],
+    deal_stage_changed: ['📊', 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400'], robot: ['🤖', 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300'], expense_pending: ['🧾', 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'], expense_confirmed: ['✅', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'],
+    expense_handled: ['🧾', 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300'], expense_threshold: ['⚠️', 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'], company_expense_submitted: ['🧾', 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'], company_expense_paid: ['💸', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'],
+    company_expense_stale: ['⏳', 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'], finance_deleted: ['🗑️', 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'], product_shortage: ['📦', 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'], production_plan_queued: ['🏭', 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400'],
+    site_order: ['🛒', 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400'], service_submitted: ['◆', 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'], service_moderated: ['◆', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'], chat_mention: ['💬', 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400'], birthday: ['🎂', 'bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300'] };
 const notifMeta = (n) => {
     const byType = NOTIF_ICONS[n.data?.type];
     if (byType) return { icon: byType[0], cls: byType[1] };
     const s = ((n.data?.title || '') + ' ' + (n.data?.message || '')).toLowerCase();
-    if (s.includes(tr('просроч')) || s.includes('overdue')) return { icon: '⏰', cls: 'bg-red-100 text-red-600' };
-    if (s.includes(tr('задач')) || s.includes(tr('назнач'))) return { icon: '✅', cls: 'bg-emerald-100 text-emerald-600' };
-    if (s.includes(tr('этап')) || s.includes(tr('сделк'))) return { icon: '📊', cls: 'bg-indigo-100 text-indigo-600' };
-    if (s.includes(tr('оплат')) || s.includes(tr('счёт')) || s.includes(tr('счет'))) return { icon: '💰', cls: 'bg-amber-100 text-amber-600' };
-    return { icon: '🔔', cls: 'bg-slate-100 text-slate-500' };
+    if (s.includes(tr('просроч')) || s.includes('overdue')) return { icon: '⏰', cls: 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-rose-400' };
+    if (s.includes(tr('задач')) || s.includes(tr('назнач'))) return { icon: '✅', cls: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' };
+    if (s.includes(tr('этап')) || s.includes(tr('сделк'))) return { icon: '📊', cls: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400' };
+    if (s.includes(tr('оплат')) || s.includes(tr('счёт')) || s.includes(tr('счет'))) return { icon: '💰', cls: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400' };
+    return { icon: '🔔', cls: 'bg-slate-100 text-slate-500 dark:bg-slate-800/60' };
 };
 const relTime = (t) => {
     const d = (Date.now() - new Date(t).getTime()) / 1000;
@@ -407,7 +410,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 />
                 <button v-if="collapsed && !mobileOpen" type="button" @click="collapsed = false"
                     :title="t('header.collapse', 'Свернуть')"
-                    class="hidden h-8 w-8 items-center justify-center rounded-lg bg-slate-100/80 text-slate-500 transition-colors duration-150 hover:bg-slate-200 hover:text-slate-700 lg:flex">
+                    class="hidden h-8 w-8 items-center justify-center rounded-lg bg-slate-100/80 text-slate-500 transition-colors duration-150 hover:bg-slate-200 hover:text-slate-700 dark:bg-slate-800/60 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300 lg:flex">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 </button>
                 <!-- Тёмный вариант надписи: исходный логотип белый и на
@@ -418,7 +421,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                      вести её вниз через весь список. -->
                 <button v-if="!collapsed || mobileOpen" type="button" @click="collapsed = !collapsed"
                     :title="t('header.collapse', 'Свернуть')"
-                    class="ml-auto hidden h-8 w-8 items-center justify-center rounded-lg bg-slate-100/80 text-slate-500 transition-colors duration-150 hover:bg-slate-200 hover:text-slate-700 lg:flex">
+                    class="ml-auto hidden h-8 w-8 items-center justify-center rounded-lg bg-slate-100/80 text-slate-500 transition-colors duration-150 hover:bg-slate-200 hover:text-slate-700 dark:bg-slate-800/60 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300 lg:flex">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
             </div>
@@ -427,7 +430,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                     <div v-if="sectionFor(item) && (!collapsed || mobileOpen)" class="nav-section">{{ $e(sectionFor(item)) }}</div>
                     <!-- В свёрнутом рельсе вместо надписи — черта: место
                          разрыва видно, а читать там нечего. -->
-                    <div v-else-if="sectionFor(item) && item.key !== 'nav.analytics'" class="mx-3 my-2 h-px bg-slate-300/50"></div>
+                    <div v-else-if="sectionFor(item) && item.key !== 'nav.analytics'" class="mx-3 my-2 h-px bg-slate-300/50 dark:bg-slate-600/50"></div>
                     <!-- ===== Группа («Финансы»): свои пункты по своим правам ===== -->
                     <template v-if="item.children">
                         <!-- Узкое меню: раздел — один значок. Раньше сюда
@@ -457,7 +460,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                 <span v-else class="text-lg leading-none transition-colors duration-200"
                                     >{{ item.icon }}</span>
                                 <span class="truncate">{{ t(item.key, item.name) }}</span>
-                                <svg class="ml-auto h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform duration-200"
+                                <svg class="ml-auto h-3.5 w-3.5 shrink-0 text-slate-500 dark:text-slate-400 transition-transform duration-200"
                                     :class="groupOpen[item.key] ? 'rotate-90' : ''"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                             </button>
@@ -470,7 +473,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                      место обозначает направляющая слева. -->
                                 <div v-show="groupOpen[item.key]" class="nav-children mt-1 space-y-0.5">
                                     <Link v-for="child in item.children" :key="child.route" :href="route(child.route)" @click="go"
-                                        :class="isActive(child.route) ? 'nav-child-active' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'"
+                                        :class="isActive(child.route) ? 'nav-child-active' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100'"
                                         class="nav-child block truncate rounded-lg py-1.5 pl-4 pr-3 text-sm transition-colors duration-150">
                                         {{ t(child.key, child.name) }}
                                     </Link>
@@ -509,8 +512,8 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                         <template v-else>{{ user?.name?.charAt(0) ?? '?' }}</template>
                     </span>
                     <div v-if="!collapsed || mobileOpen" class="min-w-0 leading-tight">
-                        <div class="truncate text-xs font-semibold text-slate-800">{{ user?.name }}</div>
-                        <div class="truncate text-xs text-slate-500">{{ user?.email ?? roleLabel }}</div>
+                        <div class="truncate text-xs font-semibold text-slate-800 dark:text-slate-200">{{ user?.name }}</div>
+                        <div class="truncate text-xs text-slate-500 dark:text-slate-400">{{ user?.email ?? roleLabel }}</div>
                     </div>
                 </Link>
             </div>
@@ -520,59 +523,65 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
         <div :class="collapsed ? 'lg:ml-20' : 'lg:ml-60'" class="flex-1 transition-all duration-300">
             <header class="glass sticky top-0 z-20 flex h-16 items-center justify-between border-b px-4 sm:px-6">
                 <div class="flex min-w-0 flex-1 items-center gap-3">
-                    <button class="flex-shrink-0 rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" @click="mobileOpen = true">☰</button>
-                    <h1 class="min-w-0 flex-1 text-base font-semibold text-slate-800 sm:text-lg"><slot name="header">{{ t('header.title', 'Панель управления') }}</slot></h1>
+                    <button class="flex-shrink-0 rounded-md p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800/60 lg:hidden" @click="mobileOpen = true">☰</button>
+                    <h1 class="min-w-0 flex-1 text-base font-semibold text-slate-800 dark:text-slate-200 sm:text-lg"><slot name="header">{{ t('header.title', 'Панель управления') }}</slot></h1>
                 </div>
                 <!-- правый блок не сжимается: часы/фирма/язык всегда целиком -->
                 <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
                     <!-- Company switcher -->
-                    <div v-if="companies.length > 1" class="flex items-center rounded-lg bg-slate-100 p-0.5 text-xs">
+                    <div v-if="companies.length > 1" class="flex items-center rounded-lg bg-slate-100 dark:bg-slate-800/60 p-0.5 text-xs">
                         <button v-for="c in companies" :key="c.id" @click="switchCompany(c.id)"
-                            :class="currentCompanyId === c.id ? 'bg-white text-emerald-600 shadow' : 'text-slate-500'"
+                            :class="currentCompanyId === c.id ? 'bg-white text-emerald-600 shadow dark:bg-slate-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'"
                             class="rounded px-2.5 py-1 font-semibold transition-all">{{ c.name }}</button>
                         <button v-if="canAllCompanies" @click="switchCompany(0)" :title="$e('Общий отчёт по обеим компаниям')"
-                            :class="currentCompanyId === 0 ? 'bg-white text-emerald-600 shadow' : 'text-slate-500'"
+                            :class="currentCompanyId === 0 ? 'bg-white text-emerald-600 shadow dark:bg-slate-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'"
                             class="rounded px-2.5 py-1 font-semibold transition-all">{{ $e('Все') }}</button>
                     </div>
-                    <span v-else-if="currentCompany" class="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-600">{{ currentCompany.name }}</span>
+                    <span v-else-if="currentCompany" class="rounded-lg bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">{{ currentCompany.name }}</span>
 
                     <!-- Live date & time -->
-                    <div class="hidden items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xs md:flex">
+                    <div class="hidden items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-800/60 px-3 py-1.5 text-xs md:flex">
                         <svg viewBox="0 0 24 24" class="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                        <span class="font-semibold tabular-nums text-slate-700">{{ clockTime }}</span>
-                        <span class="text-slate-300">·</span>
-                        <span class="tabular-nums text-slate-500">{{ clockDate }}</span>
+                        <span class="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{{ clockTime }}</span>
+                        <span class="text-slate-300 dark:text-slate-600">·</span>
+                        <span class="tabular-nums text-slate-500 dark:text-slate-400">{{ clockDate }}</span>
                     </div>
 
                     <!-- Список языков и подписи приходят с сервера: код языка
                          `kk`, но в кнопке стоит «KZ» — рядом с «RU» это
                          читается как страна, а не как опечатка. -->
-                    <div class="hidden items-center rounded-lg bg-slate-100 p-0.5 text-xs sm:flex">
+                    <div class="hidden items-center rounded-lg bg-slate-100 dark:bg-slate-800/60 p-0.5 text-xs sm:flex">
                         <button v-for="l in i18n.available" :key="l" @click="setLocale(l)"
                             :title="i18n.names[l]"
                             :aria-current="locale === l ? 'true' : undefined"
-                            :class="locale === l ? 'bg-white text-indigo-600 shadow' : 'text-slate-500'"
+                            :class="locale === l ? 'bg-white text-indigo-600 shadow dark:bg-slate-700 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'"
                             class="rounded px-2 py-1 font-medium uppercase transition-all">{{ i18n.short[l] ?? l }}</button>
                     </div>
 
+                    <!-- Переключатель темы -->
+                    <button type="button" @click="toggleTheme" class="grid h-9 w-9 place-items-center rounded-full text-slate-500 transition-all duration-300 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" :title="dark ? $e('Светлая тема') : $e('Тёмная тема')">
+                        <svg v-if="!dark" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+                        <svg v-else viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/></svg>
+                    </button>
+
                     <Dropdown align="right" width="80">
                         <template #trigger>
-                            <button class="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100" @click="bellClicked">
+                            <button class="relative rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" @click="bellClicked">
                                 <span class="text-lg">🔔</span>
                                 <span v-if="notifications.unread > 0" class="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white ring-2 ring-white">{{ notifications.unread > 9 ? '9+' : notifications.unread }}</span>
                             </button>
                         </template>
                         <template #content>
-                            <div class="w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-white/60 bg-white/80 shadow-soft-lg backdrop-blur-xl">
+                            <div class="w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-white/60 bg-white/80 shadow-soft-lg backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/70">
                                 <!-- Шапка + вкладки -->
                                 <div class="flex items-center justify-between gap-2 px-4 pt-3">
-                                    <span class="text-sm font-semibold text-slate-800">{{ t('header.notifications', 'Уведомления') }}</span>
-                                    <button v-if="notifications.unread > 0" class="text-xs font-medium text-indigo-600 hover:text-indigo-700" @click.stop="markAllRead">{{ t('header.read_all', 'Прочитать все') }}</button>
+                                    <span class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ t('header.notifications', 'Уведомления') }}</span>
+                                    <button v-if="notifications.unread > 0" class="text-xs font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300" @click.stop="markAllRead">{{ t('header.read_all', 'Прочитать все') }}</button>
                                 </div>
-                                <div class="mx-4 mt-2 flex rounded-xl bg-slate-100/80 p-0.5 text-xs font-medium" @click.stop>
+                                <div class="mx-4 mt-2 flex rounded-xl bg-slate-100/80 dark:bg-slate-800/60 p-0.5 text-xs font-medium" @click.stop>
                                     <button v-for="tab in notifTabs" :key="tab.key" type="button" @click="notifTab = tab.key"
                                         class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 transition"
-                                        :class="notifTab === tab.key ? 'bg-white text-slate-900 shadow-soft' : 'text-slate-500 hover:text-slate-800'">
+                                        :class="notifTab === tab.key ? 'bg-white text-slate-900 shadow-soft dark:bg-slate-700 dark:text-slate-100' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'">
                                         {{ tab.label }}
                                         <span v-if="tab.unread" class="rounded-full bg-rose-500 px-1.5 text-xs font-bold text-white">{{ tab.unread }}</span>
                                     </button>
@@ -580,31 +589,31 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                                 <!-- Список -->
                                 <div class="mt-2 max-h-[22rem] overflow-y-auto px-2 pb-2">
                                     <div v-for="n in notifList" :key="n.id"
-                                        class="group/n relative flex cursor-pointer gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white"
-                                        :class="!n.read_at ? 'bg-indigo-50/60' : ''" @click="openNotification(n)">
+                                        class="group/n relative flex cursor-pointer gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white dark:hover:bg-slate-800"
+                                        :class="!n.read_at ? 'bg-indigo-50/60 dark:bg-indigo-500/10' : ''" @click="openNotification(n)">
                                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base" :class="notifMeta(n).cls">{{ notifMeta(n).icon }}</span>
                                         <div class="min-w-0 flex-1">
                                             <div class="flex items-start justify-between gap-2">
-                                                <span class="truncate text-sm" :class="n.read_at ? 'font-medium text-slate-600' : 'font-semibold text-slate-900'">{{ n.data.title }}</span>
+                                                <span class="truncate text-sm" :class="n.read_at ? 'font-medium text-slate-600 dark:text-slate-300' : 'font-semibold text-slate-900 dark:text-slate-100'">{{ n.data.title }}</span>
                                                 <span class="shrink-0 text-xs text-slate-400">{{ relTime(n.created_at) }}</span>
                                             </div>
-                                            <div class="mt-0.5 line-clamp-2 text-xs leading-snug text-slate-500">{{ n.data.message }}</div>
+                                            <div class="mt-0.5 line-clamp-2 text-xs leading-snug text-slate-500 dark:text-slate-400">{{ n.data.message }}</div>
                                         </div>
                                         <span v-if="!n.read_at" class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-indigo-500"></span>
                                     </div>
                                     <div v-if="!notifList.length" class="flex flex-col items-center gap-2 px-4 py-10 text-center">
-                                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-2xl">🔕</span>
+                                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800/60 text-2xl">🔕</span>
                                         <span class="text-sm text-slate-400">{{ t('header.no_notifications', 'Нет уведомлений') }}</span>
                                     </div>
                                 </div>
-                                <Link :href="route('notifications.index')" class="block border-t border-slate-100/80 px-4 py-2.5 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50/60">{{ tr('Все уведомления и события →') }}</Link>
+                                <Link :href="route('notifications.index')" class="block border-t border-slate-100/80 dark:border-slate-800 px-4 py-2.5 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50/60 dark:text-indigo-400 dark:hover:bg-indigo-500/10">{{ tr('Все уведомления и события →') }}</Link>
                             </div>
                         </template>
                     </Dropdown>
 
                     <Dropdown align="right" width="48">
                         <template #trigger>
-                            <button class="flex items-center gap-2 rounded-full bg-slate-50 px-2 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100 sm:px-3">
+                            <button class="flex items-center gap-2 rounded-full bg-slate-50 px-2 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-800/60 sm:px-3">
                                 <span class="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-xs font-bold text-white">
                                     <img v-if="user?.avatar" :src="user.avatar" class="h-full w-full object-cover" alt="" />
                                     <template v-else>{{ user?.name?.charAt(0) ?? '?' }}</template>
@@ -627,7 +636,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                     leave-active-class="transition duration-200 ease-in" leave-to-class="opacity-0 translate-x-6">
                     <div v-for="tst in toasts" :key="tst.id"
                         class="pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-sm shadow-soft-lg backdrop-blur-md"
-                        :class="tst.type === 'error' ? 'border-rose-200/70 bg-rose-50/90 text-rose-800' : 'border-emerald-200/70 bg-emerald-50/90 text-emerald-800'">
+                        :class="tst.type === 'error' ? 'border-rose-200/70 bg-rose-50/90 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400' : 'border-emerald-200/70 bg-emerald-50/90 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400'">
                         <span class="mt-0.5 text-base leading-none">{{ tst.type === 'error' ? '⛔' : '✅' }}</span>
                         <div class="min-w-0 flex-1 leading-snug">{{ tst.text }}</div>
                         <button type="button" class="-mr-1 rounded-md px-1 text-lg leading-none opacity-50 hover:opacity-100" @click="dismissToast(tst.id)">×</button>
@@ -636,7 +645,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                 </transition-group>
             </div>
 
-            <div v-show="loading" class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 overflow-hidden bg-indigo-100">
+            <div v-show="loading" class="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5 overflow-hidden bg-indigo-100 dark:bg-indigo-500/20">
                 <div class="loadbar h-full w-2/5 bg-indigo-600"></div>
             </div>
             <main class="page-enter p-4 sm:p-6">
@@ -644,11 +653,11 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                      Молчаливое восстановление опаснее потерянного фильтра:
                      открыл «Сделки», увидел три штуки вместо ста и решил, что
                      данные пропали. Сброс здесь же, одним кликом. -->
-                <div v-if="stickyFilter" class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-2.5 text-sm">
-                    <span class="font-medium text-amber-900">{{ $e('Показано по сохранённому фильтру') }}</span>
-                    <span class="text-xs text-amber-700">{{ $e('условий:') }} {{ stickyFilter.count }}</span>
+                <div v-if="stickyFilter" class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-2.5 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+                    <span class="font-medium text-amber-900 dark:text-amber-300">{{ $e('Показано по сохранённому фильтру') }}</span>
+                    <span class="text-xs text-amber-700 dark:text-amber-400">{{ $e('условий:') }} {{ stickyFilter.count }}</span>
                     <button type="button" @click="clearStickyFilter"
-                        class="ml-auto rounded-lg bg-white px-3 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200 transition-colors duration-150 hover:bg-amber-100">
+                        class="ml-auto rounded-lg bg-white px-3 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300 ring-1 ring-amber-200 transition-colors duration-150 hover:bg-amber-100 dark:bg-slate-800 dark:text-amber-400 dark:ring-amber-500/30 dark:hover:bg-amber-500/20">
                         {{ $e('Показать всё') }}
                     </button>
                 </div>

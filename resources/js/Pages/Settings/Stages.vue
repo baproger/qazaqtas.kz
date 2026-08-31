@@ -245,55 +245,55 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
 
         <!-- Выбор воронки: компания + (сделки | цех) -->
         <div class="mb-5 flex flex-wrap items-center gap-3">
-            <div class="inline-flex rounded-xl bg-slate-100 p-1">
+            <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800/60 p-1">
                 <button v-for="c in companies" :key="c.id" type="button" @click="switchFunnel(c.id)"
                     class="rounded-lg px-4 py-1.5 text-sm font-semibold transition-all"
-                    :class="funnel === c.id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                    :class="funnel === c.id ? 'bg-white dark:bg-slate-900/70 text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'">
                     {{ c.name }}
                 </button>
             </div>
-            <div class="inline-flex rounded-xl bg-slate-100 p-1">
+            <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800/60 p-1">
                 <button type="button" @click="kindTab = 'deal'"
                     class="rounded-lg px-4 py-1.5 text-sm font-semibold transition-all"
-                    :class="!isWorkshop ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                    :class="!isWorkshop ? 'bg-white dark:bg-slate-900/70 text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'">
                     {{ $e('Воронка сделок') }}
                 </button>
                 <button type="button" @click="kindTab = 'project'"
                     class="rounded-lg px-4 py-1.5 text-sm font-semibold transition-all"
-                    :class="isWorkshop ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                    :class="isWorkshop ? 'bg-white dark:bg-slate-900/70 text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'">
                     {{ $e('Цех') }}
                 </button>
             </div>
             <!-- Выбор цеха: если цехов несколько — настраиваются отдельно -->
-            <div v-if="isWorkshop && workshopTabs.length > 1" class="inline-flex rounded-xl bg-slate-100 p-1">
+            <div v-if="isWorkshop && workshopTabs.length > 1" class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800/60 p-1">
                 <button v-for="t in workshopTabs" :key="t.key" type="button" @click="workshopTab = t.key"
                     class="rounded-lg px-4 py-1.5 text-sm font-semibold transition-all"
-                    :class="activeWs === t.key ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                    :class="activeWs === t.key ? 'bg-white dark:bg-slate-900/70 text-sky-700 dark:text-sky-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'">
                     {{ t.label }}
                 </button>
             </div>
         </div>
 
         <!-- Предупреждение о незаданных обязательных типах -->
-        <div v-if="!isWorkshop && Object.keys(missingTypes).length" class="mb-4 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+        <div v-if="!isWorkshop && Object.keys(missingTypes).length" class="mb-4 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-500/10 p-4 text-sm">
             <span class="text-lg leading-none">⚠️</span>
-            <div class="text-amber-800">
+            <div class="text-amber-800 dark:text-amber-300">
                 <b>{{ $e('Не назначены системные типы:') }}</b> {{ Object.values(missingTypes).join(' · ') }}.
-                <div class="mt-1 text-xs text-amber-700">{{ $e('Без «Оплата успешно» сделки не считаются успешными (деньги/ЗП/аналитика); без «Закуп/цех» и «Логистика» не работает отправка в цех и возврат. Назначьте тип через «Изменить».') }}</div>
+                <div class="mt-1 text-xs text-amber-700 dark:text-amber-400">{{ $e('Без «Оплата успешно» сделки не считаются успешными (деньги/ЗП/аналитика); без «Закуп/цех» и «Логистика» не работает отправка в цех и возврат. Назначьте тип через «Изменить».') }}</div>
             </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-4">
                 <div>
-                    <h3 class="font-semibold text-slate-900">{{ isWorkshop ? $e('Этапы — ') + (activeWs || $e('единый цех')) : $e('Воронка сделок') }}</h3>
+                    <h3 class="font-semibold text-slate-900 dark:text-slate-100">{{ isWorkshop ? $e('Этапы — ') + (activeWs || $e('единый цех')) : $e('Воронка сделок') }}</h3>
                     <p class="text-xs text-slate-400">{{ companyName }} {{ $e('· порядок — перетаскиванием за ⠿ или стрелками') }}</p>
                 </div>
                 <PrimaryButton @click="startAdd">{{ $e('+ Добавить этап') }}</PrimaryButton>
             </div>
 
             <!-- Форма добавления -->
-            <div v-if="adding" class="border-b border-slate-100 bg-indigo-50/40 px-5 py-4">
+            <div v-if="adding" class="border-b border-slate-100 dark:border-slate-800 bg-indigo-50/40 dark:bg-indigo-500/10 px-5 py-4">
                 <div class="flex flex-wrap items-end gap-3">
                     <div class="flex-1 min-w-[200px]">
                         <InputLabel :value="$e('Название этапа')" />
@@ -319,12 +319,12 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
             </div>
 
             <!-- Шапка таблицы: та же сетка, что у строк -->
-            <div class="grid grid-cols-[3.25rem_1.75rem_1.25rem_minmax(10rem,1.4fr)_minmax(7rem,1fr)_minmax(8rem,1.2fr)_5rem_5rem_11rem] items-center gap-3 border-b border-slate-100 bg-slate-50/80 px-5 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <div class="grid grid-cols-[3.25rem_1.75rem_1.25rem_minmax(10rem,1.4fr)_minmax(7rem,1fr)_minmax(8rem,1.2fr)_5rem_5rem_11rem] items-center gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 px-5 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <span></span><span></span><span></span>
                 <span>{{ $e('Этап') }}</span><span>{{ $e('Роль в процессе') }}</span><span>{{ $e('Свойства') }}</span><span>{{ $e('Условия') }}</span><span class="text-right">{{ $e('В работе') }}</span><span></span>
             </div>
             <!-- Список этапов -->
-            <div class="divide-y divide-slate-50">
+            <div class="divide-y divide-slate-50 dark:divide-slate-800">
                 <div
                     v-for="(stage, idx) in orderedStages"
                     :key="stage.id"
@@ -335,61 +335,61 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                     @drop.prevent="onDrop(idx)"
                 >
                     <div
-                        class="grid grid-cols-[3.25rem_1.75rem_1.25rem_minmax(10rem,1.4fr)_minmax(7rem,1fr)_minmax(8rem,1.2fr)_5rem_5rem_11rem] items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50/70"
+                        class="grid grid-cols-[3.25rem_1.75rem_1.25rem_minmax(10rem,1.4fr)_minmax(7rem,1fr)_minmax(8rem,1.2fr)_5rem_5rem_11rem] items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/60"
                         :class="dragFrom === idx ? 'opacity-40' : ''"
                     >
                         <!-- Порядок: тянуть за ручку или двигать стрелками -->
                         <div class="flex items-center gap-1.5">
                             <span
-                                class="cursor-grab select-none text-slate-300 transition-colors hover:text-indigo-500 active:cursor-grabbing"
+                                class="cursor-grab select-none text-slate-300 dark:text-slate-600 transition-colors hover:text-indigo-500 active:cursor-grabbing"
                                 draggable="true"
                                 :title="$e('Перетащите, чтобы изменить порядок')"
                                 @dragstart="onDragStart(idx, $event)"
                                 @dragend="dragFrom = null; dragOver = null"
                             >⠿</span>
-                            <div class="flex flex-col text-xs leading-none text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
+                            <div class="flex flex-col text-xs leading-none text-slate-300 dark:text-slate-600 opacity-0 transition-opacity group-hover:opacity-100">
                                 <button class="transition-colors hover:text-indigo-600 disabled:opacity-25" :disabled="idx === 0" @click="moveBy(idx, -1)" :title="$e('Выше')">▲</button>
                                 <button class="transition-colors hover:text-indigo-600 disabled:opacity-25" :disabled="idx === orderedStages.length - 1" @click="moveBy(idx, 1)" :title="$e('Ниже')">▼</button>
                             </div>
                         </div>
                         <!-- Номер -->
-                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">{{ idx + 1 }}</span>
+                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800/60 text-xs font-bold text-slate-500 dark:text-slate-400">{{ idx + 1 }}</span>
                         <!-- Цвет -->
                         <span class="h-4 w-4 shrink-0 rounded-full ring-2 ring-white shadow" :style="{ backgroundColor: stage.color || '#94a3b8' }"></span>
                         <!-- Табличные колонки: название · роль · свойства · условия · сделки -->
                         <div class="contents">
                             <div class="min-w-0">
-                                <div class="truncate font-medium text-slate-800">{{ stage.name }}</div>
-                                <div v-if="stage.workshop" class="truncate text-xs text-sky-600">{{ stage.workshop }}</div>
+                                <div class="truncate font-medium text-slate-800 dark:text-slate-200">{{ stage.name }}</div>
+                                <div v-if="stage.workshop" class="truncate text-xs text-sky-600 dark:text-sky-400">{{ stage.workshop }}</div>
                             </div>
                             <div class="min-w-0 text-xs">
-                                <span v-if="typeBadge(stage)" class="truncate rounded-full bg-indigo-100 px-2 py-0.5 font-semibold text-indigo-700">{{ typeBadge(stage) }}</span>
-                                <span v-else-if="stage.is_completed" class="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700" :title="$e('Заказ готов → сделка на Логистику')">{{ $e('🏁 завершающий') }}</span>
-                                <span v-else class="text-slate-300">—</span>
+                                <span v-if="typeBadge(stage)" class="truncate rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-2 py-0.5 font-semibold text-indigo-700 dark:text-indigo-300">{{ typeBadge(stage) }}</span>
+                                <span v-else-if="stage.is_completed" class="rounded-full bg-emerald-100 dark:bg-emerald-500/20 px-2 py-0.5 font-semibold text-emerald-700 dark:text-emerald-400" :title="$e('Заказ готов → сделка на Логистику')">{{ $e('🏁 завершающий') }}</span>
+                                <span v-else class="text-slate-300 dark:text-slate-600">—</span>
                             </div>
                             <div class="flex min-w-0 flex-wrap gap-1 text-xs">
-                                <span v-if="stage.gate_task_title" class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-700" :title="`${$e('Задача')}: ${stage.gate_task_title} · ${gateRoles[stage.gate_task_role] ?? stage.gate_task_role} · ${stage.gate_task_days} ${$e('дн.')}`">🔒</span>
-                                <span v-if="stage.requires_document" class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-700" :title="$e('Без прикреплённого документа сделка дальше не идёт')">📎</span>
-                                <span v-if="stage.is_closing" class="rounded-full bg-pink-100 px-2 py-0.5 font-semibold text-pink-700" :title="$e('Финальная проверка: «на подходе» в отчётах, карточку правит только бухгалтер')">🏁</span>
-                                <span v-if="stage.ignores_deadline" class="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600" :title="$e('⏳ без просрочки')">⏳</span>
-                                <span v-if="!stage.gate_task_title && !stage.requires_document && !stage.is_closing && !stage.ignores_deadline" class="text-slate-300">—</span>
+                                <span v-if="stage.gate_task_title" class="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 font-semibold text-amber-700 dark:text-amber-400" :title="`${$e('Задача')}: ${stage.gate_task_title} · ${gateRoles[stage.gate_task_role] ?? stage.gate_task_role} · ${stage.gate_task_days} ${$e('дн.')}`">🔒</span>
+                                <span v-if="stage.requires_document" class="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 font-semibold text-amber-700 dark:text-amber-400" :title="$e('Без прикреплённого документа сделка дальше не идёт')">📎</span>
+                                <span v-if="stage.is_closing" class="rounded-full bg-pink-100 dark:bg-pink-500/20 px-2 py-0.5 font-semibold text-pink-700 dark:text-pink-300" :title="$e('Финальная проверка: «на подходе» в отчётах, карточку правит только бухгалтер')">🏁</span>
+                                <span v-if="stage.ignores_deadline" class="rounded-full bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 font-semibold text-slate-600 dark:text-slate-300" :title="$e('⏳ без просрочки')">⏳</span>
+                                <span v-if="!stage.gate_task_title && !stage.requires_document && !stage.is_closing && !stage.ignores_deadline" class="text-slate-300 dark:text-slate-600">—</span>
                             </div>
                             <div class="text-xs">
-                                <span v-if="!isWorkshop && ruleSummary(stage).length" class="cursor-help rounded-full bg-indigo-50 px-2 py-0.5 font-medium text-indigo-700" :title="ruleSummary(stage).join('\n')">⚙ {{ ruleSummary(stage).length }}</span>
-                                <span v-else class="text-slate-300">—</span>
+                                <span v-if="!isWorkshop && ruleSummary(stage).length" class="cursor-help rounded-full bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 font-medium text-indigo-700 dark:text-indigo-300" :title="ruleSummary(stage).join('\n')">⚙ {{ ruleSummary(stage).length }}</span>
+                                <span v-else class="text-slate-300 dark:text-slate-600">—</span>
                             </div>
                             <div class="text-right text-xs tabular-nums text-slate-400">{{ occupants(stage) ? occupants(stage) + ' ' + (isWorkshop ? $e('заказ.') : $e('сдел.')) : '' }}</div>
                         </div>
                         <!-- Действия -->
                         <div class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-indigo-50 hover:text-indigo-700" @click="startEdit(stage)">{{ $e('Изменить') }}</button>
-                            <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800" :title="$e('Скопировать этап со всей логикой')" @click="duplicate(stage)">{{ $e('Копия') }}</button>
+                            <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-700" @click="startEdit(stage)">{{ $e('Изменить') }}</button>
+                            <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-800" :title="$e('Скопировать этап со всей логикой')" @click="duplicate(stage)">{{ $e('Копия') }}</button>
                             <button class="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-400 hover:bg-rose-50 hover:text-rose-600" @click="startRemove(stage)">{{ $e('Удалить') }}</button>
                         </div>
                     </div>
 
                     <!-- Редактор -->
-                    <div v-if="editing === stage.id" class="border-l-2 border-indigo-400 bg-indigo-50/40 px-5 py-4">
+                    <div v-if="editing === stage.id" class="border-l-2 border-indigo-400 bg-indigo-50/40 dark:bg-indigo-500/10 px-5 py-4">
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
                                 <InputLabel :value="$e('Название')" />
@@ -410,9 +410,9 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                                     <option value="">{{ $e('— обычный этап —') }}</option>
                                     <option v-for="(label, t) in availableTypes" :key="t" :value="t">{{ label }}</option>
                                 </select>
-                                <div v-if="editForm.errors.stage_type" class="mt-1 text-xs text-red-600">{{ editForm.errors.stage_type }}</div>
+                                <div v-if="editForm.errors.stage_type" class="mt-1 text-xs text-red-600 dark:text-rose-400">{{ editForm.errors.stage_type }}</div>
                                 <!-- Что делает выбранный тип: владелец не должен угадывать. -->
-                                <p v-if="editForm.stage_type" class="mt-1 text-xs leading-snug text-slate-500">{{ stageTypeHints[editForm.stage_type] }}</p>
+                                <p v-if="editForm.stage_type" class="mt-1 text-xs leading-snug text-slate-500 dark:text-slate-400">{{ stageTypeHints[editForm.stage_type] }}</p>
                                 <p v-else class="mt-1 text-xs leading-snug text-slate-400">{{ $e('Без роли в процессе — обычный этап. Кто может переводить — в «Условиях перехода», что делать автоматически — в «Роботах».') }}</p>
                                 <!-- Занятые типы в списке не показываем: выбрать их всё равно
                                      нельзя (тип уникален в воронке), поэтому подписываем, где они. -->
@@ -429,14 +429,14 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                         </div>
 
                         <!-- Цех: завершающий этап -->
-                        <label v-if="isWorkshop" class="mt-3 flex items-center gap-2 rounded-lg bg-white/60 px-3 py-2 text-sm text-slate-700">
+                        <label v-if="isWorkshop" class="mt-3 flex items-center gap-2 rounded-lg bg-white/60 dark:bg-slate-900/70 px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
                             <input type="checkbox" v-model="editForm.is_completed" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
                             {{ $e('🏁 Завершающий этап — заказ считается готовым, сделка возвращается на «Логистику»') }}
                         </label>
 
                         <!-- Сделки: гейт-задача -->
                         <template v-if="!isWorkshop">
-                            <div class="mt-3 text-xs font-semibold text-slate-500">{{ $e('🔒 Гейт: задача при входе на этап (пока не закрыта — сделка дальше не идёт). Пусто = без гейта.') }}</div>
+                            <div class="mt-3 text-xs font-semibold text-slate-500 dark:text-slate-400">{{ $e('🔒 Гейт: задача при входе на этап (пока не закрыта — сделка дальше не идёт). Пусто = без гейта.') }}</div>
                             <div class="mt-1.5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 <div>
                                     <InputLabel :value="$e('Текст задачи')" />
@@ -457,11 +457,11 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                             <!-- Условия перехода и роботы — две кнопки, детали в окне / на странице -->
                             <div class="mt-4 flex flex-wrap gap-2">
                                 <button type="button" @click="rulesOpen = true" :title="formRuleSummary.join('\n')"
-                                    class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-300/60 bg-indigo-500/15 px-4 py-2 text-sm font-semibold text-indigo-700 shadow-soft backdrop-blur-md transition hover:bg-indigo-500/25 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                    class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-300/60 bg-indigo-500/15 px-4 py-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300 shadow-soft backdrop-blur-md transition hover:bg-indigo-500/25 focus:outline-none focus:ring-2 focus:ring-indigo-400">
                                     ⚙ {{ $e('Условия перехода') }}<span v-if="formRuleSummary.length" class="ml-1 rounded-full bg-indigo-600 px-1.5 text-xs text-white">{{ formRuleSummary.length }}</span>
                                 </button>
                                 <Link :href="route('robots.index', { stage: stage.id })"
-                                    class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300/60 bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-soft backdrop-blur-md transition hover:bg-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                                    class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300/60 bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400 shadow-soft backdrop-blur-md transition hover:bg-emerald-500/25 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                                     🤖 {{ $e('Роботы этапа') }}
                                 </Link>
                             </div>
@@ -470,20 +470,20 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                                 <div class="p-6">
                                     <div class="flex items-start justify-between gap-3">
                                         <div>
-                                            <h2 class="text-lg font-semibold text-slate-900">{{ $e('Условия перехода') }} — {{ editForm.name }}</h2>
-                                            <p class="mt-0.5 text-xs text-slate-500">{{ $e('Кто и при каких условиях может перевести сделку. Пусто — без ограничений; админ ролями не ограничен.') }}</p>
+                                            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $e('Условия перехода') }} — {{ editForm.name }}</h2>
+                                            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $e('Кто и при каких условиях может перевести сделку. Пусто — без ограничений; админ ролями не ограничен.') }}</p>
                                         </div>
-                                        <button type="button" @click="editForm.rules = emptyRules()" class="rounded-lg px-2 py-1 text-xs font-medium text-slate-400 hover:bg-slate-100 hover:text-rose-600">{{ $e('Сбросить') }}</button>
+                                        <button type="button" @click="editForm.rules = emptyRules()" class="rounded-lg px-2 py-1 text-xs font-medium text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-rose-600">{{ $e('Сбросить') }}</button>
                                     </div>
-                                    <div class="mt-4 rounded-2xl border border-slate-100">
-                                <div class="mt-3 divide-y divide-slate-100">
+                                    <div class="mt-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <div class="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
                                     <div v-for="row in [
                                             { key: 'leave_roles', icon: '→', title: $e('Кто уводит сделку вперёд'), hint: $e('например, только бухгалтер после акта') },
                                             { key: 'enter_roles', icon: '⇥', title: $e('Кто переводит на этот этап'), hint: $e('например, «Оплата успешно» — только бухгалтер') },
                                             { key: 'extra_movers', icon: '＋', title: $e('Также могут нажать «Далее»'), hint: $e('роли без права править сделку') },
                                         ]" :key="row.key" class="grid grid-cols-1 items-center gap-2 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_14rem]">
                                         <div class="min-w-0">
-                                            <div class="text-sm font-medium text-slate-800"><span class="mr-1.5 text-slate-400">{{ row.icon }}</span>{{ row.title }}</div>
+                                            <div class="text-sm font-medium text-slate-800 dark:text-slate-200"><span class="mr-1.5 text-slate-400">{{ row.icon }}</span>{{ row.title }}</div>
                                             <div class="text-xs text-slate-400">{{ row.hint }}</div>
                                         </div>
                                         <MultiSelect v-model="editForm.rules[row.key]" :options="roles" :placeholder="$e('Поиск роли')" :empty-label="$e('все')" />
@@ -491,7 +491,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
 
                                     <div class="grid grid-cols-1 items-center gap-2 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_14rem]">
                                         <div class="min-w-0">
-                                            <div class="text-sm font-medium text-slate-800"><span class="mr-1.5 text-slate-400">↩</span>{{ $e('Откуда можно прийти') }}</div>
+                                            <div class="text-sm font-medium text-slate-800 dark:text-slate-200"><span class="mr-1.5 text-slate-400">↩</span>{{ $e('Откуда можно прийти') }}</div>
                                             <div class="text-xs text-slate-400">{{ $e('например, «ЭСФ» только с «Акта»') }}</div>
                                         </div>
                                         <MultiSelect v-model="editForm.rules.from_stages"
@@ -501,7 +501,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
 
                                     <div class="grid grid-cols-1 items-center gap-2 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_14rem]">
                                         <div class="min-w-0">
-                                            <div class="text-sm font-medium text-slate-800"><span class="mr-1.5 text-slate-400">₸</span>{{ $e('Оплата, чтобы уйти вперёд') }}</div>
+                                            <div class="text-sm font-medium text-slate-800 dark:text-slate-200"><span class="mr-1.5 text-slate-400">₸</span>{{ $e('Оплата, чтобы уйти вперёд') }}</div>
                                             <div class="text-xs text-slate-400">{{ $e('по счетам сделки') }}</div>
                                         </div>
                                         <select v-model="editForm.rules.require.payment" class="w-full rounded-xl border-white/60 bg-white/70 py-1.5 text-sm shadow-soft backdrop-blur focus:border-indigo-400 focus:ring-indigo-400">
@@ -513,19 +513,19 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
 
                                     <div class="grid grid-cols-1 items-center gap-2 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_14rem]">
                                         <div class="min-w-0">
-                                            <div class="text-sm font-medium text-slate-800"><span class="mr-1.5 text-slate-400">✓</span>{{ $e('Условия, чтобы уйти вперёд') }}</div>
+                                            <div class="text-sm font-medium text-slate-800 dark:text-slate-200"><span class="mr-1.5 text-slate-400">✓</span>{{ $e('Условия, чтобы уйти вперёд') }}</div>
                                             <div class="text-xs text-slate-400">{{ $e('гейт-задача и документ — выше') }}</div>
                                         </div>
                                         <div class="flex flex-wrap gap-2">
                                             <button type="button" @click="editForm.rules.require.invoice = !editForm.rules.require.invoice"
                                                 class="rounded-full border px-3 py-1 text-xs font-medium transition"
-                                                :class="editForm.rules.require.invoice ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 bg-white/70 text-slate-600 hover:bg-white'">{{ $e('Выставлен счёт') }}</button>
+                                                :class="editForm.rules.require.invoice ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'">{{ $e('Выставлен счёт') }}</button>
                                             <button type="button" @click="editForm.rules.advance_on_gate = !editForm.rules.advance_on_gate"
                                                 class="rounded-full border px-3 py-1 text-xs font-medium transition"
-                                                :class="editForm.rules.advance_on_gate ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 bg-white/70 text-slate-600 hover:bg-white'" :title="$e('Гейт-задача закрыта — сделка сама уходит дальше')">{{ $e('Автопереход после гейта') }}</button>
+                                                :class="editForm.rules.advance_on_gate ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'" :title="$e('Гейт-задача закрыта — сделка сама уходит дальше')">{{ $e('Автопереход после гейта') }}</button>
                                             <button type="button" @click="editForm.rules.require.items_done = !editForm.rules.require.items_done"
                                                 class="rounded-full border px-3 py-1 text-xs font-medium transition"
-                                                :class="editForm.rules.require.items_done ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 bg-white/70 text-slate-600 hover:bg-white'">{{ $e('Все позиции сделаны') }}</button>
+                                                :class="editForm.rules.require.items_done ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-white/70 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'">{{ $e('Все позиции сделаны') }}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -537,17 +537,17 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                             </Modal>
 
                             <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                <label class="flex cursor-pointer items-start gap-2 rounded-xl bg-white/60 px-3 py-2 text-sm text-slate-700">
+                                <label class="flex cursor-pointer items-start gap-2 rounded-xl bg-white/60 dark:bg-slate-900/70 px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
                                     <input type="checkbox" v-model="editForm.is_closing" class="mt-0.5 rounded border-slate-300 text-pink-600 focus:ring-pink-500" />
                                     <span>{{ $e('🏁 Финальная проверка') }}<span class="block text-xs text-slate-400">{{ $e('Сделка почти закрыта: «на подходе» в отчётах и ЗП, карточку правит только бухгалтер или админ') }}</span></span>
                                 </label>
-                                <label class="flex cursor-pointer items-start gap-2 rounded-xl bg-white/60 px-3 py-2 text-sm text-slate-700">
+                                <label class="flex cursor-pointer items-start gap-2 rounded-xl bg-white/60 dark:bg-slate-900/70 px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
                                     <input type="checkbox" v-model="editForm.ignores_deadline" class="mt-0.5 rounded border-slate-300 text-slate-600 focus:ring-slate-500" />
                                     <span>{{ $e('⏳ Не считать просроченной') }}<span class="block text-xs text-slate-400">{{ $e('Срок сделки на этом этапе не показывается как просрочка') }}</span></span>
                                 </label>
                             </div>
 
-                            <label class="mt-3 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+                            <label class="mt-3 flex cursor-pointer items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
                                 <input type="checkbox" v-model="editForm.requires_document" class="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500" />
                                 <span>
                                     {{ $e('Требуется прикреплённый документ') }}
@@ -565,8 +565,8 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                     </div>
 
                     <!-- Удаление с переносом -->
-                    <div v-if="removing === stage.id" class="border-l-2 border-rose-400 bg-rose-50/50 px-5 py-4">
-                        <div class="text-sm text-rose-700">{{ $e('На этапе «') }}{{ stage.name }}» — {{ occupants(stage) }} {{ isWorkshop ? $e('заказ(ов)') : $e('активных сделок') }}{{ $e('. Куда их перенести перед удалением?') }}</div>
+                    <div v-if="removing === stage.id" class="border-l-2 border-rose-400 bg-rose-50/50 dark:bg-rose-500/10 px-5 py-4">
+                        <div class="text-sm text-rose-700 dark:text-rose-400">{{ $e('На этапе «') }}{{ stage.name }}» — {{ occupants(stage) }} {{ isWorkshop ? $e('заказ(ов)') : $e('активных сделок') }}{{ $e('. Куда их перенести перед удалением?') }}</div>
                         <div class="mt-2 flex flex-wrap items-center gap-2">
                             <select v-model="transferTo" class="rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400">
                                 <option value="">{{ $e('— выберите этап —') }}</option>
@@ -575,7 +575,7 @@ const companyName = computed(() => props.companies.find((c) => c.id === funnel.v
                             <PrimaryButton :disabled="!transferTo" @click="confirmRemove(stage)">{{ $e('Перенести и удалить') }}</PrimaryButton>
                             <SecondaryButton @click="removing = null">{{ $e('Отмена') }}</SecondaryButton>
                         </div>
-                        <div v-if="removeErr" class="mt-1 text-xs text-red-600">{{ removeErr }}</div>
+                        <div v-if="removeErr" class="mt-1 text-xs text-red-600 dark:text-rose-400">{{ removeErr }}</div>
                     </div>
                 </div>
 

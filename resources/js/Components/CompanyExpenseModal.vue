@@ -50,7 +50,7 @@ const submit = () => form.post(route('expenses.store'), {
 <template>
     <Modal :show="show" @close="emit('close')" max-width="lg">
         <div class="p-6">
-            <h2 class="mb-1 text-lg font-semibold text-slate-900">{{ $e('Расход компании') }}</h2>
+            <h2 class="mb-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $e('Расход компании') }}</h2>
             <p class="mb-4 text-xs text-slate-400">{{ $e('Не по сделке: аренда, комуслуги, интернет, бензин, канцтовары… Подтверждается сразу.') }}</p>
             <ExpenseFields :form="form" :categories="categories">
                 <template #middle>
@@ -58,12 +58,12 @@ const submit = () => form.post(route('expenses.store'), {
                         <div class="flex gap-2">
                             <button type="button" @click="form.payment_method = 'cash'"
                                 class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all"
-                                :class="form.payment_method === 'cash' ? 'border-emerald-500 bg-emerald-100 text-emerald-700 ring-1 ring-emerald-500' : 'border-slate-200 bg-white text-slate-500'">{{ $e('Наличные') }}</button>
+                                :class="form.payment_method === 'cash' ? 'border-emerald-500 bg-emerald-100 text-emerald-700 ring-1 ring-emerald-500 dark:bg-emerald-500/20 dark:text-emerald-400' : 'border-slate-200 bg-white text-slate-500 dark:border-slate-800/80 dark:bg-slate-800 dark:text-slate-400'">{{ $e('Наличные') }}</button>
                             <button type="button" @click="form.payment_method = 'bank'"
                                 class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all"
-                                :class="form.payment_method === 'bank' ? 'border-sky-500 bg-sky-100 text-sky-700 ring-1 ring-sky-500' : 'border-slate-200 bg-white text-slate-500'">{{ $e('Банк (счёт)') }}</button>
+                                :class="form.payment_method === 'bank' ? 'border-sky-500 bg-sky-100 text-sky-700 ring-1 ring-sky-500 dark:bg-sky-500/20 dark:text-sky-400' : 'border-slate-200 bg-white text-slate-500 dark:border-slate-800/80 dark:bg-slate-800 dark:text-slate-400'">{{ $e('Банк (счёт)') }}</button>
                         </div>
-                        <div class="mt-1.5 text-xs" :class="overBalance() ? 'font-semibold text-rose-600' : 'text-slate-400'">
+                        <div class="mt-1.5 text-xs" :class="overBalance() ? 'font-semibold text-rose-600 dark:text-rose-400' : 'text-slate-400'">
                             {{ $e('Доступно: касса') }} {{ money(cash) }} {{ $e('· счёт') }} {{ money(bank) }}
                             <template v-if="overBalance()"> {{ $e('— расход превышает остаток') }} {{ form.payment_method === 'cash' ? $e('кассы') : $e('счёта') }}!</template>
                         </div>

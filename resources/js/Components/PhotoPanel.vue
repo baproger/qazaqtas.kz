@@ -78,12 +78,12 @@ const remove = async (d) => {
         <input ref="fileInput" type="file" accept="image/*" multiple class="hidden" @change="onFiles" />
 
         <div v-if="photos.length" class="grid gap-1.5" :class="compact ? 'grid-cols-4 sm:grid-cols-5' : 'grid-cols-3'">
-            <div v-for="p in photos" :key="p.id" class="group relative aspect-square overflow-hidden rounded-lg bg-slate-100">
+            <div v-for="p in photos" :key="p.id" class="group relative aspect-square overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800/60">
                 <img :src="route('documents.preview', p.id)" :alt="p.name" loading="lazy"
                     class="h-full w-full cursor-zoom-in object-cover transition-transform duration-200 group-hover:scale-105"
                     @click="zoomed = p" />
                 <span v-if="p.user?.name && !compact" class="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-slate-900/70 to-transparent px-1.5 pb-1 pt-4 text-xs text-white">{{ p.user.name }}</span>
-                <button v-if="canDelete(p)" class="chip chip-glass absolute right-1 top-1 !px-1.5 !py-1 text-slate-500 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-rose-600"
+                <button v-if="canDelete(p)" class="chip chip-glass absolute right-1 top-1 !px-1.5 !py-1 text-slate-500 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-rose-600 dark:hover:text-rose-400"
                     :title="$e('Удалить')" @click.stop="remove(p)">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>

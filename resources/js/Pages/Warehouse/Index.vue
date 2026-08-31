@@ -145,28 +145,28 @@ const lowStock = (m) => Number(m.quantity) <= 0;
         <template #header>
             <div class="flex items-center gap-3">
                 <span>{{ $t('page.warehouse', 'Склад') }}</span>
-                <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">{{ companyName }}</span>
+                <span class="rounded-full bg-slate-100 dark:bg-slate-800/60 px-2.5 py-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{{ companyName }}</span>
             </div>
         </template>
 
         <!-- Переключатель складов: готовая продукция и сырьё. -->
-        <div class="mb-4 flex flex-wrap items-center gap-2 border-b border-slate-200">
+        <div class="mb-4 flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800/80">
             <button v-for="t in [{ k: 'goods', n: $e('Готовая продукция') }, { k: 'materials', n: $e('Сырьё') }]"
                 :key="t.k" @click="tab = t.k"
                 class="-mb-px border-b-2 px-1 pb-2.5 text-sm transition-colors duration-150"
-                :class="tab === t.k ? 'border-indigo-600 font-semibold text-indigo-600' : 'border-transparent font-medium text-slate-500 hover:text-slate-700'">
+                :class="tab === t.k ? 'border-indigo-600 font-semibold text-indigo-600 dark:text-indigo-400' : 'border-transparent font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700'">
                 {{ t.n }}
             </button>
         </div>
 
         <!-- ===== Готовая продукция ===== -->
         <div v-if="tab === 'goods'" class="mb-6">
-            <div v-if="!products.length" class="rounded-xl border border-dashed border-slate-200 px-6 py-14 text-center text-sm text-slate-500">
+            <div v-if="!products.length" class="rounded-xl border border-dashed border-slate-200 dark:border-slate-800/80 px-6 py-14 text-center text-sm text-slate-500 dark:text-slate-400">
                 {{ $e('Склад пуст. Товар появится здесь, когда подтвердят выработку по плану.') }}
             </div>
-            <div v-else class="overflow-x-auto rounded-xl border border-slate-100 bg-white">
+            <div v-else class="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70">
                 <table class="min-w-full text-sm">
-                    <thead class="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400">
+                    <thead class="border-b border-slate-100 dark:border-slate-800 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>
                             <th class="px-5 py-3 font-medium">{{ $e('Товар') }}</th>
                             <th class="px-3 py-3 text-right font-medium">{{ $e('Остаток') }}</th>
@@ -175,32 +175,32 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                             <th class="px-5 py-3 text-right font-medium">{{ $e('Минимум') }}</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-50">
+                    <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
                         <template v-for="p in products" :key="p.id">
-                            <tr class="cursor-pointer transition-colors duration-150 hover:bg-slate-50/60" @click="openMovements(p)">
+                            <tr class="cursor-pointer transition-colors duration-150 hover:bg-slate-50/60 dark:hover:bg-slate-800/40" @click="openMovements(p)">
                                 <td class="px-5 py-3">
-                                    <span class="font-medium text-slate-800">{{ p.name }}</span>
-                                    <span v-if="p.level === 'empty'" class="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">{{ $e('нет в наличии') }}</span>
-                                    <span v-else-if="p.level === 'low'" class="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">{{ $e('мало') }}</span>
+                                    <span class="font-medium text-slate-800 dark:text-slate-200">{{ p.name }}</span>
+                                    <span v-if="p.level === 'empty'" class="ml-2 rounded-full bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">{{ $e('нет в наличии') }}</span>
+                                    <span v-else-if="p.level === 'low'" class="ml-2 rounded-full bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-400">{{ $e('мало') }}</span>
                                 </td>
                                 <td class="px-3 py-3 text-right tabular-nums">
-                                    <b :class="p.level === 'empty' ? 'text-slate-400' : p.level === 'low' ? 'text-amber-600' : 'text-slate-900'">{{ num(p.qty) }}</b>
+                                    <b :class="p.level === 'empty' ? 'text-slate-400' : p.level === 'low' ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-slate-100'">{{ num(p.qty) }}</b>
                                     <span class="ml-1 text-xs text-slate-400">{{ p.unit }}</span>
                                 </td>
-                                <td class="px-3 py-3 text-right tabular-nums text-emerald-600">{{ p.produced ? '+' + num(p.produced) : '—' }}</td>
-                                <td class="px-3 py-3 text-right tabular-nums text-slate-500">{{ p.shipped ? '−' + num(p.shipped) : '—' }}</td>
+                                <td class="px-3 py-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{{ p.produced ? '+' + num(p.produced) : '—' }}</td>
+                                <td class="px-3 py-3 text-right tabular-nums text-slate-500 dark:text-slate-400">{{ p.shipped ? '−' + num(p.shipped) : '—' }}</td>
                                 <td class="px-5 py-3 text-right tabular-nums text-slate-400">{{ p.min_stock !== null ? num(p.min_stock) : '—' }}</td>
                             </tr>
-                            <tr v-if="openedProduct?.id === p.id" class="bg-slate-50/60">
+                            <tr v-if="openedProduct?.id === p.id" class="bg-slate-50/60 dark:bg-slate-800/40">
                                 <td colspan="5" class="px-5 pb-4 pt-0">
                                     <div v-if="loadingMoves" class="py-3 text-xs text-slate-400">{{ $e('Загрузка…') }}</div>
                                     <div v-else-if="!movements.length" class="py-3 text-xs text-slate-400">{{ $e('Движений пока нет') }}</div>
                                     <table v-else class="min-w-full text-xs">
-                                        <tbody class="divide-y divide-slate-100">
+                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                                             <tr v-for="m in movements" :key="m.id">
                                                 <td class="py-1.5 pr-4 tabular-nums text-slate-400">{{ m.date }}</td>
-                                                <td class="py-1.5 pr-4 text-slate-600">{{ m.label }}</td>
-                                                <td class="py-1.5 pr-4 tabular-nums" :class="m.qty >= 0 ? 'text-emerald-600' : 'text-slate-500'">
+                                                <td class="py-1.5 pr-4 text-slate-600 dark:text-slate-300">{{ m.label }}</td>
+                                                <td class="py-1.5 pr-4 tabular-nums" :class="m.qty >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'">
                                                     {{ m.qty >= 0 ? '+' : '' }}{{ num(m.qty) }} {{ p.unit }}
                                                 </td>
                                                 <td class="py-1.5 pr-4 text-slate-400">{{ m.note }}</td>
@@ -222,7 +222,7 @@ const lowStock = (m) => Number(m.quantity) <= 0;
         </div>
 
         <!-- Фильтры: поиск, ед.изм, остаток, период поступления -->
-        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+        <div class="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-3 shadow-sm">
             <div class="relative w-full sm:w-56">
                 <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
                 <input v-model="search" type="text" :placeholder="$e('Поиск материала…')"
@@ -244,14 +244,14 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                 <input v-model="fTo" @change="applyPeriod" type="date" class="rounded-lg border-slate-200 py-1.5 text-xs shadow-sm" />
             </label>
             <button v-if="hasFilters" type="button" @click="resetFilters"
-                class="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">{{ $e('Сбросить ✕') }}</button>
-            <span class="ml-auto hidden text-xs tabular-nums text-slate-300 lg:block">{{ $e('найдено:') }} {{ filtered.length }}</span>
+                class="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-600">{{ $e('Сбросить ✕') }}</button>
+            <span class="ml-auto hidden text-xs tabular-nums text-slate-300 dark:text-slate-600 lg:block">{{ $e('найдено:') }} {{ filtered.length }}</span>
         </div>
 
         <!-- Остатки -->
-        <div class="overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-card">
-            <table class="min-w-full divide-y divide-slate-100 text-sm">
-                <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+        <div class="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-card">
+            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase tracking-wide text-slate-400">
                     <tr>
                         <th class="px-6 py-3">{{ $e('Материал') }}</th>
                         <th v-if="allMode" class="px-4 py-3">{{ $e('Компания') }}</th>
@@ -264,47 +264,47 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                         <th v-if="canManage" class="px-4 py-3"></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-50">
+                <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
                     <template v-for="m in filtered" :key="m.id">
-                    <tr class="transition-colors hover:bg-slate-50">
-                        <td class="px-6 py-3 font-medium text-slate-900">{{ m.name }}<span v-if="m.note" class="ml-2 text-xs text-slate-400">{{ m.note }}</span></td>
-                        <td v-if="allMode" class="px-4 py-3 text-slate-500">{{ m.company?.name ?? '—' }}</td>
-                        <td class="px-4 py-3 text-slate-500">{{ m.unit }}</td>
-                        <td class="px-4 py-3 text-right tabular-nums text-slate-600">
+                    <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                        <td class="px-6 py-3 font-medium text-slate-900 dark:text-slate-100">{{ m.name }}<span v-if="m.note" class="ml-2 text-xs text-slate-400">{{ m.note }}</span></td>
+                        <td v-if="allMode" class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ m.company?.name ?? '—' }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ m.unit }}</td>
+                        <td class="px-4 py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
                             <template v-if="Number(m.price) > 0">
                                 {{ money(m.price) }}
                                 <!-- Цена продажи и наценка: от них считается бонус менеджера. -->
-                                <div v-if="Number(m.markup_effective) > 0" class="text-xs text-emerald-600">
+                                <div v-if="Number(m.markup_effective) > 0" class="text-xs text-emerald-600 dark:text-emerald-400">
                                     {{ $e('продажа') }} {{ money(m.sale_price) }} <span class="text-slate-400">+{{ m.markup_effective }}%</span>
                                 </div>
                             </template>
-                            <span v-else class="text-slate-300">—</span>
+                            <span v-else class="text-slate-300 dark:text-slate-600">—</span>
                         </td>
-                        <td class="px-4 py-3 text-right tabular-nums text-emerald-600">
+                        <td class="px-4 py-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
                             <template v-if="Number(m.received_qty) > 0">+ {{ qty(m.received_qty) }}</template>
-                            <span v-else class="text-slate-300">—</span>
+                            <span v-else class="text-slate-300 dark:text-slate-600">—</span>
                         </td>
-                        <td class="px-4 py-3 text-right tabular-nums font-medium text-slate-700">
+                        <td class="px-4 py-3 text-right tabular-nums font-medium text-slate-700 dark:text-slate-300">
                             <template v-if="Number(m.received_sum) > 0">{{ money(m.received_sum) }}</template>
-                            <span v-else class="text-slate-300">—</span>
+                            <span v-else class="text-slate-300 dark:text-slate-600">—</span>
                         </td>
                         <td class="px-4 py-3 text-right tabular-nums">
                             <button v-if="Number(m.written_off_qty) > 0" type="button" @click="writeoffFor = m"
                                 class="font-medium text-rose-500 underline decoration-rose-200 decoration-dashed underline-offset-4 transition hover:text-rose-700"
                                 :title="$e('Показать, на какие сделки списано')">− {{ qty(m.written_off_qty) }}</button>
-                            <span v-else class="text-slate-300">—</span>
+                            <span v-else class="text-slate-300 dark:text-slate-600">—</span>
                         </td>
                         <td class="px-4 py-3 text-right">
                             <span class="rounded-full px-2.5 py-0.5 text-sm font-bold tabular-nums"
-                                :class="lowStock(m) ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'">
+                                :class="lowStock(m) ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400'">
                                 {{ qty(m.quantity) }}
                             </span>
                         </td>
                         <td v-if="canManage" class="whitespace-nowrap px-4 py-3 text-right">
-                            <button class="mr-1 text-slate-300 transition-colors hover:text-indigo-600" :title="$e('Изменить позицию')" @click="startEditMaterial(m)">
+                            <button class="mr-1 text-slate-300 dark:text-slate-600 transition-colors hover:text-indigo-600" :title="$e('Изменить позицию')" @click="startEditMaterial(m)">
                                 <svg class="inline h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                             </button>
-                            <button class="text-slate-300 transition-colors hover:text-rose-600" :title="$e('Удалить позицию')" @click="removeMaterial(m)">
+                            <button class="text-slate-300 dark:text-slate-600 transition-colors hover:text-rose-600" :title="$e('Удалить позицию')" @click="removeMaterial(m)">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                             </button>
                         </td>
@@ -315,26 +315,26 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                         <td :colspan="canManage ? (allMode ? 10 : 9) : (allMode ? 9 : 8)" class="bg-indigo-50/40 px-4 py-3">
                             <div class="flex flex-wrap items-end gap-3">
                                 <label class="flex-1 min-w-48">
-                                    <span class="text-xs text-slate-500">{{ $e('Название') }}</span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Название') }}</span>
                                     <TextInput v-model="materialForm.name" class="mt-1 w-full" />
                                     <InputError :message="materialForm.errors.name" class="mt-1" />
                                 </label>
                                 <label>
-                                    <span class="text-xs text-slate-500">{{ $e('Ед. изм.') }}</span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Ед. изм.') }}</span>
                                     <select v-model="materialForm.unit" class="mt-1 rounded-md border-slate-300 text-sm shadow-sm">
                                         <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
                                     </select>
                                 </label>
                                 <label>
-                                    <span class="text-xs text-slate-500">{{ $e('Цена закупки') }}</span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Цена закупки') }}</span>
                                     <TextInput v-model="materialForm.price" type="number" min="0" step="any" class="mt-1 w-32" />
                                 </label>
                                 <label>
-                                    <span class="text-xs text-slate-500">{{ $e('Наценка, %') }}</span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Наценка, %') }}</span>
                                     <TextInput v-model="materialForm.markup_pct" type="number" min="0" step="0.01" class="mt-1 w-24" :placeholder="String(defaultMarkup)" />
                                 </label>
                                 <label class="flex-1 min-w-40">
-                                    <span class="text-xs text-slate-500">{{ $e('Заметка') }}</span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Заметка') }}</span>
                                     <TextInput v-model="materialForm.note" class="mt-1 w-full" />
                                 </label>
                                 <div class="flex gap-2">
@@ -351,7 +351,7 @@ const lowStock = (m) => Number(m.quantity) <= 0;
 
                     <tr v-if="!filtered.length">
                         <td :colspan="canManage ? (allMode ? 10 : 9) : (allMode ? 9 : 8)" class="px-6 py-12 text-center">
-                            <svg class="mx-auto h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>
+                            <svg class="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>
                             <p class="mt-3 text-sm text-slate-400">{{ $e('Склад пуст — оформите первый приход товара') }}</p>
                             <PrimaryButton v-if="canManage" class="mt-4" @click="openReceipt">{{ $e('+ Приход товара') }}</PrimaryButton>
                         </td>
@@ -361,21 +361,21 @@ const lowStock = (m) => Number(m.quantity) <= 0;
         </div>
 
         <!-- История прихода -->
-        <div v-if="receipts.length" class="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
-            <h3 class="mb-4 text-sm font-semibold text-slate-700">{{ $e('Последние приходы') }}</h3>
-            <div class="divide-y divide-slate-50">
+        <div v-if="receipts.length" class="mt-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 shadow-card">
+            <h3 class="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{{ $e('Последние приходы') }}</h3>
+            <div class="divide-y divide-slate-50 dark:divide-slate-800">
                 <div v-for="r in receipts" :key="r.id" class="py-2.5 text-sm">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">+ {{ qty(r.quantity) }} {{ r.material?.unit }}</span>
-                        <span class="font-medium text-slate-800">{{ r.material?.name }}</span>
-                        <span v-if="Number(r.price) > 0" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-600">{{ money(r.price) }}/{{ r.material?.unit }}</span>
+                        <span class="rounded-full bg-emerald-100 dark:bg-emerald-500/20 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">+ {{ qty(r.quantity) }} {{ r.material?.unit }}</span>
+                        <span class="font-medium text-slate-800 dark:text-slate-200">{{ r.material?.name }}</span>
+                        <span v-if="Number(r.price) > 0" class="rounded-full bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-600 dark:text-slate-300">{{ money(r.price) }}/{{ r.material?.unit }}</span>
                         <span v-if="r.note" class="text-xs text-slate-400">{{ r.note }}</span>
                         <span class="ml-auto text-xs text-slate-400">{{ r.user?.name ?? '—' }} · {{ formatDate(r.date) }} {{ $e('· внесено') }} {{ formatDateTime(r.created_at) }}</span>
                         <template v-if="canManage">
-                            <button class="rounded p-1 text-slate-300 transition-colors hover:text-indigo-600" :title="$e('Редактировать приход')" @click="openEditReceipt(r)">
+                            <button class="rounded p-1 text-slate-300 dark:text-slate-600 transition-colors hover:text-indigo-600" :title="$e('Редактировать приход')" @click="openEditReceipt(r)">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                             </button>
-                            <button class="rounded p-1 text-slate-300 transition-colors hover:text-rose-600" :title="$e('Удалить приход')" @click="removeReceipt(r)">
+                            <button class="rounded p-1 text-slate-300 dark:text-slate-600 transition-colors hover:text-rose-600" :title="$e('Удалить приход')" @click="removeReceipt(r)">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                             </button>
                         </template>
@@ -419,12 +419,12 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                 <div v-if="materials.length" class="mb-4 flex gap-2">
                     <button type="button" @click="mode = 'existing'"
                         class="rounded-lg border px-4 py-2 text-sm font-semibold transition-all"
-                        :class="mode === 'existing' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'">
+                        :class="mode === 'existing' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 hover:border-slate-300'">
                         {{ $e('Существующий материал') }}
                     </button>
                     <button type="button" @click="mode = 'new'"
                         class="rounded-lg border px-4 py-2 text-sm font-semibold transition-all"
-                        :class="mode === 'new' ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'">
+                        :class="mode === 'new' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 hover:border-slate-300'">
                         {{ $e('Новая позиция') }}
                     </button>
                 </div>
@@ -475,7 +475,7 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                         <TextInput v-model="form.markup_pct" type="number" min="0" step="0.01" class="mt-1 w-full" :placeholder="String(defaultMarkup)" />
                         <p class="mt-1 text-xs text-slate-400">
                             {{ $e('Пусто — общая наценка') }} {{ defaultMarkup }}%.
-                            <template v-if="form.price">{{ $e('Цена продажи:') }} <b class="tabular-nums text-slate-600">{{ money(salePriceNow) }}</b></template>
+                            <template v-if="form.price">{{ $e('Цена продажи:') }} <b class="tabular-nums text-slate-600 dark:text-slate-300">{{ money(salePriceNow) }}</b></template>
                         </p>
                     </div>
                     <div class="col-span-2">
@@ -484,14 +484,14 @@ const lowStock = (m) => Number(m.quantity) <= 0;
                             <button v-for="p in [{ k: 'cash', l: $e('💵 Наличные') }, { k: 'bank', l: $e('🏦 Банк') }, { k: 'none', l: $e('Не списывать') }]"
                                 :key="p.k" type="button" @click="form.payment = p.k"
                                 class="rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-150"
-                                :class="form.payment === p.k ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-500 hover:border-slate-300'">{{ p.l }}</button>
+                                :class="form.payment === p.k ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 hover:border-slate-300'">{{ p.l }}</button>
                         </div>
                         <p class="mt-1 text-xs text-slate-400">
                             {{ form.payment === 'none'
                                 ? $e('Только остаток на складе — деньги не двигаются.')
                                 : $e('Спишется сразу: количество × цена уйдёт из кассы или банка расходом «Закуп материалов».') }}
                         </p>
-                        <p v-if="form.payment !== 'none' && form.quantity && form.price" class="mt-0.5 text-xs font-semibold text-slate-600">
+                        <p v-if="form.payment !== 'none' && form.quantity && form.price" class="mt-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
                             {{ $e('К списанию:') }} <span class="tabular-nums">{{ money(Number(form.quantity) * Number(form.price)) }}</span>
                         </p>
                     </div>
@@ -506,18 +506,18 @@ const lowStock = (m) => Number(m.quantity) <= 0;
         <!-- Детали списания: на какие сделки/заказы ушёл материал -->
         <Modal :show="!!writeoffFor" @close="writeoffFor = null" max-width="lg">
             <div class="p-6">
-                <h2 class="mb-1 text-lg font-semibold text-slate-900">{{ $e('Списания —') }} {{ writeoffFor?.name }}</h2>
+                <h2 class="mb-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $e('Списания —') }} {{ writeoffFor?.name }}</h2>
                 <p class="mb-4 text-xs text-slate-400">{{ $e('Клик по строке — переход в сделку / заказ цеха') }}</p>
-                <div class="max-h-80 divide-y divide-slate-50 overflow-y-auto">
+                <div class="max-h-80 divide-y divide-slate-50 dark:divide-slate-800 overflow-y-auto">
                     <button v-for="(w, i) in writeoffRows" :key="i" type="button" @click="w.target_id && router.get(writeoffLink(w))"
                         class="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left text-sm transition"
                         :class="w.target_id ? 'hover:bg-indigo-50/60' : 'cursor-default opacity-60'">
                         <div class="min-w-0">
-                            <div class="truncate font-medium" :class="w.target_id ? 'text-slate-800' : 'text-slate-400 line-through'">{{ w.label }}</div>
+                            <div class="truncate font-medium" :class="w.target_id ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 line-through'">{{ w.label }}</div>
                             <div class="text-xs text-slate-400"><template v-if="w.number">{{ w.number }} · </template>{{ w.type === 'deal' ? $e('сделка') : $e('заказ цеха') }} · {{ w.date ? formatDate(w.date) : '—' }} {{ $e('· внесено') }} {{ formatDateTime(w.created_at) }}</div>
                         </div>
                         <div class="text-right">
-                            <div class="font-semibold tabular-nums text-rose-600">− {{ qty(w.qty) }} {{ writeoffFor?.unit }}</div>
+                            <div class="font-semibold tabular-nums text-rose-600 dark:text-rose-400">− {{ qty(w.qty) }} {{ writeoffFor?.unit }}</div>
                             <div class="text-xs tabular-nums text-slate-400">{{ money(w.amount) }}</div>
                         </div>
                     </button>

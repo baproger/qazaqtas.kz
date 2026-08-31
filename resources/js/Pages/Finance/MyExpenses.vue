@@ -64,11 +64,11 @@ const submit = () => form.post(route('expenses.store'), {
             </div>
 
             <!-- ================= Мои заявки ================= -->
-            <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
-                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-sm font-semibold text-slate-900">{{ $e('Мои заявки') }}</h3>
-                    <span v-if="pending.length" class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-                        {{ $e('ждут оплаты:') }} <b class="tabular-nums">{{ pending.length }}</b>
+            <div class="mt-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $e('Мои заявки') }}</h3>
+                    <span v-if="pending.length" class="rounded-full bg-amber-100 dark:bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                        {{ $e('ждут оплаты:') }} <b class="tabular-nums whitespace-nowrap">{{ pending.length }}</b>
                     </span>
                 </div>
 
@@ -76,27 +76,27 @@ const submit = () => form.post(route('expenses.store'), {
                     {{ $e('Заявок пока нет — нажмите «+ Заявка».') }}
                 </div>
 
-                <ul v-else class="divide-y divide-slate-50">
+                <ul v-else class="divide-y divide-slate-50 dark:divide-slate-800">
                     <li v-for="e in [...pending, ...paid]" :key="e.id"
-                        class="group flex flex-wrap items-center gap-x-4 gap-y-1 px-6 py-3 transition-colors duration-150 hover:bg-slate-50/60">
+                        class="group flex flex-wrap items-center gap-x-4 gap-y-1 px-6 py-3 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60/60">
                         <span class="w-24 shrink-0 text-xs text-slate-400">{{ formatDate(e.date) }}</span>
-                        <span class="w-28 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-800">{{ money(e.amount) }}</span>
-                        <span v-if="e.category" class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">{{ e.category }}</span>
-                        <span class="min-w-0 flex-1 truncate text-sm text-slate-500">{{ e.description || '—' }}</span>
+                        <span class="w-28 shrink-0 text-right text-sm font-semibold tabular-nums whitespace-nowrap text-slate-800 dark:text-slate-200">{{ money(e.amount) }}</span>
+                        <span v-if="e.category" class="rounded-full bg-slate-100 dark:bg-slate-800/60 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">{{ e.category }}</span>
+                        <span class="min-w-0 flex-1 truncate text-sm text-slate-500 dark:text-slate-400">{{ e.description || '—' }}</span>
                         <a v-if="e.has_receipt" :href="receiptUrl(e.id)" target="_blank"
-                            class="text-xs font-medium text-indigo-600 opacity-0 transition-opacity hover:underline group-hover:opacity-100">{{ $e('Посмотреть чек') }}</a>
-                        <span v-if="e.status === 'confirmed'" class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                            class="text-xs font-medium text-indigo-600 dark:text-indigo-400 opacity-0 transition-opacity hover:underline group-hover:opacity-100">{{ $e('Посмотреть чек') }}</a>
+                        <span v-if="e.status === 'confirmed'" class="rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                             {{ $e('Оплачен') }} · {{ methodLabel(e.payment_method) }}
                         </span>
-                        <span v-else class="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">{{ $e('Ждёт бухгалтера') }}</span>
+                        <span v-else class="rounded-full bg-amber-50 dark:bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">{{ $e('Ждёт бухгалтера') }}</span>
                     </li>
                 </ul>
             </div>
 
             <!-- ================= Мне выдано (аванс, долг) ================= -->
-            <div class="mt-6 rounded-2xl border border-slate-100 bg-white shadow-sm">
-                <div class="border-b border-slate-100 px-6 py-4">
-                    <h3 class="text-sm font-semibold text-slate-900">{{ $e('Мне выдано') }}</h3>
+            <div class="mt-6 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
+                <div class="border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $e('Мне выдано') }}</h3>
                     <p class="mt-0.5 text-xs text-slate-400">{{ $e('Авансы и долги, выданные бухгалтерией за выбранный месяц.') }}</p>
                 </div>
                 <div v-if="!payouts.length" class="px-6 py-10 text-center text-sm text-slate-400">
@@ -104,7 +104,7 @@ const submit = () => form.post(route('expenses.store'), {
                 </div>
                 <div v-else class="overflow-x-auto">
                     <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                        <thead class="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase tracking-wide text-slate-400">
                             <tr>
                                 <th class="px-6 py-2.5">{{ $e('Дата') }}</th>
                                 <th class="px-4 py-2.5">{{ $e('Вид') }}</th>
@@ -113,16 +113,16 @@ const submit = () => form.post(route('expenses.store'), {
                                 <th class="px-4 py-2.5">{{ $e('За что') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-50">
-                            <tr v-for="p in payouts" :key="p.id" class="transition-colors duration-150 hover:bg-slate-50/60">
-                                <td class="px-6 py-2.5 text-slate-500">{{ formatDate(p.date) }}</td>
+                        <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+                            <tr v-for="p in payouts" :key="p.id" class="transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60/60">
+                                <td class="px-6 py-2.5 text-slate-500 dark:text-slate-400">{{ formatDate(p.date) }}</td>
                                 <td class="px-4 py-2.5">
                                     <span class="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                                        :class="p.payout === 'debt' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-700'">{{ payoutLabel(p.payout) }}</span>
+                                        :class="p.payout === 'debt' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'">{{ payoutLabel(p.payout) }}</span>
                                 </td>
-                                <td class="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-800">{{ money(p.amount) }}</td>
-                                <td class="px-4 py-2.5 text-slate-500">{{ methodLabel(p.payment_method) }}</td>
-                                <td class="px-4 py-2.5 text-slate-500">{{ p.description || '—' }}</td>
+                                <td class="px-4 py-2.5 text-right font-semibold tabular-nums whitespace-nowrap text-slate-800 dark:text-slate-200">{{ money(p.amount) }}</td>
+                                <td class="px-4 py-2.5 text-slate-500 dark:text-slate-400">{{ methodLabel(p.payment_method) }}</td>
+                                <td class="px-4 py-2.5 text-slate-500 dark:text-slate-400">{{ p.description || '—' }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -132,12 +132,12 @@ const submit = () => form.post(route('expenses.store'), {
         <!-- ================= Новая заявка ================= -->
         <Modal :show="showForm" @close="showForm = false" max-width="lg">
             <div class="p-6">
-                <h2 class="mb-1 text-lg font-semibold text-slate-900">{{ $e('Заявка на расход') }}</h2>
+                <h2 class="mb-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $e('Заявка на расход') }}</h2>
                 <p class="mb-4 text-xs text-slate-400">{{ $e('Счёт бухгалтеру на оплату: он проверит и оплатит.') }}</p>
                 <ExpenseFields :form="form" :categories="categories" :file-hint="$e('Чек (фото или PDF)')" />
                 <div class="mt-6 flex justify-end gap-2">
                     <button type="button" @click="showForm = false"
-                        class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors duration-150 hover:bg-slate-50">{{ $e('Отмена') }}</button>
+                        class="rounded-lg border border-slate-200 dark:border-slate-800/80 px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/60">{{ $e('Отмена') }}</button>
                     <button type="button" @click="submit" :disabled="form.processing"
                         class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-indigo-700 disabled:opacity-50">{{ $e('Отправить бухгалтеру') }}</button>
                 </div>

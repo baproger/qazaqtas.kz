@@ -73,7 +73,7 @@ const open = ref(false);
                 @click="open = false"
             >
                 <div
-                    class="rounded-2xl ring-1 ring-slate-900/5"
+                    class="rounded-2xl ring-1 ring-slate-900/5 dark:ring-white/10"
                     :class="contentClasses"
                 >
                     <slot name="content" />

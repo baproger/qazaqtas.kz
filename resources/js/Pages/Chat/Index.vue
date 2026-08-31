@@ -489,15 +489,15 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
     <AppLayout>
         <template #header>{{ $t('page.chat', 'Чат') }}</template>
 
-        <div class="relative flex h-[calc(100vh-8.5rem)] overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div class="relative flex h-[calc(100vh-8.5rem)] overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
             <!-- ============ LEFT: chat list ============ -->
             <aside :class="listOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-                class="absolute inset-y-0 left-0 z-20 flex w-72 flex-shrink-0 flex-col border-r border-slate-200 bg-slate-50 transition-transform duration-300 lg:static lg:z-0">
-                <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
-                    <h3 class="text-sm font-semibold text-slate-800">{{ $e('Сообщения') }}</h3>
+                class="absolute inset-y-0 left-0 z-20 flex w-72 flex-shrink-0 flex-col border-r border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-800/50 transition-transform duration-300 lg:static lg:z-0">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800/80 px-4 py-3">
+                    <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ $e('Сообщения') }}</h3>
                     <button @click="toggleSound" :title="soundOn ? $e('Выключить звук') : $e('Включить звук')"
                         class="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-base transition-colors"
-                        :class="soundOn ? 'text-indigo-500 hover:bg-indigo-50' : 'text-slate-300 hover:bg-slate-100'">
+                        :class="soundOn ? 'text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50' : 'text-slate-300 dark:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800/60'">
                         {{ soundOn ? '🔔' : '🔕' }}
                     </button>
                     <button @click="openNew" :title="$e('Новый чат')"
@@ -505,7 +505,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                         <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
                     </button>
                 </div>
-                <div class="border-b border-slate-200 p-3">
+                <div class="border-b border-slate-200 dark:border-slate-800/80 p-3">
                     <div class="relative">
                         <svg viewBox="0 0 24 24" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
                         <input v-model="search" :placeholder="$e('Поиск чатов и контактов…')"
@@ -519,7 +519,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                             <span v-if="sec.key === 'pinned'">📌</span>{{ sec.title }}
                         </div>
                         <button v-for="c in sec.items" :key="c.id" @click="selectChat(c)"
-                            :class="activeChat?.id === c.id ? 'bg-white shadow-sm ring-1 ring-indigo-100' : 'hover:bg-white/70'"
+                            :class="activeChat?.id === c.id ? 'bg-white dark:bg-slate-900/70 shadow-sm ring-1 ring-indigo-100' : 'hover:bg-white/70'"
                             class="group relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-all">
                             <span class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white" :class="avatarColor(c.name)">
                                 <img v-if="c.avatar" :src="c.avatar" class="h-full w-full object-cover" alt="" />
@@ -529,23 +529,23 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="flex min-w-0 items-center gap-1.5">
-                                        <span class="truncate text-sm" :class="isUnread(c) ? 'font-bold text-slate-900' : 'font-medium text-slate-700'">{{ c.name }}</span>
-                                        <span v-if="c.company_name" class="flex-shrink-0 rounded bg-slate-200/70 px-1 py-px text-xs font-bold uppercase text-slate-500">{{ c.company_name }}</span>
+                                        <span class="truncate text-sm" :class="isUnread(c) ? 'font-bold text-slate-900 dark:text-slate-100' : 'font-medium text-slate-700 dark:text-slate-300'">{{ c.name }}</span>
+                                        <span v-if="c.company_name" class="flex-shrink-0 rounded bg-slate-200/70 dark:bg-slate-700 px-1 py-px text-xs font-bold uppercase text-slate-500 dark:text-slate-400">{{ c.company_name }}</span>
                                     </span>
                                     <span v-if="lastOf(c)" class="flex-shrink-0 text-xs text-slate-400">{{ fmtTime(lastOf(c).time) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
-                                    <span class="truncate text-xs" :class="isUnread(c) ? 'font-semibold text-slate-600' : 'text-slate-400'">
+                                    <span class="truncate text-xs" :class="isUnread(c) ? 'font-semibold text-slate-600 dark:text-slate-300' : 'text-slate-400'">
                                         {{ lastOf(c) ? lastOf(c).text : $e('Нет сообщений') }}
                                     </span>
                                     <span v-if="unreadCount(c) > 0" class="flex h-4 min-w-4 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500 px-1 text-xs font-bold text-white">{{ unreadCount(c) > 99 ? '99+' : unreadCount(c) }}</span>
                                 </div>
                             </div>
                             <button @click.stop="togglePin(c)" :title="isPinned(c) ? $e('Открепить') : $e('Закрепить')"
-                                class="absolute right-1.5 top-1.5 hidden text-xs text-slate-300 hover:text-indigo-500 group-hover:block"
+                                class="absolute right-1.5 top-1.5 hidden text-xs text-slate-300 dark:text-slate-600 hover:text-indigo-500 group-hover:block"
                                 :class="{ '!block text-indigo-400': isPinned(c) }">📌</button>
                             <button @click.stop="toggleArchive(c)" :title="$e('В архив')"
-                                class="absolute right-1.5 bottom-1.5 hidden text-slate-300 hover:text-indigo-500 group-hover:block">
+                                class="absolute right-1.5 bottom-1.5 hidden text-slate-300 dark:text-slate-600 hover:text-indigo-500 group-hover:block">
                                 <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
                             </button>
                         </button>
@@ -560,14 +560,14 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                         </button>
                         <template v-if="showArchived">
                             <button v-for="c in archivedChats" :key="c.id" @click="selectChat(c)"
-                                :class="activeChat?.id === c.id ? 'bg-white shadow-sm ring-1 ring-indigo-100' : 'hover:bg-white/70'"
+                                :class="activeChat?.id === c.id ? 'bg-white dark:bg-slate-900/70 shadow-sm ring-1 ring-indigo-100' : 'hover:bg-white/70'"
                                 class="group relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left opacity-70 transition-all">
                                 <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white" :class="avatarColor(c.name)">
                                     <img v-if="c.avatar" :src="c.avatar" class="h-full w-full object-cover" alt="" />
                                     <span v-else-if="c.type === 'group' || c.type === 'global'">#</span>
                                     <template v-else>{{ initial(c.name) }}</template>
                                 </span>
-                                <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-600">{{ c.name }}</span>
+                                <span class="min-w-0 flex-1 truncate text-sm font-medium text-slate-600 dark:text-slate-300">{{ c.name }}</span>
                                 <button @click.stop="toggleArchive(c)" :title="$e('Вернуть из архива')"
                                     class="flex-shrink-0 text-xs text-slate-400 hover:text-indigo-500">{{ $e('Вернуть') }}</button>
                             </button>
@@ -583,10 +583,10 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                             <div v-for="c in trashedChats" :key="'t' + c.id" class="flex items-center gap-2 rounded-xl px-2.5 py-2 opacity-80 hover:bg-white/70">
                                 <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-300 text-sm font-bold text-white">#</span>
                                 <div class="min-w-0 flex-1">
-                                    <div class="truncate text-sm font-medium text-slate-600">{{ c.name }}</div>
+                                    <div class="truncate text-sm font-medium text-slate-600 dark:text-slate-300">{{ c.name }}</div>
                                     <div class="text-xs text-slate-400">{{ $e('удалён') }} {{ fmtDay(c.deleted_at) }}</div>
                                 </div>
-                                <button @click="restoreChat(c)" :title="$e('Восстановить')" class="flex-shrink-0 text-xs font-medium text-indigo-500 hover:underline">{{ $e('Вернуть') }}</button>
+                                <button @click="restoreChat(c)" :title="$e('Восстановить')" class="flex-shrink-0 text-xs font-medium text-indigo-500 dark:text-indigo-400 hover:underline">{{ $e('Вернуть') }}</button>
                                 <button @click="purgeChat(c)" :title="$e('Стереть навсегда')" class="flex-shrink-0 text-xs text-rose-500 hover:underline">✕</button>
                             </div>
                         </template>
@@ -598,15 +598,15 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
 
             <!-- ============ CENTER: conversation ============ -->
             <section class="chat-bg flex min-w-0 flex-1 flex-col">
-                <header class="flex items-center justify-between gap-2 border-b border-slate-200 bg-white/80 px-4 py-2.5 backdrop-blur">
+                <header class="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/70 px-4 py-2.5 backdrop-blur">
                     <div class="flex min-w-0 items-center gap-3">
-                        <button class="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden" @click="listOpen = true">☰</button>
+                        <button class="rounded-md p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 lg:hidden" @click="listOpen = true">☰</button>
                         <span v-if="activeChat" class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white" :class="avatarColor(activeChat.name)">
                             <img v-if="activeChat.avatar" :src="activeChat.avatar" class="h-full w-full object-cover" alt="" />
                             <span v-else-if="activeChat.type === 'group' || activeChat.type === 'global'">#</span><template v-else>{{ initial(activeChat.name) }}</template>
                         </span>
                         <div class="min-w-0">
-                            <div class="truncate text-sm font-semibold text-slate-900">{{ activeChat?.name ?? $e('Выберите чат') }}</div>
+                            <div class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ activeChat?.name ?? $e('Выберите чат') }}</div>
                             <div class="text-xs text-slate-400">{{ activeChat ? typeLabel(activeChat) + (activeChat.company_name ? ' · ' + activeChat.company_name : '') + ' · ' + (activeChat.participants?.length || 0) + $e(' уч.') : '' }}</div>
                         </div>
                     </div>
@@ -616,10 +616,10 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                 class="w-40 rounded-lg border-slate-200 py-1.5 pl-3 pr-7 text-xs shadow-sm focus:border-indigo-400 focus:ring-indigo-400 sm:w-52" />
                             <button @click="showSearch = false; msgSearch = ''" class="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">✕</button>
                         </div>
-                        <button v-else @click="showSearch = true" :title="$e('Поиск в чате')" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100">
+                        <button v-else @click="showSearch = true" :title="$e('Поиск в чате')" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/60">
                             <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
                         </button>
-                        <button @click="infoOpen = !infoOpen" :class="infoOpen ? 'bg-indigo-50 text-indigo-600' : 'text-slate-500 hover:bg-slate-100'"
+                        <button @click="infoOpen = !infoOpen" :class="infoOpen ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
                             class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors">
                             <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
                             {{ $e('Инфо') }}
@@ -631,8 +631,8 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                 <div v-if="activeChat?.pinned" class="flex items-center gap-2 border-b border-amber-100 bg-amber-50/70 px-4 py-2 text-xs">
                     <svg viewBox="0 0 24 24" class="h-4 w-4 flex-shrink-0 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7Z"/></svg>
                     <div class="min-w-0 flex-1">
-                        <span class="font-semibold text-amber-700">{{ $e('Закреплено ·') }} {{ activeChat.pinned.author }}: </span>
-                        <span class="text-slate-600">{{ activeChat.pinned.message }}</span>
+                        <span class="font-semibold text-amber-700 dark:text-amber-400">{{ $e('Закреплено ·') }} {{ activeChat.pinned.author }}: </span>
+                        <span class="text-slate-600 dark:text-slate-300">{{ activeChat.pinned.message }}</span>
                     </div>
                     <button v-if="canCreateGroup" @click="pinMessage({ id: activeChat.pinned.id })" :title="$e('Открепить')" class="flex-shrink-0 text-slate-400 hover:text-rose-500">✕</button>
                 </div>
@@ -642,18 +642,18 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                     <TransitionGroup name="msg" tag="div" class="space-y-1.5">
                         <template v-for="m in grouped" :key="m.id">
                             <div v-if="m.sep" class="my-3 flex justify-center">
-                                <span class="rounded-full bg-white/80 px-3 py-0.5 text-xs font-medium text-slate-400 shadow-sm ring-1 ring-slate-200">{{ m.day }}</span>
+                                <span class="rounded-full bg-white/80 dark:bg-slate-900/70 px-3 py-0.5 text-xs font-medium text-slate-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-800">{{ m.day }}</span>
                             </div>
                             <div v-else class="group flex items-end gap-2" :class="m.user_id === me?.id ? 'flex-row-reverse' : ''">
                                 <Avatar v-if="m.user_id !== me?.id" :name="m.user_name" :src="m.user_avatar" :size="28" />
                                 <div class="max-w-[72%]">
-                                    <div :class="m.user_id === me?.id ? 'rounded-br-md bg-indigo-600 text-white' : 'rounded-bl-md bg-white text-slate-800 ring-1 ring-slate-100'"
+                                    <div :class="m.user_id === me?.id ? 'rounded-br-md bg-indigo-600 text-white' : 'rounded-bl-md bg-white dark:bg-slate-900/70 text-slate-800 dark:text-slate-200 ring-1 ring-slate-100 dark:ring-slate-800'"
                                         class="rounded-2xl px-3.5 py-2 text-sm shadow-sm">
                                         <!-- Цитата: ответ на сообщение -->
                                         <div v-if="m.reply_to" class="mb-1.5 rounded-lg border-l-2 px-2 py-1 text-xs"
                                             :class="m.user_id === me?.id ? 'border-white/50 bg-white/10' : 'border-indigo-300 bg-indigo-50/70'">
-                                            <div class="font-semibold" :class="m.user_id === me?.id ? 'text-white' : 'text-indigo-600'">{{ m.reply_to.user_name }}</div>
-                                            <div class="truncate" :class="m.user_id === me?.id ? 'text-indigo-100' : 'text-slate-500'">{{ m.reply_to.message || $e('📎 вложение') }}</div>
+                                            <div class="font-semibold" :class="m.user_id === me?.id ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'">{{ m.reply_to.user_name }}</div>
+                                            <div class="truncate" :class="m.user_id === me?.id ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'">{{ m.reply_to.message || $e('📎 вложение') }}</div>
                                         </div>
                                         <!-- Attachments -->
                                         <div v-for="(a, i) in m.attachments" :key="i" class="mb-1.5">
@@ -661,11 +661,11 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                                 <img :src="a.url" class="max-h-56 max-w-full rounded-xl object-cover" alt="" />
                                             </a>
                                             <a v-else :href="a.url" target="_blank" :download="a.name"
-                                                :class="m.user_id === me?.id ? 'bg-white/15 hover:bg-white/25' : 'bg-slate-50 hover:bg-slate-100'"
+                                                :class="m.user_id === me?.id ? 'bg-white/15 hover:bg-white/25' : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800/60'"
                                                 class="flex items-center gap-2 rounded-xl px-2.5 py-2 transition-colors">
                                                 <span class="text-xl">📄</span>
                                                 <span class="min-w-0 flex-1">
-                                                    <span class="block truncate text-xs font-semibold" :class="m.user_id === me?.id ? 'text-white' : 'text-slate-700'">{{ a.name }}</span>
+                                                    <span class="block truncate text-xs font-semibold" :class="m.user_id === me?.id ? 'text-white' : 'text-slate-700 dark:text-slate-300'">{{ a.name }}</span>
                                                     <span class="block text-xs" :class="m.user_id === me?.id ? 'text-indigo-200' : 'text-slate-400'">{{ fmtSize(a.size) }}</span>
                                                 </span>
                                                 <svg viewBox="0 0 24 24" class="h-4 w-4 flex-shrink-0" :class="m.user_id === me?.id ? 'text-indigo-200' : 'text-slate-400'" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
@@ -673,7 +673,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                         </div>
                                         <div v-if="m.message" class="whitespace-pre-line break-words">{{ m.message }}</div>
                                         <div class="mt-0.5 flex items-center gap-1.5 text-xs" :class="m.user_id === me?.id ? 'justify-end text-indigo-200' : 'text-slate-400'">
-                                            <span v-if="m.user_id !== me?.id && activeChat?.type !== 'personal'" class="font-semibold text-indigo-500">{{ m.user_name }}</span>
+                                            <span v-if="m.user_id !== me?.id && activeChat?.type !== 'personal'" class="font-semibold text-indigo-500 dark:text-indigo-400">{{ m.user_name }}</span>
                                             <span v-if="m.edited">{{ $e('изменено') }}</span>
                                             <span>{{ fmtTime(m.created_at) }}</span>
                                             <!-- Кто прочитал: ✓ отправлено, ✓✓ прочитано (имена — по наведению) -->
@@ -689,28 +689,28 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                     <div v-if="m.reactions && m.reactions.length" class="mt-1 flex flex-wrap gap-1" :class="m.user_id === me?.id ? 'justify-end' : ''">
                                         <button v-for="r in m.reactions" :key="r.emoji" @click="react(m, r.emoji)"
                                             class="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs ring-1 transition-colors"
-                                            :class="r.mine ? 'bg-indigo-50 ring-indigo-300' : 'bg-white ring-slate-200 hover:bg-slate-50'">
-                                            <span>{{ r.emoji }}</span><span class="text-xs font-semibold text-slate-500">{{ r.count }}</span>
+                                            :class="r.mine ? 'bg-indigo-50 dark:bg-indigo-500/10 ring-indigo-300' : 'bg-white dark:bg-slate-900/70 ring-slate-200 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'">
+                                            <span>{{ r.emoji }}</span><span class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ r.count }}</span>
                                         </button>
                                     </div>
                                 </div>
                                 <!-- Действия наведением: реакция / ответить / изменить / закрепить / удалить -->
                                 <div class="relative mb-1 hidden flex-shrink-0 items-center gap-0.5 group-hover:flex">
-                                    <button @click="reactPickerFor = reactPickerFor === m.id ? null : m.id" :title="$e('Реакция')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-amber-50 hover:text-amber-500">😊</button>
-                                    <button @click="startReply(m)" :title="$e('Ответить')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-indigo-50 hover:text-indigo-500">
+                                    <button @click="reactPickerFor = reactPickerFor === m.id ? null : m.id" :title="$e('Реакция')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 dark:text-slate-600 transition-colors hover:bg-amber-50 hover:text-amber-500">😊</button>
+                                    <button @click="startReply(m)" :title="$e('Ответить')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 dark:text-slate-600 transition-colors hover:bg-indigo-50 hover:text-indigo-500">
                                         <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v1"/></svg>
                                     </button>
-                                    <button v-if="m.can_edit" @click="startEditMsg(m)" :title="$e('Изменить')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-indigo-50 hover:text-indigo-500">
+                                    <button v-if="m.can_edit" @click="startEditMsg(m)" :title="$e('Изменить')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 dark:text-slate-600 transition-colors hover:bg-indigo-50 hover:text-indigo-500">
                                         <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                                     </button>
-                                    <button v-if="canCreateGroup && activeChat?.type !== 'personal'" @click="pinMessage(m)" :title="$e('Закрепить')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-indigo-50 hover:text-indigo-500">
+                                    <button v-if="canCreateGroup && activeChat?.type !== 'personal'" @click="pinMessage(m)" :title="$e('Закрепить')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 dark:text-slate-600 transition-colors hover:bg-indigo-50 hover:text-indigo-500">
                                         <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 17v5M9 3h6l-1 7 3 3H7l3-3-1-7Z"/></svg>
                                     </button>
-                                    <button v-if="m.can_delete" @click="deleteMessage(m)" :title="$e('Удалить')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500">
+                                    <button v-if="m.can_delete" @click="deleteMessage(m)" :title="$e('Удалить')" class="flex h-6 w-6 items-center justify-center rounded-full text-slate-300 dark:text-slate-600 transition-colors hover:bg-rose-50 hover:text-rose-500">
                                         <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
                                     </button>
                                     <!-- Быстрый выбор реакции -->
-                                    <div v-if="reactPickerFor === m.id" class="absolute -top-9 left-0 z-10 flex gap-0.5 rounded-full bg-white px-1.5 py-1 shadow-lg ring-1 ring-slate-200">
+                                    <div v-if="reactPickerFor === m.id" class="absolute -top-9 left-0 z-10 flex gap-0.5 rounded-full bg-white dark:bg-slate-900/70 px-1.5 py-1 shadow-lg ring-1 ring-slate-200 dark:ring-slate-800">
                                         <button v-for="e in REACTIONS" :key="e" @click="react(m, e)" class="rounded-full px-1 text-base transition-transform hover:scale-125">{{ e }}</button>
                                     </div>
                                 </div>
@@ -724,40 +724,40 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                 </div>
 
                 <!-- Composer -->
-                <div v-if="activeChat" class="border-t border-slate-200 bg-white/80 p-3 backdrop-blur">
+                <div v-if="activeChat" class="border-t border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/70 p-3 backdrop-blur">
                     <!-- Баннер ответа/редактирования -->
                     <div v-if="replyTo || editingMsg" class="mb-2 flex items-center gap-2 rounded-lg border-l-2 border-indigo-400 bg-indigo-50/70 px-3 py-1.5 text-xs">
-                        <svg viewBox="0 0 24 24" class="h-4 w-4 flex-shrink-0 text-indigo-500" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4 flex-shrink-0 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" stroke-width="1.8">
                             <path v-if="editingMsg" d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                             <path v-else d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v1"/>
                         </svg>
                         <div class="min-w-0 flex-1">
-                            <div class="font-semibold text-indigo-600">{{ editingMsg ? $e('Редактирование') : ($e('Ответ · ') + (replyTo?.user_name ?? '')) }}</div>
-                            <div class="truncate text-slate-500">{{ (editingMsg?.message || replyTo?.message) || $e('📎 вложение') }}</div>
+                            <div class="font-semibold text-indigo-600 dark:text-indigo-400">{{ editingMsg ? $e('Редактирование') : ($e('Ответ · ') + (replyTo?.user_name ?? '')) }}</div>
+                            <div class="truncate text-slate-500 dark:text-slate-400">{{ (editingMsg?.message || replyTo?.message) || $e('📎 вложение') }}</div>
                         </div>
                         <button @click="editingMsg ? cancelEditMsg() : cancelReply()" class="flex-shrink-0 text-slate-400 hover:text-rose-500">✕</button>
                     </div>
                     <!-- Pending attachment chip -->
-                    <div v-if="form.file" class="mb-2 flex items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-1.5 text-xs">
+                    <div v-if="form.file" class="mb-2 flex items-center gap-2 rounded-lg border border-indigo-100 dark:border-indigo-500/30 bg-indigo-50/60 px-3 py-1.5 text-xs">
                         <span class="text-base">📎</span>
-                        <span class="min-w-0 flex-1 truncate font-medium text-slate-700">{{ form.file.name }}</span>
+                        <span class="min-w-0 flex-1 truncate font-medium text-slate-700 dark:text-slate-300">{{ form.file.name }}</span>
                         <span class="flex-shrink-0 text-slate-400">{{ fmtSize(form.file.size) }}</span>
                         <button @click="form.file = null" class="flex-shrink-0 text-slate-400 hover:text-rose-500">✕</button>
                     </div>
-                    <div v-if="form.progress" class="mb-2 h-1 overflow-hidden rounded-full bg-slate-100">
+                    <div v-if="form.progress" class="mb-2 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800/60">
                         <div class="h-1 bg-indigo-500 transition-all" :style="{ width: form.progress.percentage + '%' }"></div>
                     </div>
-                    <div class="relative flex items-end gap-2 rounded-2xl border border-slate-100 bg-white px-2 py-1.5 shadow-sm focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100">
-                        <button @click="showEmoji = !showEmoji" :title="$e('Эмодзи')" class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-lg text-slate-400 hover:bg-slate-100">😊</button>
+                    <div class="relative flex items-end gap-2 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 px-2 py-1.5 shadow-sm focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100">
+                        <button @click="showEmoji = !showEmoji" :title="$e('Эмодзи')" class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">😊</button>
                         <input ref="fileInput" type="file" class="hidden" @change="onFilePicked" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.zip,.rar,.txt,.csv" />
-                        <button :title="$e('Прикрепить файл')" class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100" @click="pickFile">
+                        <button :title="$e('Прикрепить файл')" class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60" @click="pickFile">
                             <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.44 11.05 12.25 20.24a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.48-8.49"/></svg>
                         </button>
                         <!-- Выпадающий список упоминаний @имя -->
-                        <div v-if="mentionList.length" class="absolute bottom-full left-2 mb-2 w-64 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-slate-200">
+                        <div v-if="mentionList.length" class="absolute bottom-full left-2 mb-2 w-64 overflow-hidden rounded-xl bg-white dark:bg-slate-900/70 shadow-lg ring-1 ring-slate-200 dark:ring-slate-800">
                             <button v-for="u in mentionList" :key="u.id" @click="pickMention(u)" class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-indigo-50">
                                 <Avatar :name="u.name" :src="u.avatar" :size="26" />
-                                <span class="text-slate-700">{{ u.name }}</span>
+                                <span class="text-slate-700 dark:text-slate-300">{{ u.name }}</span>
                             </button>
                         </div>
                         <textarea ref="textarea" v-model="form.message" @keydown.enter="onEnter" @input="onComposerInput" rows="1" :placeholder="$e('Напишите сообщение…  (@ — упомянуть, Enter — отправить)')"
@@ -770,8 +770,8 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
 
                         <!-- Emoji panel -->
                         <transition enter-active-class="transition duration-150" enter-from-class="opacity-0 translate-y-2" leave-active-class="transition duration-100" leave-to-class="opacity-0">
-                            <div v-if="showEmoji" class="absolute bottom-14 left-0 grid grid-cols-8 gap-1 rounded-xl border border-slate-100 bg-white p-2 shadow-lg">
-                                <button v-for="e in emojis" :key="e" @click="addEmoji(e)" class="flex h-8 w-8 items-center justify-center rounded-lg text-lg hover:bg-slate-100">{{ e }}</button>
+                            <div v-if="showEmoji" class="absolute bottom-14 left-0 grid grid-cols-8 gap-1 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-2 shadow-lg">
+                                <button v-for="e in emojis" :key="e" @click="addEmoji(e)" class="flex h-8 w-8 items-center justify-center rounded-lg text-lg hover:bg-slate-100 dark:hover:bg-slate-800/60">{{ e }}</button>
                             </div>
                         </transition>
                     </div>
@@ -780,46 +780,46 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
 
             <!-- ============ RIGHT: info panel ============ -->
             <transition enter-active-class="transition-transform duration-300" enter-from-class="translate-x-full" leave-active-class="transition-transform duration-300" leave-to-class="translate-x-full">
-                <aside v-if="infoOpen && activeChat" class="absolute inset-y-0 right-0 z-20 flex w-72 flex-col border-l border-slate-200 bg-white shadow-xl lg:static lg:z-0 lg:shadow-none">
-                    <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                        <h3 class="text-sm font-semibold text-slate-800">{{ $e('Информация') }}</h3>
-                        <button @click="infoOpen = false" class="rounded-md p-1 text-slate-400 hover:bg-slate-100">✕</button>
+                <aside v-if="infoOpen && activeChat" class="absolute inset-y-0 right-0 z-20 flex w-72 flex-col border-l border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/70 shadow-xl lg:static lg:z-0 lg:shadow-none">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80 px-4 py-3">
+                        <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ $e('Информация') }}</h3>
+                        <button @click="infoOpen = false" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60">✕</button>
                     </div>
-                    <div class="flex flex-col items-center border-b border-slate-100 px-4 py-5 text-center">
+                    <div class="flex flex-col items-center border-b border-slate-100 dark:border-slate-800 px-4 py-5 text-center">
                         <span class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full text-xl font-bold text-white shadow-sm" :class="avatarColor(activeChat.name)">
                             <img v-if="activeChat.avatar" :src="activeChat.avatar" class="h-full w-full object-cover" alt="" />
                             <span v-else-if="activeChat.type === 'group' || activeChat.type === 'global'">#</span><template v-else>{{ initial(activeChat.name) }}</template>
                         </span>
-                        <div class="mt-2 font-semibold text-slate-900">{{ activeChat.name }}</div>
+                        <div class="mt-2 font-semibold text-slate-900 dark:text-slate-100">{{ activeChat.name }}</div>
                         <div class="text-xs text-slate-400">{{ typeLabel(activeChat) }}</div>
-                        <p v-if="activeChat.description" class="mt-2 text-xs leading-relaxed text-slate-500">{{ activeChat.description }}</p>
+                        <p v-if="activeChat.description" class="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{{ activeChat.description }}</p>
                     </div>
 
-                    <div class="flex border-b border-slate-100 text-xs">
+                    <div class="flex border-b border-slate-100 dark:border-slate-800 text-xs">
                         <button v-for="tabItem in [{ k: 'members', l: $e('Участники') }, { k: 'files', l: $e('Вложения') }, { k: 'pinned', l: $e('Закреплённые') }]" :key="tabItem.k"
-                            @click="infoTab = tabItem.k" :class="infoTab === tabItem.k ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-400'"
+                            @click="infoTab = tabItem.k" :class="infoTab === tabItem.k ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-400'"
                             class="flex-1 border-b-2 py-2 font-medium transition-colors">{{ tabItem.l }}</button>
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-3">
                         <!-- Members -->
                         <div v-if="infoTab === 'members'">
-                            <div v-if="activeChat.type === 'personal'" class="rounded-xl bg-slate-50 p-3 text-sm">
-                                <div class="font-semibold text-slate-800">{{ otherParticipant(activeChat)?.name ?? activeChat.name }}</div>
+                            <div v-if="activeChat.type === 'personal'" class="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 text-sm">
+                                <div class="font-semibold text-slate-800 dark:text-slate-200">{{ otherParticipant(activeChat)?.name ?? activeChat.name }}</div>
                                 <div class="mt-1 text-xs text-slate-400">{{ $e('Личный контакт') }}</div>
                             </div>
                             <div v-else class="space-y-1">
-                                <div v-for="p in activeChat.participants" :key="p.id" class="group/member flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
+                                <div v-for="p in activeChat.participants" :key="p.id" class="group/member flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/60">
                                     <Avatar :name="p.name" :src="p.avatar" :size="32" />
-                                    <span class="text-sm text-slate-700">{{ p.name }}</span>
+                                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ p.name }}</span>
                                     <span v-if="p.id === me?.id" class="ml-auto text-xs text-slate-400">{{ $e('вы') }}</span>
                                     <button v-else-if="canManage(activeChat)" @click="removeMember(p)" :title="$e('Убрать из группы')"
-                                        class="ml-auto hidden text-xs text-slate-300 hover:text-rose-500 group-hover/member:block">✕</button>
+                                        class="ml-auto hidden text-xs text-slate-300 dark:text-slate-600 hover:text-rose-500 group-hover/member:block">✕</button>
                                 </div>
                                 <div v-if="!activeChat.participants?.length" class="py-4 text-center text-xs text-slate-400">{{ $e('Нет участников') }}</div>
 
                                 <!-- Добавить сотрудника в группу (admin/director) -->
-                                <div v-if="canManage(activeChat)" class="mt-3 border-t border-slate-100 pt-3">
+                                <div v-if="canManage(activeChat)" class="mt-3 border-t border-slate-100 dark:border-slate-800 pt-3">
                                     <div class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('➕ Добавить участника') }}</div>
                                     <input v-model="memberSearch" :placeholder="$e('Поиск сотрудника…')"
                                         class="mb-1.5 w-full rounded-lg border-slate-200 py-1.5 text-xs shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
@@ -827,8 +827,8 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                                         <button v-for="u in nonMembers" :key="u.id" @click="addMember(u)"
                                             class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-indigo-50">
                                             <Avatar :name="u.name" :src="u.avatar" :size="26" />
-                                            <span class="min-w-0 flex-1 truncate text-slate-700">{{ u.name }}</span>
-                                            <span class="flex-shrink-0 text-indigo-500">+</span>
+                                            <span class="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-300">{{ u.name }}</span>
+                                            <span class="flex-shrink-0 text-indigo-500 dark:text-indigo-400">+</span>
                                         </button>
                                         <div v-if="!nonMembers.length" class="py-2 text-center text-xs text-slate-400">{{ $e('Все уже в группе') }}</div>
                                     </div>
@@ -840,13 +840,13 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                             <div v-if="!attachments.length" class="py-8 text-center text-xs text-slate-400"><div class="mb-1 text-2xl">📎</div>{{ $e('Вложений пока нет') }}</div>
                             <div v-else class="space-y-1.5">
                                 <a v-for="(a, i) in attachments" :key="i" :href="a.url" target="_blank" :download="a.is_image ? null : a.name"
-                                    class="flex items-center gap-2 rounded-lg border border-slate-100 p-1.5 transition-colors hover:bg-slate-50">
+                                    class="flex items-center gap-2 rounded-lg border border-slate-100 dark:border-slate-800 p-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60">
                                     <span v-if="a.is_image" class="h-9 w-9 flex-shrink-0 overflow-hidden rounded-md">
                                         <img :src="a.url" class="h-full w-full object-cover" alt="" />
                                     </span>
-                                    <span v-else class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-slate-100 text-base">📄</span>
+                                    <span v-else class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800/60 text-base">📄</span>
                                     <span class="min-w-0 flex-1">
-                                        <span class="block truncate text-xs font-medium text-slate-700">{{ a.name }}</span>
+                                        <span class="block truncate text-xs font-medium text-slate-700 dark:text-slate-300">{{ a.name }}</span>
                                         <span class="block truncate text-xs text-slate-400">{{ fmtSize(a.size) }} · {{ a.author }}</span>
                                     </span>
                                 </a>
@@ -859,12 +859,12 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                     </div>
 
                     <!-- Group management (admin/director) -->
-                    <div v-if="canManage(activeChat) || canDeleteChat(activeChat)" class="space-y-2 border-t border-slate-100 p-3">
-                        <button v-if="canManage(activeChat)" @click="openEdit(activeChat)" class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
+                    <div v-if="canManage(activeChat) || canDeleteChat(activeChat)" class="space-y-2 border-t border-slate-100 dark:border-slate-800 p-3">
+                        <button v-if="canManage(activeChat)" @click="openEdit(activeChat)" class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/70 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60">
                             <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                             {{ $e('Редактировать группу') }}
                         </button>
-                        <button v-if="canDeleteChat(activeChat)" @click="removeChat(activeChat)" class="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50">
+                        <button v-if="canDeleteChat(activeChat)" @click="removeChat(activeChat)" class="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white dark:bg-slate-900/70 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 transition-colors hover:bg-rose-50">
                             <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
                             {{ activeChat.type === 'group' ? $e('Удалить группу') : $e('Удалить чат (в корзину)') }}
                         </button>
@@ -876,36 +876,36 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
         <!-- ============ New chat / group modal ============ -->
         <Modal :show="showNew" @close="showNew = false" max-width="lg">
             <div class="p-6">
-                <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ $e('Новый чат') }}</h2>
+                <h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $e('Новый чат') }}</h2>
 
-                <div class="mb-4 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-sm">
-                    <button @click="newForm.type = 'personal'" :class="newForm.type === 'personal' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'" class="rounded-md px-3 py-1 font-medium">{{ $e('Личный') }}</button>
-                    <button v-if="canCreateGroup" @click="newForm.type = 'group'" :class="newForm.type === 'group' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'" class="rounded-md px-3 py-1 font-medium">{{ $e('Группа') }}</button>
+                <div class="mb-4 inline-flex rounded-lg border border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-800/50 p-0.5 text-sm">
+                    <button @click="newForm.type = 'personal'" :class="newForm.type === 'personal' ? 'bg-white dark:bg-slate-900/70 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'" class="rounded-md px-3 py-1 font-medium">{{ $e('Личный') }}</button>
+                    <button v-if="canCreateGroup" @click="newForm.type = 'group'" :class="newForm.type === 'group' ? 'bg-white dark:bg-slate-900/70 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'" class="rounded-md px-3 py-1 font-medium">{{ $e('Группа') }}</button>
                 </div>
 
                 <div v-if="newForm.type === 'group'" class="mb-3 space-y-2">
                     <input v-model="newForm.name" :placeholder="$e('Название группы')" class="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
-                    <div v-if="newForm.errors.name" class="text-xs text-red-600">{{ newForm.errors.name }}</div>
+                    <div v-if="newForm.errors.name" class="text-xs text-red-600 dark:text-rose-400">{{ newForm.errors.name }}</div>
                     <textarea v-model="newForm.description" rows="2" :placeholder="$e('Описание группы (необязательно)')" class="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400"></textarea>
                     <!-- Фирма группы: сотрудники видят только группы своей фирмы -->
                     <div v-if="companies.length > 1" class="flex items-center gap-1.5">
-                        <span class="text-xs text-slate-500">{{ $e('Фирма:') }}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Фирма:') }}</span>
                         <button type="button" @click="newForm.company_id = null"
-                            :class="!newForm.company_id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'"
+                            :class="!newForm.company_id ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-800'"
                             class="rounded-full px-2.5 py-1 text-xs font-semibold">{{ $e('Обе') }}</button>
                         <button v-for="co in companies" :key="co.id" type="button" @click="newForm.company_id = co.id"
-                            :class="newForm.company_id === co.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'"
+                            :class="newForm.company_id === co.id ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-800'"
                             class="rounded-full px-2.5 py-1 text-xs font-semibold">{{ co.name }}</button>
                     </div>
                 </div>
 
-                <div class="mb-1 text-xs font-medium text-slate-500">{{ $e('Участники (') }}{{ newForm.participants.length }})</div>
+                <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('Участники (') }}{{ newForm.participants.length }})</div>
                 <input v-model="userSearch" :placeholder="$e('Поиск по имени…')" class="mb-2 w-full rounded-lg border-slate-200 py-1.5 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
-                <div class="max-h-56 space-y-0.5 overflow-y-auto rounded-lg border border-slate-100 p-1">
-                    <label v-for="u in filteredUsers" :key="u.id" class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-slate-50">
+                <div class="max-h-56 space-y-0.5 overflow-y-auto rounded-lg border border-slate-100 dark:border-slate-800 p-1">
+                    <label v-for="u in filteredUsers" :key="u.id" class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800/60">
                         <input type="checkbox" :checked="newForm.participants.includes(u.id)" @change="toggleParticipant(u.id)" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                         <Avatar :name="u.name" :src="u.avatar" :size="28" />
-                        <span class="text-slate-700">{{ u.name }}</span>
+                        <span class="text-slate-700 dark:text-slate-300">{{ u.name }}</span>
                     </label>
                     <div v-if="!filteredUsers.length" class="py-3 text-center text-xs text-slate-400">{{ $e('Нет сотрудников') }}</div>
                 </div>
@@ -920,7 +920,7 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
         <!-- ============ Edit group modal ============ -->
         <Modal :show="showEdit" @close="showEdit = false" max-width="lg">
             <div class="p-6">
-                <h2 class="mb-4 text-lg font-semibold text-slate-900">{{ $e('Редактировать группу') }}</h2>
+                <h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $e('Редактировать группу') }}</h2>
 
                 <div class="mb-4 flex items-center gap-3">
                     <span class="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-xl font-bold text-white" :class="avatarColor(editForm.name)">
@@ -929,33 +929,33 @@ onUnmounted(() => { clearInterval(timer); clearInterval(bgTimer); document.remov
                     </span>
                     <div>
                         <input ref="editPhotoInput" type="file" accept="image/*" class="hidden" @change="onEditPhoto" />
-                        <button @click="editPhotoInput?.click()" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50">{{ $e('Загрузить фото группы') }}</button>
-                        <div v-if="editForm.errors.photo" class="mt-1 text-xs text-red-600">{{ editForm.errors.photo }}</div>
+                        <button @click="editPhotoInput?.click()" class="rounded-lg border border-slate-200 dark:border-slate-800/80 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60">{{ $e('Загрузить фото группы') }}</button>
+                        <div v-if="editForm.errors.photo" class="mt-1 text-xs text-red-600 dark:text-rose-400">{{ editForm.errors.photo }}</div>
                     </div>
                 </div>
 
                 <div class="mb-3 space-y-2">
                     <input v-model="editForm.name" :placeholder="$e('Название группы')" class="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
-                    <div v-if="editForm.errors.name" class="text-xs text-red-600">{{ editForm.errors.name }}</div>
+                    <div v-if="editForm.errors.name" class="text-xs text-red-600 dark:text-rose-400">{{ editForm.errors.name }}</div>
                     <textarea v-model="editForm.description" rows="2" :placeholder="$e('Описание группы')" class="w-full rounded-lg border-slate-200 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400"></textarea>
                     <div v-if="companies.length > 1" class="flex items-center gap-1.5">
-                        <span class="text-xs text-slate-500">{{ $e('Фирма:') }}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Фирма:') }}</span>
                         <button type="button" @click="editForm.company_id = null"
-                            :class="!editForm.company_id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'"
+                            :class="!editForm.company_id ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-800'"
                             class="rounded-full px-2.5 py-1 text-xs font-semibold">{{ $e('Обе') }}</button>
                         <button v-for="co in companies" :key="co.id" type="button" @click="editForm.company_id = co.id"
-                            :class="editForm.company_id === co.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'"
+                            :class="editForm.company_id === co.id ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-800'"
                             class="rounded-full px-2.5 py-1 text-xs font-semibold">{{ co.name }}</button>
                     </div>
                 </div>
 
-                <div class="mb-1 text-xs font-medium text-slate-500">{{ $e('Участники (') }}{{ editForm.participants.length + 1 }})</div>
+                <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('Участники (') }}{{ editForm.participants.length + 1 }})</div>
                 <input v-model="userSearch" :placeholder="$e('Поиск по имени…')" class="mb-2 w-full rounded-lg border-slate-200 py-1.5 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
-                <div class="max-h-56 space-y-0.5 overflow-y-auto rounded-lg border border-slate-100 p-1">
-                    <label v-for="u in filteredUsers" :key="u.id" class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-slate-50">
+                <div class="max-h-56 space-y-0.5 overflow-y-auto rounded-lg border border-slate-100 dark:border-slate-800 p-1">
+                    <label v-for="u in filteredUsers" :key="u.id" class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800/60">
                         <input type="checkbox" :checked="editForm.participants.includes(u.id)" @change="toggleEditParticipant(u.id)" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
                         <Avatar :name="u.name" :src="u.avatar" :size="28" />
-                        <span class="text-slate-700">{{ u.name }}</span>
+                        <span class="text-slate-700 dark:text-slate-300">{{ u.name }}</span>
                     </label>
                     <div v-if="!filteredUsers.length" class="py-3 text-center text-xs text-slate-400">{{ $e('Нет сотрудников') }}</div>
                 </div>

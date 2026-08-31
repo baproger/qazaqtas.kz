@@ -24,6 +24,12 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700|figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        {{-- Тема ERP до первой отрисовки: без этого тёмная тема мигала бы
+             белым. Скрипт инлайновый, поэтому подписан CSP-nonce. --}}
+        <script nonce="{{ \Illuminate\Support\Facades\Vite::cspNonce() }}">
+            try { if (localStorage.getItem('erp.theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+        </script>
+
         <!-- Scripts -->
         @routes(nonce: \Illuminate\Support\Facades\Vite::cspNonce())
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])

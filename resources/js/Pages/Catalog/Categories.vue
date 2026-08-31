@@ -135,21 +135,21 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
         <template #header>{{ $e('Каталог сайта · Категории') }}</template>
 
         <div class="mb-4 flex gap-2 border-b">
-            <Link :href="route('catalog.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Позиции') }}</Link>
-            <Link :href="route('catalogCategories.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">{{ $e('Категории') }}</Link>
+            <Link :href="route('catalog.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">{{ $e('Позиции') }}</Link>
+            <Link :href="route('catalogCategories.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400">{{ $e('Категории') }}</Link>
         </div>
 
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-slate-500">
+            <p class="text-sm text-slate-500 dark:text-slate-400">
                 {{ $e('Категории задают разделы каталога и слайды витрины на главной.') }}
-                <span v-if="withoutImage" class="font-medium text-amber-600">
+                <span v-if="withoutImage" class="font-medium text-amber-600 dark:text-amber-400">
                     {{ $e('Без снимка:') }} {{ withoutImage }}.
                 </span>
             </p>
             <PrimaryButton @click="openCreate">{{ $e('+ Категория') }}</PrimaryButton>
         </div>
 
-        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">
+        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
             <b>{{ $e('Снимок для витрины:') }}</b> {{ $e('PNG или WebP с прозрачным фоном, предмет вырезан, 1600×1600. Прозрачность нужна, чтобы кадр одинаково лёг и на тёмную, и на светлую тему — JPG с белым фоном на тёмном сайте будет выглядеть заплаткой. Снимайте все категории в одном масштабе и с одной точки, иначе при переключении предмет «прыгает».') }}
         </div>
 
@@ -157,44 +157,44 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
             <article
                 v-for="c in categories"
                 :key="c.id"
-                class="flex flex-wrap items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                class="flex flex-wrap items-center gap-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/70"
             >
                 <!-- Снимок на клетчатой подложке: прозрачность видно сразу -->
-                <div class="checkerboard grid h-20 w-20 shrink-0 place-items-center rounded-lg border border-slate-200">
+                <div class="checkerboard grid h-20 w-20 shrink-0 place-items-center rounded-lg border border-slate-200 dark:border-slate-800/80">
                     <img v-if="c.thumb || c.image" :src="c.thumb ?? c.image" :alt="c.name" class="h-full w-full object-contain p-1" />
                     <span v-else class="text-xs uppercase tracking-wider text-slate-400">{{ $e('нет фото') }}</span>
                 </div>
 
                 <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-semibold text-slate-900">{{ c.name }}</p>
+                    <p class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ c.name }}</p>
                     <p class="truncate text-xs text-slate-400">{{ c.tagline || '—' }}</p>
                     <p class="mt-1 text-xs text-slate-400">
                         {{ c.products_count }} {{ $e('позиций · /') }}{{ c.slug }}
-                        <span v-if="!c.is_active" class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-slate-500">{{ $e('скрыта') }}</span>
+                        <span v-if="!c.is_active" class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">{{ $e('скрыта') }}</span>
                     </p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
-                    <label class="cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                    <label class="cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800/60">
                         {{ uploading === c.id ? $e('Загрузка…') : (c.image ? $e('Заменить фото') : $e('Загрузить фото')) }}
                         <input type="file" accept="image/png,image/webp" class="hidden" @change="uploadImage(c, $event)" />
                     </label>
-                    <button v-if="c.image" class="rounded-lg px-2 py-1.5 text-xs text-slate-400 hover:text-rose-600" @click="dropImage(c)">{{ $e('Убрать фото') }}</button>
-                    <button class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50" @click="openEdit(c)">{{ $e('Изменить') }}</button>
-                    <button class="rounded-lg px-2 py-1.5 text-xs text-slate-400 hover:text-rose-600" @click="remove(c)">{{ $e('Удалить') }}</button>
+                    <button v-if="c.image" class="rounded-lg px-2 py-1.5 text-xs text-slate-400 hover:text-rose-600 dark:hover:text-rose-400" @click="dropImage(c)">{{ $e('Убрать фото') }}</button>
+                    <button class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800/60" @click="openEdit(c)">{{ $e('Изменить') }}</button>
+                    <button class="rounded-lg px-2 py-1.5 text-xs text-slate-400 hover:text-rose-600 dark:hover:text-rose-400" @click="remove(c)">{{ $e('Удалить') }}</button>
                 </div>
             </article>
 
-            <p v-if="!categories.length" class="rounded-xl border border-dashed border-slate-200 px-6 py-12 text-center text-sm text-slate-400">
+            <p v-if="!categories.length" class="rounded-xl border border-dashed border-slate-200 px-6 py-12 text-center text-sm text-slate-400 dark:border-slate-800/80">
                 {{ $e('Категорий пока нет — «+ Категория»') }}
             </p>
         </div>
 
-        <p v-if="uploadError" class="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">{{ uploadError }}</p>
+        <p v-if="uploadError" class="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">{{ uploadError }}</p>
 
         <Modal :show="showForm" max-width="xl" @close="showForm = false">
             <div class="p-6">
-                <h3 class="text-sm font-semibold text-slate-900">
+                <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {{ editing ? $e('Категория') : $e('Новая категория') }}
                 </h3>
 
@@ -228,14 +228,14 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
                         <InputLabel :value="$e('Порядок')" />
                         <TextInput v-model="form.order" type="number" min="0" class="mt-1 w-full" />
                     </div>
-                    <label class="mt-6 flex items-center gap-2 text-sm text-slate-600">
+                    <label class="mt-6 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                         <input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-indigo-600" />
                         {{ $e('Показывать на сайте') }}
                     </label>
                 </div>
 
-                <div class="mt-6 border-t border-slate-100 pt-5">
-                    <p class="text-sm font-medium text-slate-900">{{ $e('Подписи к снимку') }}</p>
+                <div class="mt-6 border-t border-slate-100 pt-5 dark:border-slate-800">
+                    <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $e('Подписи к снимку') }}</p>
                     <p class="mt-1 text-xs text-slate-400">
                         {{ $e('Выноски вокруг изделия на витрине. Пишите то, что относится') }}
                         <b>{{ $e('к этому кадру') }}</b>{{ $e(': размер именно с фото, а не самой дешёвой позиции. Пустые строки не показываются. Порядок — по часовой стрелке: справа сверху, слева, справа снизу, снизу.') }}
@@ -253,7 +253,7 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
                 </div>
 
                 <div class="mt-6">
-                    <p class="text-sm font-medium text-slate-700">{{ $e('Языки') }}</p>
+                    <p class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $e('Языки') }}</p>
                     <!-- :key пересоздаёт вкладки при переходе на другой раздел:
                          построчные поля держат свой текст и сами не обновятся. -->
                     <TranslationTabs
@@ -266,12 +266,12 @@ const withoutImage = computed(() => props.categories.filter((c) => !c.image).len
                     />
                 </div>
 
-                <p v-if="!editing" class="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                <p v-if="!editing" class="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                     {{ $e('Снимок загрузите после сохранения — кнопкой «Загрузить фото» в списке.') }}
                 </p>
 
                 <div class="mt-6 flex justify-end gap-2">
-                    <button class="rounded-lg px-4 py-2 text-sm text-slate-500 hover:bg-slate-50" @click="showForm = false">{{ $e('Отмена') }}</button>
+                    <button class="rounded-lg px-4 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60" @click="showForm = false">{{ $e('Отмена') }}</button>
                     <PrimaryButton :disabled="form.processing" @click="submit">{{ $e('Сохранить') }}</PrimaryButton>
                 </div>
             </div>

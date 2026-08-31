@@ -50,8 +50,8 @@ const isActive = (name) => route().current(name);
             <span class="flex items-center gap-2">
                 <span>{{ tr('Настройки') }}</span>
                 <template v-if="title">
-                    <span class="text-slate-300">›</span>
-                    <span class="font-medium text-slate-500">{{ title }}</span>
+                    <span class="text-slate-300 dark:text-slate-600">›</span>
+                    <span class="font-medium text-slate-500 dark:text-slate-400">{{ title }}</span>
                 </template>
             </span>
         </template>
@@ -66,9 +66,9 @@ const isActive = (name) => route().current(name);
                             <Link v-if="item.show !== false" :href="route(item.route)"
                                 class="flex items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition"
                                 :class="isActive(item.route)
-                                    ? 'bg-indigo-50 font-semibold text-indigo-700'
-                                    : 'font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
-                                <svg class="h-4 w-4 shrink-0" :class="isActive(item.route) ? 'text-indigo-600' : 'text-slate-400'"
+                                    ? 'bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300'
+                                    : 'font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100'">
+                                <svg class="h-4 w-4 shrink-0" :class="isActive(item.route) ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'"
                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                     <path :d="item.icon" />
                                 </svg>

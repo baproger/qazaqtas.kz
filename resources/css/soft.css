@@ -182,3 +182,76 @@ html[data-ui-font="xlarge"] { font-size: 19px; }
     background: rgba(241, 244, 249, .8);
     padding: .25rem;
 }
+
+/* ==================================================================
+   Тёмная тема ERP (Modern SaaS). Полотно — глубокий графит #0B0F17,
+   карточки — slate-900 со стеклом. Правила ниже красят ЦЕНТРАЛЬНОЕ:
+   формы и классы этого файла; фоны и текст страниц переключают
+   dark:-утилиты в самих компонентах.
+   ================================================================== */
+html.dark { color-scheme: dark; }
+
+/* Формы: одно правило вместо dark:-классов на каждом из сотен инпутов.
+   Специфичность (.dark + тег) выше голой утилиты — побеждает всегда. */
+.dark input:not([type='checkbox']):not([type='radio']),
+.dark select,
+.dark textarea {
+    background-color: rgb(30 41 59 / 0.6);   /* slate-800/60 */
+    border-color: #334155;                    /* slate-700 */
+    color: #F1F5F9;                           /* slate-100 */
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #64748B; }
+.dark input:not([type='checkbox']):not([type='radio']):focus,
+.dark select:focus,
+.dark textarea:focus { border-color: #10B981; }
+.dark input[type='checkbox'],
+.dark input[type='radio'] { background-color: rgb(30 41 59 / 0.6); border-color: #475569; }
+.dark select option { background-color: #1E293B; color: #F1F5F9; }
+
+/* Классы Soft UI в тёмной теме. */
+.dark .pastel-good { background: rgb(16 185 129 / 0.12); }
+.dark .pastel-calm { background: rgb(51 65 85 / 0.45); }
+.dark .chip-glass {
+    background: rgb(15 23 42 / 0.62);
+    border-color: rgb(51 65 85 / 0.7);
+}
+.dark .chip-glass:hover { background: rgb(15 23 42 / 0.85); }
+.dark .chip-action { background: rgb(51 65 85 / 0.5); color: #CBD5E1; }
+.dark .chip-action:hover { background: rgb(51 65 85 / 0.8); }
+.dark .chip-action[aria-pressed='true'],
+.dark .chip-action.is-active {
+    background: rgb(99 102 241 / 0.18);
+    color: #A5B4FC;
+    border-color: rgb(99 102 241 / 0.35);
+}
+.dark .floating-bar {
+    background: rgb(15 23 42 / 0.78);
+    border-color: rgb(51 65 85 / 0.7);
+}
+.dark .tab-soft { color: #94A3B8; }
+.dark .tab-soft:hover { color: #E2E8F0; background: rgb(30 41 59 / 0.7); }
+.dark .tab-soft-active {
+    background: #1E293B;
+    color: #F1F5F9;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 16px -10px rgba(0, 0, 0, .6);
+}
+.dark .tab-rail { background: rgb(15 23 42 / 0.6); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .dark .chip-glass, .dark .floating-bar { background: #0F172A; }
+}
+
+/* ---- Микровзаимодействия ---- */
+/* Лёгкий подъём карточки-ссылки. Только transform и box-shadow —
+   ничего не перерисовывает вокруг себя. */
+.hover-lift {
+    transition: transform .3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-lift:hover {
+    transform: translateY(-0.25rem);
+    box-shadow: var(--soft-3);
+}
+.dark .hover-lift:hover { box-shadow: 0 2px 4px rgba(0, 0, 0, .4), 0 18px 40px -20px rgba(0, 0, 0, .7); }
+@media (prefers-reduced-motion: reduce) {
+    .hover-lift, .hover-lift:hover { transition: none; transform: none; }
+}

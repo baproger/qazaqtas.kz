@@ -29,15 +29,15 @@ const props = defineProps({
 const roleLabels = computed(() => usePage().props.roleLabels ?? {});
 const roleTitle = (code) => roleLabels.value[code] ?? code ?? '';
 const roleColors = {
-    admin: 'bg-purple-50 text-purple-700 ring-purple-200',
-    director: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-    financist: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    manager: 'bg-blue-50 text-blue-700 ring-blue-200',
-    designer: 'bg-pink-50 text-pink-700 ring-pink-200',
-    supplier: 'bg-amber-50 text-amber-700 ring-amber-200',
-    lawyer: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
-    cook: 'bg-orange-50 text-orange-700 ring-orange-200',
-    employee: 'bg-slate-100 text-slate-600 ring-slate-200',
+    admin: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 ring-purple-200',
+    director: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 ring-indigo-200',
+    financist: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-emerald-200 dark:ring-emerald-500/30',
+    manager: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 ring-blue-200',
+    designer: 'bg-pink-50 text-pink-700 dark:text-pink-300 ring-pink-200',
+    supplier: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 ring-amber-200 dark:ring-amber-500/30',
+    lawyer: 'bg-cyan-50 text-cyan-700 dark:text-cyan-300 ring-cyan-200',
+    cook: 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 ring-orange-200',
+    employee: 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 ring-slate-200 dark:ring-slate-800',
 };
 const companyNames = computed(() => Object.fromEntries(props.companies.map((c) => [c.id, c.name])));
 // Руководители отделов — ⭐ на карточке.
@@ -162,17 +162,17 @@ const deactivate = async (u) => {
 
         <!-- Мини-статистика -->
         <div class="mb-4 grid grid-cols-3 gap-3 sm:max-w-md">
-            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-                <p class="text-2xl font-bold text-slate-900">{{ stats.total }}</p>
-                <p class="text-xs text-slate-500">{{ $e('Всего') }}</p>
+            <div class="rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 px-4 py-3 shadow-sm">
+                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.total }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Всего') }}</p>
             </div>
-            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-                <p class="text-2xl font-bold text-emerald-600">{{ stats.active }}</p>
-                <p class="text-xs text-slate-500">{{ $e('Активных') }}</p>
+            <div class="rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 px-4 py-3 shadow-sm">
+                <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ stats.active }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Активных') }}</p>
             </div>
-            <div class="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-                <p class="text-2xl font-bold text-indigo-600">{{ stats.departments }}</p>
-                <p class="text-xs text-slate-500">{{ $e('Отделов') }}</p>
+            <div class="rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 px-4 py-3 shadow-sm">
+                <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ stats.departments }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $e('Отделов') }}</p>
             </div>
         </div>
 
@@ -193,15 +193,15 @@ const deactivate = async (u) => {
         <div class="mb-5 flex flex-wrap items-center gap-2">
             <button type="button" @click="deptFilter = 'all'"
                 class="rounded-full px-3 py-1.5 text-xs font-semibold transition"
-                :class="deptFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'">
+                :class="deptFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'">
                 {{ $e('Все') }}
             </button>
             <button v-for="c in deptChips" :key="c.id" type="button" @click="deptFilter = deptFilter === c.id ? 'all' : c.id"
                 class="rounded-full px-3 py-1.5 text-xs font-semibold transition"
-                :class="deptFilter === c.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'">
+                :class="deptFilter === c.id ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'">
                 {{ c.name }} <span :class="deptFilter === c.id ? 'text-indigo-200' : 'text-slate-400'">{{ c.count }}</span>
             </button>
-            <label v-if="inactiveCount" class="ml-auto flex cursor-pointer items-center gap-1.5 text-xs text-slate-500">
+            <label v-if="inactiveCount" class="ml-auto flex cursor-pointer items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                 <input type="checkbox" v-model="showInactive" class="rounded border-slate-300 text-indigo-600" />
                 {{ $e('Отключённые (') }}{{ inactiveCount }})
             </label>
@@ -211,9 +211,9 @@ const deactivate = async (u) => {
              Отделы раньше были секциями с карточками; на десятке сотрудников
              карточки занимали три экрана, и сравнить людей глазами было
              нельзя. Отдел остался колонкой и фильтром-чипом выше. -->
-        <div class="overflow-x-auto rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div class="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
             <table class="min-w-full text-sm">
-                <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                <thead class="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase tracking-wide text-slate-400">
                     <tr>
                         <th class="px-6 py-3">{{ $e('Пользователь') }}</th>
                         <th class="px-4 py-3">{{ $e('Email') }}</th>
@@ -224,9 +224,9 @@ const deactivate = async (u) => {
                         <th v-if="can.manage" class="px-4 py-3 text-right">{{ $e('Действия') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                     <tr v-for="u in visibleUsers" :key="u.id"
-                        class="group cursor-pointer transition-colors duration-150 hover:bg-slate-50/70"
+                        class="group cursor-pointer transition-colors duration-150 hover:bg-slate-50/70 dark:hover:bg-slate-800/60"
                         :class="{ 'opacity-60': !u.is_active }"
                         @click="router.visit(route('users.show', u.id))">
                         <td class="px-6 py-3">
@@ -235,7 +235,7 @@ const deactivate = async (u) => {
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5">
                                         <span v-if="headIds.has(u.id)" :title="$e('Руководитель отдела')">⭐</span>
-                                        <span class="truncate font-semibold text-slate-900">{{ u.name }}</span>
+                                        <span class="truncate font-semibold text-slate-900 dark:text-slate-100">{{ u.name }}</span>
                                         <span v-if="daysToBirthday(u) === 0" class="rounded-full bg-pink-50 px-2 py-0.5 text-xs font-semibold text-pink-600">{{ $e('🎂 сегодня!') }}</span>
                                         <span v-else-if="daysToBirthday(u) !== null && daysToBirthday(u) <= 7" class="rounded-full bg-pink-50 px-2 py-0.5 text-xs font-semibold text-pink-600">{{ $e('🎂 через') }} {{ daysToBirthday(u) }} {{ $e('дн.') }}</span>
                                     </div>
@@ -244,7 +244,7 @@ const deactivate = async (u) => {
                             </div>
                         </td>
                         <td class="px-4 py-3">
-                            <a :href="`mailto:${u.email}`" class="text-slate-500 transition-colors hover:text-indigo-600" @click.stop>{{ u.email }}</a>
+                            <a :href="`mailto:${u.email}`" class="text-slate-500 dark:text-slate-400 transition-colors hover:text-indigo-600" @click.stop>{{ u.email }}</a>
                         </td>
                         <td class="px-4 py-3">
                             <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ring-1"
@@ -253,26 +253,26 @@ const deactivate = async (u) => {
                         <td class="px-4 py-3">
                             <!-- Филиал = цех, к которому у сотрудника есть доступ.
                                  Пусто — доступны все (руководство). -->
-                            <span v-if="u.workshops?.length" class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700">
+                            <span v-if="u.workshops?.length" class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 dark:bg-sky-500/10 px-2.5 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-400">
                                 <span class="h-1.5 w-1.5 rounded-full bg-sky-500"></span>{{ u.workshops.join(' · ') }}
                             </span>
-                            <span v-else class="text-slate-300">—</span>
+                            <span v-else class="text-slate-300 dark:text-slate-600">—</span>
                         </td>
-                        <td class="px-4 py-3 text-slate-500">{{ u.department?.name ?? '—' }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ u.department?.name ?? '—' }}</td>
                         <td class="px-4 py-3">
                             <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                                :class="u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'">
+                                :class="u.is_active ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400'">
                                 <span class="h-1.5 w-1.5 rounded-full" :class="u.is_active ? 'bg-emerald-500' : 'bg-slate-400'"></span>
                                 {{ u.is_active ? $e('Активен') : $e('Отключён') }}
                             </span>
                         </td>
                         <td v-if="can.manage" class="px-4 py-3">
                             <div class="flex items-center justify-end gap-2">
-                                <button class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors duration-150 hover:bg-emerald-100"
+                                <button class="rounded-lg bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 transition-colors duration-150 hover:bg-emerald-100"
                                     @click.stop="openEdit(u)">✏️ {{ $e('Изменить') }}</button>
                                 <!-- Себя не отключают: иначе можно закрыть себе вход. -->
                                 <button v-if="u.is_active && u.id !== currentUserId"
-                                    class="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors duration-150 hover:bg-rose-100"
+                                    class="rounded-lg bg-rose-50 dark:bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 transition-colors duration-150 hover:bg-rose-100"
                                     @click.stop="deactivate(u)">🗑 {{ $e('Удалить') }}</button>
                             </div>
                         </td>
@@ -281,7 +281,7 @@ const deactivate = async (u) => {
             </table>
         </div>
 
-        <div v-if="!visibleUsers.length" class="mt-3 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-14 text-center text-slate-400">
+        <div v-if="!visibleUsers.length" class="mt-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900/70 px-4 py-14 text-center text-slate-400">
             {{ $e('Никого не нашли — измените поиск или фильтр') }}
         </div>
 
@@ -326,7 +326,7 @@ const deactivate = async (u) => {
                         <div class="mt-1 flex flex-wrap gap-2">
                             <button v-for="w in workshopOptions" :key="w" type="button" @click="toggleWorkshop(w)"
                                 class="rounded-lg border px-4 py-2 text-sm font-semibold transition-all"
-                                :class="form.workshops.includes(w) ? 'border-indigo-500 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'">
+                                :class="form.workshops.includes(w) ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/70 text-slate-500 dark:text-slate-400 hover:border-slate-300'">
                                 🏭 {{ w }}
                             </button>
                         </div>
@@ -359,14 +359,14 @@ const deactivate = async (u) => {
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" class="mt-1 w-full text-sm text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
                             @change="form.contract = $event.target.files[0] ?? null" />
                         <InputError :message="form.errors.contract" class="mt-1" />
-                        <a v-if="editing?.has_contract" :href="route('users.contract', editing.id)" class="mt-1 inline-block text-xs text-indigo-600 hover:underline">{{ $e('📄 Скачать текущий договор') }}</a>
+                        <a v-if="editing?.has_contract" :href="route('users.contract', editing.id)" class="mt-1 inline-block text-xs text-indigo-600 dark:text-indigo-400 hover:underline">{{ $e('📄 Скачать текущий договор') }}</a>
                     </div>
                     <div class="col-span-2">
                         <InputLabel :value="$e('Компании (может работать в обеих)')" />
                         <div class="mt-1 flex gap-2">
                             <button v-for="c in companies" :key="c.id" type="button" @click="toggleCompany(c.id)"
                                 class="rounded-lg border px-4 py-2 text-sm font-semibold transition-all"
-                                :class="form.company_ids.includes(c.id) ? 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'">
+                                :class="form.company_ids.includes(c.id) ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500' : 'border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/70 text-slate-500 dark:text-slate-400 hover:border-slate-300'">
                                 {{ c.name }}
                             </button>
                         </div>

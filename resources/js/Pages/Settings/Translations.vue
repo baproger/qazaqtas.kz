@@ -69,7 +69,7 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
     <SettingsLayout :title="$e('Переводы')" wide>
 
         <div class="mx-auto max-w-6xl space-y-5">
-            <p class="text-sm text-slate-500">
+            <p class="text-sm text-slate-500 dark:text-slate-400">
                 {{ $e('Слева — текст из поставки, справа — ваша правка. Пустое поле правки означает «оставить как есть».') }}
             </p>
 
@@ -81,7 +81,7 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
                     class="rounded-lg px-3 py-1.5 text-sm font-medium transition"
                     :class="group === g.code
                         ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'"
+                        : 'bg-white dark:bg-slate-900/70 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'"
                     @click="group = g.code"
                 >
                     {{ g.label }}
@@ -96,25 +96,25 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
                 />
             </div>
 
-            <p v-if="total > limit" class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            <p v-if="total > limit" class="rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
                 {{ $e('Показаны первые') }} {{ limit }} {{ $e('из') }} {{ total }} — {{ $e('уточните поиск, чтобы увидеть остальные.') }}
             </p>
 
             <!-- Строки словаря -->
-            <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <div class="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
                 <table class="min-w-full text-sm">
-                    <thead class="border-b border-slate-100 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                    <thead class="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase tracking-wide text-slate-400">
                         <tr>
                             <th class="px-4 py-2.5 w-1/3">{{ $e('Строка') }}</th>
                             <th v-for="l in locales" :key="l.code" class="px-4 py-2.5">{{ l.name }}</th>
                             <th class="px-4 py-2.5 w-10"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        <tr v-for="row in items" :key="row.key" class="align-top hover:bg-slate-50/60">
+                    <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+                        <tr v-for="row in items" :key="row.key" class="align-top hover:bg-slate-50/60 dark:hover:bg-slate-800/40 dark:hover:bg-slate-800/60">
                             <td class="px-4 py-2.5">
-                                <p class="break-words text-xs text-slate-600">{{ row.shipped[locales[0].code] || row.name }}</p>
-                                <p class="mt-0.5 break-all font-mono text-xs text-slate-300">{{ row.name }}</p>
+                                <p class="break-words text-xs text-slate-600 dark:text-slate-300">{{ row.shipped[locales[0].code] || row.name }}</p>
+                                <p class="mt-0.5 break-all font-mono text-xs text-slate-300 dark:text-slate-600">{{ row.name }}</p>
                             </td>
 
                             <td v-for="l in locales" :key="l.code" class="px-4 py-2.5">
@@ -129,7 +129,7 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
                             <td class="px-4 py-2.5 text-right">
                                 <button
                                     v-if="isOverridden(row)"
-                                    class="text-slate-300 transition-colors hover:text-rose-500"
+                                    class="text-slate-300 dark:text-slate-600 transition-colors hover:text-rose-500"
                                     :title="$e('Снять правку — вернуть текст из поставки')"
                                     @click="reset(row)"
                                 >✕</button>
@@ -146,7 +146,7 @@ const isOverridden = (row) => props.locales.some((l) => (edits.value[row.key]?.[
             </div>
 
             <div class="sticky bottom-4 flex items-center justify-end gap-3">
-                <span v-if="saveForm.recentlySuccessful" class="text-sm text-emerald-600">{{ $e('✓ Сохранено') }}</span>
+                <span v-if="saveForm.recentlySuccessful" class="text-sm text-emerald-600 dark:text-emerald-400">{{ $e('✓ Сохранено') }}</span>
                 <PrimaryButton :disabled="saveForm.processing" @click="save">{{ $e('Сохранить переводы') }}</PrimaryButton>
             </div>
         </div>

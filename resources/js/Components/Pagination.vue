@@ -24,8 +24,8 @@ const pageLinks = usePageLinks(() => props.links);
                 v-else
                 :href="link.url"
                 preserve-scroll
-                :class="link.active ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'"
-                class="inline-flex h-8 min-w-8 items-center justify-center rounded px-3 text-sm ring-1 ring-slate-200"
+                :class="link.active ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'"
+                class="inline-flex h-8 min-w-8 items-center justify-center rounded px-3 text-sm ring-1 ring-slate-200 dark:ring-slate-800"
                 :aria-label="link.aria"
             >
                 <svg v-if="link.arrow" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path :d="link.arrow === 'prev' ? 'M19 12H5M11 18l-6-6 6-6' : 'M5 12h14M13 6l6 6-6 6'" /></svg>

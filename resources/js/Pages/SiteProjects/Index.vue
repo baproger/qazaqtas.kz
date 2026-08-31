@@ -90,7 +90,7 @@ const remove = async (p) => {
 
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <PrimaryButton @click="openCreate">{{ $e('+ Объект') }}</PrimaryButton>
-            <a :href="route('site.home')" target="_blank" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-indigo-600 shadow-sm transition hover:bg-slate-50">
+            <a :href="route('site.home')" target="_blank" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-indigo-600 shadow-sm transition hover:bg-slate-50 dark:border-slate-800/80 dark:bg-slate-900/70 dark:text-indigo-400 dark:hover:bg-slate-800/60">
                 {{ $e('Открыть главную ↗') }}
             </a>
             <p class="ml-auto text-xs text-slate-400">
@@ -99,10 +99,10 @@ const remove = async (p) => {
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <article v-for="p in projects" :key="p.id" class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <article v-for="p in projects" :key="p.id" class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
                 <div class="relative">
                     <img v-if="p.thumb || p.image" :src="p.thumb ?? p.image" :alt="p.title" loading="lazy" class="aspect-[16/10] w-full object-cover" />
-                    <div v-else class="grid aspect-[16/10] w-full place-items-center bg-slate-100 text-xs text-slate-400">
+                    <div v-else class="grid aspect-[16/10] w-full place-items-center bg-slate-100 text-xs text-slate-400 dark:bg-slate-800/60">
                         {{ $e('Нет фото — объект не попадёт на главную') }}
                     </div>
 
@@ -116,28 +116,28 @@ const remove = async (p) => {
 
                 <div class="p-4">
                     <p class="text-xs text-slate-400">{{ p.city }}<template v-if="p.year"> · {{ p.year }}</template></p>
-                    <h3 class="mt-1 font-semibold text-slate-900">{{ p.title }}</h3>
-                    <p v-if="p.products" class="mt-1 line-clamp-2 text-xs text-slate-500">{{ p.products }}</p>
+                    <h3 class="mt-1 font-semibold text-slate-900 dark:text-slate-100">{{ p.title }}</h3>
+                    <p v-if="p.products" class="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">{{ p.products }}</p>
                     <div class="mt-3 flex items-center justify-between">
-                        <span class="text-sm font-semibold text-indigo-600">{{ p.area ?? '—' }}</span>
+                        <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">{{ p.area ?? '—' }}</span>
                         <span>
-                            <button class="rounded p-1 text-slate-300 transition hover:text-indigo-600" :title="$e('Изменить')" @click="openEdit(p)">
+                            <button class="rounded p-1 text-slate-300 transition hover:text-indigo-600 dark:text-slate-600 dark:hover:text-indigo-400" :title="$e('Изменить')" @click="openEdit(p)">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                             </button>
-                            <button class="rounded p-1 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить')" @click="remove(p)">✕</button>
+                            <button class="rounded p-1 text-slate-300 transition hover:text-rose-600 dark:text-slate-600 dark:hover:text-rose-400" :title="$e('Удалить')" @click="remove(p)">✕</button>
                         </span>
                     </div>
                 </div>
             </article>
 
-            <p v-if="!projects.length" class="col-span-full rounded-2xl border border-dashed border-slate-200 py-16 text-center text-sm text-slate-400">
+            <p v-if="!projects.length" class="col-span-full rounded-2xl border border-dashed border-slate-200 py-16 text-center text-sm text-slate-400 dark:border-slate-800/80">
                 {{ $e('Объектов пока нет — «+ Объект»') }}
             </p>
         </div>
 
         <Modal :show="showForm" max-width="xl" @close="showForm = false">
             <div class="p-6">
-                <h3 class="mb-4 text-base font-semibold text-slate-900">{{ editingId ? $e('Изменить объект') : $e('Новый объект') }}</h3>
+                <h3 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ editingId ? $e('Изменить объект') : $e('Новый объект') }}</h3>
 
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div class="sm:col-span-2">
@@ -157,12 +157,12 @@ const remove = async (p) => {
                     </div>
                 </div>
 
-                <label class="mt-4 flex items-center gap-2 text-sm text-slate-600">
+                <label class="mt-4 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                     <input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> {{ $e('Показывать на сайте') }}
                 </label>
 
                 <div class="mt-5">
-                    <p class="text-sm font-medium text-slate-700">{{ $e('Языки') }}</p>
+                    <p class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ $e('Языки') }}</p>
                     <!-- :key пересоздаёт вкладки при переходе на другой объект. -->
                     <TranslationTabs
                         :key="`tr-${editingId ?? 'new'}`"

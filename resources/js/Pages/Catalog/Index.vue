@@ -140,16 +140,16 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
         <template #header>{{ $e('Каталог сайта') }}</template>
 
         <div class="mb-4 flex gap-2 border-b">
-            <Link :href="route('catalog.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600">{{ $e('Позиции') }}</Link>
-            <Link :href="route('catalogCategories.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">{{ $e('Категории') }}</Link>
+            <Link :href="route('catalog.index')" class="border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400">{{ $e('Позиции') }}</Link>
+            <Link :href="route('catalogCategories.index')" class="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">{{ $e('Категории') }}</Link>
         </div>
 
         <div class="mb-4 flex flex-wrap items-center gap-2">
             <PrimaryButton @click="openCreate">{{ $e('+ Позиция') }}</PrimaryButton>
-            <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50" @click="showCats = true">
+            <button class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 dark:border-slate-800/80 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-800/60" @click="showCats = true">
                 {{ $e('⚙ Категории') }}
             </button>
-            <a :href="route('site.catalog')" target="_blank" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-indigo-600 shadow-sm transition hover:bg-slate-50">
+            <a :href="route('site.catalog')" target="_blank" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-indigo-600 shadow-sm transition hover:bg-slate-50 dark:border-slate-800/80 dark:bg-slate-900/70 dark:text-indigo-400 dark:hover:bg-slate-800/60">
                 {{ $e('Открыть витрину ↗') }}
             </a>
 
@@ -162,10 +162,10 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
             </div>
         </div>
 
-        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-100 text-sm">
-                    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400">
+                <table class="min-w-full divide-y divide-slate-100 text-sm dark:divide-slate-800">
+                    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400 dark:bg-slate-800/50">
                         <tr>
                             <th class="px-4 py-2.5 w-16">{{ $e('Фото') }}</th>
                             <th class="px-4 py-2.5">{{ $e('Позиция') }}</th>
@@ -176,31 +176,31 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                             <th class="px-4 py-2.5"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        <tr v-for="p in products.data" :key="p.id" class="hover:bg-slate-50">
+                    <tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+                        <tr v-for="p in products.data" :key="p.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/60">
                             <td class="px-4 py-2">
                                 <img v-if="p.images?.length" :src="p.images[0].thumb ?? p.images[0].path" :alt="p.name" loading="lazy"
-                                    class="h-11 w-14 rounded-lg object-cover ring-1 ring-slate-200" />
-                                <span v-else class="grid h-11 w-14 place-items-center rounded-lg bg-slate-100 text-xs text-slate-400">{{ $e('нет') }}</span>
+                                    class="h-11 w-14 rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-800" />
+                                <span v-else class="grid h-11 w-14 place-items-center rounded-lg bg-slate-100 text-xs text-slate-400 dark:bg-slate-800/60">{{ $e('нет') }}</span>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="font-medium text-slate-800">{{ p.name }}</span>
+                                <span class="font-medium text-slate-800 dark:text-slate-200">{{ p.name }}</span>
                                 <span class="block text-xs text-slate-400">{{ p.short_description }}</span>
                             </td>
-                            <td class="px-4 py-3 text-slate-500">{{ p.category?.name ?? categoryName(p.category_id) }}</td>
+                            <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ p.category?.name ?? categoryName(p.category_id) }}</td>
                             <td class="px-4 py-3 text-slate-400">{{ p.code ?? '—' }}</td>
-                            <td class="px-4 py-3 text-right font-semibold tabular-nums text-slate-900">{{ money(p.price) }} <span class="text-xs font-normal text-slate-400">/ {{ p.unit }}</span></td>
+                            <td class="whitespace-nowrap px-4 py-3 text-right font-semibold tabular-nums text-slate-900 dark:text-slate-100">{{ money(p.price) }} <span class="text-xs font-normal text-slate-400">/ {{ p.unit }}</span></td>
                             <td class="px-4 py-3 text-center">
-                                <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'">
+                                <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="p.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400'">
                                     {{ p.is_active ? $e('опубликована') : $e('скрыта') }}
                                 </span>
                                 <span v-if="p.is_featured" class="ml-1 text-amber-500" :title="$e('Показывается на главной')">★</span>
                             </td>
                             <td class="whitespace-nowrap px-4 py-3 text-right">
-                                <button class="rounded p-1 text-slate-300 transition hover:text-indigo-600" :title="$e('Изменить')" @click="openEdit(p)">
+                                <button class="rounded p-1 text-slate-300 transition hover:text-indigo-600 dark:text-slate-600 dark:hover:text-indigo-400" :title="$e('Изменить')" @click="openEdit(p)">
                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                 </button>
-                                <button class="rounded p-1 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить')" @click="remove(p)">✕</button>
+                                <button class="rounded p-1 text-slate-300 transition hover:text-rose-600 dark:text-slate-600 dark:hover:text-rose-400" :title="$e('Удалить')" @click="remove(p)">✕</button>
                             </td>
                         </tr>
                         <tr v-if="!products.data.length"><td colspan="7" class="px-6 py-12 text-center text-slate-400">{{ $e('Каталог пуст — «+ Позиция»') }}</td></tr>
@@ -216,13 +216,13 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
         <!-- Форма позиции -->
         <Modal :show="showForm" max-width="2xl" @close="showForm = false">
             <div class="p-6">
-                <h3 class="text-base font-semibold text-slate-900">{{ editingId ? $e('Изменить позицию') : $e('Новая позиция каталога') }}</h3>
+                <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ editingId ? $e('Изменить позицию') : $e('Новая позиция каталога') }}</h3>
 
                 <!-- Медиа доступны только у сохранённой позиции: файлам нужен id. -->
-                <div v-if="editingId" class="mb-4 mt-3 flex gap-4 border-b border-slate-100">
+                <div v-if="editingId" class="mb-4 mt-3 flex gap-4 border-b border-slate-100 dark:border-slate-800">
                     <button v-for="t2 in [['fields', $e('Данные')], ['lang', $e('Языки')], ['media', $e('Фото, 3D и документы')]]" :key="t2[0]"
                         class="-mb-px border-b-2 pb-2 text-sm transition"
-                        :class="tab === t2[0] ? 'border-indigo-500 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'"
+                        :class="tab === t2[0] ? 'border-indigo-500 text-slate-900 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'"
                         @click="tab = t2[0]">{{ t2[1] }}</button>
                 </div>
                 <div v-else class="mb-4"></div>
@@ -283,7 +283,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                     </div>
                 </div>
 
-                <div v-show="tab === 'fields'" class="mt-4 flex flex-wrap gap-5 text-sm text-slate-600">
+                <div v-show="tab === 'fields'" class="mt-4 flex flex-wrap gap-5 text-sm text-slate-600 dark:text-slate-300">
                     <label class="flex items-center gap-2"><input v-model="form.is_active" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> {{ $e('Опубликована') }}</label>
                     <label class="flex items-center gap-2"><input v-model="form.is_featured" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> {{ $e('На главной') }}</label>
                     <label class="flex items-center gap-2"><input v-model="form.in_stock" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> {{ $e('В наличии') }}</label>
@@ -300,19 +300,19 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
         <!-- Категории -->
         <Modal :show="showCats" max-width="lg" @close="showCats = false">
             <div class="p-6">
-                <h3 class="mb-1 text-base font-semibold text-slate-900">{{ $e('Категории каталога') }}</h3>
+                <h3 class="mb-1 text-base font-semibold text-slate-900 dark:text-slate-100">{{ $e('Категории каталога') }}</h3>
                 <p class="mb-4 text-xs text-slate-400">{{ $e('Порядок и названия видны на витрине сразу после сохранения.') }}</p>
 
                 <div class="max-h-64 space-y-2 overflow-y-auto pr-1">
-                    <div v-for="c in categories" :key="c.id" class="flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2">
+                    <div v-for="c in categories" :key="c.id" class="flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 dark:border-slate-800">
                         <span class="h-4 w-4 rounded-full" :style="{ background: c.accent ?? '#C8B79A' }" />
-                        <span class="flex-1 text-sm text-slate-700">{{ c.name }} <span class="text-xs text-slate-400">· {{ c.products_count }}</span></span>
-                        <button class="rounded p-1 text-slate-300 hover:text-indigo-600" @click="editCat(c)">✎</button>
-                        <button class="rounded p-1 text-slate-300 hover:text-rose-600" @click="removeCat(c)">✕</button>
+                        <span class="flex-1 text-sm text-slate-700 dark:text-slate-300">{{ c.name }} <span class="text-xs text-slate-400">· {{ c.products_count }}</span></span>
+                        <button class="rounded p-1 text-slate-300 hover:text-indigo-600 dark:text-slate-600 dark:hover:text-indigo-400" @click="editCat(c)">✎</button>
+                        <button class="rounded p-1 text-slate-300 hover:text-rose-600 dark:text-slate-600 dark:hover:text-rose-400" @click="removeCat(c)">✕</button>
                     </div>
                 </div>
 
-                <div class="mt-4 space-y-2 border-t border-slate-100 pt-4">
+                <div class="mt-4 space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
                     <div class="grid grid-cols-2 gap-2">
                         <TextInput v-model="catForm.name" :placeholder="$e('Название')" class="w-full" />
                         <TextInput v-model="catForm.accent" placeholder="#C8B79A" class="w-full" />

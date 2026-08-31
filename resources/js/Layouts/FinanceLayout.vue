@@ -69,7 +69,7 @@ const isActive = (name) => route().current(name);
 
             <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900">{{ title }}</h2>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ title }}</h2>
                     <p v-if="subtitle" class="mt-0.5 text-xs text-slate-400">{{ subtitle }}</p>
                 </div>
                 <!-- Кнопки и фильтры страницы — всегда в одном месте. -->

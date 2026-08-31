@@ -61,21 +61,21 @@ const fmt = (v) => (v === null || v === undefined || v === '' ? '—' : money(Nu
 </script>
 
 <template>
-    <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+    <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-sm font-semibold text-slate-800">
+            <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">
                 {{ $e('ДДС — сводка по счетам и долгам') }}
-                <span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-bold uppercase text-slate-400" :title="$e('Цифры вводятся вручную и нигде не пересчитываются')">{{ $e('ручной ввод') }}</span>
+                <span class="ml-1 rounded bg-slate-100 dark:bg-slate-800/60 px-1.5 py-0.5 text-xs font-bold uppercase text-slate-400" :title="$e('Цифры вводятся вручную и нигде не пересчитываются')">{{ $e('ручной ввод') }}</span>
             </h3>
             <div class="flex items-center gap-2 text-sm">
                 <template v-if="editDate">
                     <input v-model="dateInput" placeholder="20.07.2026" class="w-32 rounded-lg border-slate-200 py-1 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400" />
                     <button @click="saveDate" class="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-700">{{ $e('ОК') }}</button>
-                    <button @click="editDate = false" class="text-slate-400 hover:text-slate-600">✕</button>
+                    <button @click="editDate = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">✕</button>
                 </template>
                 <template v-else>
-                    <span class="rounded-lg bg-sky-50 px-3 py-1 font-semibold text-sky-700">{{ dds.date || $e('дата не указана') }}</span>
-                    <button v-if="canManage" @click="openDateEdit" :title="$e('Изменить дату')" class="text-slate-300 hover:text-indigo-500">✎</button>
+                    <span class="rounded-lg bg-sky-50 px-3 py-1 font-semibold text-sky-700 dark:bg-sky-500/10 dark:text-sky-400">{{ dds.date || $e('дата не указана') }}</span>
+                    <button v-if="canManage" @click="openDateEdit" :title="$e('Изменить дату')" class="text-slate-300 hover:text-indigo-500 dark:text-slate-600 dark:hover:text-indigo-400">✎</button>
                 </template>
             </div>
         </div>
@@ -92,37 +92,37 @@ const fmt = (v) => (v === null || v === undefined || v === '' ? '—' : money(Nu
                             <th v-if="canManage" class="py-2"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr v-for="a in dds.accounts" :key="a.id" class="group hover:bg-slate-50">
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tr v-for="a in dds.accounts" :key="a.id" class="group hover:bg-slate-50 dark:hover:bg-slate-800/60">
                             <template v-if="editingId === a.id">
                                 <td class="py-1.5 pr-2"><input v-model="form.name" class="w-full rounded-lg border-slate-200 py-1 text-sm" /></td>
                                 <td class="py-1.5 pr-2"><input v-model="form.bank" class="w-24 rounded-lg border-slate-200 py-1 text-sm" /></td>
                                 <td class="py-1.5 pr-2"><input v-model="form.balance" type="number" step="0.01" class="w-32 rounded-lg border-slate-200 py-1 text-right text-sm" /></td>
                                 <td class="py-1.5 pr-2"><input v-model="form.receivable" type="number" step="0.01" class="w-32 rounded-lg border-slate-200 py-1 text-right text-sm" /></td>
                                 <td class="py-1.5 whitespace-nowrap text-right">
-                                    <button @click="save" class="text-xs font-semibold text-indigo-600 hover:underline">{{ $e('Сохранить') }}</button>
+                                    <button @click="save" class="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400">{{ $e('Сохранить') }}</button>
                                     <button @click="cancel" class="ml-2 text-xs text-slate-400 hover:underline">{{ $e('Отмена') }}</button>
                                 </td>
                             </template>
                             <template v-else>
-                                <td class="py-2 pr-3 font-medium text-slate-800">{{ a.name }}</td>
-                                <td class="py-2 pr-3 text-slate-500">{{ a.bank || '—' }}</td>
-                                <td class="py-2 pr-3 text-right tabular-nums text-slate-800">{{ fmt(a.balance) }}</td>
-                                <td class="py-2 pr-3 text-right tabular-nums text-slate-600">{{ fmt(a.receivable) }}</td>
+                                <td class="py-2 pr-3 font-medium text-slate-800 dark:text-slate-200">{{ a.name }}</td>
+                                <td class="py-2 pr-3 text-slate-500 dark:text-slate-400">{{ a.bank || '—' }}</td>
+                                <td class="py-2 pr-3 text-right tabular-nums text-slate-800 dark:text-slate-200">{{ fmt(a.balance) }}</td>
+                                <td class="py-2 pr-3 text-right tabular-nums text-slate-600 dark:text-slate-300">{{ fmt(a.receivable) }}</td>
                                 <td v-if="canManage" class="py-2 whitespace-nowrap text-right text-xs opacity-0 transition group-hover:opacity-100">
-                                    <button @click="startEdit(a)" class="text-indigo-600 hover:underline">✎</button>
-                                    <button @click="remove(a)" class="ml-2 text-rose-500 hover:underline">✕</button>
+                                    <button @click="startEdit(a)" class="text-indigo-600 hover:underline dark:text-indigo-400">✎</button>
+                                    <button @click="remove(a)" class="ml-2 text-rose-500 hover:underline dark:text-rose-400">✕</button>
                                 </td>
                             </template>
                         </tr>
                         <!-- Добавление строки-счёта -->
-                        <tr v-if="addingKind === 'account'" class="bg-indigo-50/40">
+                        <tr v-if="addingKind === 'account'" class="bg-indigo-50/40 dark:bg-indigo-500/10">
                             <td class="py-1.5 pr-2"><input v-model="form.name" :placeholder="$e('Компания')" class="w-full rounded-lg border-slate-200 py-1 text-sm" /></td>
                             <td class="py-1.5 pr-2"><input v-model="form.bank" :placeholder="$e('банк')" class="w-24 rounded-lg border-slate-200 py-1 text-sm" /></td>
                             <td class="py-1.5 pr-2"><input v-model="form.balance" type="number" step="0.01" placeholder="0" class="w-32 rounded-lg border-slate-200 py-1 text-right text-sm" /></td>
                             <td class="py-1.5 pr-2"><input v-model="form.receivable" type="number" step="0.01" placeholder="0" class="w-32 rounded-lg border-slate-200 py-1 text-right text-sm" /></td>
                             <td class="py-1.5 whitespace-nowrap text-right">
-                                <button @click="save" :disabled="!form.name || form.processing" class="text-xs font-semibold text-indigo-600 hover:underline disabled:opacity-40">{{ $e('Добавить') }}</button>
+                                <button @click="save" :disabled="!form.name || form.processing" class="text-xs font-semibold text-indigo-600 hover:underline disabled:opacity-40 dark:text-indigo-400">{{ $e('Добавить') }}</button>
                                 <button @click="cancel" class="ml-2 text-xs text-slate-400 hover:underline">✕</button>
                             </td>
                         </tr>
@@ -131,16 +131,16 @@ const fmt = (v) => (v === null || v === undefined || v === '' ? '—' : money(Nu
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="border-t-2 border-slate-200 font-semibold">
-                            <td class="py-2 pr-3 text-slate-500">{{ $e('Сумма') }}</td><td></td>
-                            <td class="py-2 pr-3 text-right tabular-nums text-rose-600">{{ money(totals.balance) }}</td>
-                            <td class="py-2 pr-3 text-right tabular-nums text-slate-800">{{ money(totals.receivable) }}</td>
+                        <tr class="border-t-2 border-slate-200 font-semibold dark:border-slate-800/80">
+                            <td class="py-2 pr-3 text-slate-500 dark:text-slate-400">{{ $e('Сумма') }}</td><td></td>
+                            <td class="py-2 pr-3 text-right tabular-nums text-rose-600 dark:text-rose-400">{{ money(totals.balance) }}</td>
+                            <td class="py-2 pr-3 text-right tabular-nums text-slate-800 dark:text-slate-200">{{ money(totals.receivable) }}</td>
                             <td v-if="canManage"></td>
                         </tr>
                     </tfoot>
                 </table>
                 <button v-if="canManage && addingKind !== 'account'" @click="startAdd('account')"
-                    class="mt-2 rounded-lg border border-dashed border-indigo-300 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50">{{ $e('+ Компания') }}</button>
+                    class="mt-2 rounded-lg border border-dashed border-indigo-300 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500/40 dark:text-indigo-400 dark:hover:bg-indigo-500/10">{{ $e('+ Компания') }}</button>
             </div>
 
             <!-- Долги -->
@@ -149,30 +149,30 @@ const fmt = (v) => (v === null || v === undefined || v === '' ? '—' : money(Nu
                     <thead class="text-left text-xs uppercase text-slate-400">
                         <tr><th class="py-2 pr-3">{{ $e('Долги') }}</th><th class="py-2 pr-3 text-right">{{ $e('Сумма') }}</th><th v-if="canManage" class="py-2"></th></tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr v-for="d in dds.debts" :key="d.id" class="group hover:bg-slate-50">
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tr v-for="d in dds.debts" :key="d.id" class="group hover:bg-slate-50 dark:hover:bg-slate-800/60">
                             <template v-if="editingId === d.id">
                                 <td class="py-1.5 pr-2"><input v-model="form.name" class="w-full rounded-lg border-slate-200 py-1 text-sm" /></td>
                                 <td class="py-1.5 pr-2"><input v-model="form.amount" type="number" step="0.01" class="w-28 rounded-lg border-slate-200 py-1 text-right text-sm" /></td>
                                 <td class="py-1.5 whitespace-nowrap text-right">
-                                    <button @click="save" class="text-xs font-semibold text-indigo-600 hover:underline">{{ $e('ОК') }}</button>
+                                    <button @click="save" class="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400">{{ $e('ОК') }}</button>
                                     <button @click="cancel" class="ml-1.5 text-xs text-slate-400 hover:underline">✕</button>
                                 </td>
                             </template>
                             <template v-else>
-                                <td class="py-2 pr-3 font-medium text-slate-800">{{ d.name }}</td>
-                                <td class="py-2 pr-3 text-right tabular-nums text-slate-800">{{ fmt(d.amount) }}</td>
+                                <td class="py-2 pr-3 font-medium text-slate-800 dark:text-slate-200">{{ d.name }}</td>
+                                <td class="py-2 pr-3 text-right tabular-nums text-slate-800 dark:text-slate-200">{{ fmt(d.amount) }}</td>
                                 <td v-if="canManage" class="py-2 whitespace-nowrap text-right text-xs opacity-0 transition group-hover:opacity-100">
-                                    <button @click="startEdit(d)" class="text-indigo-600 hover:underline">✎</button>
-                                    <button @click="remove(d)" class="ml-2 text-rose-500 hover:underline">✕</button>
+                                    <button @click="startEdit(d)" class="text-indigo-600 hover:underline dark:text-indigo-400">✎</button>
+                                    <button @click="remove(d)" class="ml-2 text-rose-500 hover:underline dark:text-rose-400">✕</button>
                                 </td>
                             </template>
                         </tr>
-                        <tr v-if="addingKind === 'debt'" class="bg-indigo-50/40">
+                        <tr v-if="addingKind === 'debt'" class="bg-indigo-50/40 dark:bg-indigo-500/10">
                             <td class="py-1.5 pr-2"><input v-model="form.name" :placeholder="$e('Кому должны')" class="w-full rounded-lg border-slate-200 py-1 text-sm" /></td>
                             <td class="py-1.5 pr-2"><input v-model="form.amount" type="number" step="0.01" placeholder="0" class="w-28 rounded-lg border-slate-200 py-1 text-right text-sm" /></td>
                             <td class="py-1.5 whitespace-nowrap text-right">
-                                <button @click="save" :disabled="!form.name || form.processing" class="text-xs font-semibold text-indigo-600 hover:underline disabled:opacity-40">{{ $e('ОК') }}</button>
+                                <button @click="save" :disabled="!form.name || form.processing" class="text-xs font-semibold text-indigo-600 hover:underline disabled:opacity-40 dark:text-indigo-400">{{ $e('ОК') }}</button>
                                 <button @click="cancel" class="ml-1.5 text-xs text-slate-400 hover:underline">✕</button>
                             </td>
                         </tr>
@@ -181,15 +181,15 @@ const fmt = (v) => (v === null || v === undefined || v === '' ? '—' : money(Nu
                         </tr>
                     </tbody>
                     <tfoot>
-                        <tr class="border-t-2 border-slate-200 font-semibold">
-                            <td class="py-2 pr-3 text-slate-500">{{ $e('Итого') }}</td>
-                            <td class="py-2 pr-3 text-right tabular-nums text-slate-800">{{ money(totals.debts) }}</td>
+                        <tr class="border-t-2 border-slate-200 font-semibold dark:border-slate-800/80">
+                            <td class="py-2 pr-3 text-slate-500 dark:text-slate-400">{{ $e('Итого') }}</td>
+                            <td class="py-2 pr-3 text-right tabular-nums text-slate-800 dark:text-slate-200">{{ money(totals.debts) }}</td>
                             <td v-if="canManage"></td>
                         </tr>
                     </tfoot>
                 </table>
                 <button v-if="canManage && addingKind !== 'debt'" @click="startAdd('debt')"
-                    class="mt-2 rounded-lg border border-dashed border-indigo-300 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50">{{ $e('+ Долг') }}</button>
+                    class="mt-2 rounded-lg border border-dashed border-indigo-300 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500/40 dark:text-indigo-400 dark:hover:bg-indigo-500/10">{{ $e('+ Долг') }}</button>
             </div>
         </div>
     </div>

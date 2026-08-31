@@ -30,7 +30,7 @@ const verificationLinkSent = computed(
         </div>
 
         <div
-            class="mb-4 text-sm font-medium text-green-600"
+            class="mb-4 text-sm font-medium text-green-600 dark:text-green-400"
             v-if="verificationLinkSent"
         >
             {{ $e('Новая ссылка для подтверждения отправлена на email, указанный при регистрации.') }}

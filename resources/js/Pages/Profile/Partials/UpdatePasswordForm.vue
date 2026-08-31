@@ -36,11 +36,11 @@ const updatePassword = () => {
 <template>
     <section>
         <header>
-            <h2 class="text-lg font-medium text-slate-900">
+            <h2 class="text-lg font-medium text-slate-900 dark:text-slate-100">
                 {{ $e('Смена пароля') }}
             </h2>
 
-            <p class="mt-1 text-sm text-slate-600">
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 {{ $e('Используйте длинный случайный пароль, чтобы аккаунт оставался защищённым.') }}
             </p>
         </header>
@@ -110,7 +110,7 @@ const updatePassword = () => {
                 >
                     <p
                         v-if="form.recentlySuccessful"
-                        class="text-sm text-slate-600"
+                        class="text-sm text-slate-600 dark:text-slate-300"
                     >
                         {{ $e('Сохранено.') }}
                     </p>

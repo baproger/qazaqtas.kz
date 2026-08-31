@@ -31,22 +31,22 @@ const kb = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + tr(' МБ') : Math.ma
         <PrimaryButton :disabled="form.processing" @click="pick">{{ form.processing ? $e('Загрузка…') : $e('+ Загрузить документ') }}</PrimaryButton>
 
         <div class="space-y-2">
-            <div v-for="d in documents" :key="d.id" class="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 text-sm">
+            <div v-for="d in documents" :key="d.id" class="flex items-center justify-between gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 px-4 py-3 text-sm">
                 <div class="flex min-w-0 items-center gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-400">
                         <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="height:18px;width:18px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                     </span>
                     <div class="min-w-0">
-                        <a :href="route('documents.download', d.id)" class="font-medium text-indigo-600 transition-colors duration-150 hover:text-indigo-800 hover:underline">{{ d.name }}</a>
+                        <a :href="route('documents.download', d.id)" class="font-medium text-indigo-600 transition-colors duration-150 hover:text-indigo-800 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">{{ d.name }}</a>
                         <div class="text-xs text-slate-400">v{{ d.version }} · {{ kb(d.size) }} · {{ d.user?.name }}</div>
                     </div>
                 </div>
-                <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-rose-600" :title="$e('Удалить')" @click="remove(d)">
+                <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-rose-600 dark:hover:text-rose-400" :title="$e('Удалить')" @click="remove(d)">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
                 </button>
             </div>
             <div v-if="!documents.length" class="flex flex-col items-center gap-2 py-6 text-center">
-                <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                 <span class="text-sm text-slate-400">{{ $e('Документов нет') }}</span>
             </div>
         </div>

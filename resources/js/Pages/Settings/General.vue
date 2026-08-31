@@ -81,7 +81,7 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
                     <div class="flex flex-wrap gap-2 sm:justify-end">
                         <button v-for="s in fontSizes" :key="s.value" type="button" @click="form.ui_font_size = s.value"
                             class="rounded-lg border px-3 py-1.5 text-sm font-medium transition"
-                            :class="form.ui_font_size === s.value ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'">
+                            :class="form.ui_font_size === s.value ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300' : 'border-slate-200 dark:border-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'">
                             {{ s.label }}
                         </button>
                     </div>

@@ -37,16 +37,16 @@ onUnmounted(() => { clearInterval(timer); document.removeEventListener('visibili
 
 <template>
     <div class="flex h-96 flex-col">
-        <div ref="scroller" class="flex-1 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-3">
+        <div ref="scroller" class="flex-1 space-y-2 overflow-y-auto rounded-lg bg-slate-50 dark:bg-slate-800/50 p-3">
             <div v-for="m in messages" :key="m.id" class="flex" :class="m.user_id === me?.id ? 'justify-end' : 'justify-start'">
-                <div :class="m.user_id === me?.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-100'" class="max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-sm">
-                    <div v-if="m.user_id !== me?.id" class="text-xs font-semibold text-indigo-500">{{ m.user_name }}</div>
+                <div :class="m.user_id === me?.id ? 'bg-indigo-600 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-100 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-800'" class="max-w-[75%] rounded-lg px-3 py-2 text-sm shadow-sm">
+                    <div v-if="m.user_id !== me?.id" class="text-xs font-semibold text-indigo-500 dark:text-indigo-400">{{ m.user_name }}</div>
                     <div class="whitespace-pre-line">{{ m.message }}</div>
                     <div class="mt-0.5 text-right text-xs opacity-70">{{ fmt(m.created_at) }}</div>
                 </div>
             </div>
             <div v-if="!messages.length" class="flex flex-col items-center gap-2 pt-10 text-center">
-                <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
+                <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>
                 <span class="text-sm text-slate-400">{{ $e('Обсуждение по сделке — напишите первым') }}</span>
             </div>
         </div>

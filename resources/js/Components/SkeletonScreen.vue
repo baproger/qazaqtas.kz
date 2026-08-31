@@ -6,18 +6,18 @@
     <div class="space-y-6">
         <!-- Stat row -->
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div v-for="i in 4" :key="i" class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div v-for="i in 4" :key="i" class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div class="sk h-3 w-24 rounded"></div>
                 <div class="sk mt-3 h-7 w-32 rounded"></div>
                 <div class="sk mt-2 h-2.5 w-20 rounded"></div>
             </div>
         </div>
         <!-- Table block -->
-        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-5 py-3.5">
+        <div class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div class="border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
                 <div class="sk h-3.5 w-40 rounded"></div>
             </div>
-            <div class="divide-y divide-slate-50">
+            <div class="divide-y divide-slate-50 dark:divide-slate-800">
                 <div v-for="i in 6" :key="i" class="flex items-center gap-4 px-5 py-3.5">
                     <div class="sk h-3 w-8 rounded"></div>
                     <div class="flex-1 space-y-1.5">

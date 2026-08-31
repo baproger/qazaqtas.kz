@@ -68,26 +68,26 @@ const pick = (ids) => emit('pick', Array.isArray(ids) ? ids : [ids]);
 <template>
     <Modal :show="show" max-width="lg" @close="emit('close')">
         <div class="p-6">
-            <h2 class="mb-4 text-base font-semibold text-slate-900">{{ title || $e('Добавить сотрудника') }}</h2>
+            <h2 class="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">{{ title || $e('Добавить сотрудника') }}</h2>
 
             <!-- Состав: кто уже здесь. Без этой строки после закрытия окна
                  приходилось бы гадать, кого ты только что добавил. -->
-            <div v-if="members.length" class="mb-4 rounded-lg border border-slate-100 bg-slate-50/60 p-2.5">
+            <div v-if="members.length" class="mb-4 rounded-lg border border-slate-100 bg-slate-50/60 dark:bg-slate-800/40 p-2.5 dark:border-slate-800 dark:bg-slate-800/50">
                 <div class="mb-1.5 text-xs uppercase tracking-wide text-slate-400">{{ $e('Сейчас в составе') }} · {{ members.length }}</div>
                 <div class="flex flex-wrap gap-1">
                     <span v-for="m in members" :key="m.id"
-                        class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-1.5 py-0.5 text-xs font-medium text-sky-700">
+                        class="inline-flex items-center gap-1 rounded-md bg-sky-50 px-1.5 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-400">
                         {{ m.name }}
                         <button @click="emit('remove', m.id)" :title="$e('Убрать')"
-                            class="text-sky-400 transition-colors duration-150 hover:text-rose-600">×</button>
+                            class="text-sky-400 transition-colors duration-150 hover:text-rose-600 dark:hover:text-rose-400">×</button>
                     </span>
                 </div>
             </div>
 
-            <div class="mb-3 flex gap-1 rounded-lg bg-slate-100 p-1">
+            <div class="mb-3 flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800/60">
                 <button v-for="t in TABS" :key="t.key" type="button" @click="tab = t.key"
                     class="flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150"
-                    :class="tab === t.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'">
+                    :class="tab === t.key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'">
                     {{ t.label }}
                 </button>
             </div>
@@ -100,10 +100,10 @@ const pick = (ids) => emit('pick', Array.isArray(ids) ? ids : [ids]);
                     <button v-for="p in visiblePeople" :key="p.id" type="button" @click="pick(p.id)"
                         :disabled="has(p.id)"
                         class="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors duration-150"
-                        :class="has(p.id) ? 'opacity-40' : 'hover:bg-indigo-50'">
+                        :class="has(p.id) ? 'opacity-40' : 'hover:bg-indigo-50 dark:hover:bg-indigo-500/10'">
                         <Avatar :name="p.name" :src="p.avatar" :size="28" />
                         <span class="min-w-0 flex-1">
-                            <span class="block truncate text-sm text-slate-800">{{ p.name }}</span>
+                            <span class="block truncate text-sm text-slate-800 dark:text-slate-200">{{ p.name }}</span>
                             <span class="block truncate text-xs text-slate-400">{{ p.department || $e('без отдела') }}</span>
                         </span>
                         <span v-if="has(p.id)" class="text-xs text-slate-400">{{ $e('уже есть') }}</span>
@@ -112,19 +112,19 @@ const pick = (ids) => emit('pick', Array.isArray(ids) ? ids : [ids]);
                 </template>
 
                 <template v-else>
-                    <div v-for="g in groups" :key="g.id" class="rounded-lg border border-slate-100 p-2">
+                    <div v-for="g in groups" :key="g.id" class="rounded-lg border border-slate-100 p-2 dark:border-slate-800">
                         <div class="flex items-center gap-2">
-                            <span class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{{ g.name }}</span>
+                            <span class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">{{ g.name }}</span>
                             <span class="text-xs text-slate-400">{{ g.people.length }}</span>
                             <button type="button" @click="pick(g.people.map((p) => p.id))"
-                                class="rounded-md bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 transition-colors duration-150 hover:bg-indigo-100">
+                                class="rounded-md bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 transition-colors duration-150 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20">
                                 {{ $e('добавить всех') }}
                             </button>
                         </div>
                         <div class="mt-1.5 flex flex-wrap gap-1">
                             <button v-for="p in g.people" :key="p.id" type="button" @click="pick(p.id)" :disabled="has(p.id)"
                                 class="rounded-md px-2 py-1 text-xs transition-colors duration-150"
-                                :class="has(p.id) ? 'bg-slate-100 text-slate-400' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-indigo-400'">
+                                :class="has(p.id) ? 'bg-slate-100 text-slate-400 dark:bg-slate-800/60' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-indigo-400 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-800'">
                                 {{ p.name }}
                             </button>
                         </div>
@@ -134,7 +134,7 @@ const pick = (ids) => emit('pick', Array.isArray(ids) ? ids : [ids]);
             </div>
 
             <div class="mt-5 text-right">
-                <button @click="emit('close')" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700">{{ $e('Закрыть') }}</button>
+                <button @click="emit('close')" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">{{ $e('Закрыть') }}</button>
             </div>
         </div>
     </Modal>

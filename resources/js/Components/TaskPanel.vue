@@ -52,29 +52,29 @@ const saveEdit = () => editForm.put(route('tasks.update', editing.value.id), { p
 <template>
     <div class="space-y-2">
         <div v-for="t in tasks" :key="t.id" class="flex items-center justify-between rounded-xl px-4 py-3 text-sm transition-colors duration-150"
-            :class="isPastDue(t.due_date, t.status==='done') ? 'bg-rose-50 ring-1 ring-inset ring-rose-200' : 'bg-slate-50'">
+            :class="isPastDue(t.due_date, t.status==='done') ? 'bg-rose-50 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/10 dark:ring-rose-500/30' : 'bg-slate-50 dark:bg-slate-800/50'">
             <div class="min-w-0">
-                <div class="font-medium text-slate-900">{{ t.title }}</div>
+                <div class="font-medium text-slate-900 dark:text-slate-100">{{ t.title }}</div>
                 <div class="text-xs text-slate-400">
                     {{ t.assignee?.name ?? $e('Без исполнителя') }}<span v-if="t.due_date" :class="deadlineClass(t.due_date, t.status==='done')"> · {{ isPastDue(t.due_date, t.status==='done') ? $e('просрочено ') : '' }}{{ formatDateTime(t.due_date) }}</span>
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
                 <button @click="advance(t)" :title="$e('Сменить статус')"><StatusBadge :status="t.status" /></button>
-                <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-indigo-600" :title="$e('Редактировать')" @click="openEdit(t)">
+                <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-indigo-600 dark:hover:text-indigo-400" :title="$e('Редактировать')" @click="openEdit(t)">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
                 </button>
-                <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-rose-600" :title="$e('Удалить')" @click="remove(t)">
+                <button class="rounded p-1 text-slate-400 transition-colors duration-150 hover:text-rose-600 dark:hover:text-rose-400" :title="$e('Удалить')" @click="remove(t)">
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
                 </button>
             </div>
         </div>
         <div v-if="!tasks.length" class="flex flex-col items-center gap-2 py-6 text-center">
-            <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m4 16 2 2 4-4M11 6h10M11 11h10M11 18h10"/></svg>
+            <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m4 16 2 2 4-4M11 6h10M11 11h10M11 18h10"/></svg>
             <span class="text-sm text-slate-400">{{ $e('Задач пока нет') }}</span>
         </div>
 
-        <div v-if="adding" class="rounded-xl border border-dashed border-slate-300 p-4">
+        <div v-if="adding" class="rounded-xl border border-dashed border-slate-300 p-4 dark:border-slate-600">
             <TextInput v-model="form.title" :placeholder="$e('Название задачи')" class="mb-2 w-full" />
             <div class="mb-2 grid grid-cols-2 gap-2">
                 <select v-model="form.assignee_id" class="rounded-lg border-slate-300 text-sm transition duration-150 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20">
@@ -88,13 +88,13 @@ const saveEdit = () => editForm.put(route('tasks.update', editing.value.id), { p
             <TextInput v-model="form.due_date" type="datetime-local" class="mb-2 w-full" />
             <div class="flex gap-2">
                 <PrimaryButton :disabled="form.processing || !form.title" @click="add">{{ $e('Добавить') }}</PrimaryButton>
-                <button class="text-sm text-slate-500 transition-colors duration-150 hover:text-slate-700" @click="adding = false">{{ $e('Отмена') }}</button>
+                <button class="text-sm text-slate-500 transition-colors duration-150 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300" @click="adding = false">{{ $e('Отмена') }}</button>
             </div>
         </div>
         <button v-else
             :class="!tasks.length
                 ? 'mx-auto flex rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700'
-                : 'text-sm font-medium text-indigo-600 transition-colors duration-150 hover:text-indigo-800'"
+                : 'text-sm font-medium text-indigo-600 transition-colors duration-150 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300'"
             @click="adding = true">{{ $e('+ Добавить задачу') }}</button>
 
         <!-- Edit modal -->

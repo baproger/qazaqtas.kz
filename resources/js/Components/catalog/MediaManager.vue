@@ -93,14 +93,14 @@ const removeDocument = async (index) => {
         <section>
             <div class="flex items-center justify-between">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Фотографии') }}</p>
-                <label class="cursor-pointer text-xs font-semibold text-indigo-600 hover:underline">
+                <label class="cursor-pointer text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400">
                     {{ $e('+ Загрузить') }}
                     <input ref="imageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" @change="uploadImages" />
                 </label>
             </div>
 
             <div v-if="product.images?.length" class="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
-                <figure v-for="(img, i) in product.images" :key="img.path" class="overflow-hidden rounded-xl border border-slate-200">
+                <figure v-for="(img, i) in product.images" :key="img.path" class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800/80">
                     <div class="group relative">
                         <img :src="img.thumb ?? img.path" :alt="img.alt ?? product.name" loading="lazy" class="aspect-[4/3] w-full object-cover" />
 
@@ -128,7 +128,7 @@ const removeDocument = async (index) => {
                     </select>
                 </figure>
             </div>
-            <p v-else class="mt-3 rounded-xl border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400">
+            <p v-else class="mt-3 rounded-xl border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400 dark:border-slate-800/80">
                 {{ $e('Пока нет фото — витрина рисует схему изделия по типу и цвету') }}
             </p>
 
@@ -141,19 +141,19 @@ const removeDocument = async (index) => {
         </section>
 
         <!-- 3D-модель -->
-        <section class="border-t border-slate-100 pt-5">
+        <section class="border-t border-slate-100 pt-5 dark:border-slate-800">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('3D-модель (GLB или OBJ)') }}</p>
 
-            <div v-if="product.model_path" class="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2">
+            <div v-if="product.model_path" class="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-800/80">
                 <span class="text-lg">🧊</span>
-                <span class="flex-1 truncate text-sm text-slate-700">
+                <span class="flex-1 truncate text-sm text-slate-700 dark:text-slate-300">
                     {{ $e('Модель загружена (') }}{{ modelFormat }}{{ $e(') — сцена покажет её вместо схемы') }}
                 </span>
-                <button class="rounded p-1 text-slate-300 hover:text-rose-600" @click="removeModel">✕</button>
+                <button class="rounded p-1 text-slate-300 hover:text-rose-600 dark:text-slate-600 dark:hover:text-rose-400" @click="removeModel">✕</button>
             </div>
 
-            <label v-else class="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center hover:border-indigo-300">
-                <span class="text-xs font-medium text-slate-500">{{ $e('Перетащите или выберите файлы (до 24 МБ каждый)') }}</span>
+            <label v-else class="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center hover:border-indigo-300 dark:border-slate-800/80">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $e('Перетащите или выберите файлы (до 24 МБ каждый)') }}</span>
                 <span class="mt-1 text-xs text-slate-400">
                     {{ $e('.glb — одним файлом · .obj — вместе с .mtl и текстурами, выделите всё сразу') }}
                 </span>
@@ -167,19 +167,19 @@ const removeDocument = async (index) => {
         </section>
 
         <!-- Документы -->
-        <section class="border-t border-slate-100 pt-5">
+        <section class="border-t border-slate-100 pt-5 dark:border-slate-800">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Документы') }}</p>
 
             <ul v-if="product.documents?.length" class="mt-3 space-y-2">
-                <li v-for="(doc, i) in product.documents" :key="doc.path" class="flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2">
-                    <a :href="doc.path" target="_blank" class="flex-1 truncate text-sm text-indigo-600 hover:underline">{{ doc.name }}</a>
-                    <button class="rounded p-1 text-slate-300 hover:text-rose-600" @click="removeDocument(i)">✕</button>
+                <li v-for="(doc, i) in product.documents" :key="doc.path" class="flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 dark:border-slate-800">
+                    <a :href="doc.path" target="_blank" class="flex-1 truncate text-sm text-indigo-600 hover:underline dark:text-indigo-400">{{ doc.name }}</a>
+                    <button class="rounded p-1 text-slate-300 hover:text-rose-600 dark:text-slate-600 dark:hover:text-rose-400" @click="removeDocument(i)">✕</button>
                 </li>
             </ul>
 
             <div class="mt-3 flex flex-wrap items-center gap-2">
                 <TextInput v-model="docName" :placeholder="$e('Название документа')" class="flex-1" />
-                <label class="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                <label class="cursor-pointer rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800/60"
                     :class="!docName.trim() && 'pointer-events-none opacity-40'">
                     {{ $e('Выбрать файл') }}
                     <input ref="docInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx" class="hidden" @change="uploadDocument" />
@@ -187,6 +187,6 @@ const removeDocument = async (index) => {
             </div>
         </section>
 
-        <p v-if="uploading" class="text-xs text-indigo-600">{{ $e('Загружаем…') }}</p>
+        <p v-if="uploading" class="text-xs text-indigo-600 dark:text-indigo-400">{{ $e('Загружаем…') }}</p>
     </div>
 </template>

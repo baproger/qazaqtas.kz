@@ -67,18 +67,18 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
 </script>
 
 <template>
-    <div v-if="hasItems" class="divide-y divide-slate-100">
+    <div v-if="hasItems" class="divide-y divide-slate-100 dark:divide-slate-800">
         <div v-for="it in items" :key="it.id" class="grid gap-3 py-3 first:pt-0 last:pb-0 sm:grid-cols-2 sm:gap-4">
             <!-- Слева: что делать и сколько. -->
             <div class="min-w-0">
                 <div class="flex items-baseline gap-2">
-                    <span class="min-w-0 text-base font-medium leading-snug" :class="it.finished_at ? 'text-slate-400 line-through' : 'text-slate-800'">🧱 {{ it.name }}</span>
-                    <span v-if="it.finished_at" class="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700"
+                    <span class="min-w-0 text-base font-medium leading-snug" :class="it.finished_at ? 'text-slate-400 line-through' : 'text-slate-800 dark:text-slate-200'">🧱 {{ it.name }}</span>
+                    <span v-if="it.finished_at" class="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
                         :title="it.finisher?.name ? $e('отметил') + ': ' + it.finisher.name : ''">✓ {{ $e('закончен') }}</span>
                 </div>
                 <div class="mt-1 flex items-baseline gap-3 tabular-nums">
-                    <b class="text-lg font-bold leading-none text-slate-900">
-                        {{ qty(it.quantity) }} <span class="text-sm font-semibold text-slate-500">{{ it.unit }}</span>
+                    <b class="text-lg font-bold leading-none text-slate-900 dark:text-slate-100">
+                        {{ qty(it.quantity) }} <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">{{ it.unit }}</span>
                     </b>
                     <span v-if="showMoney && it.amount" class="text-sm text-slate-400">{{ money(it.amount) }}</span>
                 </div>
@@ -87,13 +87,13 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
                 <div v-if="done(it)" class="mt-2">
                     <div class="flex items-baseline gap-2 text-xs tabular-nums">
                         <span class="text-slate-400">{{ $e('сделано') }}</span>
-                        <b :class="done(it).over ? 'text-amber-600' : done(it).left === 0 ? 'text-emerald-600' : 'text-slate-700'">
+                        <b :class="done(it).over ? 'text-amber-600 dark:text-amber-400' : done(it).left === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'">
                             {{ qty(done(it).done) }} / {{ qty(done(it).plan) }} {{ it.unit }}
                         </b>
-                        <span v-if="done(it).pending" class="rounded bg-amber-50 px-1 py-px text-xs font-semibold text-amber-700"
+                        <span v-if="done(it).pending" class="rounded bg-amber-50 px-1 py-px text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"
                             :title="$e('внесено, но мастер ещё не подтвердил')">+{{ qty(done(it).pending) }} {{ $e('ждёт') }}</span>
                     </div>
-                    <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800/60">
                         <div class="h-full rounded-full transition-all duration-500"
                             :class="done(it).over ? 'bg-amber-400' : done(it).percent >= 100 ? 'bg-emerald-500' : 'bg-indigo-500'"
                             :style="{ width: Math.min(done(it).percent, 100) + '%' }"></div>
@@ -111,7 +111,7 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
                         <span class="text-xs text-slate-400">{{ it.unit }}</span>
                         <button :disabled="busy" @click="saveReport(it)"
                             class="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-semibold text-white transition-colors duration-150 hover:bg-indigo-700 disabled:opacity-50">{{ $e('Записать') }}</button>
-                        <button class="text-xs text-slate-400 hover:text-slate-600" @click="reporting = null">{{ $e('Отмена') }}</button>
+                        <button class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" @click="reporting = null">{{ $e('Отмена') }}</button>
                     </template>
                     <button v-else-if="!it.finished_at" @click="openReport(it)"
                         class="chip chip-action">
@@ -121,7 +121,7 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
 
                     <button @click="toggleFinished(it)"
                         class="chip"
-                        :class="it.finished_at ? 'chip-action text-slate-400' : 'pastel-good text-emerald-700 hover:brightness-95'">
+                        :class="it.finished_at ? 'chip-action text-slate-400' : 'pastel-good text-emerald-700 dark:text-emerald-400 hover:brightness-95'">
                         {{ it.finished_at ? $e('Вернуть в работу') : $e('Товар закончен') }}
                     </button>
                 </div>
@@ -134,9 +134,9 @@ const toggleFinished = (item) => router.post(route('projects.items.finish', [pro
 
     <!-- Позиций нет: сделка заведена одной строкой «наименование + количество». -->
     <div v-else-if="fallbackName">
-        <div class="text-base font-medium leading-snug text-slate-800">🧱 {{ fallbackName }}</div>
-        <b v-if="fallbackQuantity" class="text-lg font-bold tabular-nums text-slate-900">
-            {{ qty(fallbackQuantity) }} <span class="text-sm font-semibold text-slate-500">{{ fallbackUnit }}</span>
+        <div class="text-base font-medium leading-snug text-slate-800 dark:text-slate-200">🧱 {{ fallbackName }}</div>
+        <b v-if="fallbackQuantity" class="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">
+            {{ qty(fallbackQuantity) }} <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">{{ fallbackUnit }}</span>
         </b>
         <p class="mt-2 text-xs text-slate-400">{{ $e('Фото крепятся к позициям — добавьте товары в заказ') }}</p>
     </div>

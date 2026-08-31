@@ -37,29 +37,29 @@ onUnmounted(() => document.removeEventListener('click', onDocClick));
 <template>
     <div class="mgr-picker relative" :class="width">
         <button type="button" @click="open = !open"
-            class="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 shadow-sm">
+            class="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 shadow-sm dark:border-slate-800/80 dark:bg-slate-800 dark:text-slate-300">
             <span class="truncate">{{ selectedName }}</span>
             <span class="text-slate-400">{{ open ? '▲' : '▼' }}</span>
         </button>
-        <div v-if="open" class="absolute z-30 mt-1 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-100 bg-white py-1 shadow-lg">
+        <div v-if="open" class="absolute z-30 mt-1 max-h-80 w-64 overflow-y-auto rounded-xl border border-slate-100 bg-white py-1 shadow-lg dark:border-slate-800 dark:bg-slate-900">
             <button type="button" @click="pick('')"
-                class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50" :class="!modelValue ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ $e(placeholder) }}</button>
-            <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-slate-400">{{ $e('Менеджеры (отдел продаж)') }}</div>
+                class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-500/10" :class="!modelValue ? 'font-semibold text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'">{{ $e(placeholder) }}</button>
+            <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-slate-400 dark:border-slate-800">{{ $e('Менеджеры (отдел продаж)') }}</div>
             <button v-for="m in managers" :key="m.id" type="button" @click="pick(m.id)"
-                class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
-                :class="Number(modelValue) === m.id ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ m.name }}</button>
+                class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
+                :class="Number(modelValue) === m.id ? 'font-semibold text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'">{{ m.name }}</button>
             <div v-if="!managers.length" class="px-3 py-1.5 text-xs text-slate-400">{{ $e('Нет менеджеров') }}</div>
             <!-- Остальные отделы: свёрнуты, раскрываются кликом -->
             <template v-for="g in groups" :key="g.name">
                 <button type="button" @click="toggleDept(g.name)"
-                    class="mt-1 flex w-full items-center justify-between border-t border-slate-100 px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-slate-400 hover:text-slate-600">
+                    class="mt-1 flex w-full items-center justify-between border-t border-slate-100 px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-slate-400 hover:text-slate-600 dark:border-slate-800 dark:hover:text-slate-300">
                     {{ g.name }} ({{ g.items.length }})
                     <span>{{ openDepts.has(g.name) ? '▲' : '▼' }}</span>
                 </button>
                 <template v-if="openDepts.has(g.name)">
                     <button v-for="m in g.items" :key="m.id" type="button" @click="pick(m.id)"
-                        class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50"
-                        :class="Number(modelValue) === m.id ? 'font-semibold text-indigo-600' : 'text-slate-700'">{{ m.name }}</button>
+                        class="block w-full px-3 py-1.5 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
+                        :class="Number(modelValue) === m.id ? 'font-semibold text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-300'">{{ m.name }}</button>
                 </template>
             </template>
         </div>

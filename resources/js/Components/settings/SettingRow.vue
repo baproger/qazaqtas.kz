@@ -9,8 +9,8 @@ defineProps({ title: { type: String, required: true }, description: { type: Stri
 <template>
     <div class="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-            <div class="text-sm font-medium text-slate-900">{{ title }}</div>
-            <p v-if="description" class="mt-0.5 text-sm text-slate-500">{{ description }}</p>
+            <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ title }}</div>
+            <p v-if="description" class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ description }}</p>
         </div>
         <div class="shrink-0 sm:w-64 sm:text-right">
             <slot />

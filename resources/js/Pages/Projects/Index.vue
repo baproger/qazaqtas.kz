@@ -52,41 +52,41 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
     <AppLayout>
         <template #header>{{ $t('page.workshop', 'Цех') }}</template>
 
-        <div class="mb-4 inline-flex rounded-md bg-white shadow-sm border border-slate-200">
-            <button :class="view === 'kanban' ? 'bg-indigo-600 text-white' : 'text-slate-600'" class="rounded-l-md px-4 py-1.5 text-sm" @click="switchView('kanban')">{{ $e('Канбан') }}</button>
-            <button :class="view === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-600'" class="rounded-r-md px-4 py-1.5 text-sm" @click="switchView('list')">{{ $e('Список') }}</button>
+        <div class="mb-4 inline-flex rounded-md bg-white dark:bg-slate-900/70 shadow-sm border border-slate-200 dark:border-slate-800/80">
+            <button :class="view === 'kanban' ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-300'" class="rounded-l-md px-4 py-1.5 text-sm" @click="switchView('kanban')">{{ $e('Канбан') }}</button>
+            <button :class="view === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-300'" class="rounded-r-md px-4 py-1.5 text-sm" @click="switchView('list')">{{ $e('Список') }}</button>
         </div>
 
         <div v-if="view === 'kanban'" class="space-y-6">
         <div v-for="g in workshopGroups" :key="g.key">
             <div v-if="g.name" class="mb-2 flex items-center gap-2">
-                <span class="text-sm font-bold text-slate-800">{{ g.name }}</span>
-                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs tabular-nums text-slate-500">{{ g.stages.reduce((n, s) => n + byStage(s.id).length, 0) }}</span>
+                <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ g.name }}</span>
+                <span class="rounded-full bg-slate-100 dark:bg-slate-800/60 px-2 py-0.5 text-xs tabular-nums text-slate-500 dark:text-slate-400">{{ g.stages.reduce((n, s) => n + byStage(s.id).length, 0) }}</span>
             </div>
             <div class="flex gap-4 overflow-x-auto pb-4">
             <div v-for="stage in g.stages" :key="stage.id" class="flex w-72 flex-shrink-0 flex-col rounded-lg bg-slate-200/60" @dragover.prevent @drop="onDrop(stage)">
                 <div class="flex items-center justify-between px-3 py-2">
                     <div class="flex items-center gap-2">
                         <span class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: stage.color }"></span>
-                        <span class="text-sm font-semibold text-slate-700">{{ stage.name }}</span>
+                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">{{ stage.name }}</span>
                         <span class="text-xs text-slate-400">{{ byStage(stage.id).length }}</span>
                     </div>
                 </div>
                 <div class="flex-1 space-y-2 px-2 pb-2">
                     <Link v-for="p in byStage(stage.id)" :key="p.id" :href="route('projects.show', p.id)" draggable="true" @dragstart="draggingId = p.id"
-                        class="block cursor-move rounded-md bg-white p-3 shadow-sm border border-slate-200 hover:ring-indigo-300">
+                        class="block cursor-move rounded-md bg-white dark:bg-slate-900/70 p-3 shadow-sm border border-slate-200 dark:border-slate-800/80 hover:ring-indigo-300">
                         <!-- Минимум для цеха: товар, номер сделки, адрес, КРУПНО время в цехе -->
-                        <div class="text-sm font-bold leading-snug text-slate-900">{{ p.deal?.client_name || p.deal?.company_name || p.name }}</div>
-                        <div class="mt-0.5 text-xs font-semibold tracking-wide text-indigo-500">{{ p.deal?.number || p.number }}</div>
-                        <div v-if="p.deal?.address" class="mt-1 text-xs leading-snug text-slate-500">📍 {{ p.deal.address }}</div>
-                        <div v-if="p.deal?.foreman" class="mt-1 truncate text-xs text-slate-500" :title="$e('Бригадир')">👷 {{ p.deal.foreman.name }}</div>
-                        <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-indigo-50 px-2.5 py-2" :title="$e('Сколько заказ находится в цехе')">
+                        <div class="text-sm font-bold leading-snug text-slate-900 dark:text-slate-100">{{ p.deal?.client_name || p.deal?.company_name || p.name }}</div>
+                        <div class="mt-0.5 text-xs font-semibold tracking-wide text-indigo-500 dark:text-indigo-400">{{ p.deal?.number || p.number }}</div>
+                        <div v-if="p.deal?.address" class="mt-1 text-xs leading-snug text-slate-500 dark:text-slate-400">📍 {{ p.deal.address }}</div>
+                        <div v-if="p.deal?.foreman" class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400" :title="$e('Бригадир')">👷 {{ p.deal.foreman.name }}</div>
+                        <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-2" :title="$e('Сколько заказ находится в цехе')">
                             <span class="text-xs font-semibold uppercase tracking-wide text-indigo-400">{{ $e('⏱ в цехе') }}</span>
-                            <span class="text-xl font-bold leading-none tabular-nums text-indigo-700">{{ inWorkshop(p) ?? '—' }}</span>
+                            <span class="text-xl font-bold leading-none tabular-nums text-indigo-700 dark:text-indigo-300">{{ inWorkshop(p) ?? '—' }}</span>
                         </div>
                         <div v-if="onStage(p)" class="mt-1 text-right text-xs tabular-nums text-slate-400">{{ $e('на этапе') }} {{ onStage(p) }}</div>
                         <button v-if="p.project_stage_id === lastStageOf(g)" @click.prevent.stop="sendToAct(p)" class="mt-2 w-full rounded bg-teal-600 py-1 text-xs font-semibold text-white hover:bg-teal-700">{{ $e('🚚 Готово → Логистика') }}</button>
-                        <button v-else @click.prevent.stop="advance(p)" class="mt-2 w-full rounded bg-slate-100 py-1 text-xs text-slate-600 hover:bg-indigo-100 hover:text-indigo-700">{{ $e('Далее →') }}</button>
+                        <button v-else @click.prevent.stop="advance(p)" class="mt-2 w-full rounded bg-slate-100 dark:bg-slate-800/60 py-1 text-xs text-slate-600 dark:text-slate-300 hover:bg-indigo-100 hover:text-indigo-700">{{ $e('Далее →') }}</button>
                     </Link>
                     <div v-if="!byStage(stage.id).length" class="py-6 text-center text-xs text-slate-400">{{ $e('Пусто') }}</div>
                 </div>
@@ -95,19 +95,19 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
         </div>
         </div>
 
-        <div v-else class="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
-            <table class="min-w-full divide-y divide-slate-100 text-sm">
-                <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
+        <div v-else class="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 shadow-sm">
+            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/50 text-left text-xs uppercase text-slate-500 dark:text-slate-400">
                     <tr>
                         <th class="px-4 py-3">{{ $e('Номер') }}</th><th class="px-4 py-3">{{ $e('Компания') }}</th><th class="px-4 py-3">{{ $e('Клиент') }}</th>
                         <th class="px-4 py-3">{{ $e('Этап') }}</th><th v-if="canSeeMoney" class="px-4 py-3">{{ $e('Бюджет') }}</th><th class="px-4 py-3">{{ $e('Статус') }}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
-                    <tr v-for="p in projects.data" :key="p.id" class="cursor-pointer hover:bg-slate-50" @click="router.get(route('projects.show', p.id))">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tr v-for="p in projects.data" :key="p.id" class="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60" @click="router.get(route('projects.show', p.id))">
                         <td class="px-4 py-3 text-slate-400">{{ p.number }}</td>
-                        <td class="px-4 py-3 font-medium text-slate-900">{{ p.deal?.company_name || p.name }}</td>
-                        <td class="px-4 py-3 text-slate-500">{{ p.client?.name ?? '—' }}</td>
+                        <td class="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{{ p.deal?.company_name || p.name }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ p.client?.name ?? '—' }}</td>
                         <td class="px-4 py-3"><StatusBadge :status="p.stage?.name" :color="p.stage?.color" /></td>
                         <td v-if="canSeeMoney" class="px-4 py-3">{{ money(p.budget) }}</td>
                         <td class="px-4 py-3"><StatusBadge :status="p.status" /></td>

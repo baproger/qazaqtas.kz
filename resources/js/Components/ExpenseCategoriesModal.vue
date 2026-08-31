@@ -53,7 +53,7 @@ const remove = async (c) => {
 <template>
     <Modal :show="show" max-width="md" @close="emit('close')">
         <div class="p-6">
-            <h3 class="mb-1 text-base font-semibold text-slate-900">{{ $e('Категории расходов компании') }}</h3>
+            <h3 class="mb-1 text-base font-semibold text-slate-900 dark:text-slate-100">{{ $e('Категории расходов компании') }}</h3>
             <p class="mb-4 text-xs text-slate-400">{{ $e('Переименуйте прямо в поле (сохранение — Enter или клик мимо), ✕ — удалить.') }}</p>
             <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
                 <!-- Служебные категории (code) заблокированы: на них держатся
@@ -63,12 +63,12 @@ const remove = async (c) => {
                 <div v-for="c in categories" :key="c.id" class="flex items-center gap-2">
                     <input v-if="!c.code" v-model="names[c.id]" @keyup.enter="save(c)" @blur="save(c)" type="text"
                         class="flex-1 rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                    <span v-else class="flex flex-1 items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                    <span v-else class="flex flex-1 items-center gap-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
                         {{ c.name }}
-                        <span class="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-500"
+                        <span class="rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                             :title="$e('На этой категории держатся расчёты — менять её нельзя')">{{ $e('служебная') }}</span>
                     </span>
-                    <button v-if="!c.code" @click="remove(c)" class="rounded p-1.5 text-slate-300 transition hover:text-rose-600" :title="$e('Удалить категорию')">✕</button>
+                    <button v-if="!c.code" @click="remove(c)" class="rounded p-1.5 text-slate-300 transition hover:text-rose-600 dark:text-slate-600 dark:hover:text-rose-400" :title="$e('Удалить категорию')">✕</button>
                 </div>
                 <div v-if="!categories.length" class="py-4 text-center text-sm text-slate-400">{{ $e('Категорий пока нет') }}</div>
             </div>

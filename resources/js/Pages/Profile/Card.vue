@@ -56,14 +56,14 @@ const onAvatar = (e) => {
         <template #header>{{ $t('page.profile', 'Профиль') }}</template>
 
         <div class="mx-auto max-w-3xl space-y-6">
-            <div v-if="isAdmin" class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+            <div v-if="isAdmin" class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-4 shadow-sm">
                 <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">{{ $e('Сотрудник') }}</label>
                 <select v-model="selectedId" @change="loadUser" class="w-full rounded-lg border-slate-200 py-2 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400">
                     <option v-for="e in employees" :key="e.id" :value="e.id">{{ e.name }}</option>
                 </select>
             </div>
 
-            <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+            <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 shadow-sm">
                 <div class="flex items-center gap-4">
                     <div class="relative flex-shrink-0">
                         <span class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-indigo-600 text-2xl font-bold text-white shadow-lg shadow-indigo-600/30">
@@ -80,16 +80,16 @@ const onAvatar = (e) => {
                         </template>
                     </div>
                     <div>
-                        <div class="text-xl font-semibold text-slate-900">{{ current.name }}</div>
+                        <div class="text-xl font-semibold text-slate-900 dark:text-slate-100">{{ current.name }}</div>
                         <div class="mt-1.5 flex items-center gap-2">
-                            <span class="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">{{ roleTitle(current.role) || '—' }}</span>
+                            <span class="rounded-md bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">{{ roleTitle(current.role) || '—' }}</span>
                             <span class="text-xs text-slate-400">{{ deptName(current.department_id) }}</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Read-only notice for regular users -->
-                <div v-if="!isAdmin" class="mt-6 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 ring-1 ring-slate-200">
+                <div v-if="!isAdmin" class="mt-6 rounded-lg bg-slate-50 dark:bg-slate-800/50 px-3 py-2 text-xs text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-800">
                     {{ $e('Данные профиля может изменять только администратор или директор. Для правок обратитесь к руководству.') }}
                 </div>
 
@@ -99,12 +99,12 @@ const onAvatar = (e) => {
                         <div>
                             <InputLabel :value="$e('Полное имя')" />
                             <TextInput v-model="form.name" class="mt-1 w-full" />
-                            <div v-if="form.errors.name" class="mt-1 text-xs text-red-600">{{ form.errors.name }}</div>
+                            <div v-if="form.errors.name" class="mt-1 text-xs text-red-600 dark:text-rose-400">{{ form.errors.name }}</div>
                         </div>
                         <div>
                             <InputLabel value="Email" />
                             <TextInput v-model="form.email" type="email" class="mt-1 w-full" />
-                            <div v-if="form.errors.email" class="mt-1 text-xs text-red-600">{{ form.errors.email }}</div>
+                            <div v-if="form.errors.email" class="mt-1 text-xs text-red-600 dark:text-rose-400">{{ form.errors.email }}</div>
                         </div>
                         <div>
                             <InputLabel :value="$e('Телефон')" />
@@ -119,13 +119,13 @@ const onAvatar = (e) => {
                         </div>
                         <div>
                             <InputLabel :value="$e('Роль')" />
-                            <div class="mt-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                            <div class="mt-1 rounded-md border border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
                                 {{ roleTitle(current.role) || '—' }} <span class="text-xs text-slate-400">{{ $e('(изменяется только в «Сотрудники»)') }}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div v-if="mustVerifyEmail && isSelf" class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 ring-1 ring-amber-200">
+                    <div v-if="mustVerifyEmail && isSelf" class="mt-4 rounded-lg bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-500/30">
                         {{ $e('Электронная почта не подтверждена.') }}
                         <span v-if="status === 'verification-link-sent'" class="font-medium">{{ $e('Ссылка для подтверждения отправлена.') }}</span>
                     </div>
@@ -133,26 +133,26 @@ const onAvatar = (e) => {
                     <div class="mt-6 flex items-center gap-3">
                         <PrimaryButton :disabled="form.processing" @click="save">{{ $e('Сохранить') }}</PrimaryButton>
                         <transition enter-active-class="transition duration-300 ease-out" enter-from-class="translate-x-2 opacity-0" leave-active-class="transition duration-500" leave-to-class="opacity-0">
-                            <span v-if="form.recentlySuccessful" class="flex items-center gap-1 text-sm font-medium text-emerald-600">{{ $e('✓ Сохранено') }}</span>
+                            <span v-if="form.recentlySuccessful" class="flex items-center gap-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">{{ $e('✓ Сохранено') }}</span>
                         </transition>
                     </div>
                 </template>
 
                 <!-- Read-only field summary for regular users -->
                 <dl v-else class="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-0.5 text-slate-800">{{ current.email }}</dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Телефон') }}</dt><dd class="mt-0.5 text-slate-800">{{ current.phone || '—' }}</dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Отдел / должность') }}</dt><dd class="mt-0.5 text-slate-800">{{ deptName(current.department_id) }}</dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Роль') }}</dt><dd class="mt-0.5 text-slate-800">{{ roleTitle(current.role) || '—' }}</dd></div>
+                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-0.5 text-slate-800 dark:text-slate-200">{{ current.email }}</dd></div>
+                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Телефон') }}</dt><dd class="mt-0.5 text-slate-800 dark:text-slate-200">{{ current.phone || '—' }}</dd></div>
+                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Отдел / должность') }}</dt><dd class="mt-0.5 text-slate-800 dark:text-slate-200">{{ deptName(current.department_id) }}</dd></div>
+                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Роль') }}</dt><dd class="mt-0.5 text-slate-800 dark:text-slate-200">{{ roleTitle(current.role) || '—' }}</dd></div>
                 </dl>
             </div>
 
             <!-- Security: password & account deletion — admins/directors only, own account -->
             <template v-if="isSelf && isAdmin">
-                <div class="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/70 p-6 shadow-sm">
                     <UpdatePasswordForm class="max-w-xl" />
                 </div>
-                <div class="rounded-2xl border border-rose-200 bg-white p-6 shadow-sm">
+                <div class="rounded-2xl border border-rose-200 bg-white dark:bg-slate-900/70 p-6 shadow-sm">
                     <DeleteUserForm class="max-w-xl" />
                 </div>
             </template>

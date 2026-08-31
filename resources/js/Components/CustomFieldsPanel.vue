@@ -22,7 +22,7 @@ const save = () => { form.values = { ...model }; form.post(route('custom-field-v
 <template>
     <div v-if="fields.length" class="space-y-4">
         <div v-for="f in fields" :key="f.id">
-            <label class="mb-1 block text-sm text-slate-600">{{ f.name }}<span v-if="f.required" class="text-red-500"> *</span></label>
+            <label class="mb-1 block text-sm text-slate-600 dark:text-slate-300">{{ f.name }}<span v-if="f.required" class="text-red-500"> *</span></label>
 
             <select v-if="f.type === 'select' || f.type === 'radio'" v-model="model[f.id]" class="w-full rounded-lg border-slate-300 shadow-sm transition duration-150 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20">
                 <option value="">—</option>
@@ -38,7 +38,7 @@ const save = () => { form.values = { ...model }; form.post(route('custom-field-v
         <PrimaryButton :disabled="form.processing" @click="save">{{ $e('Сохранить поля') }}</PrimaryButton>
     </div>
     <div v-else class="flex flex-col items-center gap-2 py-8 text-center">
-        <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>
+        <svg class="h-10 w-10 text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>
         <span class="text-sm text-slate-400">{{ $e('Дополнительных полей не настроено. Добавьте их в «Настройки → Доп. поля».') }}</span>
     </div>
 </template>
