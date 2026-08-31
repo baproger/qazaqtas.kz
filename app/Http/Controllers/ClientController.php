@@ -23,6 +23,9 @@ class ClientController extends Controller
 
         $clients = Client::query()
             ->with('responsible:id,name')
+            // Область «Свои»: менеджер видит своих контрагентов и ничейных.
+            ->when(\App\Support\AccessScope::for($request->user(), 'client.viewAny') === \App\Support\AccessScope::OWN,
+                fn ($q) => $q->where(fn ($w) => $w->whereNull('responsible_user_id')->orWhere('responsible_user_id', $request->user()->id)))
             ->when($request->string('search')->toString(), fn ($q, $s) => $q
                 ->where('name', 'like', "%{$s}%")
                 ->orWhere('inn', 'like', "%{$s}%")

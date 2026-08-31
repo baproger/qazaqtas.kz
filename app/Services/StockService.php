@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Deal;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\StockMovement;
@@ -127,8 +128,83 @@ class StockService
                 ]);
             }
 
+            // Витринный флажок «в наличии» следует за остатком, как только
+            // товар встал на складской учёт (появилось первое движение).
+            // Товар, которого на складе не бывает («под заказ»), остаётся на
+            // ручном флажке из карточки каталога.
+            $total = (float) ProductStock::where('product_id', $productId)->sum('qty');
+            Product::whereKey($productId)->update(['in_stock' => $total > 0.001]);
+
             return $movement;
         });
+    }
+
+    /**
+     * Списание позиций сделки со склада: сделка дошла до выигрышного этапа.
+     *
+     * Списываем НЕ БОЛЬШЕ остатка: чего на складе не было — делалось под
+     * заказ и в остатке никогда не лежало (наряд под позицию сделки прихода
+     * не даёт, §4 «Склад»). Идемпотентно по позиции: повторный перевод на
+     * won второй раз не списывает (уникальный индекс источник+тип).
+     */
+    public function writeOffDeal(Deal $deal, ?int $userId = null): void
+    {
+        $companyId = $deal->company_id ? (int) $deal->company_id : null;
+
+        foreach ($deal->items()->whereNotNull('product_id')->get() as $item) {
+            if ($this->alreadyMoved($item, StockMovement::DEAL_OUT)) {
+                continue;
+            }
+
+            $have = $this->qty((int) $item->product_id, $companyId);
+            $qty = round(min((float) $item->quantity, max($have, 0)), 2);
+            if ($qty <= 0) {
+                continue; // остатка нет — вся позиция сделана под заказ
+            }
+
+            $this->move(
+                productId: (int) $item->product_id,
+                companyId: $companyId,
+                qty: -$qty,
+                type: StockMovement::DEAL_OUT,
+                source: $item,
+                userId: $userId,
+                note: 'Сделка '.$deal->number,
+            );
+        }
+    }
+
+    /**
+     * Возврат на склад: сделку увели с выигрышного этапа обратно.
+     *
+     * Возвращаем ровно столько, сколько списали (не сколько в позиции):
+     * часть позиции могла делаться под заказ и на складе не лежала.
+     */
+    public function returnDeal(Deal $deal, ?int $userId = null): void
+    {
+        foreach ($deal->items()->whereNotNull('product_id')->get() as $item) {
+            if ($this->alreadyMoved($item, StockMovement::DEAL_RETURN)) {
+                continue;
+            }
+
+            $out = StockMovement::where('source_type', $item->getMorphClass())
+                ->where('source_id', $item->id)
+                ->where('type', StockMovement::DEAL_OUT)
+                ->first();
+            if (! $out) {
+                continue;
+            }
+
+            $this->move(
+                productId: (int) $out->product_id,
+                companyId: $out->company_id ? (int) $out->company_id : null,
+                qty: -1 * (float) $out->qty,
+                type: StockMovement::DEAL_RETURN,
+                source: $item,
+                userId: $userId,
+                note: 'Возврат: сделка '.$deal->number.' ушла с выигрышного этапа',
+            );
+        }
     }
 
     /** Остаток одного товара на складе фирмы. */
