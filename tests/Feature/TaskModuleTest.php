@@ -52,4 +52,25 @@ class TaskModuleTest extends TestCase
         $this->assertEquals('done', $task->status);
         $this->assertNotNull($task->completed_at);
     }
+
+    public function test_status_all_is_no_filter_and_default_is_open(): void
+    {
+        $u = $this->admin();
+        $other = User::factory()->create();
+        Task::forceCreate(['title' => 'Открытая', 'creator_id' => $u->id, 'assignee_id' => $other->id, 'status' => 'new', 'type' => 'corporate', 'priority' => 'medium']);
+        Task::forceCreate(['title' => 'Готовая', 'creator_id' => $u->id, 'assignee_id' => $other->id, 'status' => 'done', 'type' => 'corporate', 'priority' => 'medium']);
+
+        // «Все статусы» — отсутствие фильтра, а не статус с именем all.
+        // Раньше all уходил в where('status','all') и страница была пустой.
+        $this->actingAs($u)->get(route('tasks.index', ['view' => 'created', 'status' => 'all']))
+            ->assertInertia(fn ($p) => $p->has('tasks.data', 2)->where('filters.status', 'all'));
+
+        // Канбан всегда просит все статусы — он тоже не должен пустеть.
+        $this->actingAs($u)->get(route('tasks.index', ['view' => 'created', 'status' => 'all', 'mode' => 'board']))
+            ->assertInertia(fn ($p) => $p->has('tasks.data', 2));
+
+        // Без параметра статуса показываются только открытые — как и написано в селекте.
+        $this->actingAs($u)->get(route('tasks.index', ['view' => 'created']))
+            ->assertInertia(fn ($p) => $p->has('tasks.data', 1)->where('filters.status', 'open'));
+    }
 }

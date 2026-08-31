@@ -4,7 +4,7 @@
  * названия и срока (debounce 600 мс), обновление раз в 30 с (и по WebSocket,
  * если подключён Echo).
  */
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
@@ -21,6 +21,22 @@ const mode = ref(props.filters.mode || 'list');
 const fStatus = ref(props.filters.status);
 const fType = ref(props.filters.type);
 const search = ref(props.filters.search);
+
+// Адрес — источник правды. При «назад/вперёд» и повторном входе из меню
+// Inertia обновляет props, а локальные refs без синхронизации оставались
+// от прошлого адреса: вкладка и режим показывали не то, что открыто.
+watch(() => props.filters, (f) => {
+    view.value = f.view;
+    mode.value = f.mode || 'list';
+    fStatus.value = f.status;
+    fType.value = f.type;
+    search.value = f.search;
+});
+
+/** Активен ли фильтр, из-за которого список мог опустеть. */
+const filtered = computed(() => view.value !== 'mine' || fStatus.value !== 'open' || !!fType.value || !!search.value);
+const resetFilters = () => { view.value = 'mine'; fStatus.value = 'open'; fType.value = ''; search.value = ''; apply(); };
+
 let searchTimer = null;
 const apply = () => router.get(route('tasks.index'), {
     view: view.value, mode: mode.value !== 'list' ? mode.value : undefined, status: fStatus.value !== 'open' ? fStatus.value : undefined, type: fType.value || undefined, search: search.value || undefined,
@@ -77,7 +93,7 @@ useLive({ tasks: ['tasks', 'counts'] });
 const prioCls = { high: 'bg-rose-100 text-rose-700', medium: 'bg-slate-100 text-slate-600', low: 'bg-sky-100 text-sky-700' };
 const typeCls = { crm_deal: 'bg-indigo-100 text-indigo-700', erp_process: 'bg-amber-100 text-amber-700', corporate: 'bg-emerald-100 text-emerald-700' };
 const fmt = (d) => d ? new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' }) : '';
-const field = 'w-full rounded-xl border-white/60 bg-white/70 text-sm shadow-soft backdrop-blur focus:border-indigo-400 focus:ring-indigo-400';
+const field = 'rounded-xl border-white/60 bg-white/70 text-sm shadow-soft backdrop-blur focus:border-indigo-400 focus:ring-indigo-400';
 </script>
 
 <template>
@@ -105,12 +121,12 @@ const field = 'w-full rounded-xl border-white/60 bg-white/70 text-sm shadow-soft
                     <button type="button" @click="setMode('list')" class="rounded-xl px-3 py-1.5 font-medium transition" :class="mode === 'list' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-white'" :title="$e('Список')">☰</button>
                     <button type="button" @click="setMode('board')" class="rounded-xl px-3 py-1.5 font-medium transition" :class="mode === 'board' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-white'" :title="$e('Канбан')">▦</button>
                 </div>
-                <select v-if="mode === 'list'" v-model="fStatus" @change="apply" :class="field + ' w-auto'">
+                <select v-if="mode === 'list'" v-model="fStatus" @change="apply" :class="field">
                     <option value="open">{{ $e('Открытые') }}</option>
                     <option v-for="(l, k) in statuses" :key="k" :value="k">{{ l }}</option>
                     <option value="all">{{ $e('Все статусы') }}</option>
                 </select>
-                <select v-model="fType" @change="apply" :class="field + ' w-auto'">
+                <select v-model="fType" @change="apply" :class="field">
                     <option value="">{{ $e('Все типы') }}</option>
                     <option v-for="(l, k) in types" :key="k" :value="k">{{ l }}</option>
                 </select>
@@ -120,10 +136,10 @@ const field = 'w-full rounded-xl border-white/60 bg-white/70 text-sm shadow-soft
 
             <!-- Новая задача -->
             <div v-if="adding" class="mt-3 grid grid-cols-1 gap-2 rounded-2xl bg-white/60 p-3 sm:grid-cols-[1fr_12rem_9rem_8rem_auto]">
-                <input v-model="form.title" type="text" :placeholder="$e('Что нужно сделать')" :class="field" @keydown.enter="create" />
-                <select v-model="form.assignee_id" :class="field"><option value="">{{ $e('Себе') }}</option><option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option></select>
-                <input v-model="form.due_date" type="date" :class="field" />
-                <select v-model="form.priority" :class="field"><option v-for="(l, k) in priorities" :key="k" :value="k">{{ l }}</option></select>
+                <input v-model="form.title" type="text" :placeholder="$e('Что нужно сделать')" :class="field + ' w-full'" @keydown.enter="create" />
+                <select v-model="form.assignee_id" :class="field + ' w-full'"><option value="">{{ $e('Себе') }}</option><option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option></select>
+                <input v-model="form.due_date" type="date" :class="field + ' w-full'" />
+                <select v-model="form.priority" :class="field + ' w-full'"><option v-for="(l, k) in priorities" :key="k" :value="k">{{ l }}</option></select>
                 <PrimaryButton :disabled="form.processing || !form.title" @click="create">{{ $e('Создать') }}</PrimaryButton>
                 <div v-if="form.errors.title" class="text-xs text-rose-600 sm:col-span-5">{{ form.errors.title }}</div>
             </div>
@@ -198,7 +214,13 @@ const field = 'w-full rounded-xl border-white/60 bg-white/70 text-sm shadow-soft
                     </div>
                 </div>
             </section>
-            <div v-if="!tasks.data.length" class="rounded-3xl border border-dashed border-slate-200 bg-white/60 p-12 text-center text-sm text-slate-400 backdrop-blur">✅ {{ $e('Задач нет') }}</div>
+            <div v-if="!tasks.data.length" class="rounded-3xl border border-dashed border-slate-200 bg-white/60 p-12 text-center text-sm text-slate-400 backdrop-blur">
+                <p>✅ {{ $e('Задач нет') }}</p>
+                <template v-if="filtered">
+                    <p class="mt-1 text-xs">{{ $e('По выбранным фильтрам ничего не нашлось') }}</p>
+                    <button type="button" class="mt-3 rounded-xl bg-slate-900 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700" @click="resetFilters">{{ $e('Сбросить фильтры') }}</button>
+                </template>
+            </div>
             <Pagination :links="tasks.links" />
         </div>
     </AppLayout>

@@ -33,7 +33,10 @@ class TaskController extends Controller
         $user = $request->user();
 
         $view = $request->string('view')->toString() ?: 'mine';
-        $status = $request->string('status')->toString();
+        // «open» — открытые, «all» — без фильтра, остальное — конкретный
+        // статус. Раньше «all» уходил в where('status','all') и страница
+        // честно показывала «Задач нет», хотя задачи были.
+        $status = $request->string('status')->toString() ?: 'open';
         $type = $request->string('type')->toString();
         $search = trim($request->string('search')->toString());
 
@@ -42,7 +45,7 @@ class TaskController extends Controller
             ->when($view === 'created', fn ($q) => $q->where('creator_id', $user->id))
             ->when($view === 'all', fn ($q) => $q->visibleTo($user))
             ->when($status === 'open', fn ($q) => $q->whereNotIn('status', Task::CLOSED))
-            ->when($status !== '' && $status !== 'open', fn ($q) => $q->where('status', $status))
+            ->when(! in_array($status, ['open', 'all'], true), fn ($q) => $q->where('status', $status))
             ->when($type !== '', fn ($q) => $q->where('type', $type))
             ->when($search !== '', fn ($q) => $q->where('title', 'like', "%{$search}%"))
             ->orderByRaw("case when status in ('done','canceled') then 1 else 0 end")
@@ -62,7 +65,7 @@ class TaskController extends Controller
 
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
-            'filters' => ['view' => $view, 'status' => $status ?: 'open', 'type' => $type, 'search' => $search, 'mode' => $request->string('mode')->toString() ?: 'list'],
+            'filters' => ['view' => $view, 'status' => $status, 'type' => $type, 'search' => $search, 'mode' => $request->string('mode')->toString() ?: 'list'],
             'counts' => [
                 'mine' => (clone $mineOpen)->count(),
                 'overdue' => (clone $mineOpen)->whereNotNull('due_date')->whereDate('due_date', '<', now())->count(),
