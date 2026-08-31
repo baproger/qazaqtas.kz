@@ -56,7 +56,6 @@ onBeforeUnmount(() => stop());
                     {{ $t('site.projects.cta_lead') }}
                 </p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">
-                    <Link :href="$r('site.configurator')" class="btn-sand">{{ $t('site.cta.build_3d') }}</Link>
                     <Link :href="$r('site.contacts')" class="btn-ghost">{{ $t('site.cta.write') }}</Link>
                 </div>
             </div>
