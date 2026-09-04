@@ -4,6 +4,7 @@ import { router } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { confirmDialog } from '@/composables/useConfirm';
+import { compressImage } from '@/utils/image';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
@@ -16,6 +17,7 @@ const tr = useE();
 const props = defineProps({ product: { type: Object, required: true } });
 
 const uploading = ref(false);
+const uploadError = ref('');
 const docName = ref('');
 const imageInput = ref(null);
 const modelInput = ref(null);
@@ -29,14 +31,30 @@ const modelFormat = computed(() => {
     return path.slice(path.lastIndexOf('.') + 1).toUpperCase() || '3D';
 });
 
-const uploadImages = (event) => {
-    const files = [...event.target.files];
-    if (!files.length) return;
+const uploadImages = async (event) => {
+    const picked = [...event.target.files];
+    if (!picked.length) return;
+    uploadError.value = '';
     uploading.value = true;
+
+    // Фото с телефона весит 4–8 МБ и молча упирается в лимиты PHP
+    // (upload_max_filesize). Жмём на устройстве той же утилитой, что и
+    // формы цеха: длинная сторона 1600 px, JPEG — сотни килобайт.
+    const files = await Promise.all(picked.map(compressImage));
+
+    const huge = files.find((f) => f.size > 8 * 1024 * 1024);
+    if (huge) {
+        uploading.value = false;
+        uploadError.value = tr('Файл больше 8 МБ — сохраните как JPG и попробуйте снова.');
+        return;
+    }
+
     router.post(route('catalogMedia.images', props.product.id), { images: files }, {
         ...opts,
         forceFormData: true,
         onSuccess: () => (imageInput.value.value = ''),
+        // Ошибка валидации раньше терялась молча — «нажал, и ничего».
+        onError: (errors) => (uploadError.value = Object.values(errors)[0] ?? tr('Не удалось загрузить фото.')),
     });
 };
 
@@ -98,6 +116,8 @@ const removeDocument = async (index) => {
                     <input ref="imageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" @change="uploadImages" />
                 </label>
             </div>
+
+            <p v-if="uploadError" class="mt-2 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">{{ uploadError }}</p>
 
             <div v-if="product.images?.length" class="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
                 <figure v-for="(img, i) in product.images" :key="img.path" class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800/80">
