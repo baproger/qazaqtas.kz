@@ -217,7 +217,8 @@
     border-radius: 9999px;
     background: rgb(var(--sand-300));
     box-shadow: 0 0 0 4px rgb(var(--sand-300) / 0.14);
-    transform: scale(0);
+    /* Не из нуля: из ничего ничего не появляется (Emil). */
+    transform: scale(0.4);
     animation: hero-dot-in 260ms var(--ease) calc(var(--d, 0ms) + 420ms) both;
 }
 @keyframes hero-dot-in {

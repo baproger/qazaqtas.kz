@@ -51,7 +51,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDoc));
         </button>
 
         <transition enter-active-class="transition duration-150 ease-out" enter-from-class="opacity-0 -translate-y-1 scale-[0.98]"
-            leave-active-class="transition duration-100 ease-in" leave-to-class="opacity-0 -translate-y-1 scale-[0.98]">
+            leave-active-class="transition duration-100 ease-out" leave-to-class="opacity-0 -translate-y-1 scale-[0.98]">
             <div v-if="open" class="absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl border border-white/60 bg-white/80 shadow-soft-lg backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/70">
                 <div v-if="options.length > 6" class="border-b border-slate-100/80 p-2 dark:border-slate-800">
                     <input v-model="q" type="search" :placeholder="placeholder" class="w-full rounded-lg border-0 bg-slate-100/70 px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-indigo-300" />

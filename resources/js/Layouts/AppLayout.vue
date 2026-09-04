@@ -466,7 +466,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
                             </button>
                             <Transition
                                 enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 -translate-y-1"
-                                leave-active-class="transition duration-150 ease-in" leave-to-class="opacity-0 -translate-y-1">
+                                leave-active-class="transition duration-150 ease-out" leave-to-class="opacity-0 -translate-y-1">
                                 <!-- Дочерние пункты БЕЗ иконок: раздел уже назван
                                      значком выше, а два десятка мелких символов
                                      рядом друг с другом читались как рябь. Их
@@ -633,7 +633,7 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
             <!-- Тосты: системные сообщения справа сверху, уходят сами -->
             <div class="pointer-events-none fixed right-4 top-4 z-[70] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2">
                 <transition-group enter-active-class="transition duration-300 ease-out" enter-from-class="opacity-0 translate-x-6" enter-to-class="opacity-100 translate-x-0"
-                    leave-active-class="transition duration-200 ease-in" leave-to-class="opacity-0 translate-x-6">
+                    leave-active-class="transition duration-200 ease-out" leave-to-class="opacity-0 translate-x-6">
                     <div v-for="tst in toasts" :key="tst.id"
                         class="pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-2xl border px-4 py-3 text-sm shadow-soft-lg backdrop-blur-md"
                         :class="tst.type === 'error' ? 'border-rose-200/70 bg-rose-50/90 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400' : 'border-emerald-200/70 bg-emerald-50/90 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400'">
