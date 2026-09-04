@@ -343,7 +343,8 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="mt-14">
-                <ProjectsBento :projects="projects.slice(0, 4)" />
+                <!-- Три крупные карточки — ровно два ряда сетки, без дыр. -->
+                <ProjectsBento :projects="projects.slice(0, 3)" />
             </div>
           </div>
         </section>

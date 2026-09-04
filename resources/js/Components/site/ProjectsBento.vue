@@ -2,16 +2,20 @@
 /**
  * Bento-сетка объектов — на ЛЮБОЕ количество карточек.
  *
- * Раскладка повторяется суперциклом из четырнадцати (4 колонки), и крупные
- * карточки бывают С ОБЕИХ сторон — иначе четвёртая колонка получала бы
- * только мелочь:
+ * Раскладка повторяется суперциклом из десяти БЕЗ мелких карточек 1×1 —
+ * объекты подаются крупно (просьба владельца: «больше большой блок»):
  *
- *   ┌───────────┬─────┬─────┐  ┌─────┬─────┬───────────┐
- *   │     0     │  1  │  2  │  │  7  │  8  │     9     │   0/9 — 2×2
- *   │           │     │  3  │  │ 10  │     │           │   1/8 — 1×2
- *   ├───────────┼─────┴─────┤  ├─────┼─────┴───────────┤   4/13 — 2×1
- *   │     4     │  5  │  6  │  │ 11  │ 12  │    13     │   прочие 1×1
- *   └───────────┴─────┴─────┘  └─────┴─────┴───────────┘
+ *   ┌───────────┬─────┬─────┐   0 — большая 2×2, 1-2 — высокие 1×2
+ *   │     0     │  1  │  2  │
+ *   │           │     │     │   3-4 — широкие 2×1
+ *   ├───────────┴──┬──┴─────┤
+ *   │      3       │   4    │   5-7 — высокая, БОЛЬШАЯ ПО ЦЕНТРУ, высокая
+ *   ├─────┬────────┴──┬─────┤
+ *   │  5  │     6     │  7  │   8-9 — широкие 2×1
+ *   │     │           │     │
+ *   ├─────┴─────┬─────┴─────┤
+ *   │     8     │     9     │
+ *   └───────────┴───────────┘
  *
  * Порядок в DOM подобран под построчный автоплейсмент грида — дыр не
  * остаётся. Первые четыре позиции совпадают с прежней раскладкой:
@@ -21,8 +25,8 @@ const props = defineProps({
     projects: { type: Array, default: () => [] },
 });
 
-/** Размер по месту в суперцикле: lg 2×2 · tall 1×2 · wide 2×1 · sm 1×1. */
-const SIZES = ['lg', 'tall', 'sm', 'sm', 'wide', 'sm', 'sm', 'sm', 'tall', 'lg', 'sm', 'sm', 'sm', 'wide'];
+/** Размер по месту в суперцикле: lg 2×2 · tall 1×2 · wide 2×1. */
+const SIZES = ['lg', 'tall', 'tall', 'wide', 'wide', 'tall', 'lg', 'tall', 'wide', 'wide'];
 const sizeFor = (i) => SIZES[i % SIZES.length];
 
 const SPAN = {
@@ -51,7 +55,7 @@ const AREA = { lg: 'display mt-5 text-4xl sm:text-5xl', tall: 'display mt-3 text
             <div class="relative flex h-full flex-col justify-end" :class="PAD[sizeFor(i)]">
                 <p class="text-xs uppercase tracking-[0.24em] text-white/70">{{ p.city }}<template v-if="p.year"> · {{ p.year }}</template></p>
                 <h3 class="display text-white" :class="TITLE[sizeFor(i)]">{{ p.title }}</h3>
-                <p v-if="p.products && sizeFor(i) !== 'sm'" class="mt-2 max-w-md text-sm leading-relaxed text-white/70">{{ p.products }}</p>
+                <p v-if="p.products" class="mt-2 max-w-md text-sm leading-relaxed text-white/70">{{ p.products }}</p>
                 <p v-if="p.area" class="text-white" :class="AREA[sizeFor(i)]">{{ p.area }}</p>
             </div>
         </article>
