@@ -144,6 +144,21 @@ onMounted(() => {
                             </template>
                         </p>
                     </div>
+
+                    <!-- Доверие: три коротких довода, заполняющих колонку под палитрой. -->
+                    <div class="mt-8 grid gap-3">
+                        <div v-for="t in ['production', 'delivery', 'quality']" :key="t" class="card card-sm flex items-start gap-3 p-4">
+                            <span class="mt-0.5 text-sand-300">
+                                <svg v-if="t === 'production'" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21V9l6 4V9l6 4V5l6-2v18H3Z"/></svg>
+                                <svg v-else-if="t === 'delivery'" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z"/><circle cx="7" cy="17.5" r="1.5"/><circle cx="17" cy="17.5" r="1.5"/></svg>
+                                <svg v-else viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+                            </span>
+                            <span>
+                                <b class="block text-sm font-semibold text-sand-50">{{ $t(`site.product.trust_${t}_title`) }}</b>
+                                <span class="mt-0.5 block text-xs leading-relaxed text-sand-100/50">{{ $t(`site.product.trust_${t}_text`) }}</span>
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Покупка -->

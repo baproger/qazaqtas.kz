@@ -101,7 +101,7 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
             </div>
 
             <!-- Сетка 4 колонки, акцент на цену -->
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
                 <Link v-for="s in services.data" :key="s.id" :href="$r('site.service', s.slug)" class="card card-hover reveal group overflow-hidden rounded-3xl">
                     <!-- Фото: чистое, без плашек поверх — только категория -->
                     <div class="relative m-2 aspect-[4/3] overflow-hidden rounded-2xl">

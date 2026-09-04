@@ -48,15 +48,17 @@ onBeforeUnmount(() => stop());
                 <h2 class="display mt-4 text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.about.tech_title') }}</h2>
             </div>
 
-            <ol class="mt-14 space-y-3">
+            <!-- Таймлайн: золотая направляющая ведёт от сырья к отгрузке —
+                 процесс читается как путь, а не как пять одинаковых полос. -->
+            <ol class="relative mt-14 space-y-8 before:absolute before:bottom-4 before:left-[27px] before:top-4 before:w-px before:bg-gradient-to-b before:from-sand-300/50 before:via-sand-300/20 before:to-transparent">
                 <li
                     v-for="p in production"
                     :key="p.step"
-                    class="card card-hover reveal grid gap-4 p-6 sm:grid-cols-[80px_260px_1fr] sm:items-baseline sm:gap-8 sm:p-8"
+                    class="reveal relative grid gap-3 pl-20 sm:grid-cols-[240px_1fr] sm:gap-10"
                 >
-                    <span class="text-sm font-semibold tracking-[0.2em] text-sand-300/70">{{ p.step }}</span>
-                    <h3 class="display text-2xl text-sand-50">{{ p.title }}</h3>
-                    <p class="text-sm leading-relaxed text-sand-100/55">{{ p.text }}</p>
+                    <span class="display absolute left-0 top-1/2 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-2xl border border-sand-300/25 bg-sand-300/10 text-lg text-sand-300 backdrop-blur">{{ p.step }}</span>
+                    <h3 class="display self-center text-2xl text-sand-50">{{ p.title }}</h3>
+                    <p class="self-center text-sm leading-relaxed text-sand-100/55">{{ p.text }}</p>
                 </li>
             </ol>
         </section>
@@ -64,8 +66,10 @@ onBeforeUnmount(() => stop());
         <section>
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <p class="eyebrow reveal">{{ $t('site.about.advantages') }}</p>
-                <div class="duo-grid mt-12 grid sm:grid-cols-2">
-                    <div v-for="a in advantages" :key="a.title" class="reveal p-8 sm:p-12">
+                <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:gap-6">
+                    <div v-for="(a, i) in advantages" :key="a.title" class="card card-hover reveal relative overflow-hidden rounded-3xl p-8 sm:p-10">
+                        <!-- Номер-водяной знак: даёт карточке характер, не съедая текст. -->
+                        <span class="display pointer-events-none absolute -right-2 -top-7 text-[7rem] leading-none text-sand-300/[0.07]">{{ String(i + 1).padStart(2, '0') }}</span>
                         <h3 class="display text-2xl text-sand-50 sm:text-3xl">{{ a.title }}</h3>
                         <p class="mt-4 max-w-md text-sm leading-relaxed text-sand-100/55">{{ a.text }}</p>
                     </div>
