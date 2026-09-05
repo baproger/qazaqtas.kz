@@ -96,13 +96,13 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
                         <!-- Таймеры — два градиентных блока в одну строку:
                              яркий индиго-фиолетовый «в цехе» и спокойный «на этапе». -->
                         <div class="mt-2 grid grid-cols-2 gap-1.5">
-                            <div class="rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 px-2.5 py-1.5 text-white shadow-sm" :title="$e('Сколько заказ находится в цехе')">
-                                <div class="text-[10px] font-semibold uppercase tracking-wide text-white/70">{{ $e('⏱ в цехе') }}</div>
-                                <div class="mt-0.5 text-lg font-bold leading-none tabular-nums">{{ inWorkshop(p) ?? '—' }}</div>
+                            <div class="rounded-lg bg-gradient-to-br from-indigo-500/15 via-indigo-500/10 to-violet-500/5 px-2.5 py-1.5" :title="$e('Сколько заказ находится в цехе')">
+                                <div class="text-[10px] font-semibold uppercase tracking-wide text-indigo-400">{{ $e('⏱ в цехе') }}</div>
+                                <div class="mt-0.5 text-lg font-bold leading-none tabular-nums text-indigo-700 dark:text-indigo-300">{{ inWorkshop(p) ?? '—' }}</div>
                             </div>
-                            <div class="rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 px-2.5 py-1.5 dark:from-slate-800 dark:to-slate-700/60">
+                            <div class="rounded-lg bg-gradient-to-br from-slate-500/10 via-slate-500/5 to-transparent px-2.5 py-1.5">
                                 <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{{ $e('на этапе') }}</div>
-                                <div class="mt-0.5 text-lg font-bold leading-none tabular-nums text-slate-700 dark:text-slate-200">{{ onStage(p) ?? '—' }}</div>
+                                <div class="mt-0.5 text-lg font-bold leading-none tabular-nums text-slate-600 dark:text-slate-300">{{ onStage(p) ?? '—' }}</div>
                             </div>
                         </div>
                         <button v-if="p.project_stage_id === lastStageOf(g)" @click.prevent.stop="sendToAct(p)" class="mt-2 w-full rounded bg-teal-600 py-1 text-xs font-semibold text-white hover:bg-teal-700">{{ $e('🚚 Готово → Логистика') }}</button>
