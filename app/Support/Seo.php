@@ -14,14 +14,17 @@ use Illuminate\Support\Str;
  */
 final class Seo
 {
-    /** @return array{title: string, description: string, image: ?string, canonical: ?string} */
+    /** @return array{title: string, description: string, keywords: ?string, image: ?string, canonical: ?string} */
     public static function for(?Model $model, string $title, ?string $description = null, ?string $image = null, ?string $canonical = null): array
     {
         $manual = $model && method_exists($model, 'seoMeta') ? $model->seoMeta : null;
+        // Ручные метаданные знают язык страницы: kk с фолбэком на ru.
+        $localized = $manual?->forLocale(app()->getLocale()) ?? [];
 
         return [
-            'title' => self::text($manual?->title ?: $title, 70),
-            'description' => self::text($manual?->description ?: $description ?: '', 160),
+            'title' => self::text(($localized['title'] ?? null) ?: $title, 70),
+            'description' => self::text(($localized['description'] ?? null) ?: $description ?: '', 160),
+            'keywords' => ($localized['keywords'] ?? null) ?: null,
             'image' => $manual?->og_image ?: $image,
             'canonical' => $canonical,
         ];

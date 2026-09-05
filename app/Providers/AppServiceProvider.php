@@ -62,6 +62,8 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'deal' => Deal::class,
             'deal_item' => DealItem::class,
+            // Товар каталога: морф-имя нужно SEO-метаданным (seo_meta).
+            'product' => \App\Models\Product::class,
             'project' => Project::class,
             // Наряд — источник движения склада: подтверждённая выработка.
             'work_order' => WorkOrder::class,

@@ -36,7 +36,9 @@ window.addEventListener('unhandledrejection', (e) => reportBrowserError({
 router.on('success', (event) => syncI18n(event.detail.page.props));
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    // Витринные заголовки уже содержат бренд — суффикс «- QAZAQ TAS ERP»
+    // давал дубль бренда в title и минус от SEO-чекеров.
+    title: (title) => (title?.includes('QAZAQ') ? title : `${title} - ${appName}`),
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.vue`,

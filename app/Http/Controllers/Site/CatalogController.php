@@ -39,18 +39,22 @@ class CatalogController extends Controller
     public function show(Product $product): Response
     {
         abort_unless($product->is_active, 404);
-        $product->load(['translations', 'category:id,name,slug,accent', 'category.translations']);
+        $product->load(['seoMeta', 'translations', 'category:id,name,slug,accent', 'category.translations']);
 
         $name = (string) $product->tr('name');
 
         return Inertia::render('Site/Product', [
             'product' => $product->localized(),
             'related' => $this->catalog->related($product),
-            'seo' => [
-                'title' => __('site.seo.product_title', ['name' => $name]),
-                'description' => $product->tr('short_description')
-                    ?: __('site.seo.product_description', ['name' => $name]),
-            ],
+            // Ручные метаданные карточки (вкладка SEO в ERP) сильнее
+            // автогенерации; canonical — адрес этой страницы без параметров.
+            'seo' => \App\Support\Seo::for(
+                $product,
+                __('site.seo.product_title', ['name' => $name]),
+                $product->tr('short_description') ?: __('site.seo.product_description', ['name' => $name]),
+                $product->images[0]['path'] ?? null,
+                url()->current(),
+            ),
         ]);
     }
 

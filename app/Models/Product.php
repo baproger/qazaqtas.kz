@@ -16,6 +16,12 @@ use Illuminate\Support\Str;
  */
 class Product extends Model
 {
+    /** Ручные SEO-метаданные карточки; вывод собирает Support\Seo. */
+    public function seoMeta(): \Illuminate\Database\Eloquent\Relations\MorphOne
+    {
+        return $this->morphOne(\App\Models\SeoMeta::class, 'seoable');
+    }
+
     use HasTranslations, SoftDeletes;
 
     /** Что видит покупатель — то и переводится; коды, цены и файлы общие. */

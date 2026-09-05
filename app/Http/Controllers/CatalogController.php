@@ -56,6 +56,9 @@ class CatalogController extends Controller
         $this->authorize('create', Product::class);
         $product = Product::create($this->validated($request));
         $product->saveTranslations($request->input('translations'));
+        // SEO заполняется сразу шаблоном (мгновенно, без внешних запросов);
+        // «живые» тексты ИИ — кнопкой на вкладке SEO.
+        app(\App\Services\SeoAiService::class)->fillIfEmpty($product->load(['translations', 'category']));
         CatalogService::flushCache();
 
         return back()->with('success', 'Позиция добавлена в каталог.');
@@ -141,5 +144,44 @@ class CatalogController extends Controller
         $data['min_order'] ??= 0;
 
         return $data;
+    }
+
+    /** Текущие SEO-поля карточки — для вкладки SEO в модалке. */
+    public function seo(Product $product): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('update', $product);
+
+        return response()->json($product->seoMeta?->only([
+            'title', 'description', 'keywords', 'title_kk', 'description_kk', 'keywords_kk',
+        ]) ?? []);
+    }
+
+    /** Сохранить SEO-поля; пустые строки стираются в null. */
+    public function saveSeo(Request $request, Product $product): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('update', $product);
+
+        $data = $request->validate([
+            'title' => ['nullable', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:300'],
+            'keywords' => ['nullable', 'string', 'max:500'],
+            'title_kk' => ['nullable', 'string', 'max:120'],
+            'description_kk' => ['nullable', 'string', 'max:300'],
+            'keywords_kk' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $product->seoMeta()->updateOrCreate([], array_map(fn ($v) => $v === '' ? null : $v, $data));
+        CatalogService::flushCache();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Сгенерировать SEO: Claude при заданном ключе, иначе шаблон. */
+    public function generateSeo(Product $product, \App\Services\SeoAiService $ai): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('update', $product);
+        $product->load(['translations', 'category']);
+
+        return response()->json($ai->generate($product));
     }
 }

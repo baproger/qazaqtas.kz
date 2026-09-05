@@ -266,6 +266,10 @@ Route::middleware('auth')->group(function () {
     Route::put('catalog/{product:id}', [CatalogController::class, 'update'])->name('catalog.update');
     Route::delete('catalog/{product:id}', [CatalogController::class, 'destroy'])->name('catalog.destroy');
     // Медиа карточки: фото, текстура для 3D, GLB-модель, документы.
+    // SEO карточки: чтение, сохранение, генерация (ИИ или шаблон).
+    Route::get('catalog/{product:id}/seo', [CatalogController::class, 'seo'])->name('catalog.seo');
+    Route::post('catalog/{product:id}/seo', [CatalogController::class, 'saveSeo'])->name('catalog.seo.save');
+    Route::post('catalog/{product:id}/seo/generate', [CatalogController::class, 'generateSeo'])->name('catalog.seo.generate');
     Route::post('catalog/{product:id}/images', [CatalogMediaController::class, 'storeImages'])->name('catalogMedia.images');
     Route::delete('catalog/{product:id}/images', [CatalogMediaController::class, 'destroyImage'])->name('catalogMedia.imageDestroy');
     Route::post('catalog/{product:id}/images/main', [CatalogMediaController::class, 'makeMainImage'])->name('catalogMedia.imageMain');

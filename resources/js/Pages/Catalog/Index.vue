@@ -10,6 +10,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { confirmDialog } from '@/composables/useConfirm';
 import MediaManager from '@/Components/catalog/MediaManager.vue';
+import SeoPanel from '@/Components/catalog/SeoPanel.vue';
 import Pagination from '@/Components/Pagination.vue';
 import TranslationTabs from '@/Components/TranslationTabs.vue';
 import { parseMap, formatMap, parseColors, formatColors } from '@/utils/catalog';
@@ -220,7 +221,7 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
 
                 <!-- Медиа доступны только у сохранённой позиции: файлам нужен id. -->
                 <div v-if="editingId" class="mb-4 mt-3 flex gap-4 border-b border-slate-100 dark:border-slate-800">
-                    <button v-for="t2 in [['fields', $e('Данные')], ['lang', $e('Языки')], ['media', $e('Фото, 3D и документы')]]" :key="t2[0]"
+                    <button v-for="t2 in [['fields', $e('Данные')], ['lang', $e('Языки')], ['media', $e('Фото, 3D и документы')], ['seo', 'SEO']]" :key="t2[0]"
                         class="-mb-px border-b-2 pb-2 text-sm transition"
                         :class="tab === t2[0] ? 'border-indigo-500 text-slate-900 dark:text-slate-100' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'"
                         @click="tab = t2[0]">{{ t2[1] }}</button>
@@ -228,6 +229,8 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                 <div v-else class="mb-4"></div>
 
                 <MediaManager v-if="tab === 'media' && editingProduct" :product="editingProduct" />
+
+                <SeoPanel v-if="tab === 'seo' && editingProduct" :product="editingProduct" />
 
                 <!-- :key пересоздаёт вкладки при переходе на другую карточку:
                      построчные поля держат свой текст и сами не обновятся. -->

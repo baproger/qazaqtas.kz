@@ -20,6 +20,13 @@ const props = defineProps({
 
 const page = usePage();
 const site = computed(() => page.props.site ?? {});
+// Адреса языковых версий приходят с каждым Inertia-ответом — hreflang и
+// canonical всегда про ТЕКУЩУЮ страницу.
+const alternates = computed(() => page.props.i18n?.alternates ?? {});
+const i18nDefault = computed(() => page.props.i18n?.default ?? 'kk');
+const canonicalHref = computed(() => props.seo?.canonical
+    ?? alternates.value[page.props.i18n?.locale]
+    ?? (typeof window !== 'undefined' ? window.location.origin + window.location.pathname : ''));
 const contacts = computed(() => site.value.contacts ?? {});
 const branches = computed(() => site.value.branches ?? []);
 const cartCount = computed(() => site.value.cartCount ?? 0);
@@ -84,11 +91,16 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
     <Head>
         <title>{{ seo.title ?? 'QAZAQ TAS' }}</title>
         <meta name="description" :content="seo.description ?? ''" />
+        <meta v-if="seo.keywords" name="keywords" :content="seo.keywords" />
         <meta property="og:title" :content="seo.title ?? 'QAZAQ TAS'" />
         <meta property="og:description" :content="seo.description ?? ''" />
         <meta property="og:type" content="website" />
         <meta v-if="seo.image" property="og:image" :content="seo.image" />
-        <link v-if="seo.canonical" rel="canonical" :href="seo.canonical" />
+        <!-- Canonical и hreflang живут здесь, а не в blade: при SPA-переходах
+             blade-теги оставались от первой страницы и путали SEO-чекеры. -->
+        <link rel="canonical" :href="canonicalHref" />
+        <link v-for="(url, loc) in alternates" :key="loc" rel="alternate" :hreflang="loc" :href="url" />
+        <link v-if="alternates[i18nDefault]" rel="alternate" hreflang="x-default" :href="alternates[i18nDefault]" />
         <meta name="theme-color" :content="theme === 'dark' ? '#08090B' : '#FAF8F5'" />
     </Head>
 
