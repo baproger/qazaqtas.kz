@@ -93,11 +93,14 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
                             <div v-if="p.deal?.foreman" class="truncate" :title="$e('Бригадир')">👷 {{ p.deal.foreman.name }}</div>
                             <div v-if="p.deal?.deadline">🗓 {{ formatDate(p.deal.deadline) }}</div>
                         </div>
-                        <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-2" :title="$e('Сколько заказ находится в цехе')">
-                            <span class="text-xs font-semibold uppercase tracking-wide text-indigo-400">{{ $e('⏱ в цехе') }}</span>
-                            <span class="text-xl font-bold leading-none tabular-nums text-indigo-700 dark:text-indigo-300">{{ inWorkshop(p) ?? '—' }}</span>
+                        <!-- Оба таймера в одну строку: слева всего в цехе, справа на этапе. -->
+                        <div class="mt-2 flex items-baseline justify-between gap-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1.5" :title="$e('Сколько заказ находится в цехе')">
+                            <span class="flex items-baseline gap-1.5">
+                                <span class="text-[11px] font-semibold uppercase tracking-wide text-indigo-400">{{ $e('⏱ в цехе') }}</span>
+                                <span class="text-lg font-bold leading-none tabular-nums text-indigo-700 dark:text-indigo-300">{{ inWorkshop(p) ?? '—' }}</span>
+                            </span>
+                            <span v-if="onStage(p)" class="text-[11px] tabular-nums text-slate-400">{{ $e('на этапе') }} <span class="font-semibold text-slate-500 dark:text-slate-300">{{ onStage(p) }}</span></span>
                         </div>
-                        <div v-if="onStage(p)" class="mt-1 text-right text-xs tabular-nums text-slate-400">{{ $e('на этапе') }} {{ onStage(p) }}</div>
                         <button v-if="p.project_stage_id === lastStageOf(g)" @click.prevent.stop="sendToAct(p)" class="mt-2 w-full rounded bg-teal-600 py-1 text-xs font-semibold text-white hover:bg-teal-700">{{ $e('🚚 Готово → Логистика') }}</button>
                         <button v-else @click.prevent.stop="advance(p)" class="mt-2 w-full rounded bg-slate-100 dark:bg-slate-800/60 py-1 text-xs text-slate-600 dark:text-slate-300 hover:bg-indigo-100 hover:text-indigo-700">{{ $e('Далее →') }}</button>
                     </Link>
