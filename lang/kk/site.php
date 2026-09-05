@@ -34,6 +34,7 @@ return [
     ],
 
     'cta' => [
+        'free_estimate' => 'Тегін есептеу',
         'whatsapp' => 'WhatsApp арқылы жазу',
         'instagram' => 'Instagram-дағы парақшамыз',
         'catalog' => 'Каталогты қарау',

@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
+import CtaEstimate from '@/Components/site/CtaEstimate.vue';
 import ProjectsBento from '@/Components/site/ProjectsBento.vue';
 import { observeReveal } from '@/utils/site';
 
@@ -30,14 +31,15 @@ onBeforeUnmount(() => stop());
         <section class="ambient mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
             <ProjectsBento :projects="projects" />
 
-            <div class="card mt-16 p-10 text-center sm:p-16">
-                <h2 class="display text-[clamp(1.75rem,4vw,3rem)] text-sand-50">{{ $t('site.projects.cta_title') }}</h2>
-                <p class="mx-auto mt-4 max-w-lg text-sm text-sand-100/55">
-                    {{ $t('site.projects.cta_lead') }}
-                </p>
-                <div class="mt-8 flex flex-wrap justify-center gap-3">
-                    <Link :href="$r('site.contacts')" class="btn-ghost">{{ $t('site.cta.write') }}</Link>
-                </div>
+            <div class="mt-16">
+                <CtaEstimate
+                    :title="$t('site.projects.cta_title')"
+                    :lead="$t('site.projects.cta_lead')"
+                    :primary-href="$r('site.contacts')"
+                    :primary-label="$t('site.cta.write')"
+                    :secondary-href="$r('site.catalog')"
+                    :secondary-label="$t('site.cta.catalog')"
+                />
             </div>
         </section>
     </SiteLayout>

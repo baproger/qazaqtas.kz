@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
+import CtaEstimate from '@/Components/site/CtaEstimate.vue';
 import ProjectsBento from '@/Components/site/ProjectsBento.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import PavingParallax from '@/Components/site/PavingParallax.vue';
@@ -352,22 +353,14 @@ onBeforeUnmount(() => {
         <!-- ======================= CTA ======================= -->
         <section class="ambient">
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
-              <!-- Панель идёт во всю ширину колонки, как остальные блоки.
-                   Воздух вокруг заголовка даёт не рамка, а его собственная
-                   мера строки. -->
-              <div class="card px-8 py-16 text-center sm:px-16 sm:py-20">
-                <h2 class="display mx-auto max-w-lg text-balance text-[clamp(1.75rem,4vw,2.75rem)] text-sand-50">
-                    {{ $t('site.home.cta_title') }}
-                </h2>
-                <p class="mx-auto mt-5 max-w-md text-pretty text-sm leading-relaxed text-sand-100/55">
-                    {{ $t('site.home.cta_lead') }}
-                </p>
-                <div class="mt-8 flex flex-wrap justify-center gap-3">
-                    <Link :href="$r('site.contacts')" class="btn-sand">
-                        {{ $t('site.home.contact_sales') }}
-                    </Link>
-                </div>
-              </div>
+              <CtaEstimate
+                  :title="$t('site.home.cta_title')"
+                  :lead="$t('site.home.cta_lead')"
+                  :primary-href="$r('site.contacts')"
+                  :primary-label="$t('site.home.contact_sales')"
+                  :secondary-href="$r('site.catalog')"
+                  :secondary-label="$t('site.cta.catalog')"
+              />
             </div>
         </section>
     </SiteLayout>

@@ -34,6 +34,7 @@ return [
     ],
 
     'cta' => [
+        'free_estimate' => 'Бесплатный расчёт',
         'whatsapp' => 'Написать в WhatsApp',
         'instagram' => 'Мы в Instagram',
         'catalog' => 'Смотреть каталог',
