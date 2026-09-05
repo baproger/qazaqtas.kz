@@ -53,7 +53,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
         <!-- Зона снимка: своя подложка с внутренней тенью, чтобы изделие
              стояло в нише, а не лежало на плоскости. -->
         <div class="relative m-2 overflow-hidden rounded-2xl">
-            <Link :href="$r('site.product', product.slug)" class="block overflow-hidden" :aria-label="product.name">
+            <Link :href="$r('site.product', product.slug)" prefetch cache-for="1m" class="block overflow-hidden" :aria-label="product.name">
                 <ProductVisual :product="product" ratio="aspect-square" shape="rounded-none" />
             </Link>
 
@@ -79,7 +79,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
             <p v-if="product.category" class="eyebrow">{{ product.category.name }}</p>
 
             <h3 class="mt-1.5 line-clamp-2 text-[15px] font-semibold leading-tight text-sand-50">
-                <Link :href="$r('site.product', product.slug)" class="transition hover:text-sand-300">{{ product.name }}</Link>
+                <Link :href="$r('site.product', product.slug)" prefetch cache-for="1m" class="transition hover:text-sand-300">{{ product.name }}</Link>
             </h3>
 
             <!-- Размер чипом: сравнивать позиции удобнее, чем в строке текста -->

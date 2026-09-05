@@ -148,10 +148,14 @@ const telHref = computed(() => `tel:${String(contacts.value.phone ?? '').replace
                 </Link>
 
                 <nav class="ml-auto hidden items-center gap-8 lg:flex" :aria-label="$t('site.a11y.main_nav')">
+                    <!-- prefetch: страница подтягивается при наведении, повторные
+                         переходы отвечают из кэша — навигация ощущается мгновенной. -->
                     <Link
                         v-for="item in nav"
                         :key="item.route"
                         :href="$r(item.route)"
+                        prefetch
+                        cache-for="1m"
                         class="relative text-sm text-sand-100/75 transition hover:text-sand-50"
                         :class="{ 'text-sand-50': $rIs(item.route) }"
                     >

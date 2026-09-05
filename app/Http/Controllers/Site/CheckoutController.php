@@ -40,15 +40,36 @@ class CheckoutController extends Controller
                 ->with('error', __('site.flash.cart_empty'));
         }
 
+        // Данные клиента попадают в ERP как есть — валидируем строго, с
+        // человеческими подсказками на языке страницы.
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
+            'name' => ['required', 'string', 'min:2', 'max:120', "regex:/^[\p{L}][\p{L}\s.'-]*$/u"],
             'phone' => ['required', 'string', 'max:40'],
             'email' => ['nullable', 'email', 'max:120'],
-            'city' => ['nullable', 'string', 'max:80'],
-            'address' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'required_if:delivery,delivery', 'string', 'max:80'],
+            'address' => ['nullable', 'required_if:delivery,delivery', 'string', 'min:5', 'max:255'],
             'delivery' => ['required', 'in:delivery,pickup'],
             'comment' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'name.regex' => __('site.checkout.err_name'),
+            'name.min' => __('site.checkout.err_name'),
+            'city.required_if' => __('site.checkout.err_city'),
+            'address.required_if' => __('site.checkout.err_address'),
+            'address.min' => __('site.checkout.err_address'),
         ]);
+
+        // Телефон приводим к единому виду +7 7XX XXX XX XX: менеджер звонит
+        // по нему из ERP, мусор в этом поле стоит потерянного заказа.
+        $digits = preg_replace('/\D/', '', $data['phone']);
+        if (strlen($digits) === 10 && $digits[0] === '7') {
+            $digits = '7'.$digits; // ввели без кода страны: 7XX...
+        }
+        if (strlen($digits) !== 11 || ! in_array($digits[0], ['7', '8'], true)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'phone' => __('site.checkout.err_phone'),
+            ]);
+        }
+        $data['phone'] = '+7 '.substr($digits, 1, 3).' '.substr($digits, 4, 3).' '.substr($digits, 7, 2).' '.substr($digits, 9, 2);
 
         $order = $this->orders->createFromCart($contents, $data);
         $this->cart->clear();
