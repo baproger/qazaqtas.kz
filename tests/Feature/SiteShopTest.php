@@ -152,6 +152,7 @@ class SiteShopTest extends TestCase
 
         $this->post(route('site.cart.add', $this->paving()->slug), ['quantity' => 120]);
 
+        $this->withSession(['checkout.opened_at' => now()->subMinute()->getTimestamp()]);
         $this->post(route('site.checkout.store'), [
             'name' => 'Асхат',
             'phone' => '+7 701 123 45 67',
@@ -178,6 +179,7 @@ class SiteShopTest extends TestCase
     {
         $this->post(route('site.cart.add', $this->paving()->slug), ['quantity' => 20]);
 
+        $this->withSession(['checkout.opened_at' => now()->subMinute()->getTimestamp()]);
         $this->post(route('site.checkout.store'), ['delivery' => 'delivery'])
             ->assertSessionHasErrors(['name', 'phone']);
 
@@ -195,6 +197,7 @@ class SiteShopTest extends TestCase
         $manager->companies()->attach(Company::orderBy('id')->value('id'));
 
         $this->post(route('site.cart.add', $this->paving()->slug), ['quantity' => 120]);
+        $this->withSession(['checkout.opened_at' => now()->subMinute()->getTimestamp()]);
         $this->post(route('site.checkout.store'), [
             'name' => 'Асхат', 'phone' => '+77011234567', 'delivery' => 'pickup',
         ]);
