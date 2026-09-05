@@ -448,3 +448,47 @@
     }
 }
 
+
+/* --------------------------------------------------------------
+   Premium-микровзаимодействия: spotlight за курсором и панель цифр.
+   -------------------------------------------------------------- */
+@media (hover: hover) and (pointer: fine) {
+    .spotlight::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        opacity: 0;
+        background: radial-gradient(
+            340px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+            rgb(var(--glow-warm) / 0.12),
+            transparent 65%
+        );
+        transition: opacity 0.35s ease;
+        z-index: 1;
+    }
+    .spotlight:hover::before {
+        opacity: 1;
+    }
+}
+
+/* Гаснущие вертикальные разделители между ячейками панели цифр. */
+.stat-cell {
+    position: relative;
+}
+.stat-cell + .stat-cell::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgb(var(--card-border) / 0.55), transparent);
+}
+@media (max-width: 1023px) {
+    /* В сетке 2×2 у начала второго ряда разделителя быть не должно. */
+    .stat-cell:nth-child(odd)::before {
+        display: none;
+    }
+}

@@ -56,6 +56,17 @@ export const favorites = localList('qt.favorites');
 export const recent = localList('qt.recent', 8);
 
 /** Плавное появление секций: одна общая IntersectionObserver-обёртка. */
+/**
+ * Spotlight, следующий за курсором: пишет координаты в CSS-переменные
+ * элемента, свечение рисует .spotlight::before (только hover-устройства).
+ */
+export const trackSpotlight = (e) => {
+    const el = e.currentTarget;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--spot-x', `${e.clientX - r.left}px`);
+    el.style.setProperty('--spot-y', `${e.clientY - r.top}px`);
+};
+
 export const observeReveal = (root = document) => {
     const nodes = root.querySelectorAll('.reveal:not(.is-in)');
     if (!nodes.length) return () => {};

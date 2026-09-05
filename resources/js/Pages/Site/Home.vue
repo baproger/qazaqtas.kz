@@ -2,12 +2,13 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
+import CountUp from '@/Components/site/CountUp.vue';
 import CtaEstimate from '@/Components/site/CtaEstimate.vue';
 import ProjectsBento from '@/Components/site/ProjectsBento.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import PavingParallax from '@/Components/site/PavingParallax.vue';
 import HeroShowcase from '@/Components/site/HeroShowcase.vue';
-import { observeReveal } from '@/utils/site';
+import { observeReveal, trackSpotlight } from '@/utils/site';
 import { useSmoothScroll, loadScrollTrigger } from '@/site/useSmoothScroll';
 import { theme } from '@/site/theme';
 import { useT } from '@/composables/useTranslations';
@@ -234,15 +235,15 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Цифры ======================= -->
-        <!-- Стат-плитки в фирменном градиентном языке (как CtaEstimate):
-             тонкая рамка песок→изумруд, сама цифра — градиентным текстом. -->
+        <!-- Премиальная панель: единое стекло, count-up цифр при появлении,
+             spotlight за курсором, акцент-линия растёт при наведении. -->
         <section>
-            <div class="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-5 py-14 sm:px-8 lg:grid-cols-4 lg:gap-6">
-                <div v-for="(s, i) in stats" :key="s.label" class="reveal relative overflow-hidden rounded-2xl p-px" :style="{ '--d': `${i * 60}ms` }">
-                    <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-sand-300/50 via-sand-300/10 to-emerald-400/40" aria-hidden="true" />
-                    <div class="relative h-full rounded-[calc(1rem-1px)] bg-gradient-to-br from-ink-700 via-ink-800 to-ink-800 px-6 py-8 sm:px-8 sm:py-10">
-                        <p class="display bg-gradient-to-r from-sand-50 via-sand-300 to-emerald-300 bg-clip-text text-3xl text-transparent sm:text-5xl">{{ s.value }}</p>
-                        <p class="mt-3 text-sm text-sand-100/55">{{ s.label }}</p>
+            <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
+                <div class="spotlight card reveal relative grid grid-cols-2 overflow-hidden rounded-3xl lg:grid-cols-4" @pointermove="trackSpotlight">
+                    <div v-for="s in stats" :key="s.label" class="stat-cell group px-6 py-10 sm:px-8 sm:py-14">
+                        <span class="pointer-events-none absolute left-6 top-7 h-px w-10 bg-gradient-to-r from-sand-300/80 to-emerald-400/60 transition-all duration-300 ease-premium group-hover:w-16 sm:left-8" aria-hidden="true" />
+                        <p class="display text-3xl tabular-nums text-sand-50 sm:text-5xl"><CountUp :value="s.value" /></p>
+                        <p class="mt-3 text-sm text-sand-100/50">{{ s.label }}</p>
                     </div>
                 </div>
             </div>
@@ -262,27 +263,36 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Премиальная карточка: spotlight за курсором, порядковый
+                     номер-водяной знак, стрелка в круге разворачивается и
+                     заливается песком, нажатие слегка утапливает карточку. -->
                 <Link
-                    v-for="c in categories"
+                    v-for="(c, idx) in categories"
                     :key="c.id"
                     :href="$r('site.catalog', { category: c.slug })"
                     prefetch
                     cache-for="1m"
-                    class="reveal group hover-lift relative block overflow-hidden rounded-3xl p-px"
+                    class="spotlight card card-hover reveal group relative flex flex-col overflow-hidden rounded-3xl p-7 active:scale-[0.98] sm:p-8"
+                    :style="{ '--d': `${(idx % 3) * 70}ms` }"
+                    @pointermove="trackSpotlight"
                 >
-                    <!-- Градиентная рамка проявляется при наведении. -->
-                    <span class="absolute inset-0 rounded-3xl bg-gradient-to-br from-sand-300/45 via-sand-300/10 to-emerald-400/35 opacity-60 transition duration-300 group-hover:opacity-100" aria-hidden="true" />
-                    <span class="relative block h-full overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-ink-700 via-ink-800 to-ink-800 p-7 sm:p-8">
-                        <span
-                            class="accent-glow absolute -right-10 -top-10 h-32 w-32 rounded-full blur-2xl transition"
-                            :style="{ background: c.accent ?? '#C8B79A' }"
-                        />
-                        <span class="inline-flex rounded-full bg-gradient-to-r from-sand-300/15 to-emerald-400/10 px-2.5 py-1 text-xs text-sand-100/60 ring-1 ring-sand-300/20">{{ $tc('site.hero.count', c.products_count) }}</span>
-                        <h3 class="display mt-4 text-2xl text-sand-50">{{ c.name }}</h3>
-                        <p class="mt-3 min-h-10 text-sm leading-relaxed text-sand-100/50">{{ c.tagline }}</p>
-                        <span class="mt-8 inline-flex items-center gap-2 text-sm font-medium text-sand-300">
-                            {{ $t('site.home.view_category') }}
-                            <svg class="h-4 w-4 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    <span
+                        class="accent-glow absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-60 blur-2xl transition duration-500 group-hover:opacity-100"
+                        :style="{ background: c.accent ?? '#C8B79A' }"
+                    />
+                    <span class="relative flex items-center justify-between">
+                        <span class="inline-flex items-center gap-2 rounded-full border border-sand-300/20 bg-sand-300/10 px-3 py-1 text-xs text-sand-100/70">
+                            <span class="h-1.5 w-1.5 rounded-full" :style="{ background: c.accent ?? '#C8B79A' }" />
+                            {{ $tc('site.hero.count', c.products_count) }}
+                        </span>
+                        <span class="display text-sm text-sand-300/30 transition duration-300 group-hover:text-sand-300/70">{{ String(idx + 1).padStart(2, '0') }}</span>
+                    </span>
+                    <h3 class="display relative mt-6 text-2xl text-sand-50 transition duration-300 ease-premium group-hover:translate-x-1">{{ c.name }}</h3>
+                    <p class="relative mt-3 min-h-10 text-sm leading-relaxed text-sand-100/50">{{ c.tagline }}</p>
+                    <span class="relative mt-auto flex items-center justify-between pt-8">
+                        <span class="text-sm font-medium text-sand-300">{{ $t('site.home.view_category') }}</span>
+                        <span class="grid h-10 w-10 place-items-center rounded-full border border-sand-300/25 text-sand-300 transition duration-300 ease-premium group-hover:border-sand-300 group-hover:bg-sand-300 group-hover:text-ink-900">
+                            <svg class="h-4 w-4 -rotate-45 transition-transform duration-300 ease-premium group-hover:rotate-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                         </span>
                     </span>
                 </Link>
