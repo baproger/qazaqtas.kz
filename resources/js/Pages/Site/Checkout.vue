@@ -18,6 +18,7 @@ const props = defineProps({
 const form = useForm({
     name: '',
     phone: '',
+    website: '', // honeypot: человек это поле не видит и не заполняет
     email: '',
     city: props.cities[0] ?? '',
     address: '',
@@ -45,6 +46,8 @@ const receiveOptions = computed(() => [
             </p>
 
             <form class="mt-12 grid gap-8 lg:grid-cols-[1fr_380px]" @submit.prevent="submit">
+                    <!-- Ловушка для ботов: вне экрана, вне таба, вне скринридера. -->
+                    <input v-model="form.website" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] h-0 w-0 opacity-0" />
                 <div class="space-y-6">
                     <div class="grid gap-5 sm:grid-cols-2">
                         <label class="block">

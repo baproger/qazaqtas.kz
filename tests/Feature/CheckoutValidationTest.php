@@ -18,11 +18,13 @@ class CheckoutValidationTest extends TestCase
     /** Наполняем корзину — без неё оформление уводит в каталог. */
     private function cartWithItem(): Product
     {
-        $product = Product::create([
+        $product = Product::firstWhere('slug', 'plitka-test') ?? Product::create([
             'name' => 'Плитка «Тест»', 'slug' => 'plitka-test', 'unit' => 'м²',
             'price' => 9000, 'min_order' => 1, 'is_active' => true, 'is_service' => false,
         ]);
         $this->post(route('site.cart.add', $product->slug), ['quantity' => 10])->assertRedirect();
+        // Форма «открыта» полминуты назад — тайм-капкан антиспама пройден.
+        $this->withSession(['checkout.opened_at' => now()->subSeconds(30)->getTimestamp()]);
 
         return $product;
     }
@@ -67,6 +69,35 @@ class CheckoutValidationTest extends TestCase
 
         $this->post(route('site.checkout.store'), $this->valid(['city' => '', 'address' => '']))
             ->assertSessionHasErrors(['city', 'address']);
+    }
+
+    public function test_honeypot_fakes_success_without_creating_order(): void
+    {
+        $this->cartWithItem();
+
+        $this->post(route('site.checkout.store'), $this->valid(['website' => 'http://spam.example']))
+            ->assertRedirect(route('site.thanks'));
+        $this->assertSame(0, Order::count());
+    }
+
+    public function test_submit_faster_than_five_seconds_is_rejected(): void
+    {
+        $this->cartWithItem();
+        $this->withSession(['checkout.opened_at' => now()->getTimestamp()]);
+
+        $this->post(route('site.checkout.store'), $this->valid())->assertSessionHasErrors(['name']);
+        $this->assertSame(0, Order::count());
+    }
+
+    public function test_duplicate_submit_reuses_recent_order(): void
+    {
+        $this->cartWithItem();
+        $this->post(route('site.checkout.store'), $this->valid())->assertSessionHasNoErrors();
+
+        $this->cartWithItem();
+        $this->post(route('site.checkout.store'), $this->valid())->assertSessionHasNoErrors();
+
+        $this->assertSame(1, Order::count());
     }
 
     public function test_pickup_needs_no_address(): void

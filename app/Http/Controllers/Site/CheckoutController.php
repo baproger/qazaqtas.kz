@@ -17,12 +17,15 @@ class CheckoutController extends Controller
 {
     public function __construct(private CartService $cart, private OrderService $orders) {}
 
-    public function show(): Response|RedirectResponse
+    public function show(Request $request): Response|RedirectResponse
     {
         $contents = $this->cart->contents();
         if (! $contents['items']) {
             return redirect()->route('site.cart');
         }
+
+        // Тайм-капкан: человек не заполняет форму быстрее пяти секунд.
+        $request->session()->put('checkout.opened_at', now()->getTimestamp());
 
         return Inertia::render('Site/Checkout', [
             'cart' => $contents,
@@ -38,6 +41,22 @@ class CheckoutController extends Controller
         if (! $contents['items']) {
             return redirect()->route(\App\Support\Locales::routeName('site.cart', app()->getLocale()))
                 ->with('error', __('site.flash.cart_empty'));
+        }
+
+        // --- Антиспам, до валидации ---
+        // Honeypot: поле «website» скрыто стилями, человек его не видит и не
+        // заполняет. Боту отвечаем «успехом» без заказа — пусть считает, что
+        // спам прошёл, и не подбирает обход.
+        if ($request->filled('website')) {
+            return redirect()->route('site.thanks');
+        }
+
+        // Тайм-капкан: сабмит без открытой формы или быстрее 5 секунд — бот.
+        $openedAt = (int) $request->session()->get('checkout.opened_at', 0);
+        if ($openedAt === 0 || now()->getTimestamp() - $openedAt < 5) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'name' => __('site.checkout.err_too_fast'),
+            ]);
         }
 
         // Данные клиента попадают в ERP как есть — валидируем строго, с
@@ -70,6 +89,16 @@ class CheckoutController extends Controller
             ]);
         }
         $data['phone'] = '+7 '.substr($digits, 1, 3).' '.substr($digits, 4, 3).' '.substr($digits, 7, 2).' '.substr($digits, 9, 2);
+
+        // Дубль-защита: повторная отправка с тем же телефоном за две минуты
+        // (двойной клик, нетерпеливое обновление) не плодит копии заказа.
+        $recent = Order::where('phone', $data['phone'])->where('created_at', '>=', now()->subMinutes(2))->latest('id')->first();
+        if ($recent) {
+            $this->cart->clear();
+            $request->session()->put('site.last_order', $recent->number);
+
+            return redirect()->route('site.thanks', ['order' => $recent->number]);
+        }
 
         $order = $this->orders->createFromCart($contents, $data);
         $this->cart->clear();
