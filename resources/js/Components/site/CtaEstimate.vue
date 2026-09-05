@@ -2,8 +2,8 @@
 /**
  * Призыв «посчитаем ваш двор/объект» — один дизайн на всех страницах.
  *
- * Современная градиентная панель: тонкая градиентная рамка (слой-подложка
- * под внутренней картой), глубокий фон и два glow-пятна фирменных цветов.
+ * Панель без рамок и обводок (просьба владельца): глубокий градиентный
+ * фон и два glow-пятна фирменных цветов, никаких кромок по периметру.
  * Всё на токенах витрины — обе темы из коробки.
  */
 import { Link } from '@inertiajs/vue3';
@@ -19,11 +19,7 @@ defineProps({
 </script>
 
 <template>
-    <div class="reveal relative overflow-hidden rounded-3xl p-px">
-        <!-- Градиентная рамка: песок → прозрачность → фирменный зелёный. -->
-        <div class="absolute inset-0 rounded-3xl bg-gradient-to-r from-sand-300/60 via-sand-300/10 to-emerald-400/50" aria-hidden="true" />
-
-        <div class="spotlight relative overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-ink-700 via-ink-800 to-ink-900 px-8 py-16 text-center sm:px-16 sm:py-20">
+    <div class="reveal relative overflow-hidden rounded-3xl bg-gradient-to-br from-ink-700 via-ink-800 to-ink-900 px-8 py-16 text-center sm:px-16 sm:py-20">
             <!-- Glow-пятна: тёплый песок сверху, зелёный снизу — та же пара,
                  что подсвечивает полотно витрины. -->
             <div class="pointer-events-none absolute -left-24 -top-32 h-80 w-80 rounded-full bg-sand-300/20 blur-3xl" aria-hidden="true" />
@@ -39,7 +35,6 @@ defineProps({
             <div class="relative mt-9 flex flex-wrap justify-center gap-3">
                 <Link :href="primaryHref" class="btn-sand">{{ primaryLabel }}</Link>
                 <Link v-if="secondaryHref" :href="secondaryHref" class="btn-ghost">{{ secondaryLabel }}</Link>
-            </div>
         </div>
     </div>
 </template>
