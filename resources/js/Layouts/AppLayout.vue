@@ -1,4 +1,5 @@
 <script setup>
+import { initSpotlight } from '@/utils/site';
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -370,6 +371,10 @@ const roleLabel = computed(() => roleTitle(roles.value[0]));
 const now = ref(new Date());
 let clockTimer = null;
 onMounted(() => { clockTimer = setInterval(() => (now.value = new Date()), 1000); });
+// Mouse-tracking glow для карточек ERP (.spotlight): один слушатель на документ.
+let stopSpotlight = () => {};
+onMounted(() => { stopSpotlight = initSpotlight(); });
+onUnmounted(() => stopSpotlight());
 onUnmounted(() => clearInterval(clockTimer));
 
 // Размер шрифта из настроек — на корень документа. Снимаем при уходе из ERP

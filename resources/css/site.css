@@ -452,9 +452,16 @@
 /* --------------------------------------------------------------
    Premium-микровзаимодействия: spotlight за курсором и панель цифр.
    -------------------------------------------------------------- */
+/* Вне витрины (.site задаёт свои токены) glow — индиго ERP. */
+:root {
+    --glow-warm: 129 140 248;
+}
+
 @media (hover: hover) and (pointer: fine) {
-    /* Мягкая заливка: тёплое пятно + тесное яркое ядро под курсором. */
-    .spotlight::before {
+    /* Мягкая заливка: тёплое пятно + тесное яркое ядро под курсором.
+       .spotlight-soft — вариант для безрамочных панелей: только заливка. */
+    .spotlight::before,
+    .spotlight-soft::before {
         content: '';
         position: absolute;
         inset: 0;
@@ -499,8 +506,12 @@
         z-index: 1;
     }
     .spotlight:hover::before,
+    .spotlight-soft:hover::before,
     .spotlight:hover::after {
         opacity: 1;
+    }
+    .spotlight-soft {
+        position: relative;
     }
 }
 

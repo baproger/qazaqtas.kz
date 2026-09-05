@@ -392,7 +392,7 @@ const applyBinMatch = () => {
                     </button>
                     <div v-for="deal in byStage(stage.id)" :key="deal.id" draggable="true"
                         @dragstart="onDragStart($event, deal)" @dragend="onDragEnd"
-                        class="cursor-move rounded-lg bg-white dark:bg-slate-900/70 p-2.5 border border-slate-200 dark:border-slate-800/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200"
+                        class="spotlight cursor-move rounded-lg bg-white dark:bg-slate-900/70 p-2.5 border border-slate-200 dark:border-slate-800/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200"
                         :class="dragVisual === deal.id ? 'border-dashed border-indigo-400 bg-indigo-50/70 opacity-40 dark:border-indigo-400/60 dark:bg-indigo-500/10' : ''">
                         <Link :href="route('deals.show', deal.id)" draggable="false" class="block">
                             <!-- Кто и сколько -->

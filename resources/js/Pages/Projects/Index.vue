@@ -74,7 +74,7 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
                 </div>
                 <div class="flex-1 space-y-2 px-2 pb-2">
                     <Link v-for="p in byStage(stage.id)" :key="p.id" :href="route('projects.show', p.id)" draggable="true" @dragstart="draggingId = p.id"
-                        class="block cursor-move rounded-xl bg-white dark:bg-slate-900/70 p-3 shadow-sm border border-slate-200 dark:border-slate-800/80 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                        class="spotlight block cursor-move rounded-xl bg-white dark:bg-slate-900/70 p-3 shadow-sm border border-slate-200 dark:border-slate-800/80 transition-all hover:-translate-y-0.5 hover:shadow-md">
                         <!-- Для цеха главное: КТО, ЧТО делаем (все позиции с количеством),
                              КУДА везём и СКОЛЬКО заказ уже в работе. -->
                         <div class="flex items-start justify-between gap-2">

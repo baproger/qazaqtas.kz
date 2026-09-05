@@ -47,7 +47,7 @@ const clearCart = () => router.delete(siteRoute('site.cart.clear'), { preserveSc
 
             <!-- Пустая корзина — та же градиентная панель без рамок, что и блок
                  «Посчитаем ваш двор»: глубокий ink-градиент и два glow-пятна. -->
-            <div v-if="!cart.items.length" class="relative mt-12 overflow-hidden rounded-3xl bg-gradient-to-br from-ink-700 via-ink-800 to-ink-900 px-8 py-20 text-center">
+            <div v-if="!cart.items.length" class="spotlight-soft relative mt-12 overflow-hidden rounded-3xl bg-gradient-to-br from-ink-700 via-ink-800 to-ink-900 px-8 py-20 text-center">
                 <div class="pointer-events-none absolute -left-24 -top-32 h-80 w-80 rounded-full bg-sand-300/20 blur-3xl" aria-hidden="true" />
                 <div class="pointer-events-none absolute -bottom-36 -right-24 h-96 w-96 rounded-full bg-emerald-400/15 blur-3xl" aria-hidden="true" />
                 <div class="relative mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl border border-sand-300/20 bg-sand-300/10 text-sand-300 backdrop-blur">
