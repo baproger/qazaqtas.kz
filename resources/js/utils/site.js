@@ -64,15 +64,28 @@ export const recent = localList('qt.recent', 8);
  */
 export const initSpotlight = () => {
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return () => {};
+    // Глобальный «фонарик»: мягкое пятно света ходит за курсором по всей
+    // странице. Внутри .site берёт песочный токен витрины, в ERP — индиго.
+    const orb = document.createElement('div');
+    orb.className = 'cursor-glow';
+    (document.querySelector('.site') ?? document.body).appendChild(orb);
     const move = (e) => {
-        const el = e.target.closest?.('.spotlight');
+        orb.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+        orb.style.opacity = '1';
+        const el = e.target.closest?.('.spotlight, .spotlight-soft');
         if (!el) return;
         const r = el.getBoundingClientRect();
         el.style.setProperty('--spot-x', `${e.clientX - r.left}px`);
         el.style.setProperty('--spot-y', `${e.clientY - r.top}px`);
     };
+    const hide = () => { orb.style.opacity = '0'; };
     document.addEventListener('pointermove', move, { passive: true });
-    return () => document.removeEventListener('pointermove', move);
+    document.documentElement.addEventListener('pointerleave', hide);
+    return () => {
+        document.removeEventListener('pointermove', move);
+        document.documentElement.removeEventListener('pointerleave', hide);
+        orb.remove();
+    };
 };
 
 export const observeReveal = (root = document) => {

@@ -534,3 +534,27 @@
         display: none;
     }
 }
+
+/* Глобальный фонарик за курсором: лёгкое пятно света поверх страницы,
+   не ловит события и не мешает чтению (прозрачность минимальная). */
+@media (hover: hover) and (pointer: fine) {
+    .cursor-glow {
+        position: fixed;
+        left: -260px;
+        top: -260px;
+        width: 520px;
+        height: 520px;
+        border-radius: 9999px;
+        pointer-events: none;
+        z-index: 40;
+        background: radial-gradient(circle, rgb(var(--glow-warm) / 0.08), transparent 62%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        will-change: transform;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cursor-glow {
+        display: none;
+    }
+}
