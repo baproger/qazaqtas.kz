@@ -100,8 +100,8 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
                 </div>
             </div>
 
-            <!-- Сетка 4 колонки, акцент на цену -->
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+            <!-- Плотная сетка: 4 колонки на десктопе — объявлений видно больше -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
                 <Link v-for="s in services.data" :key="s.id" :href="$r('site.service', s.slug)" class="spotlight card card-hover reveal group overflow-hidden rounded-3xl">
                     <!-- Фото: чистое, без плашек поверх — только категория -->
                     <div class="relative m-2 aspect-[4/3] overflow-hidden rounded-2xl">
