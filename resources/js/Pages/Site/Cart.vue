@@ -45,13 +45,17 @@ const clearCart = () => router.delete(siteRoute('site.cart.clear'), { preserveSc
         <section class="ambient mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
             <h1 class="display text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.cart.title') }}</h1>
 
-            <div v-if="!cart.items.length" class="spotlight card mt-12 px-8 py-20 text-center">
-                <div class="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl border border-sand-300/20 bg-sand-300/10 text-sand-300">
+            <!-- Пустая корзина — та же градиентная панель без рамок, что и блок
+                 «Посчитаем ваш двор»: глубокий ink-градиент и два glow-пятна. -->
+            <div v-if="!cart.items.length" class="relative mt-12 overflow-hidden rounded-3xl bg-gradient-to-br from-ink-700 via-ink-800 to-ink-900 px-8 py-20 text-center">
+                <div class="pointer-events-none absolute -left-24 -top-32 h-80 w-80 rounded-full bg-sand-300/20 blur-3xl" aria-hidden="true" />
+                <div class="pointer-events-none absolute -bottom-36 -right-24 h-96 w-96 rounded-full bg-emerald-400/15 blur-3xl" aria-hidden="true" />
+                <div class="relative mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl border border-sand-300/20 bg-sand-300/10 text-sand-300 backdrop-blur">
                     <svg viewBox="0 0 24 24" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h2l2.4 10.2a1.5 1.5 0 0 0 1.46 1.15h6.9a1.5 1.5 0 0 0 1.45-1.1L20.5 9H7"/><circle cx="10.5" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg>
                 </div>
-                <p class="display text-2xl text-sand-50">{{ $t('site.cart.empty_title') }}</p>
-                <p class="mt-3 text-sm text-sand-100/50">{{ $t('site.cart.empty_lead') }}</p>
-                <div class="mt-8 flex flex-wrap justify-center gap-3">
+                <p class="display relative text-2xl text-sand-50">{{ $t('site.cart.empty_title') }}</p>
+                <p class="relative mx-auto mt-3 max-w-md text-sm leading-relaxed text-sand-100/60">{{ $t('site.cart.empty_lead') }}</p>
+                <div class="relative mt-8 flex flex-wrap justify-center gap-3">
                     <Link :href="$r('site.catalog')" class="btn-sand">{{ $t('site.cart.to_catalog') }}</Link>
                 </div>
             </div>
