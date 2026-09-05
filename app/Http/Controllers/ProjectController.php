@@ -91,7 +91,7 @@ class ProjectController extends Controller
             ->when(CurrentCompany::id(), fn ($q, $c) => $q->whereHas('deal', fn ($d) => $d->where('company_id', $c)))
             // Цеху на карточке нужны срок, описание, заметка и адрес (город) из сделки.
             // foreman_id + deal.foreman: на доске видно, чья бригада ведёт заказ.
-            ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order', 'deal:id,number,company_name,client_name,address,deadline,description,note,foreman_id', 'deal.foreman:id,name'])
+            ->with(['client:id,name', 'responsible:id,name,avatar', 'stage:id,name,color,order', 'deal:id,number,company_name,client_name,address,deadline,description,note,foreman_id', 'deal.foreman:id,name', 'deal.items:id,deal_id,name,quantity,unit'])
             ->withCount(['tasks as overdue_count' => fn ($q) => $q->where('status', '!=', 'done')->whereNotNull('due_date')->where('due_date', '<', now())])
             // Тайминг: когда заказ вошёл на текущий этап (открытый лог).
             ->addSelect(['stage_entered_at' => ProjectStageLog::select('entered_at')

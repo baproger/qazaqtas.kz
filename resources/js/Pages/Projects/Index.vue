@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import StatusBadge from '@/Components/StatusBadge.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { onMounted, onUnmounted } from 'vue';
-import { formatDuration } from '@/utils/format';
+import { formatDate, formatDuration } from '@/utils/format';
 
 const props = defineProps({ projects: [Array, Object], stages: Array, view: String, filters: Object, canSeeMoney: Boolean });
 
@@ -74,12 +74,25 @@ const inWorkshop = (p) => p.created_at ? formatDuration((nowTs.value - new Date(
                 </div>
                 <div class="flex-1 space-y-2 px-2 pb-2">
                     <Link v-for="p in byStage(stage.id)" :key="p.id" :href="route('projects.show', p.id)" draggable="true" @dragstart="draggingId = p.id"
-                        class="block cursor-move rounded-md bg-white dark:bg-slate-900/70 p-3 shadow-sm border border-slate-200 dark:border-slate-800/80 hover:ring-indigo-300">
-                        <!-- Минимум для цеха: товар, номер сделки, адрес, КРУПНО время в цехе -->
-                        <div class="text-sm font-bold leading-snug text-slate-900 dark:text-slate-100">{{ p.deal?.client_name || p.deal?.company_name || p.name }}</div>
-                        <div class="mt-0.5 text-xs font-semibold tracking-wide text-indigo-500 dark:text-indigo-400">{{ p.deal?.number || p.number }}</div>
-                        <div v-if="p.deal?.address" class="mt-1 text-xs leading-snug text-slate-500 dark:text-slate-400">📍 {{ p.deal.address }}</div>
-                        <div v-if="p.deal?.foreman" class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400" :title="$e('Бригадир')">👷 {{ p.deal.foreman.name }}</div>
+                        class="block cursor-move rounded-xl bg-white dark:bg-slate-900/70 p-3 shadow-sm border border-slate-200 dark:border-slate-800/80 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                        <!-- Для цеха главное: КТО, ЧТО делаем (все позиции с количеством),
+                             КУДА везём и СКОЛЬКО заказ уже в работе. -->
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="text-sm font-bold leading-snug text-slate-900 dark:text-slate-100">{{ p.deal?.client_name || p.deal?.company_name || p.name }}</div>
+                            <span class="shrink-0 rounded-md bg-indigo-50 px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-400">{{ p.deal?.number || p.number }}</span>
+                        </div>
+                        <div v-if="p.deal?.items?.length" class="mt-2 space-y-1 rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-slate-800/40">
+                            <div v-for="it in p.deal.items.slice(0, 3)" :key="it.id" class="flex items-baseline justify-between gap-2 text-xs">
+                                <span class="truncate font-medium text-slate-700 dark:text-slate-300">🧱 {{ it.name }}</span>
+                                <span class="shrink-0 font-semibold tabular-nums text-slate-600 dark:text-slate-400">{{ Number(it.quantity) }} {{ it.unit }}</span>
+                            </div>
+                            <div v-if="p.deal.items.length > 3" class="text-[11px] font-medium text-indigo-400">+{{ p.deal.items.length - 3 }}</div>
+                        </div>
+                        <div class="mt-2 space-y-0.5 text-xs leading-snug text-slate-500 dark:text-slate-400">
+                            <div v-if="p.deal?.address">📍 {{ p.deal.address }}</div>
+                            <div v-if="p.deal?.foreman" class="truncate" :title="$e('Бригадир')">👷 {{ p.deal.foreman.name }}</div>
+                            <div v-if="p.deal?.deadline">🗓 {{ formatDate(p.deal.deadline) }}</div>
+                        </div>
                         <div class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-2" :title="$e('Сколько заказ находится в цехе')">
                             <span class="text-xs font-semibold uppercase tracking-wide text-indigo-400">{{ $e('⏱ в цехе') }}</span>
                             <span class="text-xl font-bold leading-none tabular-nums text-indigo-700 dark:text-indigo-300">{{ inWorkshop(p) ?? '—' }}</span>
