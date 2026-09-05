@@ -67,15 +67,50 @@ const dropAllowed = (stage) => {
     return true;
 };
 
+// Кастомный «призрак»: системный полупрозрачный снимок прячем, вместо него
+// за курсором летит чёткий клон карточки с тенью и лёгким наклоном.
+let ghostEl = null;
+let ghostDx = 0;
+let ghostDy = 0;
+const moveGhost = (e) => {
+    if (ghostEl) ghostEl.style.transform = `translate(${e.clientX - ghostDx}px, ${e.clientY - ghostDy}px) rotate(3deg) scale(1.02)`;
+};
 const onDragStart = (e, deal) => {
     draggingId.value = deal.id;
     e.dataTransfer.effectAllowed = 'move';
+    // Пустой canvas вместо системного снимка (грузится мгновенно, в отличие от Image).
+    const blank = document.createElement('canvas');
+    blank.width = blank.height = 1;
+    e.dataTransfer.setDragImage(blank, 0, 0);
+    // Клон карточки — полноцветный, поверх всего, не ловит события.
+    const src = e.currentTarget;
+    const r = src.getBoundingClientRect();
+    ghostDx = e.clientX - r.left;
+    ghostDy = e.clientY - r.top;
+    ghostEl = src.cloneNode(true);
+    Object.assign(ghostEl.style, {
+        position: 'fixed',
+        left: '0',
+        top: '0',
+        width: `${r.width}px`,
+        margin: '0',
+        pointerEvents: 'none',
+        zIndex: '9999',
+        transition: 'none',
+        boxShadow: '0 24px 48px -12px rgb(0 0 0 / 0.4)',
+        transform: `translate(${r.left}px, ${r.top}px) rotate(3deg) scale(1.02)`,
+    });
+    document.body.appendChild(ghostEl);
+    document.addEventListener('dragover', moveGhost);
     setTimeout(() => { dragVisual.value = deal.id; });
 };
 const onDragEnd = () => {
     draggingId.value = null;
     dragVisual.value = null;
     dragOverStage.value = null;
+    document.removeEventListener('dragover', moveGhost);
+    ghostEl?.remove();
+    ghostEl = null;
 };
 
 const onDrop = async (stage) => {
@@ -584,7 +619,7 @@ const applyBinMatch = () => {
                 <!-- ШАГ 3: контрольный экран. Всё введённое на одном месте —
                      ошибку видно ДО записи, а не после создания сделки. -->
                 <div v-show="step === 3" class="space-y-4">
-                    <div class="grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-800/40 dark:bg-slate-800/50 p-4 text-sm sm:grid-cols-3">
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-3 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-800/40 p-4 text-sm sm:grid-cols-3">
                         <div>
                             <div class="text-xs uppercase tracking-wide text-slate-400">{{ $e('Тип сделки') }}</div>
                             <div class="mt-0.5 font-semibold" :class="form.deal_type === 'resale' ? 'text-amber-700 dark:text-amber-400' : 'text-indigo-700 dark:text-indigo-300'">
