@@ -41,10 +41,10 @@ class SeoAiService
         $product->seoMeta()->create([
             'title' => $g['ru']['title'],
             'description' => $g['ru']['description'],
-            'keywords' => $g['ru']['keywords'],
+
             'title_kk' => $g['kk']['title'],
             'description_kk' => $g['kk']['description'],
-            'keywords_kk' => $g['kk']['keywords'],
+
         ]);
     }
 
@@ -67,7 +67,7 @@ class SeoAiService
                     ." Морозостойкость F200, класс прочности B30. Цена от {$price} ₸/{$unit}, доставка из Шымкента, Алматы и Тараза.",
                     160,
                 ),
-                'keywords' => mb_strtolower(trim("{$name}, {$category}, мраморный композит, купить в казахстане, qazaq tas", ', ')),
+                'keywords' => '', // keywords не генерируем — только руками
             ],
             'kk' => [
                 'title' => Seo::text("{$nameKk} — {$price} ₸/{$unit} бастап сатып алу | QAZAQ TAS", 70),
@@ -77,7 +77,7 @@ class SeoAiService
                     ." Аязға төзімділік F200, беріктік класы B30. Бағасы {$price} ₸/{$unit} бастап, Шымкент, Алматы және Тараздан жеткізу.",
                     160,
                 ),
-                'keywords' => mb_strtolower(trim("{$nameKk}, мәрмәр композиті, қазақстанда сатып алу, qazaq tas", ', ')),
+                'keywords' => '',
             ],
         ];
     }
@@ -236,9 +236,9 @@ class SeoAiService
             maxTokens: 2000,
             system: 'Ты SEO-редактор витрины завода QAZAQ TAS. По данным товара составь метатеги на двух языках. '
                 .'Требования: title до 70 символов с брендом; description до 160 символов, продающий и конкретный, '
-                .'без кавычек-ёлочек в начале; keywords — 5–7 фраз через запятую, строчными. Казахский — грамотный, '
+                .'без кавычек-ёлочек в начале. Казахский — грамотный, '
                 .'естественный (не калька). Ответь ТОЛЬКО валидным JSON без пояснений и без markdown: '
-                .'{"ru":{"title":"","description":"","keywords":""},"kk":{"title":"","description":"","keywords":""}}',
+                .'{"ru":{"title":"","description":""},"kk":{"title":"","description":""}}',
             messages: [['role' => 'user', 'content' => (string) $facts]],
         );
 
@@ -255,14 +255,14 @@ class SeoAiService
         $data = json_decode($text, true, 8, JSON_THROW_ON_ERROR);
 
         foreach (['ru', 'kk'] as $loc) {
-            foreach (['title', 'description', 'keywords'] as $key) {
+            foreach (['title', 'description'] as $key) {
                 if (! is_string($data[$loc][$key] ?? null) || $data[$loc][$key] === '') {
                     throw new \RuntimeException("SEO-ответ ИИ без поля {$loc}.{$key}");
                 }
             }
             $data[$loc]['title'] = Seo::text($data[$loc]['title'], 70);
             $data[$loc]['description'] = Seo::text($data[$loc]['description'], 160);
-            $data[$loc]['keywords'] = Seo::text($data[$loc]['keywords'], 300);
+            $data[$loc]['keywords'] = ''; // keywords не генерируем — только руками
         }
 
         return ['ru' => $data['ru'], 'kk' => $data['kk']];

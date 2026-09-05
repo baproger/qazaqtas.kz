@@ -45,7 +45,7 @@ class SeoProductTest extends TestCase
         $this->assertLessThanOrEqual(162, mb_strlen($g['ru']['description']));
         $this->assertStringContainsString('QAZAQ TAS', $g['kk']['title']);
         $this->assertStringContainsString('мәрмәр композиті', $g['kk']['description']);
-        $this->assertNotSame('', $g['kk']['keywords']);
+        $this->assertSame('', $g['kk']['keywords'], 'keywords не генерируются');
     }
 
     public function test_creating_a_product_autofills_seo(): void
@@ -59,7 +59,7 @@ class SeoProductTest extends TestCase
         $this->assertNotNull($product->seoMeta);
         $this->assertStringContainsString('Бордюр «Тест»', $product->seoMeta->title);
         $this->assertNotEmpty($product->seoMeta->title_kk);
-        $this->assertNotEmpty($product->seoMeta->keywords);
+        $this->assertEmpty($product->seoMeta->keywords, 'keywords не автозаполняются');
     }
 
     public function test_generate_endpoint_falls_back_to_template_without_ai_key(): void
