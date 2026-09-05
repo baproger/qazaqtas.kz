@@ -115,6 +115,35 @@ class SeoProductTest extends TestCase
         $this->assertStringContainsString('QAZAQ TAS зауыты', $response->json('kk.description'));
     }
 
+    public function test_describe_template_is_unique_per_product_and_bilingual(): void
+    {
+        config(['services.anthropic.key' => null]);
+        $admin = $this->admin();
+
+        $bench = $this->actingAs($admin)->postJson(route('catalog.describe'), [
+            'name' => 'Скамья «Парковая» 1800', 'category' => 'Скамьи',
+            'specs' => ['size' => '1800 × 600 × 800 мм', 'frost' => 'F200'],
+            'colors' => [['name' => 'Ақ', 'hex' => '#fff'], ['name' => 'Сұр', 'hex' => '#888']],
+        ])->assertOk()->json();
+
+        $tile = $this->actingAs($admin)->postJson(route('catalog.describe'), [
+            'name' => 'Плитка «Квадрат» 300×300×60', 'category' => 'Тротуарная плитка',
+            'specs' => ['size' => '300 × 300 × 60 мм'],
+        ])->assertOk()->json();
+
+        // Тексты уникальны между товарами и содержат их конкретику.
+        $this->assertNotSame($bench['ru']['description'], $tile['ru']['description']);
+        $this->assertStringContainsString('Скамья «Парковая» 1800', $bench['ru']['description']);
+        $this->assertStringContainsString('уличная скамья', $bench['ru']['description']);
+        $this->assertStringContainsString('1800 × 600 × 800 мм', $bench['ru']['description']);
+        $this->assertStringContainsString('F200', $bench['ru']['description']);
+        // Казахская версия согласована и на казахском.
+        $this->assertStringContainsString('көше орындығы', $bench['kk']['description']);
+        $this->assertStringContainsString('Аязға төзімділік F200', $bench['kk']['description']);
+        $this->assertSame('1800 × 600 × 800 мм · мәрмәр композиті', $bench['kk']['short_description']);
+        $this->assertStringContainsString('тротуар тақтасы', $tile['kk']['description']);
+    }
+
     public function test_seo_endpoints_require_catalog_rights(): void
     {
         $this->seed(RolePermissionSeeder::class);

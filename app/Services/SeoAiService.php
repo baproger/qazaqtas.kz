@@ -138,6 +138,131 @@ class SeoAiService
         return ['kk' => $kk, 'ru' => $ru];
     }
 
+    /**
+     * Уникальное описание карточки на двух языках из данных товара.
+     *
+     * Владелец заметил, что все карточки вышли с одной заглушкой. Теперь
+     * описание собирается из конкретики: категория, размер, морозостойкость,
+     * палитра. С ключом ИИ текст пишет Claude; без ключа — шаблон, который
+     * всё равно различается между товарами, потому что вплетает их данные.
+     *
+     * @return array{ru: array{short_description:string, description:string}, kk: array{short_description:string, description:string}, source: string}
+     */
+    public function describe(array $base): array
+    {
+        if (config('services.anthropic.key') && class_exists(\Anthropic\Client::class)) {
+            try {
+                return $this->describeViaClaude($base) + ['source' => 'ai'];
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $this->templateDescribe($base) + ['source' => 'template'];
+    }
+
+    /** @return array{ru: array<string,string>, kk: array<string,string>} */
+    public function templateDescribe(array $base): array
+    {
+        $name = (string) ($base['name'] ?? '');
+        $category = (string) ($base['category'] ?? '');
+        $specs = (array) ($base['specs'] ?? []);
+        $size = (string) ($specs['size'] ?? '');
+        $frost = (string) ($specs['frost'] ?? '');
+        $strength = (string) ($specs['strength'] ?? '');
+        $colors = count((array) ($base['colors'] ?? []));
+
+        $catRu = self::categoryPhrase($category, [
+            'скам' => 'уличная скамья для парков, набережных и дворов',
+            'плитк' => 'тротуарная плитка для дорожек, дворов и площадей',
+            'бордюр' => 'бордюр для дорожек, газонов и проезжей части',
+            'вазон' => 'уличный вазон для озеленения города',
+            'урн' => 'уличная урна для парков и входных групп',
+            'ступен' => 'ступени и облицовка входных групп',
+        ], 'изделие для благоустройства');
+        $catKk = self::categoryPhrase($category, [
+            'скам' => 'саябақтар мен аулаларға арналған көше орындығы',
+            'плитк' => 'жолдар мен алаңдарға арналған тротуар тақтасы',
+            'бордюр' => 'жолдар мен газондарға арналған бордюр',
+            'вазон' => 'қаланы көгалдандыруға арналған вазон',
+            'урн' => 'саябақтарға арналған қоқыс жәшігі',
+            'ступен' => 'кіреберіс топтарына арналған саты мен қаптама',
+        ], 'абаттандыруға арналған бұйым');
+
+        $ru = "{$name} — {$catRu} из мраморного композита QAZAQ TAS.";
+        $kk = "{$name} — QAZAQ TAS мәрмәр композитінен жасалған {$catKk}.";
+        if ($size) {
+            $ru .= " Размер {$size}.";
+            $kk .= " Өлшемі {$size}.";
+        }
+        if ($frost || $strength) {
+            $ru .= ' '.trim(($frost ? "Морозостойкость {$frost}" : '').($frost && $strength ? ', ' : '').($strength ? "класс прочности {$strength}" : '')).'.';
+            $kk .= ' '.trim(($frost ? "Аязға төзімділік {$frost}" : '').($frost && $strength ? ', ' : '').($strength ? "беріктік класы {$strength}" : '')).'.';
+        }
+        if ($colors > 1) {
+            $ru .= " {$colors} оттенков, цвет сквозной — не стирается и не выгорает.";
+            $kk .= " {$colors} реңк, түсі сіңірілген — өшпейді және оңбайды.";
+        }
+        $ru .= ' Собственное производство в Шымкенте, Алматы и Таразе, доставка по всему Казахстану.';
+        $kk .= ' Шымкент, Алматы және Тараздағы өз өндірісіміз, Қазақстан бойынша жеткізу.';
+
+        return [
+            'ru' => ['short_description' => trim(($size ? "{$size} · " : '').'мраморный композит'), 'description' => $ru],
+            'kk' => ['short_description' => trim(($size ? "{$size} · " : '').'мәрмәр композиті'), 'description' => $kk],
+        ];
+    }
+
+    /** Фраза категории по подстроке её названия. */
+    private static function categoryPhrase(string $category, array $map, string $default): string
+    {
+        $needle = mb_strtolower($category);
+        foreach ($map as $part => $phrase) {
+            if ($needle !== '' && str_contains($needle, $part)) {
+                return $phrase;
+            }
+        }
+
+        return $default;
+    }
+
+    /** @return array{ru: array<string,string>, kk: array<string,string>} */
+    private function describeViaClaude(array $base): array
+    {
+        $client = new \Anthropic\Client(apiKey: (string) config('services.anthropic.key'));
+
+        $message = $client->messages->create(
+            model: (string) config('services.anthropic.model'),
+            maxTokens: 3000,
+            system: 'Ты редактор витрины завода QAZAQ TAS (изделия из мраморного композита, Казахстан: Шымкент, Алматы, Тараз). '
+                .'По данным товара напиши УНИКАЛЬНОЕ описание карточки: 3–4 предложения, конкретика из характеристик '
+                .'(размер, морозостойкость, прочность, палитра), назначение по категории, без воды и превосходных степеней. '
+                .'Русская и казахская версии должны совпадать по смыслу; казахский — грамотный и естественный, не калька. '
+                .'short_description — одна строка вида «размер · материал». '
+                .'Ответь ТОЛЬКО валидным JSON: {"ru":{"short_description":"","description":""},"kk":{"short_description":"","description":""}}',
+            messages: [['role' => 'user', 'content' => (string) json_encode($base, JSON_UNESCAPED_UNICODE)]],
+        );
+
+        $text = '';
+        foreach ($message->content as $block) {
+            if ($block->type === 'text') {
+                $text = $block->text;
+                break;
+            }
+        }
+        $text = trim(preg_replace('/^```(?:json)?|```$/m', '', trim($text)));
+        $data = json_decode($text, true, 8, JSON_THROW_ON_ERROR);
+
+        foreach (['ru', 'kk'] as $loc) {
+            foreach (['short_description', 'description'] as $key) {
+                if (! is_string($data[$loc][$key] ?? null) || $data[$loc][$key] === '') {
+                    throw new \RuntimeException("Описание ИИ без поля {$loc}.{$key}");
+                }
+            }
+        }
+
+        return ['ru' => $data['ru'], 'kk' => $data['kk']];
+    }
+
     /** Словарь домена: длинные фразы раньше коротких, регистр не важен. */
     private static function kkWords(string $text): string
     {

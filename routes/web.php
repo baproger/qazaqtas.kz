@@ -266,6 +266,8 @@ Route::middleware('auth')->group(function () {
     Route::put('catalog/{product:id}', [CatalogController::class, 'update'])->name('catalog.update');
     Route::delete('catalog/{product:id}', [CatalogController::class, 'destroy'])->name('catalog.destroy');
     // Медиа карточки: фото, текстура для 3D, GLB-модель, документы.
+    // Описание карточки на двух языках: до wildcard-маршрутов {product:id}.
+    Route::post('catalog/describe', [CatalogController::class, 'describeAi'])->name('catalog.describe');
     // SEO карточки: чтение, сохранение, генерация (ИИ или шаблон).
     Route::get('catalog/{product:id}/seo', [CatalogController::class, 'seo'])->name('catalog.seo');
     Route::post('catalog/{product:id}/seo', [CatalogController::class, 'saveSeo'])->name('catalog.seo.save');

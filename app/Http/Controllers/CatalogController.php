@@ -200,4 +200,19 @@ class CatalogController extends Controller
 
         return response()->json($ai->translations($base));
     }
+
+    /** Уникальное описание ru+kk из данных карточки; работает и для новой. */
+    public function describeAi(Request $request, \App\Services\SeoAiService $ai): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('create', Product::class);
+
+        $base = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:255'],
+            'specs' => ['nullable', 'array'],
+            'colors' => ['nullable', 'array'],
+        ]);
+
+        return response()->json($ai->describe($base));
+    }
 }

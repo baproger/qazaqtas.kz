@@ -81,6 +81,38 @@ const translateAi = async () => {
     }
 };
 
+// ---- ИИ-описание: уникальный текст ru+kk из данных карточки ----
+const descBusy = ref(false);
+const descNote = ref('');
+const descError = ref(false);
+const describeAi = async () => {
+    descBusy.value = true; descNote.value = ''; descError.value = false;
+    try {
+        const { data } = await window.axios.post(route('catalog.describe'), {
+            name: form.name,
+            category: props.categories.find((c) => c.id === form.category_id)?.name ?? '',
+            specs: parseMap(specsText.value),
+            colors: parseColors(colorsText.value),
+        });
+        form.description = data.ru.description;
+        if (!form.short_description) form.short_description = data.ru.short_description;
+        form.translations = {
+            ...form.translations,
+            ru: { ...(form.translations.ru ?? {}), short_description: data.ru.short_description, description: data.ru.description },
+            kk: { ...(form.translations.kk ?? {}), short_description: data.kk.short_description, description: data.kk.description },
+        };
+        trVersion.value++;
+        descNote.value = data.source === 'ai'
+            ? tr('Описание готово на двух языках — проверьте.')
+            : tr('Описание собрано по шаблону (без ключа ИИ) — проверьте.');
+    } catch {
+        descError.value = true;
+        descNote.value = tr('Не удалось сгенерировать описание.');
+    } finally {
+        descBusy.value = false;
+    }
+};
+
 const form = useForm({
     category_id: '', name: '', slug: '', code: '', unit: 'м²', price: '', old_price: '',
     min_order: 1, short_description: '', description: '',
@@ -308,7 +340,17 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                     <div><InputLabel :value="$e('Минимальный заказ')" /><TextInput v-model="form.min_order" type="number" min="0" step="any" class="mt-1 w-full" /></div>
                     <div class="sm:col-span-2"><InputLabel :value="$e('Короткое описание')" /><TextInput v-model="form.short_description" class="mt-1 w-full" /></div>
                     <div class="sm:col-span-2">
-                        <InputLabel :value="$e('Описание')" />
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <InputLabel :value="$e('Описание')" />
+                            <div class="flex items-center gap-2">
+                                <span v-if="descNote" class="text-xs" :class="descError ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">{{ descNote }}</span>
+                                <button type="button" :disabled="descBusy || !form.name" @click="describeAi"
+                                    class="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.97] disabled:opacity-50">
+                                    <span v-if="!descBusy">✨ {{ $e('Описание (ИИ)') }}</span>
+                                    <span v-else>{{ $e('Генерируем…') }}</span>
+                                </button>
+                            </div>
+                        </div>
                         <textarea v-model="form.description" rows="3" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm"></textarea>
                     </div>
                     <div>
