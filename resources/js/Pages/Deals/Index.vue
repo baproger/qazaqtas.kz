@@ -394,7 +394,7 @@ const applyBinMatch = () => {
                         @dragstart="onDragStart($event, deal)" @dragend="onDragEnd"
                         class="cursor-move rounded-lg bg-white dark:bg-slate-900/70 p-2.5 border border-slate-200 dark:border-slate-800/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200"
                         :class="dragVisual === deal.id ? 'border-dashed border-indigo-400 bg-indigo-50/70 opacity-40 dark:border-indigo-400/60 dark:bg-indigo-500/10' : ''">
-                        <Link :href="route('deals.show', deal.id)" class="block">
+                        <Link :href="route('deals.show', deal.id)" draggable="false" class="block">
                             <!-- Кто и сколько -->
                             <div class="flex items-start justify-between gap-2">
                                 <div class="truncate text-sm font-bold text-slate-900 dark:text-slate-100">{{ deal.company_name || deal.name }}</div>
@@ -431,7 +431,7 @@ const applyBinMatch = () => {
                             </div>
                         </Link>
                         <div class="mt-2 flex items-center justify-between border-t pt-1.5">
-                            <Link :href="route('deals.show', deal.id)" class="text-xs text-slate-400 hover:text-indigo-600">{{ $e('+ Дело') }}</Link>
+                            <Link :href="route('deals.show', deal.id)" draggable="false" class="text-xs text-slate-400 hover:text-indigo-600">{{ $e('+ Дело') }}</Link>
                             <span v-if="stageTime(deal)" :title="$e('Время на текущем этапе')" class="text-xs tabular-nums text-slate-400">⏱ {{ stageTime(deal) }}</span>
                             <button v-if="workshopIds.includes(deal.deal_stage_id)" @click="toWorkshop(deal)" class="rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-emerald-700">{{ $e('📦 В цех') }}</button>
                             <button v-else-if="!wonIds.includes(deal.deal_stage_id) && (canAccounting || !postActIds.includes(deal.deal_stage_id))" @click="advance(deal)" class="rounded bg-slate-100 dark:bg-slate-800/60 px-2.5 py-1 text-xs text-slate-600 dark:text-slate-300 transition-colors hover:bg-indigo-100 hover:text-indigo-700">{{ $e('Далее →') }}</button>
