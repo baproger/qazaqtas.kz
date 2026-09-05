@@ -116,7 +116,7 @@ onMounted(() => {
                             :aria-label="$t('site.product.photo_n', null, { n: i + 1 })"
                             @click="activeIndex = i"
                         >
-                            <img :src="img.thumb ?? img.path" :alt="img.alt || product.name" loading="lazy" class="h-full w-full object-cover" />
+                            <img :src="img.thumb ?? img.path" :alt="img.alt || product.name" loading="lazy" class="h-full w-full object-contain" />
                         </button>
                     </div>
 

@@ -96,7 +96,7 @@ const tiles = computed(() => {
             :alt="image.alt || product.name"
             loading="lazy"
             decoding="async"
-            class="h-full w-full object-cover transition-transform duration-700 ease-premium group-hover:scale-105"
+            class="h-full w-full object-contain transition-transform duration-700 ease-premium group-hover:scale-105"
         />
         </picture>
         <!-- Фото товаров часто сняты на белом: лёгкая виньетка сажает снимок
