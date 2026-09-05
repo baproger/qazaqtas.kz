@@ -170,9 +170,9 @@ onMounted(() => {
                     <div class="mt-8 flex flex-wrap items-baseline gap-3">
                         <span class="display text-4xl text-sand-50">{{ money(product.price) }}</span>
                         <span class="text-sm text-sand-100/45">за {{ product.unit }}</span>
-                        <span v-if="product.old_price > 0" class="inline-flex items-center gap-2 rounded-full border border-rose-500/35 bg-gradient-to-r from-rose-500/20 via-rose-500/10 to-orange-500/15 px-3 py-1">
+                        <span v-if="product.old_price > 0" class="inline-flex items-center gap-2 rounded-lg border border-rose-500/35 bg-gradient-to-r from-rose-500/20 via-rose-500/10 to-orange-500/15 px-3 py-1">
                             <s class="text-base font-semibold tabular-nums text-rose-400">{{ money(product.old_price) }}</s>
-                            <b class="rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">−{{ Math.round((1 - product.price / product.old_price) * 100) }}%</b>
+                            <b class="rounded-md bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">−{{ Math.round((1 - product.price / product.old_price) * 100) }}%</b>
                         </span>
                         <span
                             class="ml-auto rounded-full px-3 py-1 text-xs font-medium"

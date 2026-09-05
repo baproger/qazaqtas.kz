@@ -97,9 +97,9 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                     <div class="min-w-0">
                         <!-- Акция: старая цена «убита» в красной капсуле, рядом
                              размер скидки — выгода видна раньше самой цены. -->
-                        <div v-if="product.old_price > 0" class="mb-2 inline-flex items-center gap-1.5 rounded-full border border-rose-500/35 bg-gradient-to-r from-rose-500/20 via-rose-500/10 to-orange-500/15 px-2.5 py-1 leading-none">
+                        <div v-if="product.old_price > 0" class="mb-2 inline-flex items-center gap-1.5 rounded-lg border border-rose-500/35 bg-gradient-to-r from-rose-500/20 via-rose-500/10 to-orange-500/15 px-2.5 py-1 leading-none">
                             <s class="text-xs font-semibold tabular-nums text-rose-400">{{ money(product.old_price) }}</s>
-                            <b class="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">−{{ Math.round((1 - product.price / product.old_price) * 100) }}%</b>
+                            <b class="rounded-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">−{{ Math.round((1 - product.price / product.old_price) * 100) }}%</b>
                         </div>
                         <div class="flex items-baseline gap-1.5">
                             <span class="display text-[21px] leading-none tracking-tight text-sand-50">{{ money(product.price).replace(' ₸', '') }}</span>
