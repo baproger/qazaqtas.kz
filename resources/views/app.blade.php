@@ -7,8 +7,18 @@
         <link rel="icon" type="image/png" href="/logo-mark.png">
         <link rel="apple-touch-icon" href="/logo-mark.png">
 
-        {{-- Canonical и hreflang рендерит SiteLayout через Inertia Head:
-             blade-версия «застывала» на первой странице при SPA-переходах. --}}
+        {{-- Hreflang/canonical для краулеров без JS: корректны для ПЕРВОГО
+             запроса. SiteLayout при монтировании удаляет их (data-ssr-seo)
+             и дальше ведёт эти теги сам через Inertia Head — иначе при
+             SPA-переходах они застывали от первой страницы. --}}
+        @php($alternates = \App\Support\Locales::alternates(request()))
+        @if ($alternates)
+            <link data-ssr-seo rel="canonical" href="{{ $alternates[app()->getLocale()] }}">
+            @foreach ($alternates as $altLocale => $altUrl)
+                <link data-ssr-seo rel="alternate" hreflang="{{ $altLocale }}" href="{{ $altUrl }}">
+            @endforeach
+            <link data-ssr-seo rel="alternate" hreflang="x-default" href="{{ $alternates[\App\Support\Locales::default()] }}">
+        @endif
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 

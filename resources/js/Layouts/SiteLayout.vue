@@ -61,6 +61,10 @@ const syncCanvas = () => {
 watch(theme, syncCanvas);
 
 onMounted(() => {
+    // Серверные hreflang/canonical (для краулеров без JS) снимаются: дальше
+    // этими тегами владеет Inertia Head, иначе в DOM жили бы два набора.
+    document.querySelectorAll('link[data-ssr-seo]').forEach((el) => el.remove());
+
     initTheme();
     syncCanvas();
 
