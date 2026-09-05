@@ -101,7 +101,7 @@ class SeoProductTest extends TestCase
             ->postJson(route('catalog.translate', $this->product()), [
                 'name' => 'Плитка «Квадрат» 300×300×60',
                 'short_description' => '300 × 300 × 60 мм · мраморный композит',
-                'specs' => ['material' => 'мраморный композит'],
+                'specs' => ['size' => '300 × 300 × 60 мм', 'material' => 'мраморный композит'],
                 'colors' => [['name' => 'Мрамор белый', 'hex' => '#E8E6E1']],
             ])->assertOk();
 
