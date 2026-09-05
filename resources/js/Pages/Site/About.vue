@@ -70,16 +70,24 @@ onBeforeUnmount(() => stop());
         <section>
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <p class="eyebrow reveal">{{ $t('site.about.advantages') }}</p>
-                <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:gap-6">
-                    <!-- Номер — чип в стиле шагов производства выше: единый язык
-                         страницы вместо обрезанного водяного знака. -->
-                    <div v-for="(a, i) in advantages" :key="a.title" class="spotlight card card-hover reveal group relative overflow-hidden rounded-3xl p-8 sm:p-10" :style="{ '--d': `${(i % 2) * 70}ms` }">
-                        <div class="flex items-center gap-4">
-                            <span class="display grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-sand-300/25 bg-sand-300/10 text-base text-sand-300 transition duration-300 ease-premium group-hover:border-sand-300/50 group-hover:bg-sand-300/20">{{ String(i + 1).padStart(2, '0') }}</span>
+                <!-- Bento-сетка стеклянных карточек: широкая + узкая, затем
+                     узкая + широкая. Под стеклом дышат цветные glow-пятна
+                     (песок/изумруд поочерёдно), сверху — чип-номер с линией. -->
+                <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+                    <div v-for="(a, i) in advantages" :key="a.title"
+                        class="spotlight card card-hover reveal group relative flex min-h-[220px] flex-col justify-end overflow-hidden rounded-3xl p-8 sm:p-10"
+                        :class="i % 3 === 0 ? 'lg:col-span-2' : ''"
+                        :style="{ '--d': `${(i % 2) * 70}ms` }">
+                        <span class="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full blur-3xl transition duration-500 group-hover:scale-110"
+                            :class="i % 2 ? 'bg-emerald-400/15' : 'bg-sand-300/20'" aria-hidden="true" />
+                        <span class="pointer-events-none absolute -bottom-20 -left-16 h-44 w-44 rounded-full blur-3xl"
+                            :class="i % 2 ? 'bg-sand-300/10' : 'bg-emerald-400/10'" aria-hidden="true" />
+                        <div class="absolute left-8 top-8 flex w-[calc(100%-4rem)] items-center gap-4 sm:left-10 sm:top-10 sm:w-[calc(100%-5rem)]">
+                            <span class="display grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-sand-300/25 bg-sand-300/10 text-base text-sand-300 backdrop-blur transition duration-300 ease-premium group-hover:border-sand-300/50 group-hover:bg-sand-300/20">{{ String(i + 1).padStart(2, '0') }}</span>
                             <span class="h-px flex-1 bg-gradient-to-r from-sand-300/40 to-transparent" aria-hidden="true" />
                         </div>
-                        <h3 class="display mt-6 text-2xl text-sand-50 sm:text-3xl">{{ a.title }}</h3>
-                        <p class="mt-4 max-w-md text-sm leading-relaxed text-sand-100/55">{{ a.text }}</p>
+                        <h3 class="display relative mt-20 text-2xl text-sand-50" :class="i % 3 === 0 ? 'lg:text-4xl' : 'sm:text-3xl'">{{ a.title }}</h3>
+                        <p class="relative mt-4 text-sm leading-relaxed text-sand-100/55" :class="i % 3 === 0 ? 'max-w-xl' : 'max-w-md'">{{ a.text }}</p>
                     </div>
                 </div>
             </div>
