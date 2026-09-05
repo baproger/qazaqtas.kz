@@ -117,7 +117,7 @@ class SeoProductTest extends TestCase
         $this->assertStringContainsString('Плитка «Квадрат» 300×300×60 —', $response->json('ru.description'));
         $this->assertStringContainsString('300 × 300 × 60 мм', $response->json('ru.short_description'));
 
-        $this->assertStringContainsString('QAZAQ TAS зауыты', $response->json('kk.description'));
+        $this->assertStringContainsString('QAZAQ TAS мәрмәр композитінен', $response->json('kk.description'));
     }
 
     public function test_describe_template_is_unique_per_product_and_bilingual(): void
