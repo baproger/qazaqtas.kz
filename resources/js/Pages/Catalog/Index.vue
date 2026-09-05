@@ -312,39 +312,49 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                     />
                 </div>
 
-                <div v-show="tab === 'fields'" class="grid grid-cols-2 gap-3 sm:grid-cols-12">
-                    <div class="col-span-2 sm:col-span-3">
-                        <InputLabel :value="$e('Категория')" />
-                        <select v-model="form.category_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm">
-                            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
-                        </select>
-                    </div>
-                    <div class="col-span-2 sm:col-span-3"><InputLabel :value="$e('Артикул')" /><TextInput v-model="form.code" class="mt-1 w-full" /></div>
-                    <div class="col-span-2 sm:col-span-6">
-                        <InputLabel :value="$e('Название *')" /><TextInput v-model="form.name" class="mt-1 w-full" />
-                        <InputError :message="form.errors.name" class="mt-1" />
-                    </div>
+                <div v-show="tab === 'fields'" class="space-y-5">
+                    <!-- Секции с ярлыками: глаз находит нужное поле по смыслу,
+                         а не сканированием сплошной простыни. -->
+                    <section>
+                        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Основное') }}</p>
+                        <div class="grid grid-cols-2 gap-3 sm:grid-cols-12">
+                            <div class="col-span-2 sm:col-span-3">
+                                <InputLabel class="whitespace-nowrap" :value="$e('Категория')" />
+                                <select v-model="form.category_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400">
+                                    <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2 sm:col-span-3"><InputLabel class="whitespace-nowrap" :value="$e('Артикул')" /><TextInput v-model="form.code" class="mt-1 w-full" /></div>
+                            <div class="col-span-2 sm:col-span-6">
+                                <InputLabel class="whitespace-nowrap" :value="$e('Название *')" /><TextInput v-model="form.name" class="mt-1 w-full" />
+                                <InputError :message="form.errors.name" class="mt-1" />
+                            </div>
+                        </div>
+                    </section>
 
-                    <!-- Числа — одной строкой: вся арифметика карточки перед глазами. -->
-                    <div class="sm:col-span-2">
-                        <InputLabel :value="$e('Единица измерения')" />
-                        <select v-model="form.unit" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm">
-                            <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
-                        </select>
-                    </div>
-                    <div class="sm:col-span-2"><InputLabel :value="$e('Цена, ₸ *')" /><TextInput v-model="form.price" type="number" min="0" class="mt-1 w-full" /><InputError :message="form.errors.price" class="mt-1" /></div>
-                    <div class="sm:col-span-2"><InputLabel :value="$e('Старая цена')" /><TextInput v-model="form.old_price" type="number" min="0" class="mt-1 w-full" /></div>
-                    <div class="sm:col-span-2"><InputLabel :value="$e('Минимальный заказ')" /><TextInput v-model="form.min_order" type="number" min="0" step="any" class="mt-1 w-full" /></div>
-                    <div class="sm:col-span-2">
-                        <InputLabel :value="$e('Минимальный остаток')" :title="$e('Ниже этого остатка склад пометит товар «мало»')" />
-                        <TextInput v-model="form.min_stock" type="number" min="0" step="any" class="mt-1 w-full" :placeholder="$e('не следим')" />
-                    </div>
-                    <div class="sm:col-span-2"><InputLabel :value="$e('Порядок')" /><TextInput v-model="form.order" type="number" class="mt-1 w-full" /></div>
+                    <section>
+                        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Цена и склад') }}</p>
+                        <div class="grid grid-cols-3 gap-3 sm:grid-cols-6">
+                            <div>
+                                <InputLabel class="whitespace-nowrap" :value="$e('Ед. изм.')" />
+                                <select v-model="form.unit" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400">
+                                    <option v-for="u in units" :key="u" :value="u">{{ u }}</option>
+                                </select>
+                            </div>
+                            <div><InputLabel class="whitespace-nowrap" :value="$e('Цена, ₸ *')" /><TextInput v-model="form.price" type="number" min="0" class="mt-1 w-full" /><InputError :message="form.errors.price" class="mt-1" /></div>
+                            <div><InputLabel class="whitespace-nowrap" :value="$e('Старая цена')" /><TextInput v-model="form.old_price" type="number" min="0" class="mt-1 w-full" /></div>
+                            <div><InputLabel class="whitespace-nowrap" :value="$e('Мин. заказ')" /><TextInput v-model="form.min_order" type="number" min="0" step="any" class="mt-1 w-full" /></div>
+                            <div>
+                                <InputLabel class="whitespace-nowrap" :value="$e('Мин. остаток')" :title="$e('Ниже этого остатка склад пометит товар «мало»')" />
+                                <TextInput v-model="form.min_stock" type="number" min="0" step="any" class="mt-1 w-full" :placeholder="$e('не следим')" />
+                            </div>
+                            <div><InputLabel class="whitespace-nowrap" :value="$e('Порядок')" /><TextInput v-model="form.order" type="number" class="mt-1 w-full" /></div>
+                        </div>
+                    </section>
 
-                    <div class="col-span-2 sm:col-span-12"><InputLabel :value="$e('Короткое описание')" /><TextInput v-model="form.short_description" class="mt-1 w-full" /></div>
-                    <div class="col-span-2 sm:col-span-12">
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <InputLabel :value="$e('Описание')" />
+                    <section>
+                        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Контент') }}</p>
                             <div class="flex items-center gap-2">
                                 <span v-if="descNote" class="text-xs" :class="descError ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">{{ descNote }}</span>
                                 <button type="button" :disabled="descBusy || !form.name" @click="describeAi"
@@ -354,18 +364,30 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
                                 </button>
                             </div>
                         </div>
-                        <textarea v-model="form.description" rows="3" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm"></textarea>
-                    </div>
-                    <div class="col-span-2 sm:col-span-6">
-                        <InputLabel :value="$e('Характеристики (ключ: значение)')" />
-                        <textarea v-model="specsText" rows="4" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm" :placeholder="$e('size: 300 × 300 × 60 мм') + '\n' + 'pieces_per_m2: 11.1'"></textarea>
-                        <p class="mt-1 text-xs text-slate-400">{{ $e('pieces_per_m2 нужен калькулятору площади и конфигуратору.') }}</p>
-                    </div>
-                    <div class="col-span-2 sm:col-span-6">
-                        <InputLabel :value="$e('Цвета (Название #HEX)')" />
-                        <textarea v-model="colorsText" rows="4" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm" :placeholder="$e('Мрамор белый #E8E6E1')"></textarea>
-                        <p class="mt-1 text-xs text-slate-400">{{ $e('Первый цвет — основной, им рисуется превью.') }}</p>
-                    </div>
+                        <div class="space-y-3">
+                            <div><InputLabel :value="$e('Короткое описание')" /><TextInput v-model="form.short_description" class="mt-1 w-full" /></div>
+                            <div>
+                                <InputLabel :value="$e('Описание')" />
+                                <textarea v-model="form.description" rows="3" class="mt-1 w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-400 focus:ring-indigo-400"></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $e('Характеристики и палитра') }}</p>
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <InputLabel :value="$e('Характеристики (ключ: значение)')" />
+                                <textarea v-model="specsText" rows="4" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm focus:border-indigo-400 focus:ring-indigo-400" :placeholder="$e('size: 300 × 300 × 60 мм') + '\n' + 'pieces_per_m2: 11.1'"></textarea>
+                                <p class="mt-1 text-xs text-slate-400">{{ $e('pieces_per_m2 нужен калькулятору площади и конфигуратору.') }}</p>
+                            </div>
+                            <div>
+                                <InputLabel :value="$e('Цвета (Название #HEX)')" />
+                                <textarea v-model="colorsText" rows="4" class="mt-1 w-full rounded-lg border-slate-300 font-mono text-xs shadow-sm focus:border-indigo-400 focus:ring-indigo-400" :placeholder="$e('Мрамор белый #E8E6E1')"></textarea>
+                                <p class="mt-1 text-xs text-slate-400">{{ $e('Первый цвет — основной, им рисуется превью.') }}</p>
+                            </div>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- Футер: статусы слева, действия справа — один ряд, без прокрутки. -->
