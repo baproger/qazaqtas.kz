@@ -39,7 +39,20 @@ watch(color, () => (activeIndex.value = 0));
 const quantity = ref(Number(props.product.min_order) || 1);
 const area = ref(''); // калькулятор площади: м² → количество
 const isFavorite = ref(false);
-const tab = ref('specs');
+// Вкладка живёт в адресе: смена языка — полный переход, и без этого
+// открытые «Описание»/«Доставка» сбрасывались на характеристики.
+// Языковые ссылки шапки переносят query как есть.
+const TABS = ['specs', 'about', 'delivery'];
+const initialTab = new URLSearchParams(window.location.search).get('tab');
+const tab = ref(TABS.includes(initialTab) ? initialTab : 'specs');
+watch(tab, (value) => {
+    try {
+        const url = new URL(window.location.href);
+        if (value === 'specs') url.searchParams.delete('tab');
+        else url.searchParams.set('tab', value);
+        window.history.replaceState(window.history.state, '', url);
+    } catch { /* приватный режим — вкладка просто не попадёт в адрес */ }
+});
 
 const perM2 = computed(() => Number(props.product.specs?.pieces_per_m2) || null);
 const isAreaBased = computed(() => props.product.unit === 'м²');
