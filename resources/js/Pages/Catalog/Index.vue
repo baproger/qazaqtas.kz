@@ -63,12 +63,14 @@ const translateAi = async () => {
     try {
         const { data } = await window.axios.post(route('catalog.translate', editingId.value), {
             name: form.name,
+            category: props.categories.find((c) => c.id === form.category_id)?.name ?? '',
             short_description: form.short_description,
             description: form.description,
             specs: parseMap(specsText.value),
             colors: parseColors(colorsText.value),
         });
-        form.translations = { ...form.translations, ...data };
+        // Только локали: служебный source в переводы попадать не должен.
+        form.translations = { ...form.translations, kk: data.kk, ru: data.ru };
         trVersion.value++; // вкладки пересоздаются и подтягивают новые значения
         trNote.value = data.source === 'ai'
             ? tr('Переведено ИИ — проверьте и сохраните форму.')

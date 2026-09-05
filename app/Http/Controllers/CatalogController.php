@@ -192,6 +192,7 @@ class CatalogController extends Controller
 
         $base = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:255'],
             'short_description' => ['nullable', 'string', 'max:500'],
             'description' => ['nullable', 'string', 'max:5000'],
             'specs' => ['nullable', 'array'],

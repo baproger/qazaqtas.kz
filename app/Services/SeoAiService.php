@@ -115,22 +115,23 @@ class SeoAiService
     {
         $name = (string) ($base['name'] ?? '');
 
+        // Описания обоих языков собираем ОДНИМ шаблоном из данных карточки:
+        // русская и казахская версии обязаны совпадать по смыслу, а не жить
+        // каждая своей жизнью (ru раньше просто копировал старую заглушку).
+        $described = $this->templateDescribe($base);
+
         $ru = [
             'name' => $name,
-            'short_description' => (string) ($base['short_description'] ?? ''),
-            'description' => (string) ($base['description'] ?? ''),
+            'short_description' => $described['ru']['short_description'],
+            'description' => $described['ru']['description'],
             'specs' => (array) ($base['specs'] ?? []),
             'colors' => array_values((array) ($base['colors'] ?? [])),
         ];
 
         $kk = [
             'name' => $name, // артикулы и размеры в названии универсальны
-            'short_description' => self::kkWords($ru['short_description']),
-            // Пользовательский текст словарём не перевести — собираем честное
-            // стандартное описание из данных карточки (как SEO-шаблон).
-            'description' => "{$name} — QAZAQ TAS зауытының мәрмәр композитінен жасалған бұйымы."
-                .' Вибролитьё технологиясы, фиброталшықпен арматуралау, сіңірілген бояу — түсі өшпейді және оңбайды.'
-                .' Шымкент, Алматы және Тараз алаңдарында өндіріледі, Қазақстан бойынша жеткізіледі.',
+            'short_description' => $described['kk']['short_description'],
+            'description' => $described['kk']['description'],
             'specs' => array_map(fn ($v) => is_string($v) ? self::kkWords($v) : $v, $ru['specs']),
             'colors' => array_map(fn ($c) => ['name' => mb_ucfirst(self::kkWords((string) ($c['name'] ?? ''))), 'hex' => $c['hex'] ?? ''], $ru['colors']),
         ];

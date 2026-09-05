@@ -112,6 +112,11 @@ class SeoProductTest extends TestCase
             ->assertJsonPath('kk.colors.0.hex', '#E8E6E1')
             ->assertJsonPath('ru.name', 'Плитка «Квадрат» 300×300×60');
 
+        // Русская колонка не копирует заглушку, а согласована с казахской:
+        // оба описания собраны одним шаблоном из данных карточки.
+        $this->assertStringContainsString('Плитка «Квадрат» 300×300×60 —', $response->json('ru.description'));
+        $this->assertStringContainsString('300 × 300 × 60 мм', $response->json('ru.short_description'));
+
         $this->assertStringContainsString('QAZAQ TAS зауыты', $response->json('kk.description'));
     }
 
