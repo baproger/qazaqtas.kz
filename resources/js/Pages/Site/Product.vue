@@ -104,7 +104,7 @@ onMounted(() => {
             <div class="mt-8 grid gap-10 lg:grid-cols-2 lg:gap-16">
                 <!-- Визуал -->
                 <div class="lg:sticky lg:top-28 lg:self-start">
-                    <ProductVisual :product="product" :color="color?.hex" :image="activeImage" ratio="aspect-[4/3]" />
+                    <ProductVisual :product="product" :color="color?.hex" :image="activeImage" ratio="auto" />
 
                     <!-- Миниатюры галереи -->
                     <div v-if="gallery.length > 1" class="mt-3 flex gap-2 overflow-x-auto pb-1">

@@ -54,7 +54,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
              стояло в нише, а не лежало на плоскости. -->
         <div class="relative m-2 overflow-hidden rounded-2xl">
             <Link :href="$r('site.product', product.slug)" class="block overflow-hidden" :aria-label="product.name">
-                <ProductVisual :product="product" :ratio="compact ? 'aspect-[16/10]' : 'aspect-[4/3]'" shape="rounded-none" />
+                <ProductVisual :product="product" ratio="aspect-square" shape="rounded-none" />
             </Link>
 
             <button

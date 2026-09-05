@@ -86,18 +86,9 @@ const tiles = computed(() => {
 </script>
 
 <template>
-    <div class="concrete relative overflow-hidden bg-ink-700" :class="[ratio, shape]">
-        <!-- Подложка: тот же кадр, размытый до фона — рамка заполнена при
-             любой пропорции снимка, а сам кадр (ниже) виден целиком. -->
-        <img
-            v-if="image"
-            :src="image.thumb ?? image.path"
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-            class="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl"
-        />
+    <!-- ratio="auto": рамка следует за пропорцией снимка — кадр целиком,
+         без обрезки и без полей. Фикс-аспект остаётся для карточек сетки. -->
+    <div class="concrete relative overflow-hidden bg-ink-700" :class="[image && ratio === 'auto' ? '' : (ratio === 'auto' ? 'aspect-[4/3]' : ratio), shape]">
         <picture v-if="image">
             <source v-if="image.webp" :srcset="image.webp_thumb ? `${image.webp_thumb} 600w, ${image.webp} 1600w` : image.webp" sizes="(max-width: 640px) 100vw, 33vw" type="image/webp" />
         <img
@@ -107,7 +98,8 @@ const tiles = computed(() => {
             :alt="image.alt || product.name"
             loading="lazy"
             decoding="async"
-            class="relative h-full w-full object-contain transition-transform duration-700 ease-premium group-hover:scale-105"
+            :class="ratio === 'auto' ? 'h-auto w-full' : 'h-full w-full object-cover'"
+            class="transition-transform duration-700 ease-premium group-hover:scale-105"
         />
         </picture>
         <!-- Фото товаров часто сняты на белом: лёгкая виньетка сажает снимок
