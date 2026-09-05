@@ -96,7 +96,7 @@ const COLS = [
                     <textarea v-model="form['description' + sfx]" rows="3" :class="field" />
                 </div>
                 <div>
-                    <div class="text-xs text-slate-400">Keywords <span class="text-slate-300 dark:text-slate-600">· {{ $e('через запятую') }}</span></div>
+                    <div class="text-xs text-slate-400">Keywords</div>
                     <input v-model="form['keywords' + sfx]" type="text" :class="field" />
                 </div>
             </div>

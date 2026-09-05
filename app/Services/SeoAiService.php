@@ -93,10 +93,87 @@ class SeoAiService
      */
     public function translations(array $base): array
     {
-        if (! config('services.anthropic.key') || ! class_exists(\Anthropic\Client::class)) {
-            throw new \RuntimeException('Нужен ключ ИИ: задайте ANTHROPIC_API_KEY на сервере.');
+        if (config('services.anthropic.key') && class_exists(\Anthropic\Client::class)) {
+            try {
+                return $this->translationsViaClaude($base) + ['source' => 'ai'];
+            } catch (\Throwable $e) {
+                report($e); // ИИ недоступен — словарь и шаблон спасают кнопку
+            }
         }
 
+        return $this->templateTranslations($base) + ['source' => 'template'];
+    }
+
+    /**
+     * Бесплатный перевод без ИИ: ru — базовые поля как есть, kk — словарь
+     * домена (цвета, материалы, категории) плюс стандартное описание из
+     * данных карточки. Числа, размеры и hex не трогаются.
+     *
+     * @return array{kk: array<string,mixed>, ru: array<string,mixed>}
+     */
+    public function templateTranslations(array $base): array
+    {
+        $name = (string) ($base['name'] ?? '');
+
+        $ru = [
+            'name' => $name,
+            'short_description' => (string) ($base['short_description'] ?? ''),
+            'description' => (string) ($base['description'] ?? ''),
+            'specs' => (array) ($base['specs'] ?? []),
+            'colors' => array_values((array) ($base['colors'] ?? [])),
+        ];
+
+        $kk = [
+            'name' => $name, // артикулы и размеры в названии универсальны
+            'short_description' => self::kkWords($ru['short_description']),
+            // Пользовательский текст словарём не перевести — собираем честное
+            // стандартное описание из данных карточки (как SEO-шаблон).
+            'description' => "{$name} — QAZAQ TAS зауытының мәрмәр композитінен жасалған бұйымы."
+                .' Вибролитьё технологиясы, фиброталшықпен арматуралау, сіңірілген бояу — түсі өшпейді және оңбайды.'
+                .' Шымкент, Алматы және Тараз алаңдарында өндіріледі, Қазақстан бойынша жеткізіледі.',
+            'specs' => array_map(fn ($v) => is_string($v) ? self::kkWords($v) : $v, $ru['specs']),
+            'colors' => array_map(fn ($c) => ['name' => mb_ucfirst(self::kkWords((string) ($c['name'] ?? ''))), 'hex' => $c['hex'] ?? ''], $ru['colors']),
+        ];
+
+        return ['kk' => $kk, 'ru' => $ru];
+    }
+
+    /** Словарь домена: длинные фразы раньше коротких, регистр не важен. */
+    private static function kkWords(string $text): string
+    {
+        static $dict = [
+            'мраморный композит' => 'мәрмәр композиті',
+            'тротуарная плитка' => 'тротуар тақтасы',
+            'мрамор белый' => 'ақ мәрмәр',
+            'серый графит' => 'сұр графит',
+            'песочный' => 'құмды',
+            'антрацит' => 'антрацит',
+            'терракота' => 'терракота',
+            'зелёный' => 'жасыл',
+            'зеленый' => 'жасыл',
+            'красный' => 'қызыл',
+            'чёрный' => 'қара',
+            'черный' => 'қара',
+            'белый' => 'ақ',
+            'серый' => 'сұр',
+            'коричневый' => 'қоңыр',
+            'бордюр' => 'бордюр',
+            'вазон' => 'вазон',
+            'скамья' => 'орындық',
+            'урна' => 'қоқыс жәшігі',
+            'ступень' => 'саты',
+        ];
+
+        foreach ($dict as $ruWord => $kkWord) {
+            $text = preg_replace('/'.preg_quote($ruWord, '/').'/iu', $kkWord, $text);
+        }
+
+        return $text;
+    }
+
+    /** @return array{kk: array<string,mixed>, ru: array<string,mixed>} */
+    private function translationsViaClaude(array $base): array
+    {
         $client = new \Anthropic\Client(apiKey: (string) config('services.anthropic.key'));
 
         $message = $client->messages->create(

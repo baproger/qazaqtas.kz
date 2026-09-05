@@ -198,14 +198,6 @@ class CatalogController extends Controller
             'colors' => ['nullable', 'array'],
         ]);
 
-        try {
-            return response()->json($ai->translations($base));
-        } catch (\RuntimeException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json(['message' => 'ИИ недоступен, попробуйте позже.'], 422);
-        }
+        return response()->json($ai->translations($base));
     }
 }

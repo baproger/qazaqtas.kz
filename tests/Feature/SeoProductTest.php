@@ -93,14 +93,26 @@ class SeoProductTest extends TestCase
             ->where('seo.description', 'Ручное описание RU'));
     }
 
-    public function test_translate_endpoint_explains_missing_ai_key(): void
+    public function test_translate_falls_back_to_dictionary_template_without_ai_key(): void
     {
         config(['services.anthropic.key' => null]);
 
-        $this->actingAs($this->admin())
-            ->postJson(route('catalog.translate', $this->product()), ['name' => 'Плитка'])
-            ->assertStatus(422)
-            ->assertJsonPath('message', fn ($m) => str_contains($m, 'ANTHROPIC_API_KEY'));
+        $response = $this->actingAs($this->admin())
+            ->postJson(route('catalog.translate', $this->product()), [
+                'name' => 'Плитка «Квадрат» 300×300×60',
+                'short_description' => '300 × 300 × 60 мм · мраморный композит',
+                'specs' => ['material' => 'мраморный композит'],
+                'colors' => [['name' => 'Мрамор белый', 'hex' => '#E8E6E1']],
+            ])->assertOk();
+
+        $response->assertJsonPath('source', 'template')
+            ->assertJsonPath('kk.short_description', '300 × 300 × 60 мм · мәрмәр композиті')
+            ->assertJsonPath('kk.specs.material', 'мәрмәр композиті')
+            ->assertJsonPath('kk.colors.0.name', 'Ақ мәрмәр')
+            ->assertJsonPath('kk.colors.0.hex', '#E8E6E1')
+            ->assertJsonPath('ru.name', 'Плитка «Квадрат» 300×300×60');
+
+        $this->assertStringContainsString('QAZAQ TAS зауыты', $response->json('kk.description'));
     }
 
     public function test_seo_endpoints_require_catalog_rights(): void

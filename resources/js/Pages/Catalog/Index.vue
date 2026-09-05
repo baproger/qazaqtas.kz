@@ -70,7 +70,9 @@ const translateAi = async () => {
         });
         form.translations = { ...form.translations, ...data };
         trVersion.value++; // вкладки пересоздаются и подтягивают новые значения
-        trNote.value = tr('Переведено ИИ — проверьте и сохраните форму.');
+        trNote.value = data.source === 'ai'
+            ? tr('Переведено ИИ — проверьте и сохраните форму.')
+            : tr('Собрано по шаблону (ключ ИИ не задан) — проверьте и сохраните.');
     } catch (e) {
         trError.value = true;
         trNote.value = e?.response?.data?.message ?? tr('Не удалось перевести.');
