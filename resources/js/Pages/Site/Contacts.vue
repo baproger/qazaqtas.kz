@@ -31,7 +31,7 @@ const openFaq = ref(0);
         <section class="ambient mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-24">
             <p class="eyebrow">{{ $t('site.contacts.branches') }}</p>
             <div class="mt-8 grid gap-4 sm:grid-cols-3">
-                <article v-for="b in branches" :key="b.city" class="card card-hover p-8">
+                <article v-for="b in branches" :key="b.city" class="spotlight card card-hover p-8">
                     <h2 class="display text-2xl text-sand-50">{{ b.city }}</h2>
                     <p class="mt-2 text-xs uppercase tracking-[0.2em] text-sand-300/60">{{ b.role }}</p>
                     <p class="mt-5 text-sm text-sand-100/55">{{ b.address }}</p>
@@ -48,7 +48,7 @@ const openFaq = ref(0);
         <section>
             <div class="mx-auto max-w-4xl px-5 py-20 sm:px-8 sm:py-28">
                 <h2 class="display text-[clamp(1.75rem,4vw,3rem)] text-sand-50">{{ $t('site.contacts.faq') }}</h2>
-                <div class="card mt-10 divide-y divide-white/10 px-6 sm:px-8">
+                <div class="spotlight card mt-10 divide-y divide-white/10 px-6 sm:px-8">
                     <div v-for="(item, i) in faq" :key="i">
                         <button
                             class="flex w-full items-center justify-between gap-6 py-6 text-left"

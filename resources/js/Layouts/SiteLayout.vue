@@ -1,4 +1,5 @@
 <script setup>
+import { initSpotlight } from '@/utils/site';
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { theme, toggleTheme, initTheme } from '@/site/theme';
@@ -60,6 +61,9 @@ const syncCanvas = () => {
 };
 watch(theme, syncCanvas);
 
+let stopSpotlight = () => {};
+onBeforeUnmount(() => stopSpotlight());
+onMounted(() => { stopSpotlight = initSpotlight(); });
 onMounted(() => {
     // Серверные hreflang/canonical (для краулеров без JS) снимаются: дальше
     // этими тегами владеет Inertia Head, иначе в DOM жили бы два набора.

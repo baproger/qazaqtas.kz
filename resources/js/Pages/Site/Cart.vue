@@ -45,7 +45,7 @@ const clearCart = () => router.delete(siteRoute('site.cart.clear'), { preserveSc
         <section class="ambient mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
             <h1 class="display text-[clamp(2rem,5vw,3.5rem)] text-sand-50">{{ $t('site.cart.title') }}</h1>
 
-            <div v-if="!cart.items.length" class="card mt-12 px-8 py-20 text-center">
+            <div v-if="!cart.items.length" class="spotlight card mt-12 px-8 py-20 text-center">
                 <div class="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl border border-sand-300/20 bg-sand-300/10 text-sand-300">
                     <svg viewBox="0 0 24 24" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h2l2.4 10.2a1.5 1.5 0 0 0 1.46 1.15h6.9a1.5 1.5 0 0 0 1.45-1.1L20.5 9H7"/><circle cx="10.5" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg>
                 </div>
@@ -62,7 +62,7 @@ const clearCart = () => router.delete(siteRoute('site.cart.clear'), { preserveSc
                     <article
                         v-for="item in cart.items"
                         :key="item.key"
-                        class="card card-sm flex flex-wrap items-center gap-5 p-5"
+                        class="spotlight card card-sm flex flex-wrap items-center gap-5 p-5"
                     >
                         <!-- Снимок как в каталоге: есть фото — фото, нет —
                              векторная схема по типу изделия и цвету. -->
@@ -118,7 +118,7 @@ const clearCart = () => router.delete(siteRoute('site.cart.clear'), { preserveSc
 
                 <!-- Итоги -->
                 <aside class="lg:sticky lg:top-28 lg:self-start">
-                    <div class="card p-6 sm:p-7">
+                    <div class="spotlight card p-6 sm:p-7">
                         <p class="eyebrow">{{ $t('site.common.total') }}</p>
 
                         <div class="mt-5 space-y-3 text-sm">

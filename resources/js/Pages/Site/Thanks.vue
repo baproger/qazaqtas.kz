@@ -21,7 +21,7 @@ defineProps({
                 {{ $t('site.thanks.lead') }}
             </p>
 
-            <div v-if="order" class="card mx-auto mt-10 w-full max-w-md p-6 text-left">
+            <div v-if="order" class="spotlight card mx-auto mt-10 w-full max-w-md p-6 text-left">
                 <p class="eyebrow">{{ $t('site.thanks.order', null, { number: order.number }) }}</p>
                 <ul class="mt-4 space-y-2 text-sm">
                     <li v-for="(item, i) in order.items" :key="i" class="flex justify-between gap-4 text-sand-100/60">

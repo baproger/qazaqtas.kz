@@ -43,7 +43,7 @@ const AREA = { lg: 'display mt-5 text-4xl sm:text-5xl', tall: 'display mt-3 text
 <template>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-4 md:auto-rows-[minmax(200px,auto)] lg:gap-6">
         <article v-for="(p, i) in projects" :key="p.title + i"
-            class="card card-hover reveal group relative overflow-hidden rounded-3xl md:min-h-0"
+            class="spotlight card card-hover reveal group relative overflow-hidden rounded-3xl md:min-h-0"
             :class="SPAN[sizeFor(i)]">
             <img v-if="p.image" :src="sizeFor(i) === 'sm' ? (p.thumb || p.image) : p.image"
                 :srcset="p.thumb && sizeFor(i) !== 'sm' ? `${p.thumb} 600w, ${p.image} 1600w` : undefined"

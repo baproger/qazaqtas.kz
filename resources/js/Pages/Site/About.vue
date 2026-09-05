@@ -3,7 +3,7 @@ import { onMounted, onBeforeUnmount } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SiteLayout from '@/Layouts/SiteLayout.vue';
 import CountUp from '@/Components/site/CountUp.vue';
-import { observeReveal, trackSpotlight } from '@/utils/site';
+import { observeReveal } from '@/utils/site';
 import { computed } from 'vue';
 
 defineProps({
@@ -36,7 +36,7 @@ onBeforeUnmount(() => stop());
 
         <section>
             <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
-                <div class="spotlight card reveal relative grid grid-cols-2 overflow-hidden rounded-3xl lg:grid-cols-4" @pointermove="trackSpotlight">
+                <div class="spotlight card reveal relative grid grid-cols-2 overflow-hidden rounded-3xl lg:grid-cols-4">
                     <div v-for="s in stats" :key="s.label" class="stat-cell group px-6 py-10 sm:px-8 sm:py-14">
                         <span class="pointer-events-none absolute left-6 top-7 h-px w-10 bg-gradient-to-r from-sand-300/80 to-emerald-400/60 transition-all duration-300 ease-premium group-hover:w-16 sm:left-8" aria-hidden="true" />
                         <p class="display text-3xl tabular-nums text-sand-50 sm:text-5xl"><CountUp :value="s.value" /></p>
@@ -71,7 +71,7 @@ onBeforeUnmount(() => stop());
             <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
                 <p class="eyebrow reveal">{{ $t('site.about.advantages') }}</p>
                 <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:gap-6">
-                    <div v-for="(a, i) in advantages" :key="a.title" class="card card-hover reveal relative overflow-hidden rounded-3xl p-8 sm:p-10">
+                    <div v-for="(a, i) in advantages" :key="a.title" class="spotlight card card-hover reveal relative overflow-hidden rounded-3xl p-8 sm:p-10">
                         <!-- Номер-водяной знак: даёт карточке характер, не съедая текст. -->
                         <span class="display pointer-events-none absolute -right-2 -top-7 text-[7rem] leading-none text-sand-300/[0.07]">{{ String(i + 1).padStart(2, '0') }}</span>
                         <h3 class="display text-2xl text-sand-50 sm:text-3xl">{{ a.title }}</h3>
@@ -84,7 +84,7 @@ onBeforeUnmount(() => stop());
         <section class="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
             <p class="eyebrow reveal">{{ $t('site.about.sites') }}</p>
             <div class="mt-10 grid gap-4 sm:grid-cols-3">
-                <article v-for="b in branches" :key="b.city" class="card card-hover reveal p-8">
+                <article v-for="b in branches" :key="b.city" class="spotlight card card-hover reveal p-8">
                     <h3 class="display text-2xl text-sand-50">{{ b.city }}</h3>
                     <p class="mt-2 text-xs uppercase tracking-[0.2em] text-sand-300/60">{{ b.role }}</p>
                     <p class="mt-5 text-sm text-sand-100/55">{{ b.address }}</p>

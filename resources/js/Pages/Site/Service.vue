@@ -11,7 +11,7 @@ const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v));
     <SiteLayout :seo="seo">
         <section class="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
             <Link :href="$r('site.services')" class="text-sm text-sand-100/50 hover:text-sand-50">← {{ $t('site.nav.services') }}</Link>
-            <div class="card mt-6 overflow-hidden rounded-3xl">
+            <div class="spotlight card mt-6 overflow-hidden rounded-3xl">
                 <div v-if="service.photo" class="relative aspect-[16/8] overflow-hidden">
                     <picture>
                         <source v-if="service.photo_webp" :srcset="service.photo_webp" type="image/webp" />
@@ -36,7 +36,7 @@ const money = (v) => new Intl.NumberFormat('ru-RU').format(Math.round(v));
             <template v-if="related.length">
                 <h2 class="display mt-14 text-2xl text-sand-50">{{ $t('site.services.related') }}</h2>
                 <div class="mt-5 grid gap-4 sm:grid-cols-3">
-                    <Link v-for="s in related" :key="s.id" :href="$r('site.service', s.slug)" class="card card-hover overflow-hidden rounded-2xl">
+                    <Link v-for="s in related" :key="s.id" :href="$r('site.service', s.slug)" class="spotlight card card-hover overflow-hidden rounded-2xl">
                         <img v-if="s.thumb" :src="s.thumb" :alt="s.title" loading="lazy" class="aspect-[16/10] w-full object-cover" />
                         <div class="p-4"><div class="text-sm font-medium text-sand-50">{{ s.title }}</div></div>
                     </Link>

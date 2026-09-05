@@ -453,6 +453,7 @@
    Premium-микровзаимодействия: spotlight за курсором и панель цифр.
    -------------------------------------------------------------- */
 @media (hover: hover) and (pointer: fine) {
+    /* Мягкая заливка: тёплое пятно + тесное яркое ядро под курсором. */
     .spotlight::before {
         content: '';
         position: absolute;
@@ -460,15 +461,45 @@
         border-radius: inherit;
         pointer-events: none;
         opacity: 0;
-        background: radial-gradient(
-            340px circle at var(--spot-x, 50%) var(--spot-y, 50%),
-            rgb(var(--glow-warm) / 0.12),
-            transparent 65%
-        );
+        background:
+            radial-gradient(
+                160px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+                rgb(var(--glow-warm) / 0.14),
+                transparent 70%
+            ),
+            radial-gradient(
+                420px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+                rgb(var(--glow-warm) / 0.09),
+                transparent 65%
+            );
         transition: opacity 0.35s ease;
         z-index: 1;
     }
-    .spotlight:hover::before {
+    /* Светящаяся кромка: градиент виден только на кольце в 1px
+       (mask вырезает середину) и следует за курсором. */
+    .spotlight::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1px;
+        pointer-events: none;
+        opacity: 0;
+        background: radial-gradient(
+            260px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+            rgb(var(--glow-warm) / 0.65),
+            rgb(var(--glow-warm) / 0.1) 55%,
+            transparent 75%
+        );
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask-composite: exclude;
+        transition: opacity 0.35s ease;
+        z-index: 1;
+    }
+    .spotlight:hover::before,
+    .spotlight:hover::after {
         opacity: 1;
     }
 }

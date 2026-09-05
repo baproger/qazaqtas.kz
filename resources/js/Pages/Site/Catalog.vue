@@ -123,7 +123,7 @@ onBeforeUnmount(() => stopReveal());
 
         <section class="ambient mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
             <!-- Фильтры: одна стеклянная панель, как в «Услугах» -->
-            <div class="card mb-8 rounded-3xl p-5 backdrop-blur-xl">
+            <div class="spotlight card mb-8 rounded-3xl p-5 backdrop-blur-xl">
                 <!-- Категории: сегменты в скролл-ленте, единый стиль с «Услугами» -->
                 <div class="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
                     <!-- Кнопки, а не ссылки: фильтр меняется без «перезагрузки» —
@@ -182,7 +182,7 @@ onBeforeUnmount(() => stopReveal());
                         </div>
                     </div>
 
-                    <div v-else class="card px-8 py-20 text-center">
+                    <div v-else class="spotlight card px-8 py-20 text-center">
                         <p class="display text-2xl text-sand-50">{{ $t('site.catalog.empty_title') }}</p>
                         <p class="mt-3 text-sm text-sand-100/50">{{ $t('site.catalog.empty_lead') }}</p>
                         <button class="btn-ghost mt-8" @click="reset">{{ $t('site.catalog.reset') }}</button>

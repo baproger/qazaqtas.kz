@@ -50,7 +50,7 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
 
         <section class="ambient mx-auto max-w-7xl px-5 pb-16 sm:px-8 sm:pb-24">
             <!-- Фильтры: стеклянная панель, сегменты и подписанные контролы -->
-            <div class="card mb-8 rounded-3xl p-5 backdrop-blur-xl">
+            <div class="spotlight card mb-8 rounded-3xl p-5 backdrop-blur-xl">
                 <!-- Категории: скролл-лента чипов -->
                 <div class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
                     <button type="button" @click="apply({ category: undefined })" class="shrink-0 rounded-xl px-4 py-2 text-sm font-medium transition"
@@ -102,7 +102,7 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
 
             <!-- Сетка 4 колонки, акцент на цену -->
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-                <Link v-for="s in services.data" :key="s.id" :href="$r('site.service', s.slug)" class="card card-hover reveal group overflow-hidden rounded-3xl">
+                <Link v-for="s in services.data" :key="s.id" :href="$r('site.service', s.slug)" class="spotlight card card-hover reveal group overflow-hidden rounded-3xl">
                     <!-- Фото: чистое, без плашек поверх — только категория -->
                     <div class="relative m-2 aspect-[4/3] overflow-hidden rounded-2xl">
                         <picture v-if="s.photo">
@@ -134,7 +134,7 @@ const field = 'rounded-full border-sand-100/15 bg-transparent px-4 py-1.5 text-s
                     </div>
                 </Link>
             </div>
-            <p v-if="!services.data.length" class="card mt-4 rounded-3xl p-10 text-center text-sm text-sand-100/50">{{ $t('site.services.empty') }}</p>
+            <p v-if="!services.data.length" class="spotlight card mt-4 rounded-3xl p-10 text-center text-sm text-sand-100/50">{{ $t('site.services.empty') }}</p>
         </section>
     </SiteLayout>
 </template>

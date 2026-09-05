@@ -47,7 +47,7 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
 </script>
 
 <template>
-    <article class="card card-sm card-lift group flex h-full flex-col overflow-hidden">
+    <article class="spotlight card card-sm card-lift group flex h-full flex-col overflow-hidden">
         <!-- Изображение: фиксированная пропорция, чтобы плитка карточек
              не «прыгала» при разной высоте фото. -->
         <!-- Зона снимка: своя подложка с внутренней тенью, чтобы изделие

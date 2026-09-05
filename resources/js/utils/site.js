@@ -57,14 +57,22 @@ export const recent = localList('qt.recent', 8);
 
 /** Плавное появление секций: одна общая IntersectionObserver-обёртка. */
 /**
- * Spotlight, следующий за курсором: пишет координаты в CSS-переменные
- * элемента, свечение рисует .spotlight::before (только hover-устройства).
+ * Mouse-tracking glow: один делегированный слушатель на документ ведёт
+ * CSS-переменные --spot-x/--spot-y у ближайшего .spotlight под курсором.
+ * Свечение и светящуюся кромку рисуют .spotlight::before/::after
+ * (только hover-устройства). Возвращает функцию отписки.
  */
-export const trackSpotlight = (e) => {
-    const el = e.currentTarget;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty('--spot-x', `${e.clientX - r.left}px`);
-    el.style.setProperty('--spot-y', `${e.clientY - r.top}px`);
+export const initSpotlight = () => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return () => {};
+    const move = (e) => {
+        const el = e.target.closest?.('.spotlight');
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--spot-x', `${e.clientX - r.left}px`);
+        el.style.setProperty('--spot-y', `${e.clientY - r.top}px`);
+    };
+    document.addEventListener('pointermove', move, { passive: true });
+    return () => document.removeEventListener('pointermove', move);
 };
 
 export const observeReveal = (root = document) => {

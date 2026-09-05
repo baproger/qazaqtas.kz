@@ -8,7 +8,7 @@ import ProjectsBento from '@/Components/site/ProjectsBento.vue';
 import ProductCard from '@/Components/site/ProductCard.vue';
 import PavingParallax from '@/Components/site/PavingParallax.vue';
 import HeroShowcase from '@/Components/site/HeroShowcase.vue';
-import { observeReveal, trackSpotlight } from '@/utils/site';
+import { observeReveal } from '@/utils/site';
 import { useSmoothScroll, loadScrollTrigger } from '@/site/useSmoothScroll';
 import { theme } from '@/site/theme';
 import { useT } from '@/composables/useTranslations';
@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
              spotlight за курсором, акцент-линия растёт при наведении. -->
         <section>
             <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8">
-                <div class="spotlight card reveal relative grid grid-cols-2 overflow-hidden rounded-3xl lg:grid-cols-4" @pointermove="trackSpotlight">
+                <div class="spotlight card reveal relative grid grid-cols-2 overflow-hidden rounded-3xl lg:grid-cols-4">
                     <div v-for="s in stats" :key="s.label" class="stat-cell group px-6 py-10 sm:px-8 sm:py-14">
                         <span class="pointer-events-none absolute left-6 top-7 h-px w-10 bg-gradient-to-r from-sand-300/80 to-emerald-400/60 transition-all duration-300 ease-premium group-hover:w-16 sm:left-8" aria-hidden="true" />
                         <p class="display text-3xl tabular-nums text-sand-50 sm:text-5xl"><CountUp :value="s.value" /></p>
@@ -274,7 +274,7 @@ onBeforeUnmount(() => {
                     cache-for="1m"
                     class="spotlight card card-hover reveal group relative flex flex-col overflow-hidden rounded-3xl p-7 active:scale-[0.98] sm:p-8"
                     :style="{ '--d': `${(idx % 3) * 70}ms` }"
-                    @pointermove="trackSpotlight"
+                   
                 >
                     <span
                         class="accent-glow absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-60 blur-2xl transition duration-500 group-hover:opacity-100"
@@ -341,7 +341,7 @@ onBeforeUnmount(() => {
                     <li
                         v-for="p in production"
                         :key="p.step"
-                        class="card card-hover reveal group grid gap-4 p-6 sm:grid-cols-[80px_260px_1fr] sm:items-baseline sm:gap-8 sm:p-8"
+                        class="spotlight card card-hover reveal group grid gap-4 p-6 sm:grid-cols-[80px_260px_1fr] sm:items-baseline sm:gap-8 sm:p-8"
                     >
                         <span class="text-sm font-semibold tracking-[0.2em] text-sand-300/70">{{ p.step }}</span>
                         <h3 class="display text-2xl text-sand-50">{{ p.title }}</h3>

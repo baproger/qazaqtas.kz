@@ -160,7 +160,7 @@ onMounted(() => {
 
                     <!-- Доверие: три коротких довода, заполняющих колонку под палитрой. -->
                     <div class="mt-8 grid gap-3">
-                        <div v-for="t in ['production', 'delivery', 'quality']" :key="t" class="card card-sm flex items-start gap-3 p-4">
+                        <div v-for="t in ['production', 'delivery', 'quality']" :key="t" class="spotlight card card-sm flex items-start gap-3 p-4">
                             <span class="mt-0.5 text-sand-300">
                                 <svg v-if="t === 'production'" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21V9l6 4V9l6 4V5l6-2v18H3Z"/></svg>
                                 <svg v-else-if="t === 'delivery'" viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z"/><circle cx="7" cy="17.5" r="1.5"/><circle cx="17" cy="17.5" r="1.5"/></svg>
@@ -194,7 +194,7 @@ onMounted(() => {
                     </div>
 
                     <!-- Калькулятор площади -->
-                    <div v-if="isAreaBased" class="card card-sm mt-8 p-5 sm:p-6">
+                    <div v-if="isAreaBased" class="spotlight card card-sm mt-8 p-5 sm:p-6">
                         <p class="eyebrow">{{ $t('site.product.area_calc') }}</p>
                         <div class="mt-4 flex flex-wrap items-end gap-3">
                             <label class="flex-1">

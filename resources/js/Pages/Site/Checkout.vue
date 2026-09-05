@@ -106,7 +106,7 @@ const receiveOptions = computed(() => [
 
                 <!-- Состав заказа -->
                 <aside class="lg:sticky lg:top-28 lg:self-start">
-                    <div class="card p-6 sm:p-7">
+                    <div class="spotlight card p-6 sm:p-7">
                         <p class="eyebrow">{{ $t('site.checkout.your_order') }}</p>
                         <ul class="mt-5 space-y-3 text-sm">
                             <li v-for="item in cart.items" :key="item.key" class="flex justify-between gap-4">
