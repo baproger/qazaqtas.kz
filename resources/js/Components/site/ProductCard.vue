@@ -95,13 +95,18 @@ onBeforeUnmount(() => clearTimeout(resetTimer));
                 <!-- Одна линия: цена слева, действия справа -->
                 <div class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
+                        <!-- Акция: старая цена «убита» в красной капсуле, рядом
+                             размер скидки — выгода видна раньше самой цены. -->
+                        <div v-if="product.old_price > 0" class="mb-2 inline-flex items-center gap-1.5 rounded-full border border-rose-500/35 bg-gradient-to-r from-rose-500/20 via-rose-500/10 to-orange-500/15 px-2.5 py-1 leading-none">
+                            <s class="text-xs font-semibold tabular-nums text-rose-400">{{ money(product.old_price) }}</s>
+                            <b class="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">−{{ Math.round((1 - product.price / product.old_price) * 100) }}%</b>
+                        </div>
                         <div class="flex items-baseline gap-1.5">
                             <span class="display text-[21px] leading-none tracking-tight text-sand-50">{{ money(product.price).replace(' ₸', '') }}</span>
                             <span class="text-sm font-medium text-sand-300">₸</span>
                             <span class="text-xs text-sand-100/45">/ {{ product.unit }}</span>
                         </div>
                         <p class="mt-1 truncate text-[11px] leading-none text-sand-100/35">
-                            <span v-if="product.old_price > 0" class="mr-1.5 line-through">{{ money(product.old_price) }}</span>
                             <template v-if="product.min_order > 0">{{ $t('site.product.min', null, { count: Number(product.min_order), unit: product.unit }) }}</template>
                         </p>
                     </div>
