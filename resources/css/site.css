@@ -107,26 +107,7 @@
     border-image: linear-gradient(90deg, transparent, rgb(var(--card-border) / 0.18), transparent) 1;
 }
 
-/* Блок цифр. Плитка из непрозрачных ячеек вырезала на градиенте ровный
-   прямоугольник — оставляем только разделители, и те гаснут к краям. */
-.stat-grid > * {
-    position: relative;
-}
-.stat-grid > * + *::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 18%;
-    bottom: 18%;
-    width: 1px;
-    background: linear-gradient(180deg, transparent, rgb(var(--sand-300) / 0.28), transparent);
-}
-@media (max-width: 1023px) {
-    /* В две колонки левый край ряда разделителя не требует. */
-    .stat-grid > :nth-child(odd)::before {
-        display: none;
-    }
-}
+
 
 /* Сетка «преимуществ». Тот же приём, что и у цифр: непрозрачные ячейки
    резали фон прямоугольником — остались только гаснущие разделители. */

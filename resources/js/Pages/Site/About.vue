@@ -34,10 +34,13 @@ onBeforeUnmount(() => stop());
         </section>
 
         <section>
-            <div class="stat-grid mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-4">
-                <div v-for="s in stats" :key="s.label" class="px-6 py-10 sm:px-8 sm:py-14">
-                    <p class="display text-3xl text-sand-50 sm:text-5xl">{{ s.value }}</p>
-                    <p class="mt-3 text-sm text-sand-100/50">{{ s.label }}</p>
+            <div class="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-5 py-14 sm:px-8 lg:grid-cols-4 lg:gap-6">
+                <div v-for="(s, i) in stats" :key="s.label" class="reveal relative overflow-hidden rounded-2xl p-px" :style="{ '--d': `${i * 60}ms` }">
+                    <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-sand-300/50 via-sand-300/10 to-emerald-400/40" aria-hidden="true" />
+                    <div class="relative h-full rounded-[calc(1rem-1px)] bg-gradient-to-br from-ink-700 via-ink-800 to-ink-800 px-6 py-8 sm:px-8 sm:py-10">
+                        <p class="display bg-gradient-to-r from-sand-50 via-sand-300 to-emerald-300 bg-clip-text text-3xl text-transparent sm:text-5xl">{{ s.value }}</p>
+                        <p class="mt-3 text-sm text-sand-100/55">{{ s.label }}</p>
+                    </div>
                 </div>
             </div>
         </section>

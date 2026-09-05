@@ -234,11 +234,16 @@ onBeforeUnmount(() => {
         </section>
 
         <!-- ======================= Цифры ======================= -->
+        <!-- Стат-плитки в фирменном градиентном языке (как CtaEstimate):
+             тонкая рамка песок→изумруд, сама цифра — градиентным текстом. -->
         <section>
-            <div class="stat-grid mx-auto grid max-w-7xl grid-cols-2 lg:grid-cols-4">
-                <div v-for="s in stats" :key="s.label" class="px-6 py-10 sm:px-8 sm:py-14">
-                    <p class="display text-3xl text-sand-50 sm:text-5xl">{{ s.value }}</p>
-                    <p class="mt-3 text-sm text-sand-100/50">{{ s.label }}</p>
+            <div class="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-5 py-14 sm:px-8 lg:grid-cols-4 lg:gap-6">
+                <div v-for="(s, i) in stats" :key="s.label" class="reveal relative overflow-hidden rounded-2xl p-px" :style="{ '--d': `${i * 60}ms` }">
+                    <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-sand-300/50 via-sand-300/10 to-emerald-400/40" aria-hidden="true" />
+                    <div class="relative h-full rounded-[calc(1rem-1px)] bg-gradient-to-br from-ink-700 via-ink-800 to-ink-800 px-6 py-8 sm:px-8 sm:py-10">
+                        <p class="display bg-gradient-to-r from-sand-50 via-sand-300 to-emerald-300 bg-clip-text text-3xl text-transparent sm:text-5xl">{{ s.value }}</p>
+                        <p class="mt-3 text-sm text-sand-100/55">{{ s.label }}</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -261,18 +266,24 @@ onBeforeUnmount(() => {
                     v-for="c in categories"
                     :key="c.id"
                     :href="$r('site.catalog', { category: c.slug })"
-                    class="card card-hover reveal group relative overflow-hidden p-7 sm:p-8"
+                    prefetch
+                    cache-for="1m"
+                    class="reveal group hover-lift relative block overflow-hidden rounded-3xl p-px"
                 >
-                    <span
-                        class="accent-glow absolute -right-10 -top-10 h-32 w-32 rounded-full blur-2xl transition"
-                        :style="{ background: c.accent ?? '#C8B79A' }"
-                    />
-                    <p class="text-xs text-sand-100/40">{{ c.products_count }} позиций</p>
-                    <h3 class="display mt-4 text-2xl text-sand-50">{{ c.name }}</h3>
-                    <p class="mt-3 min-h-10 text-sm leading-relaxed text-sand-100/50">{{ c.tagline }}</p>
-                    <span class="mt-8 inline-flex items-center gap-2 text-sm font-medium text-sand-300">
-                        Смотреть
-                        <svg class="h-4 w-4 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    <!-- Градиентная рамка проявляется при наведении. -->
+                    <span class="absolute inset-0 rounded-3xl bg-gradient-to-br from-sand-300/45 via-sand-300/10 to-emerald-400/35 opacity-60 transition duration-300 group-hover:opacity-100" aria-hidden="true" />
+                    <span class="relative block h-full overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-ink-700 via-ink-800 to-ink-800 p-7 sm:p-8">
+                        <span
+                            class="accent-glow absolute -right-10 -top-10 h-32 w-32 rounded-full blur-2xl transition"
+                            :style="{ background: c.accent ?? '#C8B79A' }"
+                        />
+                        <span class="inline-flex rounded-full bg-gradient-to-r from-sand-300/15 to-emerald-400/10 px-2.5 py-1 text-xs text-sand-100/60 ring-1 ring-sand-300/20">{{ $tc('site.hero.count', c.products_count) }}</span>
+                        <h3 class="display mt-4 text-2xl text-sand-50">{{ c.name }}</h3>
+                        <p class="mt-3 min-h-10 text-sm leading-relaxed text-sand-100/50">{{ c.tagline }}</p>
+                        <span class="mt-8 inline-flex items-center gap-2 text-sm font-medium text-sand-300">
+                            {{ $t('site.home.view_category') }}
+                            <svg class="h-4 w-4 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                        </span>
                     </span>
                 </Link>
             </div>
