@@ -47,17 +47,44 @@ const canAccounting = computed(() => (usePage().props.auth.user?.roles ?? []).so
 const postActIds = computed(() => [...actIds.value, ...esfIds.value, ...wonIds.value]);
 
 const draggingId = ref(null);
-const onDrop = async (stage) => {
-    const id = draggingId.value; draggingId.value = null;
-    if (!id) return;
-    const deal = list.value.find((d) => d.id === id);
-    if (!deal || deal.deal_stage_id === stage.id) return;
+// Визуальное состояние перетаскивания: dragVisual затемняет исходную
+// карточку (ставится через setTimeout, чтобы браузер успел снять «призрак»
+// в полном виде), dragOverStage подсвечивает колонку под курсором.
+const dragVisual = ref(null);
+const dragOverStage = ref(null);
+const draggingDeal = computed(() => list.value.find((d) => d.id === draggingId.value) ?? null);
+
+/** Разрешён ли перенос текущей сделки на этап (те же правила, что в onDrop). */
+const dropAllowed = (stage) => {
+    const deal = draggingDeal.value;
+    if (!deal || deal.deal_stage_id === stage.id) return false;
     // Не бухгалтер/админ: сделку на АКТ/ЭСФ/Оплате не двигает; на ЭСФ/Оплату не переводит.
-    if (!canAccounting.value && postActIds.value.includes(deal.deal_stage_id)) return;
-    if (!canAccounting.value && postActIds.value.includes(stage.id) && !actIds.value.includes(stage.id)) return;
+    if (!canAccounting.value && postActIds.value.includes(deal.deal_stage_id)) return false;
+    if (!canAccounting.value && postActIds.value.includes(stage.id) && !actIds.value.includes(stage.id)) return false;
     // «ЭСФ» — только после «Акта»; «Оплата» — только после «ЭСФ».
-    if (esfIds.value.includes(stage.id) && !actIds.value.includes(deal.deal_stage_id)) return;
-    if (wonIds.value.includes(stage.id) && !preWonIds.value.includes(deal.deal_stage_id)) return;
+    if (esfIds.value.includes(stage.id) && !actIds.value.includes(deal.deal_stage_id)) return false;
+    if (wonIds.value.includes(stage.id) && !preWonIds.value.includes(deal.deal_stage_id)) return false;
+    return true;
+};
+
+const onDragStart = (e, deal) => {
+    draggingId.value = deal.id;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => { dragVisual.value = deal.id; });
+};
+const onDragEnd = () => {
+    draggingId.value = null;
+    dragVisual.value = null;
+    dragOverStage.value = null;
+};
+
+const onDrop = async (stage) => {
+    const id = draggingId.value;
+    if (!id) return onDragEnd();
+    const deal = draggingDeal.value;
+    const allowed = dropAllowed(stage);
+    onDragEnd();
+    if (!allowed) return;
     // Leaving the «Оплата успешно» stage needs confirmation.
     if (wonIds.value.includes(deal.deal_stage_id)
         && ! (await confirmDialog({ title: tr('Сделка уже успешна'), message: tr('Сделка на этапе «Оплата успешно». Точно перевести её на другой этап?'), confirmText: tr('Перевести'), danger: true }))) return;
@@ -301,7 +328,19 @@ const applyBinMatch = () => {
 
         <!-- KANBAN -->
         <div v-if="view === 'kanban'" class="flex gap-3 overflow-x-auto pb-4">
-            <div v-for="stage in visibleStages" :key="stage.id" class="flex w-64 flex-shrink-0 flex-col rounded-xl bg-slate-100/80 dark:bg-slate-800/60" :class="fStage ? 'w-80' : ''" @dragover.prevent @drop="onDrop(stage)">
+            <!-- Во время перетаскивания: валидные колонки — пунктирный контур,
+                 колонка под курсором — синяя заливка с кольцом, запретная — розовое кольцо. -->
+            <div v-for="stage in visibleStages" :key="stage.id"
+                class="flex w-64 flex-shrink-0 flex-col rounded-xl bg-slate-100/80 transition-all duration-200 dark:bg-slate-800/60"
+                :class="[
+                    fStage ? 'w-80' : '',
+                    draggingId && dragOverStage === stage.id
+                        ? (dropAllowed(stage)
+                            ? 'bg-indigo-100/90 ring-2 ring-indigo-400 dark:bg-indigo-500/15 dark:ring-indigo-400/70'
+                            : 'ring-2 ring-rose-300 dark:ring-rose-500/50')
+                        : (draggingId && dropAllowed(stage) ? 'outline-dashed outline-1 outline-indigo-300/80 dark:outline-indigo-400/40' : ''),
+                ]"
+                @dragover.prevent="dragOverStage = stage.id" @drop="onDrop(stage)">
                 <div class="px-3 py-2">
                     <div class="flex items-center gap-2">
                         <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: stage.color }"></span>
@@ -316,8 +355,10 @@ const applyBinMatch = () => {
                         class="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-indigo-300 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 transition-colors hover:border-indigo-400 hover:bg-indigo-50">
                         {{ $e('+ Новая сделка') }}
                     </button>
-                    <div v-for="deal in byStage(stage.id)" :key="deal.id" draggable="true" @dragstart="draggingId = deal.id"
-                        class="cursor-move rounded-lg bg-white dark:bg-slate-900/70 p-2.5 border border-slate-200 dark:border-slate-800/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200">
+                    <div v-for="deal in byStage(stage.id)" :key="deal.id" draggable="true"
+                        @dragstart="onDragStart($event, deal)" @dragend="onDragEnd"
+                        class="cursor-move rounded-lg bg-white dark:bg-slate-900/70 p-2.5 border border-slate-200 dark:border-slate-800/80 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-indigo-200"
+                        :class="dragVisual === deal.id ? 'border-dashed border-indigo-400 bg-indigo-50/70 opacity-40 dark:border-indigo-400/60 dark:bg-indigo-500/10' : ''">
                         <Link :href="route('deals.show', deal.id)" class="block">
                             <!-- Кто и сколько -->
                             <div class="flex items-start justify-between gap-2">
