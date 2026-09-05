@@ -53,6 +53,32 @@ const editingProduct = computed(() => props.products.data.find((p) => p.id === e
 const specsText = ref('');
 const colorsText = ref('');
 
+// ---- ИИ-перевод вкладки «Языки»: заполняет kk и ru из базовых полей ----
+const trBusy = ref(false);
+const trNote = ref('');
+const trError = ref(false);
+const trVersion = ref(0);
+const translateAi = async () => {
+    trBusy.value = true; trNote.value = ''; trError.value = false;
+    try {
+        const { data } = await window.axios.post(route('catalog.translate', editingId.value), {
+            name: form.name,
+            short_description: form.short_description,
+            description: form.description,
+            specs: parseMap(specsText.value),
+            colors: parseColors(colorsText.value),
+        });
+        form.translations = { ...form.translations, ...data };
+        trVersion.value++; // вкладки пересоздаются и подтягивают новые значения
+        trNote.value = tr('Переведено ИИ — проверьте и сохраните форму.');
+    } catch (e) {
+        trError.value = true;
+        trNote.value = e?.response?.data?.message ?? tr('Не удалось перевести.');
+    } finally {
+        trBusy.value = false;
+    }
+};
+
 const form = useForm({
     category_id: '', name: '', slug: '', code: '', unit: 'м²', price: '', old_price: '',
     min_order: 1, short_description: '', description: '',
@@ -234,14 +260,23 @@ const categoryName = (id) => props.categories.find((c) => c.id === id)?.name ?? 
 
                 <!-- :key пересоздаёт вкладки при переходе на другую карточку:
                      построчные поля держат свой текст и сами не обновятся. -->
-                <TranslationTabs
-                    v-show="tab === 'lang'"
-                    :key="`tr-${editingId ?? 'new'}`"
-                    v-model="form.translations"
-                    :locales="locales"
-                    :base="translationBase"
-                    :fields="PRODUCT_FIELDS"
-                />
+                <div v-show="tab === 'lang'">
+                    <div v-if="editingId" class="mb-3 flex flex-wrap items-center gap-2">
+                        <button type="button" :disabled="trBusy" @click="translateAi"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.97] disabled:opacity-50">
+                            <span v-if="!trBusy">✨ {{ $e('Перевести (ИИ)') }}</span>
+                            <span v-else>{{ $e('Переводим…') }}</span>
+                        </button>
+                        <span v-if="trNote" class="text-xs" :class="trError ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">{{ trNote }}</span>
+                    </div>
+                    <TranslationTabs
+                        :key="`tr-${editingId ?? 'new'}-${trVersion}`"
+                        v-model="form.translations"
+                        :locales="locales"
+                        :base="translationBase"
+                        :fields="PRODUCT_FIELDS"
+                    />
+                </div>
 
                 <div v-show="tab === 'fields'" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>

@@ -184,4 +184,28 @@ class CatalogController extends Controller
 
         return response()->json($ai->generate($product));
     }
+
+    /** ИИ-перевод карточки на kk и ru — из текущих значений формы. */
+    public function translateAi(Request $request, Product $product, \App\Services\SeoAiService $ai): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('update', $product);
+
+        $base = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'short_description' => ['nullable', 'string', 'max:500'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'specs' => ['nullable', 'array'],
+            'colors' => ['nullable', 'array'],
+        ]);
+
+        try {
+            return response()->json($ai->translations($base));
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'ИИ недоступен, попробуйте позже.'], 422);
+        }
+    }
 }

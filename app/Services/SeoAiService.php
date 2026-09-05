@@ -82,6 +82,62 @@ class SeoAiService
         ];
     }
 
+    /**
+     * Перевод карточки товара на обе локали витрины.
+     *
+     * В отличие от SEO, перевода «по шаблону» не бывает — без ключа ИИ
+     * честно отказываемся, кнопка в ERP покажет причину.
+     *
+     * @param  array{name: string, short_description: ?string, description: ?string, specs: array<string,mixed>, colors: array<int,array{name:string,hex:string}>}  $base
+     * @return array{kk: array<string,mixed>, ru: array<string,mixed>}
+     */
+    public function translations(array $base): array
+    {
+        if (! config('services.anthropic.key') || ! class_exists(\Anthropic\Client::class)) {
+            throw new \RuntimeException('Нужен ключ ИИ: задайте ANTHROPIC_API_KEY на сервере.');
+        }
+
+        $client = new \Anthropic\Client(apiKey: (string) config('services.anthropic.key'));
+
+        $message = $client->messages->create(
+            model: (string) config('services.anthropic.model'),
+            maxTokens: 4000,
+            system: 'Ты переводчик витрины завода QAZAQ TAS (изделия из мраморного композита). '
+                .'Переведи поля карточки товара на казахский (kk) и русский (ru). Требования: '
+                .'kk — грамотный, естественный казахский, не калька; ru — литературный русский; '
+                .'если поле уже на целевом языке — верни его отредактированную копию. '
+                .'specs: ключи оставить ТЕ ЖЕ, переводить только значения; числа, размеры и единицы не менять. '
+                .'colors: переводить только name, hex не менять, порядок и количество сохранить. '
+                .'Ответь ТОЛЬКО валидным JSON без пояснений: '
+                .'{"kk":{"name":"","short_description":"","description":"","specs":{},"colors":[{"name":"","hex":""}]},"ru":{...то же...}}',
+            messages: [['role' => 'user', 'content' => (string) json_encode($base, JSON_UNESCAPED_UNICODE)]],
+        );
+
+        $text = '';
+        foreach ($message->content as $block) {
+            if ($block->type === 'text') {
+                $text = $block->text;
+                break;
+            }
+        }
+        $text = trim(preg_replace('/^```(?:json)?|```$/m', '', trim($text)));
+        $data = json_decode($text, true, 16, JSON_THROW_ON_ERROR);
+
+        foreach (['kk', 'ru'] as $loc) {
+            if (! is_array($data[$loc] ?? null)) {
+                throw new \RuntimeException("Перевод без локали {$loc}");
+            }
+            $data[$loc]['specs'] = is_array($data[$loc]['specs'] ?? null) ? $data[$loc]['specs'] : [];
+            // Гарантия «цвет тот же»: hex всегда из исходной палитры.
+            $data[$loc]['colors'] = collect($base['colors'] ?? [])->values()->map(fn ($c, $i) => [
+                'name' => (string) ($data[$loc]['colors'][$i]['name'] ?? $c['name']),
+                'hex' => $c['hex'],
+            ])->all();
+        }
+
+        return ['kk' => $data['kk'], 'ru' => $data['ru']];
+    }
+
     /** @return array{ru: array<string,string>, kk: array<string,string>} */
     private function viaClaude(Product $product): array
     {

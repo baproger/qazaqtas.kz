@@ -93,6 +93,16 @@ class SeoProductTest extends TestCase
             ->where('seo.description', 'Ручное описание RU'));
     }
 
+    public function test_translate_endpoint_explains_missing_ai_key(): void
+    {
+        config(['services.anthropic.key' => null]);
+
+        $this->actingAs($this->admin())
+            ->postJson(route('catalog.translate', $this->product()), ['name' => 'Плитка'])
+            ->assertStatus(422)
+            ->assertJsonPath('message', fn ($m) => str_contains($m, 'ANTHROPIC_API_KEY'));
+    }
+
     public function test_seo_endpoints_require_catalog_rights(): void
     {
         $this->seed(RolePermissionSeeder::class);
