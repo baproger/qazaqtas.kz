@@ -145,7 +145,8 @@ class LocalAnswerService
         }
 
         $lines = $rows->map(function ($r) {
-            $days = now()->startOfDay()->diffInDays(\Illuminate\Support\Carbon::parse($r->deadline)->startOfDay());
+            // diffInDays в Carbon 3 знаковый: без abs() выходило «просрочка -6 дн.».
+            $days = (int) abs(now()->startOfDay()->diffInDays(\Illuminate\Support\Carbon::parse($r->deadline)->startOfDay()));
 
             return "- **{$r->number}** {$this->who($r)} · {$this->money($r->budget)} · этап «{$r->stage}»"
                 ." · просрочка **{$days} дн.** · ".($r->responsible ?: 'без ответственного');
@@ -220,7 +221,7 @@ class LocalAnswerService
         if ($stuck->isNotEmpty()) {
             $text .= "\n\n**Дольше 3 дней в работе: {$stuck->count()}**\n"
                 .$stuck->map(function ($p) {
-                    $days = now()->diffInDays(\Illuminate\Support\Carbon::parse($p->created_at));
+                    $days = (int) abs(now()->diffInDays(\Illuminate\Support\Carbon::parse($p->created_at)));
 
                     return "- {$p->number} ".($p->client_name ?: '')." · этап «{$p->stage}» · **{$days} дн.**";
                 })->implode("\n");

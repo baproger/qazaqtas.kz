@@ -228,11 +228,52 @@ class AssistantApiTest extends TestCase
         $answer = (new AssistantTools($this->director))->run('employee_summary', ['name' => 'ерман']);
 
         $this->assertSame('Ерман Сериков', $answer['employee']);
-        $this->assertSame(2, $answer['deals_count']);          // считает сервер
-        $this->assertSame(500000.0, $answer['deals_sum']);
+        $this->assertSame(2, $answer['deals_count_total']);    // считает сервер
+        $this->assertSame(500000.0, $answer['deals_sum_total']);
         // У каждой сущности есть ссылка — модель обязана дать её пользователю.
         $this->assertMatchesRegularExpression('#^/deals/\d+$#', $answer['recent_deals'][0]['link']);
         $this->assertMatchesRegularExpression('#^/users/\d+$#', $answer['link']);
+    }
+
+    public function test_employee_summary_names_both_period_and_total(): void
+    {
+        // Модель сама подставляла текущий месяц и отвечала «1 сделка» там,
+        // где у человека их две. Теперь инструмент всегда отдаёт обе цифры.
+        $old = $this->deal(['responsible_user_id' => $this->director->id, 'budget' => 1000000]);
+        $old->forceFill(['created_at' => now()->subMonths(2)])->saveQuietly();
+        $this->deal(['responsible_user_id' => $this->director->id, 'budget' => 400000]);
+
+        $answer = (new AssistantTools($this->director))->run('employee_summary', [
+            'name' => 'ерман',
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->toDateString(),
+        ]);
+
+        $this->assertSame(2, $answer['deals_count_total']);       // всего у человека
+        $this->assertSame(1, $answer['deals_count_in_period']);   // из них за месяц
+        $this->assertStringContainsString('обе', $answer['hint']);
+    }
+
+    public function test_overdue_days_are_positive(): void
+    {
+        // Разница дат в Carbon знаковая: без abs() выходило «просрочка -6 дн.».
+        $this->deal(['deadline' => now()->subDays(6)->toDateString()]);
+
+        $answer = (new AssistantTools($this->director))->run('overdue_deals', []);
+
+        $this->assertSame(1, $answer['count']);
+        $this->assertSame(6, $answer['items'][0]['days_overdue']);
+    }
+
+    public function test_deals_list_can_filter_by_responsible(): void
+    {
+        $this->deal(['responsible_user_id' => $this->director->id, 'budget' => 700000]);
+        $this->deal(['budget' => 900000]);   // чужая
+
+        $answer = (new AssistantTools($this->director))->run('deals_list', ['responsible' => 'ерман']);
+
+        $this->assertSame(1, $answer['count']);
+        $this->assertSame(700000.0, $answer['sum']);
     }
 
     public function test_unknown_employee_returns_error_with_available_names(): void

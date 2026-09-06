@@ -52,6 +52,7 @@ class AssistantTools
                 'parameters' => ['type' => 'object', 'properties' => $period + [
                     'stage' => ['type' => 'string', 'description' => 'Название этапа или его часть.'],
                     'city' => ['type' => 'string', 'description' => 'Город/филиал: Шымкент, Алматы, Тараз.'],
+                    'responsible' => ['type' => 'string', 'description' => 'Имя ответственного или его часть.'],
                     'limit' => ['type' => 'integer', 'description' => 'Сколько позиций вернуть, по умолчанию 20.'],
                 ]],
             ],
@@ -79,7 +80,7 @@ class AssistantTools
             ],
             [
                 'name' => 'employee_summary',
-                'description' => 'Сводка по конкретному сотруднику по части имени: его сделки (count и sum), просрочка, задачи. Используй, когда в вопросе назван человек.',
+                'description' => 'Сводка по конкретному сотруднику по части имени: его сделки, просрочка, задачи. Используй, когда в вопросе назван человек. Период НЕОБЯЗАТЕЛЕН и фильтрует по дате СОЗДАНИЯ сделки — не подставляй его, если пользователь про период не спрашивал. Инструмент всегда возвращает и общее число сделок, и число за период.',
                 'parameters' => ['type' => 'object', 'properties' => $period + [
                     'name' => ['type' => 'string', 'description' => 'Имя или часть имени сотрудника.'],
                 ], 'required' => ['name']],
@@ -227,7 +228,8 @@ class AssistantTools
                 'budget' => (float) $d->budget,
                 'stage' => $d->stage,
                 'deadline' => $d->deadline,
-                'days_overdue' => (int) now()->startOfDay()->diffInDays(Carbon::parse($d->deadline)->startOfDay()),
+                // abs(): разница дат в Carbon 3 знаковая, модель получала минус.
+                'days_overdue' => (int) abs(now()->startOfDay()->diffInDays(Carbon::parse($d->deadline)->startOfDay())),
                 'responsible' => $d->responsible ?: 'без ответственного',
                 'link' => route('deals.show', $d->id, false),
             ])->all(),
@@ -299,7 +301,7 @@ class AssistantTools
                 'number' => $p->number,
                 'client' => $p->client_name ?: '—',
                 'stage' => $p->stage,
-                'days_in_work' => (int) now()->diffInDays(Carbon::parse($p->created_at)),
+                'days_in_work' => (int) abs(now()->diffInDays(Carbon::parse($p->created_at))),
                 'link' => route('projects.show', $p->id, false),
             ])->all(),
         ];
@@ -363,11 +365,22 @@ class AssistantTools
 
         [$from, $to] = $this->period($args, wholeTime: true);
 
-        $deals = $this->baseDeals()
+        // Считаем ВСЕГДА обе величины: всего у человека и сколько из них
+        // попало в спрошенный период. Иначе модель, сама подставив текущий
+        // месяц, отвечала «1 сделка» там, где всего их две, — и человек
+        // видел цифру, не сходящуюся с его собственным списком.
+        $all = $this->baseDeals()
             ->where('deals.responsible_user_id', $found->id)
-            ->when($from, fn ($q) => $q->whereBetween('deals.created_at', [$from, $to]))
             ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(deals.budget), 0) as total')
             ->first();
+
+        $deals = $from
+            ? $this->baseDeals()
+                ->where('deals.responsible_user_id', $found->id)
+                ->whereBetween('deals.created_at', [$from, $to])
+                ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(deals.budget), 0) as total')
+                ->first()
+            : $all;
 
         $overdue = $this->baseDeals()
             ->where('deals.responsible_user_id', $found->id)
@@ -389,8 +402,13 @@ class AssistantTools
             'employee' => $found->name,
             'link' => route('users.show', $found->id, false),
             'period' => $from ? $this->periodLabel($from, $to) : 'за всё время',
-            'deals_count' => (int) $deals->cnt,
-            'deals_sum' => (float) $deals->total,
+            'deals_count_total' => (int) $all->cnt,
+            'deals_sum_total' => (float) $all->total,
+            'deals_count_in_period' => (int) $deals->cnt,
+            'deals_sum_in_period' => (float) $deals->total,
+            'hint' => $from
+                ? 'deals_count_in_period — только сделки, СОЗДАННЫЕ в этом периоде; deals_count_total — все сделки сотрудника. Назови обе величины, чтобы не путать.'
+                : 'Период не задан: обе величины совпадают и означают все сделки сотрудника.',
             'overdue_deals_count' => $overdue,
             'open_tasks' => (clone $tasks)->count(),
             'overdue_tasks' => (clone $tasks)->whereNotNull('due_date')
@@ -468,10 +486,21 @@ class AssistantTools
 
         return $this->baseDeals()
             ->when($from, fn ($q) => $q->whereBetween('deals.created_at', [$from, $to]))
-            ->when($args['stage'] ?? null, fn ($q, $stage) => $q->where('deal_stages.name', 'like', '%'.$stage.'%'))
+            // Имена и этапы сопоставляем в PHP: SQL LIKE не различает регистр
+            // только у латиницы, и «карыздар» не нашёл бы «Карыздар».
+            ->when($args['stage'] ?? null, fn ($q, $stage) => $q->whereIn(
+                'deals.deal_stage_id',
+                DB::table('deal_stages')->pluck('name', 'id')
+                    ->filter(fn ($n) => mb_stripos($n, $stage) !== false)->keys()->all() ?: [0],
+            ))
             ->when($args['city'] ?? null, fn ($q, $city) => $q->where(fn ($w) => $w
                 ->where('deals.branch', 'like', '%'.$city.'%')
-                ->orWhere('deals.address', 'like', '%'.$city.'%')));
+                ->orWhere('deals.address', 'like', '%'.$city.'%')))
+            ->when($args['responsible'] ?? null, fn ($q, $who) => $q->whereIn(
+                'deals.responsible_user_id',
+                User::query()->pluck('name', 'id')
+                    ->filter(fn ($n) => mb_stripos($n, $who) !== false)->keys()->all() ?: [0],
+            ));
     }
 
     /**
