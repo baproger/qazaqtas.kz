@@ -64,6 +64,7 @@ class SettingsController extends Controller
                 'set' => AiKey::isSet(),
                 'tail' => AiKey::tail(),
                 'source' => AiKey::source(),
+                'provider' => AiKey::provider(),
                 'canEdit' => $request->user()->hasRole('admin'),
             ],
         ]);

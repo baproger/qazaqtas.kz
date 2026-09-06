@@ -169,6 +169,20 @@ class AssistantApiTest extends TestCase
             ->assertJsonStructure(['error']);
     }
 
+    public function test_free_mode_is_not_rate_limited(): void
+    {
+        // Без ключа ответы читаются из своей базы — ограничивать их незачем.
+        // Раньше пара нажатий на примеры съедала лимит и человек упирался в 429.
+        AiKey::forget();
+        config(['services.anthropic.key' => null]);
+
+        for ($i = 0; $i < 12; $i++) {
+            $this->actingAs($this->director)
+                ->postJson('/api/assistant/ask', ['question' => 'покажи остатки по складу'])
+                ->assertOk();
+        }
+    }
+
     public function test_bad_key_is_explained_in_human_words(): void
     {
         Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['message' => 'bad key']], 403)]);

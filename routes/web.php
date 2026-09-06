@@ -77,9 +77,9 @@ Route::middleware('auth')->group(function () {
     // ИИ-помощник руководителя: доступ только admin/director (Gate).
     Route::middleware('can:use-ai-assistant')->prefix('ai')->group(function () {
         Route::get('/', [AiAssistantController::class, 'index'])->name('ai.index');
-        Route::post('send', [AiAssistantController::class, 'send'])->middleware('throttle:15,1')->name('ai.send');
+        Route::post('send', [AiAssistantController::class, 'send'])->middleware('throttle:30,1')->name('ai.send');
         // Мини-чат в углу экрана — тот же вопрос, ответ в JSON.
-        Route::post('ask', [AiAssistantController::class, 'ask'])->middleware('throttle:15,1')->name('ai.ask');
+        Route::post('ask', [AiAssistantController::class, 'ask'])->middleware('throttle:30,1')->name('ai.ask');
         // Wildcard идут последними, иначе съедают ask/history.
         Route::get('{conversation}', [AiAssistantController::class, 'show'])->name('ai.show');
         Route::delete('{conversation}', [AiAssistantController::class, 'destroy'])->name('ai.destroy');

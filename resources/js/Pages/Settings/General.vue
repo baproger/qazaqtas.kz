@@ -92,23 +92,23 @@ const save = () => form.put(route('settings.update'), { preserveScroll: true });
             </SettingSection>
 
             <SettingSection v-if="aiKey.canEdit" :title="$e('ИИ-помощник')">
-                <SettingRow :title="$e('Ключ Anthropic (ANTHROPIC_API_KEY)')">
+                <SettingRow :title="$e('Ключ Google Gemini')">
                     <div class="w-full space-y-2">
                         <p v-if="aiKey.set" class="text-xs text-emerald-600 dark:text-emerald-400">
-                            {{ $e('Ключ задан') }} · …{{ aiKey.tail }}
+                            {{ $e('Ключ задан') }} · …{{ aiKey.tail }} · {{ aiKey.provider }}
                             <span class="text-slate-400">({{ aiKey.source === 'env' ? $e('из файла .env на сервере') : $e('из настроек') }})</span>
                         </p>
                         <p v-else class="text-xs text-slate-400">
                             {{ $e('Ключ не задан — помощник отвечает готовыми данными из системы.') }}
                         </p>
                         <TextInput v-model="form.anthropic_key" type="password" autocomplete="new-password"
-                            :placeholder="aiKey.set ? $e('Оставьте пустым, чтобы не менять') : 'sk-ant-...'" class="w-full" />
+                            :placeholder="aiKey.set ? $e('Оставьте пустым, чтобы не менять') : 'AIza...'" class="w-full" />
                         <label v-if="aiKey.set && aiKey.source === 'settings'" class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                             <input v-model="form.anthropic_key_clear" type="checkbox" class="rounded border-slate-300 text-rose-600 focus:ring-rose-400" />
                             {{ $e('Удалить сохранённый ключ') }}
                         </label>
                         <p class="text-xs text-slate-400">
-                            {{ $e('Ключ берётся на console.anthropic.com, хранится в базе в зашифрованном виде и в браузер не отдаётся. С ключом помощник отвечает на свободные вопросы и пишет тексты.') }}
+                            {{ $e('Бесплатный ключ берётся на aistudio.google.com/apikey — кнопка «Create API key». Хранится в базе в зашифрованном виде и в браузер не отдаётся. С ключом помощник отвечает на свободные вопросы и пишет тексты.') }}
                         </p>
                     </div>
                 </SettingRow>

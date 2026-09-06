@@ -7,6 +7,7 @@ use App\Models\AiChatLog;
 use App\Services\Ai\AssistantAgent;
 use App\Services\Ai\AssistantException;
 use App\Services\LocalAnswerService;
+use App\Support\AiKey;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -29,16 +30,23 @@ class AssistantController extends Controller
             'history.*.content' => ['required_with:history', 'string', 'max:4000'],
         ]);
 
+        // Лимит бережёт ВНЕШНИЙ сервис и его квоты. Ответы бесплатного
+        // режима — обычный запрос к своей базе, ограничивать их незачем:
+        // раньше пара нажатий на примеры съедала лимит и человек упирался
+        // в 429, ничего толком не спросив.
+        $limited = AiKey::isSet();
         $key = 'assistant:'.$request->user()->id;
 
-        if (RateLimiter::tooManyAttempts($key, self::PER_MINUTE)) {
+        if ($limited && RateLimiter::tooManyAttempts($key, self::PER_MINUTE)) {
             return response()->json([
                 'error' => 'Слишком много вопросов подряд — подождите '
                     .RateLimiter::availableIn($key).' сек. и повторите.',
             ], 429);
         }
 
-        RateLimiter::hit($key, 60);
+        if ($limited) {
+            RateLimiter::hit($key, 60);
+        }
 
         try {
             $result = $agent->ask($request->user(), $data['question'], $data['history'] ?? []);

@@ -105,7 +105,7 @@ const remove = (id) => router.delete(route('ai.destroy', id), { preserveScroll: 
             <section class="flex max-h-[75vh] flex-col rounded-xl border border-slate-200 bg-white dark:border-slate-800/80 dark:bg-slate-900/70">
                 <!-- Без ключа помощник работает: отвечает готовыми выборками из базы. -->
                 <div v-if="!configured" class="border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-500 dark:border-slate-800/80 dark:bg-slate-800/40 dark:text-slate-400">
-                    {{ $e('Режим без ИИ: отвечаю готовыми данными из системы. Свободные вопросы заработают, когда администратор добавит ключ ANTHROPIC_API_KEY.') }}
+                    {{ $e('Режим без ИИ: отвечаю готовыми данными из системы. Свободные вопросы заработают, когда администратор добавит бесплатный ключ Google Gemini в Настройках.') }}
                 </div>
 
                 <div ref="feed" class="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">

@@ -9,9 +9,9 @@ use App\Support\Seo;
 /**
  * SEO карточки товара: заголовок, описание, ключевые слова — ru и kk.
  *
- * Два пути с одинаковой формой ответа. С ключом ANTHROPIC_API_KEY тексты
- * пишет Claude (официальный PHP SDK, кнопка «Сгенерировать ИИ»); без ключа
- * работает шаблонный генератор из данных карточки — он же заполняет SEO
+ * Два пути с одинаковой формой ответа. С ключом Anthropic (sk-ant…) тексты
+ * пишет Claude (официальный PHP SDK, кнопка «Сгенерировать ИИ»); с ключом Google
+ * Gemini или вовсе без ключа работает шаблонный генератор из данных карточки — он же заполняет SEO
  * автоматически при создании товара, чтобы ни одна страница не выходила
  * на витрину с пустыми метатегами.
  */
@@ -20,7 +20,7 @@ class SeoAiService
     /** @return array{ru: array<string,string>, kk: array<string,string>, source: string} */
     public function generate(Product $product): array
     {
-        if (AiKey::isSet() && class_exists(\Anthropic\Client::class)) {
+        if (AiKey::isAnthropic() && class_exists(\Anthropic\Client::class)) {
             try {
                 return $this->viaClaude($product) + ['source' => 'ai'];
             } catch (\Throwable $e) {
@@ -94,7 +94,7 @@ class SeoAiService
      */
     public function translations(array $base): array
     {
-        if (AiKey::isSet() && class_exists(\Anthropic\Client::class)) {
+        if (AiKey::isAnthropic() && class_exists(\Anthropic\Client::class)) {
             try {
                 return $this->translationsViaClaude($base) + ['source' => 'ai'];
             } catch (\Throwable $e) {
@@ -152,7 +152,7 @@ class SeoAiService
      */
     public function describe(array $base): array
     {
-        if (AiKey::isSet() && class_exists(\Anthropic\Client::class)) {
+        if (AiKey::isAnthropic() && class_exists(\Anthropic\Client::class)) {
             try {
                 return $this->describeViaClaude($base) + ['source' => 'ai'];
             } catch (\Throwable $e) {

@@ -158,7 +158,7 @@ class AiAssistantTest extends TestCase
 
         $this->assertFalse($answer['ok']);
         $this->assertStringContainsString('Просроченные сделки', $answer['content']);
-        $this->assertStringContainsString('ANTHROPIC_API_KEY', $answer['content']);
+        $this->assertStringContainsString('Gemini', $answer['content']);
     }
 
     public function test_widget_answers_with_json(): void

@@ -55,7 +55,7 @@ class AssistantAgent
         $key = AiKey::get();
 
         if (! $key) {
-            throw new AssistantException('Ключ ИИ не настроен — вставьте его в Настройках, раздел «ИИ-помощник».');
+            throw new AssistantException('Ключ ИИ не настроен. Откройте Настройки → ИИ-помощник и вставьте бесплатный ключ Google Gemini (aistudio.google.com/apikey).');
         }
 
         $this->usedTools = [];

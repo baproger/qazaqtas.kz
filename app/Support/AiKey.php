@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\Crypt;
  * он не отдаётся никогда — только признак «задан» и последние 4 символа,
  * чтобы человек узнал свой ключ.
  *
- * Переменная окружения остаётся запасным вариантом: если ключ прописан на
- * сервере, а в Настройках пусто, всё продолжает работать.
+ * Ключ может быть от Google Gemini (AIza…, AQ.…) или от Anthropic (sk-ant…) —
+ * провайдер определяется по его виду. Переменная окружения AI_API_KEY
+ * остаётся запасным вариантом, если в Настройках пусто.
  */
 class AiKey
 {
@@ -44,6 +45,25 @@ class AiKey
         $key = static::get();
 
         return $key ? mb_substr($key, -4) : null;
+    }
+
+    /**
+     * Ключ от Anthropic? По нему решают и агент, и SEO-генератор: тот
+     * работает через SDK Anthropic, и Gemini-ключ ему подсовывать нельзя.
+     */
+    public static function isAnthropic(): bool
+    {
+        return str_starts_with((string) static::get(), 'sk-ant');
+    }
+
+    /** Название провайдера для интерфейса. */
+    public static function provider(): ?string
+    {
+        return match (true) {
+            ! static::isSet() => null,
+            static::isAnthropic() => 'Anthropic',
+            default => 'Google Gemini',
+        };
     }
 
     /** Откуда взят ключ — подсказка в интерфейсе. */
