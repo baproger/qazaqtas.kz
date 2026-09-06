@@ -150,9 +150,11 @@ class AssistantAgent
                 throw new AssistantException('Модель вернула пустой ответ. Попробуйте переформулировать вопрос.');
             }
 
-            // Ход модели возвращаем в диалог целиком — иначе она не увидит,
-            // что именно спрашивала.
-            $contents[] = ['role' => 'model', 'parts' => $parts];
+            // Ход модели возвращаем в диалог — иначе она не увидит, что именно
+            // спрашивала. Пересобираем вручную: пустой объект args приходит от
+            // PHP обратно пустым СПИСКОМ, и Gemini отвечает «Proto field is not
+            // repeating, cannot start list».
+            $contents[] = ['role' => 'model', 'parts' => $this->modelParts($parts)];
 
             $responses = [];
             foreach ($calls as $part) {
@@ -317,14 +319,43 @@ class AssistantAgent
     }
 
     /**
+     * Ход модели в том виде, в каком его примет Gemini обратно.
+     *
+     * json_encode превращает пустой массив PHP в «[]», а протокол ждёт в
+     * args объект — отсюда ошибка «Proto field is not repeating». Поэтому
+     * args приводим к объекту явно, а лишние поля ответа (например
+     * thoughtSignature) не пересылаем.
+     *
+     * @param  array<int, array<string, mixed>>  $parts
+     * @return array<int, array<string, mixed>>
+     */
+    private function modelParts(array $parts): array
+    {
+        $out = [];
+
+        foreach ($parts as $part) {
+            if (isset($part['functionCall'])) {
+                $out[] = ['functionCall' => [
+                    'name' => (string) ($part['functionCall']['name'] ?? ''),
+                    'args' => (object) ((array) ($part['functionCall']['args'] ?? [])),
+                ]];
+            } elseif (isset($part['text']) && $part['text'] !== '') {
+                $out[] = ['text' => $part['text']];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * Gemini требует, чтобы functionResponse.response был объектом.
-     * Списки на верхнем уровне заворачиваем в {result: ...}.
+     * Списки на верхнем уровне заворачиваем в {result: ...}, пустой ответ —
+     * тоже объект, иначе он уедет пустым списком и получит ту же ошибку.
      *
      * @param  array<mixed>  $value
-     * @return array<string, mixed>
      */
-    private function asObject(array $value): array
+    private function asObject(array $value): object
     {
-        return array_is_list($value) ? ['result' => $value] : $value;
+        return (object) (array_is_list($value) ? ['result' => $value] : $value);
     }
 }

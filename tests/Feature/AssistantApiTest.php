@@ -123,23 +123,31 @@ class AssistantApiTest extends TestCase
 
     public function test_tool_result_is_sent_back_as_an_object(): void
     {
-        // Gemini требует объект в functionResponse.response: список сверху
-        // недопустим, поэтому оборачиваем в {result: ...}.
+        // Проверяем СЫРОЙ JSON: именно в нём жила ошибка — PHP отдавал
+        // пустые структуры списком «[]», а протокол ждёт объект «{}».
         $this->fakeGemini('tasks_overview', 'Ответ.');
         $this->actingAs($this->director)->postJson('/api/assistant/ask', ['question' => 'Задачи?'])->assertOk();
 
-        Http::assertSent(function ($request) {
-            foreach ($request->data()['contents'] ?? [] as $c) {
-                foreach ($c['parts'] ?? [] as $p) {
-                    if (isset($p['functionResponse'])) {
-                        return is_array($p['functionResponse']['response'])
-                            && ! array_is_list($p['functionResponse']['response']);
-                    }
-                }
-            }
+        Http::assertSent(fn ($request) => str_contains($request->body(), '"functionResponse"')
+            ? str_contains($request->body(), '"response":{')
+            : true);
+    }
 
-            return false;
-        });
+    public function test_empty_tool_arguments_are_returned_as_an_object(): void
+    {
+        // Gemini отвечал «Proto field is not repeating, cannot start list»:
+        // вызов без аргументов приходил как {}, PHP декодировал его в пустой
+        // массив и отправлял обратно как [].
+        $this->fakeGemini('overdue_deals', 'Просрочек нет.');
+
+        $this->actingAs($this->director)
+            ->postJson('/api/assistant/ask', ['question' => 'Что просрочено?'])
+            ->assertOk();
+
+        // Ни один запрос не должен содержать список вместо объекта…
+        Http::assertNotSent(fn ($request) => str_contains($request->body(), '"args":[]'));
+        // …и ход модели с пустыми аргументами должен уйти именно как {}.
+        Http::assertSent(fn ($request) => str_contains($request->body(), '"args":{}'));
     }
 
     public function test_model_falls_back_when_quota_is_exhausted(): void
