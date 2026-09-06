@@ -9,6 +9,10 @@ return [
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => env('SEO_AI_MODEL', 'claude-opus-5'),
+        // ИИ-помощник руководителя: своя модель (можно удешевить, не трогая
+        // SEO) и дневной лимит вопросов на пользователя; 0 — без лимита.
+        'assistant_model' => env('AI_ASSISTANT_MODEL', 'claude-opus-5'),
+        'daily_limit' => (int) env('AI_ASSISTANT_DAILY_LIMIT', 100),
     ],
 
 

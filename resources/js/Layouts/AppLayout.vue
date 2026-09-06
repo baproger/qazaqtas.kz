@@ -135,6 +135,7 @@ const allNav = [
     { key: 'nav.partnerServices', name: tr('Мои услуги'), route: 'partner.services', icon: '◆', roles: ['partner', 'assistant', 'admin'] },
     { key: 'nav.moderation', name: tr('Модерация услуг'), route: 'moderation.services', icon: '☑', roles: ['assistant', 'admin'] },
     { key: 'nav.chat', name: tr('Чат'), route: 'chat.index', icon: '✉' },
+    { key: 'nav.ai', name: tr('ИИ-помощник'), route: 'ai.index', icon: '✦', roles: ['admin', 'director'] },
     {
         key: 'nav.admin', name: tr('Управление'), icon: '⚙', children: [
             { key: 'nav.users', name: tr('Сотрудники'), route: 'users.index', icon: '☻', perm: 'user.viewAny' },
@@ -195,6 +196,7 @@ const navIcons = {
     'projects.index': '<path d="M2 20h20"/><path d="M4 20V10l5 4v-4l5 4V6h6v14"/>',
     'warehouse.index': '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
     'chat.index': '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    'ai.index': '<path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/>',
     'profile.edit': '<circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>',
     'finance.index': '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
     'payroll.index': '<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',

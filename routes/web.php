@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiAssistantController;
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuditController;
@@ -72,6 +73,14 @@ Route::post('screen/projects/{project}/advance', [WorkshopScreenController::clas
 Route::post('screen/projects/{project}/complete', [WorkshopScreenController::class, 'completeProject'])->middleware('throttle:30,1')->name('screen.completeProject');
 
 Route::middleware('auth')->group(function () {
+    // ИИ-помощник руководителя: доступ только admin/director (Gate).
+    Route::middleware('can:use-ai-assistant')->prefix('ai')->group(function () {
+        Route::get('/', [AiAssistantController::class, 'index'])->name('ai.index');
+        Route::post('send', [AiAssistantController::class, 'send'])->middleware('throttle:15,1')->name('ai.send');
+        Route::get('{conversation}', [AiAssistantController::class, 'show'])->name('ai.show');
+        Route::delete('{conversation}', [AiAssistantController::class, 'destroy'])->name('ai.destroy');
+    });
+
     // Single profile page (role-aware card). `update`/`destroy` back the Breeze
     // name/email + password + delete forms; `card.update` saves the card fields.
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

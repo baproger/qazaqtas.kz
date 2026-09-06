@@ -49,6 +49,11 @@ class AppServiceProvider extends ServiceProvider
         // Admins bypass all policy/permission checks.
         Gate::before(fn (User $user, string $ability) => $user->hasRole('admin') ? true : null);
 
+        // ИИ-помощник — инструмент первых лиц: он видит сводку по всей
+        // компании (деньги, склад, загрузка людей), поэтому доступ к нему
+        // не выдаётся правами, а прибит к двум ролям.
+        Gate::define('use-ai-assistant', fn (User $user) => $user->hasAnyRole(['admin', 'director']));
+
         // Stable polymorphic aliases used across tasks/documents/comments/etc.
         // Деньги изменились → отчёты пересчитать (Support\ReportCache).
         foreach ([Deal::class, DealItem::class, Invoice::class, Payment::class, Expense::class,
