@@ -3,7 +3,15 @@
 namespace App\Services\Ai;
 
 use App\Http\Controllers\ReportController;
+use App\Models\Client;
+use App\Models\Expense;
+use App\Models\Invoice;
+use App\Models\Order;
 use App\Models\User;
+use App\Services\FinanceService;
+use App\Services\PayrollService;
+use App\Support\CurrentCompany;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -89,6 +97,48 @@ class AssistantTools
                 ], 'required' => ['name']],
             ],
             [
+                'name' => 'cash_balances',
+                'description' => 'Касса и банк: остатки денег сейчас (наличные — общие на холдинг, банк — своей фирмы) и движение за период: поступления и расходы по способу оплаты. Для вопросов «сколько денег в кассе», «наличные», «на счёте», «приход/расход».',
+                'parameters' => ['type' => 'object', 'properties' => $period],
+            ],
+            [
+                'name' => 'expenses',
+                'description' => 'Расходы: сумма и число за всё время и за текущий месяц (или за заданный период), разбивка по категориям, последние записи. Для вопросов «сколько потратили», «на что ушли деньги», «расходы за месяц».',
+                'parameters' => ['type' => 'object', 'properties' => $period + [
+                    'status' => ['type' => 'string', 'description' => 'confirmed — подтверждённые (по умолчанию), pending — ожидают подтверждения, all — все.'],
+                ]],
+            ],
+            [
+                'name' => 'invoices',
+                'description' => 'Счета: сколько выставлено, оплачено и не оплачено (сумма к получению), список неоплаченных с клиентом и датой. Для вопросов «какие счета не оплачены», «сколько нам должны по счетам».',
+                'parameters' => ['type' => 'object', 'properties' => $period],
+            ],
+            [
+                'name' => 'debts',
+                'description' => 'Задолженности: дебиторская (нам должны) и кредиторская (мы должны) по контрагентам, плюс долги сотрудников перед компанией. Для вопросов «кто нам должен», «кому мы должны», «долги».',
+                'parameters' => ['type' => 'object', 'properties' => (object) []],
+            ],
+            [
+                'name' => 'payroll',
+                'description' => 'Зарплата за месяц по сотрудникам: оклад, часы, начисленный бонус, выплаченный бонус. Для вопросов «сколько зарплата», «какой бонус у …», «фонд оплаты труда».',
+                'parameters' => ['type' => 'object', 'properties' => [
+                    'month' => ['type' => 'string', 'description' => 'Месяц ГГГГ-ММ. Не указан — текущий.'],
+                    'name' => ['type' => 'string', 'description' => 'Имя сотрудника или его часть — если спросили про одного.'],
+                ]],
+            ],
+            [
+                'name' => 'site_orders',
+                'description' => 'Заказы с сайта (витрина): сколько новых, в работе, всего на какую сумму; последние заказы с городом, суммой и статусом. Для вопросов «заказы с сайта», «сколько заявок».',
+                'parameters' => ['type' => 'object', 'properties' => $period],
+            ],
+            [
+                'name' => 'clients_list',
+                'description' => 'Справочник контрагентов: сколько клиентов, у кого сколько сделок и на какую сумму, ответственный менеджер. Для вопросов «сколько у нас клиентов», «список клиентов», «крупнейшие клиенты».',
+                'parameters' => ['type' => 'object', 'properties' => [
+                    'limit' => ['type' => 'integer', 'description' => 'Сколько клиентов вернуть, по умолчанию 20.'],
+                ]],
+            ],
+            [
                 'name' => 'client_summary',
                 'description' => 'Сводка по клиенту по части названия: его сделки (count и sum), оплаты, последние сделки. Используй, когда в вопросе назван клиент или заказчик.',
                 'parameters' => ['type' => 'object', 'properties' => ['name' => [
@@ -117,6 +167,13 @@ class AssistantTools
                 'tasks_overview' => $this->tasksOverview(),
                 'employee_summary' => $this->employeeSummary($args),
                 'client_summary' => $this->clientSummary($args),
+                'cash_balances' => $this->cashBalances($args),
+                'expenses' => $this->expenses($args),
+                'invoices' => $this->invoices($args),
+                'debts' => $this->debts(),
+                'payroll' => $this->payroll($args),
+                'site_orders' => $this->siteOrders($args),
+                'clients_list' => $this->clientsList($args),
                 default => ['error' => "Инструмент «{$name}» не существует."],
             };
         } catch (\Throwable $e) {
@@ -498,8 +555,342 @@ class AssistantTools
     }
 
     // ------------------------------------------------------------------
+    // Финансы, зарплата, витрина, справочник
+    // ------------------------------------------------------------------
+
+    /** Касса: те же скоупы и остатки, что плитки «Финансов» (FinanceService). */
+    private function cashBalances(array $args): array
+    {
+        if (! ($this->user->hasAnyRole(['admin', 'director', 'financist']) && $this->user->can('payment.viewAny'))) {
+            return ['error' => 'Касса открыта только бухгалтерии и руководству.'];
+        }
+
+        $finance = app(FinanceService::class);
+        $companyId = CurrentCompany::id();
+        $balances = $finance->companyBalances($companyId);
+
+        $flow = function (?Carbon $from, ?Carbon $to) use ($finance, $companyId) {
+            $between = fn ($q, string $col) => $q
+                ->when($from, fn ($x) => $x->where($col, '>=', $from->copy()->startOfDay()))
+                ->when($to, fn ($x) => $x->where($col, '<=', $to->copy()->endOfDay()));
+
+            $payments = $between(
+                DB::table('payments')->join('invoices', 'invoices.id', '=', 'payments.invoice_id')->whereNull('invoices.deleted_at'),
+                'payments.payment_date',
+            )->selectRaw("SUM(CASE WHEN payments.payment_method = 'cash' THEN payments.amount ELSE 0 END) as cash, SUM(CASE WHEN payments.payment_method = 'cash' THEN 0 ELSE payments.amount END) as bank")->first();
+
+            $receipts = $between(DB::table('cash_receipts')->when($companyId, fn ($q) => $q->where('company_id', $companyId)), 'date')
+                ->selectRaw("SUM(CASE WHEN method = 'cash' THEN amount ELSE 0 END) as cash, SUM(CASE WHEN method = 'cash' THEN 0 ELSE amount END) as bank")->first();
+
+            $expenses = $between($finance->scopeCompanyExpenses(Expense::query()->where('status', 'confirmed'), $companyId), 'date')
+                ->selectRaw("SUM(CASE WHEN payment_method = 'cash' THEN amount ELSE 0 END) as cash, SUM(CASE WHEN payment_method = 'cash' THEN 0 ELSE amount END) as bank")->first();
+
+            return [
+                'income_cash' => round((float) $payments->cash + (float) $receipts->cash, 2),
+                'income_bank' => round((float) $payments->bank + (float) $receipts->bank, 2),
+                'outcome_cash' => round((float) $expenses->cash, 2),
+                'outcome_bank' => round((float) $expenses->bank, 2),
+            ];
+        };
+
+        return [
+            'balance_now' => [
+                'cash' => round((float) $balances['cash'], 2),
+                'bank' => round((float) $balances['bank'], 2),
+                'total' => round((float) $balances['cash'] + (float) $balances['bank'], 2),
+            ],
+        ] + $this->periods($args, $flow) + [
+            'currency' => 'KZT',
+            'hint' => 'balance_now — деньги сейчас (cash — наличные, единая касса холдинга; bank — счета своей фирмы). income/outcome — движение за указанный период.',
+        ];
+    }
+
+    /** Расходы: подтверждённые по умолчанию, разбивка по категориям, последние записи. */
+    private function expenses(array $args): array
+    {
+        if (! $this->user->can('expense.viewAny')) {
+            return ['error' => 'У вас нет доступа к расходам.'];
+        }
+
+        $status = (string) ($args['status'] ?? 'confirmed');
+        $base = fn () => app(FinanceService::class)
+            ->scopeCompanyExpenses(Expense::query()->when($status !== 'all', fn ($q) => $q->where('status', $status)), CurrentCompany::id());
+
+        $calc = function (?Carbon $from, ?Carbon $to) use ($base) {
+            $q = $base()
+                ->when($from, fn ($x) => $x->where('date', '>=', $from->copy()->startOfDay()))
+                ->when($to, fn ($x) => $x->where('date', '<=', $to->copy()->endOfDay()));
+
+            $byCat = (clone $q)->leftJoin('expense_categories', 'expense_categories.id', '=', 'expenses.category_id')
+                ->groupBy('expense_categories.name')
+                ->orderByRaw('SUM(expenses.amount) DESC')
+                ->selectRaw("COALESCE(expense_categories.name, 'Без категории') as category, COUNT(*) as cnt, SUM(expenses.amount) as total")
+                ->get();
+
+            return [
+                'count' => (int) $byCat->sum('cnt'),
+                'sum' => round((float) $byCat->sum('total'), 2),
+                'by_category' => $byCat->map(fn ($r) => ['category' => $r->category, 'count' => (int) $r->cnt, 'sum' => round((float) $r->total, 2)])->all(),
+            ];
+        };
+
+        $recent = $base()->with('category:id,name')->orderByDesc('date')->limit(15)->get()
+            ->map(fn ($e) => [
+                'date' => optional($e->date)->format('Y-m-d') ?? (string) $e->date,
+                'amount' => (float) $e->amount,
+                'category' => $e->category?->name ?? 'Без категории',
+                'description' => (string) $e->description,
+                'status' => $e->status,
+                'method' => $e->payment_method,
+            ])->all();
+
+        return $this->periods($args, $calc) + [
+            'status_filter' => $status,
+            'recent' => $recent,
+            'link' => $this->link('expensesBoard.index'),
+            'currency' => 'KZT',
+        ];
+    }
+
+    /** Счета: выставлено / оплачено / остаток к получению, неоплаченные списком. */
+    private function invoices(array $args): array
+    {
+        if (! $this->user->can('invoice.viewAny')) {
+            return ['error' => 'У вас нет доступа к счетам.'];
+        }
+
+        $base = fn () => app(FinanceService::class)->scopeCompanyInvoices(Invoice::query(), CurrentCompany::id());
+
+        $calc = function (?Carbon $from, ?Carbon $to) use ($base) {
+            $q = $base()
+                ->when($from, fn ($x) => $x->where('issue_date', '>=', $from->copy()->startOfDay()))
+                ->when($to, fn ($x) => $x->where('issue_date', '<=', $to->copy()->endOfDay()));
+            $ids = (clone $q)->pluck('id');
+            $issued = (float) (clone $q)->sum('amount');
+            $paid = (float) DB::table('payments')->whereIn('invoice_id', $ids)->sum('amount');
+
+            return [
+                'count' => $ids->count(),
+                'issued_sum' => round($issued, 2),
+                'paid_sum' => round($paid, 2),
+                'unpaid_sum' => round(max(0, $issued - $paid), 2),
+                'by_status' => (clone $q)->groupBy('status')->selectRaw('status, COUNT(*) as cnt, SUM(amount) as total')->get()
+                    ->map(fn ($r) => ['status' => $r->status, 'count' => (int) $r->cnt, 'sum' => round((float) $r->total, 2)])->all(),
+            ];
+        };
+
+        $unpaid = $base()->where('status', '!=', 'paid')->with('client:id,name')->orderBy('due_date')->limit(20)->get()
+            ->map(function ($i) {
+                $paid = (float) DB::table('payments')->where('invoice_id', $i->id)->sum('amount');
+
+                return [
+                    'number' => $i->number,
+                    'client' => $i->client?->name ?? '—',
+                    'amount' => (float) $i->amount,
+                    'paid' => $paid,
+                    'remaining' => round(max(0, (float) $i->amount - $paid), 2),
+                    'status' => $i->status,
+                    'due_date' => optional($i->due_date)->format('Y-m-d') ?? (string) $i->due_date,
+                    'overdue' => $i->due_date && Carbon::parse($i->due_date)->lt(now()->startOfDay()),
+                ];
+            })->all();
+
+        return $this->periods($args, $calc) + [
+            'unpaid_invoices' => $unpaid,
+            'link' => $this->link('finance.invoices'),
+            'currency' => 'KZT',
+            'hint' => 'Статусы: sent — выставлен, partially_paid — оплачен частично, paid — оплачен.',
+        ];
+    }
+
+    /** Долги контрагентов (дебиторка/кредиторка) и долги сотрудников. */
+    private function debts(): array
+    {
+        if (! ($this->user->hasAnyRole(['admin', 'director', 'financist']) && $this->user->can('invoice.viewAny'))) {
+            return ['error' => 'Задолженности видит бухгалтерия и руководство.'];
+        }
+
+        $companyId = CurrentCompany::id();
+        $rows = DB::table('debts')->when($companyId, fn ($q) => $q->where('company_id', $companyId))->orderByDesc('amount')->get();
+        $side = fn (string $type) => $rows->where('type', $type)->values();
+
+        $employees = DB::table('employee_debts')->join('users', 'users.id', '=', 'employee_debts.user_id')
+            ->whereNull('employee_debts.closed_at')
+            ->when($companyId, fn ($q) => $q->where('employee_debts.company_id', $companyId))
+            ->orderByDesc('employee_debts.amount')
+            ->get(['users.name', 'employee_debts.amount', 'employee_debts.monthly_payment', 'employee_debts.note']);
+
+        $fmt = fn ($c) => $c->map(fn ($d) => ['counterparty' => $d->counterparty, 'amount' => (float) $d->amount, 'date' => $d->date, 'note' => $d->note])->all();
+
+        return [
+            'receivable' => ['count' => $side('receivable')->count(), 'sum' => round((float) $side('receivable')->sum('amount'), 2), 'items' => $fmt($side('receivable'))],
+            'payable' => ['count' => $side('payable')->count(), 'sum' => round((float) $side('payable')->sum('amount'), 2), 'items' => $fmt($side('payable'))],
+            'employee_debts' => [
+                'count' => $employees->count(),
+                'sum' => round((float) $employees->sum('amount'), 2),
+                'items' => $employees->map(fn ($e) => ['employee' => $e->name, 'amount' => (float) $e->amount, 'monthly_payment' => (float) $e->monthly_payment, 'note' => $e->note])->all(),
+            ],
+            'link' => $this->link('finance.debts'),
+            'currency' => 'KZT',
+            'hint' => 'receivable — нам должны (дебиторская), payable — мы должны (кредиторская), employee_debts — сотрудники должны компании.',
+        ];
+    }
+
+    /** Зарплата за месяц: оклад, часы, бонус начисленный и выплаченный. */
+    private function payroll(array $args): array
+    {
+        if (! $this->user->can('payroll.view')) {
+            return ['error' => 'У вас нет доступа к зарплате.'];
+        }
+
+        $month = preg_match('/^\d{4}-\d{2}$/', (string) ($args['month'] ?? '')) ? $args['month'] : now()->format('Y-m');
+        $needle = trim((string) ($args['name'] ?? ''));
+
+        $people = User::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'salary']);
+        if ($needle !== '') {
+            $people = $people->filter(fn ($u) => mb_stripos($u->name, $needle) !== false)->values();
+            if ($people->isEmpty()) {
+                return ['error' => "Сотрудник «{$needle}» не найден.", 'available' => User::where('is_active', true)->pluck('name')->all()];
+            }
+        }
+
+        $bonuses = app(PayrollService::class)->bonusByUsersForMonth($people->pluck('id'), $month);
+        $hours = DB::table('work_hours')->where('month', $month)->pluck('hours', 'user_id');
+        $paid = DB::table('bonus_payouts')->where('month', $month)->groupBy('user_id')->selectRaw('user_id, SUM(amount) as s')->pluck('s', 'user_id');
+
+        $rows = $people->map(fn ($u) => [
+            'employee' => $u->name,
+            'link' => $this->link('users.show', $u->id),
+            'salary' => (float) ($u->salary ?? 0),
+            'hours' => (float) ($hours[$u->id] ?? 0),
+            'bonus_accrued' => round((float) ($bonuses[$u->id] ?? 0), 2),
+            'bonus_paid' => round((float) ($paid[$u->id] ?? 0), 2),
+        ]);
+
+        return [
+            'month' => $month,
+            'count' => $rows->count(),
+            'salary_total' => round((float) $rows->sum('salary'), 2),
+            'bonus_accrued_total' => round((float) $rows->sum('bonus_accrued'), 2),
+            'bonus_paid_total' => round((float) $rows->sum('bonus_paid'), 2),
+            'employees' => $rows->all(),
+            'link' => $this->link('payroll.index'),
+            'currency' => 'KZT',
+            'hint' => 'salary — оклад по карточке сотрудника; bonus_accrued — бонус, начисленный по сделкам месяца; bonus_paid — уже выплачено.',
+        ];
+    }
+
+    /** Заказы с сайта: по статусам и последние. */
+    private function siteOrders(array $args): array
+    {
+        if (! ($this->user->hasAnyRole(['admin', 'director', 'financist', 'manager']) && $this->user->can('deal.viewAny'))) {
+            return ['error' => 'У вас нет доступа к заказам с сайта.'];
+        }
+
+        $base = fn () => Order::query()->when(CurrentCompany::id(), fn ($q, $c) => $q->where('company_id', $c));
+
+        $calc = function (?Carbon $from, ?Carbon $to) use ($base) {
+            $q = $base()
+                ->when($from, fn ($x) => $x->where('created_at', '>=', $from))
+                ->when($to, fn ($x) => $x->where('created_at', '<=', $to));
+
+            return [
+                'count' => (clone $q)->count(),
+                'sum' => round((float) (clone $q)->sum('total'), 2),
+                'by_status' => (clone $q)->groupBy('status')->selectRaw('status, COUNT(*) as cnt, SUM(total) as total')->get()
+                    ->map(fn ($r) => ['status' => $r->status, 'count' => (int) $r->cnt, 'sum' => round((float) $r->total, 2)])->all(),
+            ];
+        };
+
+        $recent = $base()->with(['deal:id,number', 'manager:id,name'])->latest()->limit(15)->get()
+            ->map(fn ($o) => [
+                'number' => $o->number,
+                'customer' => $o->name,
+                'city' => $o->city,
+                'total' => (float) $o->total,
+                'status' => $o->status,
+                'manager' => $o->manager?->name,
+                'deal' => $o->deal?->number,
+                'created_at' => optional($o->created_at)->toDateString(),
+                'link' => $this->link('siteOrders.index'),
+            ])->all();
+
+        return $this->periods($args, $calc) + ['recent' => $recent, 'currency' => 'KZT'];
+    }
+
+    /** Справочник контрагентов с числом и суммой сделок. */
+    private function clientsList(array $args): array
+    {
+        if (! $this->user->can('viewAny', Client::class)) {
+            return ['error' => 'У вас нет доступа к справочнику контрагентов.'];
+        }
+
+        $limit = max(1, min(50, (int) ($args['limit'] ?? 20)));
+        $total = Client::query()->count();
+
+        $rows = Client::query()->with('responsible:id,name')
+            ->leftJoin('deals', fn ($j) => $j->on('deals.client_id', '=', 'clients.id')->whereNull('deals.deleted_at'))
+            ->groupBy('clients.id')
+            ->orderByRaw('COALESCE(SUM(deals.budget), 0) DESC')
+            ->limit($limit)
+            ->selectRaw('clients.*, COUNT(deals.id) as deals_cnt, COALESCE(SUM(deals.budget), 0) as deals_sum')
+            ->get()
+            ->map(fn ($c) => [
+                'name' => $c->name,
+                'type' => $c->type,
+                'phone' => $c->phone,
+                'responsible' => $c->responsible?->name,
+                'deals_count' => (int) $c->deals_cnt,
+                'deals_sum' => round((float) $c->deals_sum, 2),
+                'link' => $this->link('clients.show', $c->id),
+            ]);
+
+        return [
+            'count' => $total,
+            'shown' => $rows->count(),
+            'items' => $rows->all(),
+            'currency' => 'KZT',
+            // Клиентов часто заводят прямо в сделке текстом, минуя справочник.
+            'hint' => $total === 0
+                ? 'Справочник пуст, но клиенты могут быть записаны в сделках текстом — для «крупнейших клиентов» используй deals_list или client_summary.'
+                : 'deals_sum — сумма сделок, привязанных к карточке клиента.',
+        ];
+    }
+
+    // ------------------------------------------------------------------
     // Общее
     // ------------------------------------------------------------------
+
+    /**
+     * Единая логика периодов для денежных инструментов: без дат — всё
+     * время плюс текущий месяц рядом; с датами — период плюс всё время.
+     * Модель всегда получает обе величины и не путает «за месяц» с «всего».
+     *
+     * @param  callable(?Carbon, ?Carbon): array<string, mixed>  $calc
+     * @return array<string, mixed>
+     */
+    private function periods(array $args, callable $calc): array
+    {
+        [$from, $to] = $this->period($args, wholeTime: true);
+
+        if ($from) {
+            return $calc($from, $to) + [
+                'scope' => 'период '.$this->periodLabel($from, $to),
+                'all_time' => $calc(null, null),
+            ];
+        }
+
+        return $calc(null, null) + [
+            'scope' => 'за всё время',
+            'current_month' => $calc(now()->startOfMonth(), now()) + ['scope' => 'текущий месяц'],
+        ];
+    }
+
+    /** Ссылка на страницу, если такой маршрут есть — иначе null, а не падение. */
+    private function link(string $route, mixed $params = []): ?string
+    {
+        return Route::has($route) ? route($route, $params, false) : null;
+    }
 
     private function baseDeals(): \Illuminate\Database\Query\Builder
     {

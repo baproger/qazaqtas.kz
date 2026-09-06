@@ -328,13 +328,45 @@ class AssistantApiTest extends TestCase
     public function test_all_tools_answer_without_errors(): void
     {
         $tools = new AssistantTools($this->director);
+        $this->assertCount(15, $tools->schema(), 'Ожидается 15 инструментов');
+        // Поисковым инструментам нужно, чтобы было что найти.
+        $this->deal(['client_name' => 'ТОО Ерман-Строй', 'responsible_user_id' => $this->director->id]);
 
         foreach ($tools->schema() as $tool) {
             $args = in_array($tool['name'], ['employee_summary', 'client_summary'], true) ? ['name' => 'ерман'] : [];
             $result = $tools->run($tool['name'], $args);
 
             $this->assertIsArray($result, "Инструмент {$tool['name']} вернул не массив");
-            $this->assertArrayNotHasKey('exception', $result);
+            // Директору доступно всё: {error} здесь означает сломанный запрос.
+            $this->assertArrayNotHasKey('error', $result, "{$tool['name']}: ".($result['error'] ?? ''));
+        }
+    }
+
+    public function test_finance_tools_report_both_all_time_and_current_month(): void
+    {
+        // «Сколько денег в кассе» — модель получает и остаток сейчас, и движение.
+        $tools = new AssistantTools($this->director);
+
+        $cash = $tools->run('cash_balances', []);
+        $this->assertArrayHasKey('balance_now', $cash);
+        $this->assertSame('за всё время', $cash['scope']);
+        $this->assertArrayHasKey('current_month', $cash);
+
+        $exp = $tools->run('expenses', ['from' => now()->startOfMonth()->toDateString(), 'to' => now()->toDateString()]);
+        $this->assertStringStartsWith('период', $exp['scope']);
+        $this->assertArrayHasKey('all_time', $exp);
+    }
+
+    public function test_finance_tools_are_closed_to_a_foreman(): void
+    {
+        $foreman = User::factory()->create();
+        $foreman->assignRole('foreman');
+        $tools = new AssistantTools($foreman);
+
+        // Касса и долги закрыты ролью жёстко; счета и зарплата — правами,
+        // которые владелец раздаёт сам, их здесь не проверяем.
+        foreach (['cash_balances', 'debts'] as $name) {
+            $this->assertArrayHasKey('error', $tools->run($name, []), "{$name} должен быть закрыт бригадиру");
         }
     }
 }
