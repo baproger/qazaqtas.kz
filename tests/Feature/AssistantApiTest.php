@@ -53,7 +53,8 @@ class AssistantApiTest extends TestCase
     private function fakeGemini(string $tool, string $finalText): void
     {
         $call = ['candidates' => [['content' => ['parts' => [
-            ['functionCall' => ['name' => $tool, 'args' => (object) []]],
+            // thoughtSignature Gemini 3 обязана вернуться назад нетронутой.
+            ['functionCall' => ['name' => $tool, 'args' => (object) []], 'thoughtSignature' => 'sig-test-123'],
         ]]]]];
         $text = ['candidates' => [['content' => ['parts' => [['text' => $finalText]]]]]];
 
@@ -146,8 +147,10 @@ class AssistantApiTest extends TestCase
 
         // Ни один запрос не должен содержать список вместо объекта…
         Http::assertNotSent(fn ($request) => str_contains($request->body(), '"args":[]'));
-        // …и ход модели с пустыми аргументами должен уйти именно как {}.
-        Http::assertSent(fn ($request) => str_contains($request->body(), '"args":{}'));
+        // …ход модели с пустыми аргументами уходит как {}, а подпись мысли —
+        // рядом с ним, без неё Gemini 3 отвечает «missing thought_signature».
+        Http::assertSent(fn ($request) => str_contains($request->body(), '"args":{}')
+            && str_contains($request->body(), '"thoughtSignature":"sig-test-123"'));
     }
 
     public function test_model_falls_back_when_quota_is_exhausted(): void

@@ -321,30 +321,24 @@ class AssistantAgent
     /**
      * Ход модели в том виде, в каком его примет Gemini обратно.
      *
-     * json_encode превращает пустой массив PHP в «[]», а протокол ждёт в
-     * args объект — отсюда ошибка «Proto field is not repeating». Поэтому
-     * args приводим к объекту явно, а лишние поля ответа (например
-     * thoughtSignature) не пересылаем.
+     * Части возвращаем КАК ЕСТЬ — вместе с thoughtSignature: Gemini 3 требует
+     * подпись рядом с functionCall и без неё отвечает 400 «missing
+     * thought_signature». Единственная правка — args: json_encode превращает
+     * пустой массив PHP в «[]», а протокол ждёт объект, отсюда была ошибка
+     * «Proto field is not repeating».
      *
      * @param  array<int, array<string, mixed>>  $parts
      * @return array<int, array<string, mixed>>
      */
     private function modelParts(array $parts): array
     {
-        $out = [];
-
-        foreach ($parts as $part) {
+        foreach ($parts as &$part) {
             if (isset($part['functionCall'])) {
-                $out[] = ['functionCall' => [
-                    'name' => (string) ($part['functionCall']['name'] ?? ''),
-                    'args' => (object) ((array) ($part['functionCall']['args'] ?? [])),
-                ]];
-            } elseif (isset($part['text']) && $part['text'] !== '') {
-                $out[] = ['text' => $part['text']];
+                $part['functionCall']['args'] = (object) ((array) ($part['functionCall']['args'] ?? []));
             }
         }
 
-        return $out;
+        return array_values($parts);
     }
 
     /**
