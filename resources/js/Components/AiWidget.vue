@@ -10,7 +10,7 @@
  * ссылки открываются переходом внутри приложения.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { parseAnswer } from '@/utils/chatText';
 import { useE } from '@/composables/useTranslations';
@@ -23,6 +23,40 @@ const question = ref('');
 const sending = ref(false);
 const messages = ref([]);          // { role, content, tools? }
 const feed = ref(null);
+
+/**
+ * Переписка переживает переходы между страницами.
+ *
+ * Страницы подключают AppLayout внутри своего шаблона, поэтому при каждом
+ * переходе layout — а с ним и виджет — создаётся заново, и переписка,
+ * жившая только в памяти, пропадала. Держим её в localStorage: своя на
+ * каждого пользователя, только на этом устройстве. Общий журнал вопросов
+ * лежит на сервере и открывается во вкладке «История».
+ */
+const STORE_KEY = `ai.chat.${usePage().props.auth?.user?.id ?? 'guest'}`;
+const KEEP = 40;                   // хвост переписки, чтобы не пухло хранилище
+
+const restore = () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORE_KEY) ?? '[]');
+        if (Array.isArray(saved)) messages.value = saved;
+    } catch {
+        /* приватный режим или мусор в хранилище — начинаем с чистого листа */
+    }
+};
+
+const persist = () => {
+    try {
+        localStorage.setItem(STORE_KEY, JSON.stringify(messages.value.slice(-KEEP)));
+    } catch {
+        /* хранилище недоступно — переписка просто не переживёт переход */
+    }
+};
+
+const clearChat = () => {
+    messages.value = [];
+    persist();
+};
 
 const history = ref([]);
 const historyLoading = ref(false);
@@ -112,7 +146,12 @@ const onKeydown = (e) => {
 const onEsc = (e) => {
     if (e.key === 'Escape' && open.value) open.value = false;
 };
-onMounted(() => document.addEventListener('keydown', onEsc));
+watch(messages, persist, { deep: true });
+
+onMounted(() => {
+    restore();
+    document.addEventListener('keydown', onEsc);
+});
 onBeforeUnmount(() => document.removeEventListener('keydown', onEsc));
 </script>
 
@@ -137,6 +176,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onEsc));
                             class="border-b-2 pb-2 pt-2 text-xs font-medium transition-colors"
                             :class="tab === t.k ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-600'"
                             @click="tab = t.k">{{ t.n }}</button>
+                        <button v-if="tab === 'chat' && messages.length" class="ml-auto pb-2 pt-2 text-xs text-slate-400 transition-colors hover:text-rose-500"
+                            @click="clearChat">{{ $e('Очистить') }}</button>
                     </div>
                 </header>
 
