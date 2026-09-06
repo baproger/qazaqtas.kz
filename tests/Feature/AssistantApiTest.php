@@ -328,7 +328,7 @@ class AssistantApiTest extends TestCase
     public function test_all_tools_answer_without_errors(): void
     {
         $tools = new AssistantTools($this->director);
-        $this->assertCount(15, $tools->schema(), 'Ожидается 15 инструментов');
+        $this->assertCount(16, $tools->schema(), 'Ожидается 16 инструментов');
         // Поисковым инструментам нужно, чтобы было что найти.
         $this->deal(['client_name' => 'ТОО Ерман-Строй', 'responsible_user_id' => $this->director->id]);
 
@@ -357,6 +357,31 @@ class AssistantApiTest extends TestCase
         $this->assertArrayHasKey('all_time', $exp);
     }
 
+    public function test_finance_overview_matches_the_finance_page_to_the_tenge(): void
+    {
+        // «Чистая прибыль 5 375 190 ₸ на странице, а ИИ говорит другое»:
+        // страница Финансы и «Сводный отчёт» считают прибыль по-разному.
+        // Инструмент обязан отдать цифру страницы и подписать остальные.
+        $this->deal(['budget' => 1000000, 'client_name' => 'ТОО Финанс']);
+
+        $answer = (new AssistantTools($this->director))->run('finance_overview', []);
+
+        $request = Request::create('/finance', 'GET', []);
+        $request->setUserResolver(fn () => $this->director);
+        $page = app(\App\Http\Controllers\InvoiceController::class)->assistantSummary($request);
+
+        $this->assertSame((float) $page['net'], (float) $answer['net_profit']);
+        $this->assertSame((float) $page['income'], (float) $answer['income']['total']);
+        $this->assertArrayHasKey('report_company_profit_all_deals', $answer['other_profit_figures']);
+        $this->assertStringContainsString('три', $answer['hint']);
+    }
+
+    public function test_finance_page_still_renders_after_refactor(): void
+    {
+        $this->actingAs($this->director)->get(route('finance.index'))->assertOk()
+            ->assertInertia(fn ($p) => $p->component('Finance/Index')->has('summary.net'));
+    }
+
     public function test_finance_tools_are_closed_to_a_foreman(): void
     {
         $foreman = User::factory()->create();
@@ -365,7 +390,7 @@ class AssistantApiTest extends TestCase
 
         // Касса и долги закрыты ролью жёстко; счета и зарплата — правами,
         // которые владелец раздаёт сам, их здесь не проверяем.
-        foreach (['cash_balances', 'debts'] as $name) {
+        foreach (['cash_balances', 'debts', 'finance_overview'] as $name) {
             $this->assertArrayHasKey('error', $tools->run($name, []), "{$name} должен быть закрыт бригадиру");
         }
     }

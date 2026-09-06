@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -56,7 +57,10 @@ class InvoiceController extends Controller
     /** Финансы — только руководство: менеджеры ведут деньги в карточке сделки. */
     private function guardFinance(Request $request): void
     {
-        $this->authorize('viewAny', Invoice::class);
+        // Права — по пользователю ЗАПРОСА, а не сессии: страницу это не
+        // меняет (тот же человек), зато ИИ-помощник, вызывающий сводку с
+        // собранным вручную запросом, проверяется как положено.
+        Gate::forUser($request->user())->authorize('viewAny', Invoice::class);
         abort_unless($request->user()->hasAnyRole(['admin', 'director', 'financist']), 403);
     }
 
@@ -125,6 +129,31 @@ class InvoiceController extends Controller
         // подставляем сохранённый набор (App\Support\StickyFilters).
         StickyFilters::apply($request, 'finance', ['fin_month']);
 
+        return Inertia::render('Finance/Index', $this->overview($request));
+    }
+
+    /**
+     * Сводка «Финансов» для ИИ-помощника — тем же кодом, что страница.
+     *
+     * «Чистая прибыль» здесь считается как деньги минус все расходы, и это
+     * не то же, что прибыль фирмы в «Сводном отчёте». Помощник обязан
+     * называть ровно ту цифру, которую руководитель видит на этой странице.
+     *
+     * @return array<string, mixed>
+     */
+    public function assistantSummary(Request $request): array
+    {
+        return $this->overview($request)['summary'];
+    }
+
+    /**
+     * Данные страницы «Финансы → Обзор»: одна сборка на страницу и на
+     * помощника, чтобы цифры не разошлись.
+     *
+     * @return array<string, mixed>
+     */
+    private function overview(Request $request): array
+    {
         $this->guardFinance($request);
 
         $companyId = CurrentCompany::id();
@@ -196,7 +225,7 @@ class InvoiceController extends Controller
         $balances = app(FinanceService::class)->companyBalances($companyId ?: null);
         $dealsIncome = app(FinanceService::class)->dealsIncome($companyId ?: null, $mStart, $mEnd);
 
-        return Inertia::render('Finance/Index', [
+        return [
             'invoiceTotals' => $invoiceTotals,
             'filters' => $request->only('fin_month'),
             'categories' => $categories,
@@ -230,7 +259,7 @@ class InvoiceController extends Controller
                 'expensesTotal' => $expensesTotal,
                 'net' => round($incomeTotal - $expensesTotal, 2),
             ],
-        ]);
+        ];
     }
 
     /** Счета: сегодняшние + прошлые с поиском по номеру и статусу. */

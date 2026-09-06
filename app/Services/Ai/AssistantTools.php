@@ -2,6 +2,7 @@
 
 namespace App\Services\Ai;
 
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReportController;
 use App\Models\Client;
 use App\Models\Expense;
@@ -97,6 +98,13 @@ class AssistantTools
                 ], 'required' => ['name']],
             ],
             [
+                'name' => 'finance_overview',
+                'description' => 'Страница «Финансы → Обзор»: ЧИСТАЯ ПРИБЫЛЬ = все поступления денег − все расходы (аренда, зарплата, налог, расходы по сделкам), с разбивкой дохода и расходов, договоры, дебиторка, касса и банк. Для вопросов «чистая прибыль», «сколько заработали», «итог по финансам». Без month — за всё время, как страница по умолчанию.',
+                'parameters' => ['type' => 'object', 'properties' => [
+                    'month' => ['type' => 'string', 'description' => 'Месяц ГГГГ-ММ. Только если пользователь назвал месяц.'],
+                ]],
+            ],
+            [
                 'name' => 'cash_balances',
                 'description' => 'Касса и банк: остатки денег сейчас (наличные — общие на холдинг, банк — своей фирмы) и движение за период: поступления и расходы по способу оплаты. Для вопросов «сколько денег в кассе», «наличные», «на счёте», «приход/расход».',
                 'parameters' => ['type' => 'object', 'properties' => $period],
@@ -167,6 +175,7 @@ class AssistantTools
                 'tasks_overview' => $this->tasksOverview(),
                 'employee_summary' => $this->employeeSummary($args),
                 'client_summary' => $this->clientSummary($args),
+                'finance_overview' => $this->financeOverview($args),
                 'cash_balances' => $this->cashBalances($args),
                 'expenses' => $this->expenses($args),
                 'invoices' => $this->invoices($args),
@@ -202,7 +211,7 @@ class AssistantTools
         $result = $this->reportTotals(null, null) + [
             'scope' => 'за всё время',
             'currency' => 'KZT',
-            'hint' => 'company_profit — чистая прибыль фирмы после налога и бонусов; remainder — остаток до бонусов.',
+            'hint' => 'company_profit — прибыль фирмы по сделкам из «Сводного отчёта» (после налога и бонусов); remainder — остаток до бонусов. Это НЕ «Чистая прибыль» со страницы Финансы → Обзор — за ней вызывай finance_overview.',
         ];
 
         if ($from) {
@@ -557,6 +566,61 @@ class AssistantTools
     // ------------------------------------------------------------------
     // Финансы, зарплата, витрина, справочник
     // ------------------------------------------------------------------
+
+    /**
+     * «Финансы → Обзор» тем же кодом, что страница. Вместе с цифрой страницы
+     * отдаём две другие «прибыли» системы с подписями — модель обязана
+     * сказать, какую именно называет.
+     */
+    private function financeOverview(array $args): array
+    {
+        if (! $this->user->hasAnyRole(['admin', 'director', 'financist'])) {
+            return ['error' => 'Финансовый обзор открыт только бухгалтерии и руководству.'];
+        }
+
+        $month = preg_match('/^\d{4}-\d{2}$/', (string) ($args['month'] ?? '')) ? $args['month'] : '';
+        $request = Request::create('/finance', 'GET', $month ? ['fin_month' => $month] : []);
+        $request->setUserResolver(fn () => $this->user);
+
+        $s = app(InvoiceController::class)->assistantSummary($request);
+        $report = $this->reportTotals(null, null);
+        $won = app(PayrollService::class)->companyTotals();
+
+        $categories = collect($s['categories'] ?? [])->map(fn ($c) => [
+            'category' => $c['name'],
+            'sum' => round((float) $c['sum'], 2),
+            'counted_in_total' => ! ($c['in_payroll'] ?? false),
+        ])->values()->all();
+
+        return [
+            'scope' => $month ? "месяц {$month}" : 'за всё время',
+            'net_profit' => round((float) $s['net'], 2),
+            'net_profit_label' => '«Чистая прибыль» со страницы Финансы → Обзор: все поступления денег минус все расходы.',
+            'income' => [
+                'total' => round((float) $s['income'], 2),
+                'from_invoices' => round((float) $s['incomeInvoices'], 2),
+                'manual_receipts' => round((float) $s['incomeManual'], 2),
+            ],
+            'expenses' => [
+                'total' => round((float) $s['expensesTotal'], 2),
+                'by_category' => $categories,
+                'deal_expenses' => round((float) $s['dealExpenses'], 2),
+                'payroll' => round((float) $s['payroll'], 2),
+                'tax' => round((float) $s['tax'], 2),
+            ],
+            'contracts_sum' => round((float) $s['contracts'], 2),
+            'receivables' => round((float) $s['receivablesTotal'], 2),
+            'payables' => round((float) $s['payables'], 2),
+            'cash' => round((float) $s['cash'], 2),
+            'bank' => round((float) $s['bank'], 2),
+            'other_profit_figures' => [
+                'report_company_profit_all_deals' => round((float) $report['company_profit'], 2),
+                'analytics_net_won_deals' => round((float) $won['company'], 2),
+            ],
+            'currency' => 'KZT',
+            'hint' => 'В системе три «прибыли». net_profit — страница Финансы → Обзор (деньги минус все расходы): её называй на вопрос «чистая прибыль». report_company_profit_all_deals — «Сводный отчёт» по всем сделкам (договоры − расходы сделок − налог − бонусы). analytics_net_won_deals — «Аналитика», то же по выигранным сделкам. Всегда говори, какую цифру приводишь.',
+        ];
+    }
 
     /** Касса: те же скоупы и остатки, что плитки «Финансов» (FinanceService). */
     private function cashBalances(array $args): array
