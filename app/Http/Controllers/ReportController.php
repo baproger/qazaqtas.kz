@@ -45,6 +45,19 @@ class ReportController extends Controller
         return Inertia::render('Reports/Deals', ReportCache::remember($request, 'deals', fn () => $this->build($request)));
     }
 
+    /**
+     * Итоги реестра для ИИ-помощника: тот же расчёт, что видит страница.
+     *
+     * Помощник обязан называть цифры, совпадающие с отчётом до тенге, —
+     * второй «облегчённый» расчёт рано или поздно разошёлся бы с таблицей.
+     *
+     * @return array<string, mixed>
+     */
+    public function assistantTotals(Request $request): array
+    {
+        return $this->build($request)['totals'] ?? [];
+    }
+
     /** @return array<string, mixed> */
     private function build(Request $request): array
     {

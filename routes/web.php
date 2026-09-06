@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AiAssistantController;
+use App\Http\Controllers\Api\AssistantController as AssistantApiController;
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuditController;
@@ -79,8 +80,16 @@ Route::middleware('auth')->group(function () {
         Route::post('send', [AiAssistantController::class, 'send'])->middleware('throttle:15,1')->name('ai.send');
         // Мини-чат в углу экрана — тот же вопрос, ответ в JSON.
         Route::post('ask', [AiAssistantController::class, 'ask'])->middleware('throttle:15,1')->name('ai.ask');
+        // Wildcard идут последними, иначе съедают ask/history.
         Route::get('{conversation}', [AiAssistantController::class, 'show'])->name('ai.show');
         Route::delete('{conversation}', [AiAssistantController::class, 'destroy'])->name('ai.destroy');
+    });
+
+    // Агент с инструментами: отвечает цифрами из системы, а не «по памяти».
+    // Сессионная авторизация (SPA на Inertia), поэтому маршруты живут здесь.
+    Route::middleware('can:use-ai-assistant')->prefix('api/assistant')->group(function () {
+        Route::post('ask', [AssistantApiController::class, 'ask'])->name('assistant.ask');
+        Route::get('history', [AssistantApiController::class, 'history'])->name('assistant.history');
     });
 
     // Single profile page (role-aware card). `update`/`destroy` back the Breeze
@@ -416,4 +425,5 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
 
