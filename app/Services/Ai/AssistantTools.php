@@ -43,8 +43,11 @@ class AssistantTools
         return [
             [
                 'name' => 'sales_report',
-                'description' => 'Финансовый итог по сделкам за период: сумма договоров, оплачено, расходы, налог, чистый остаток, бонусы, прибыль фирмы и маржа. Те же цифры, что в отчёте «Сводный отчёт». Используй для вопросов о выручке, прибыли, марже.',
-                'parameters' => ['type' => 'object', 'properties' => $period],
+                'description' => 'Финансовый итог по сделкам: сумма договоров, оплачено, расходы, налог, чистый остаток, бонусы, прибыль фирмы и маржа. Те же цифры, что в отчёте «Сводный отчёт». БЕЗ периода считает за всё время — как страница отчёта по умолчанию; не подставляй период, если пользователь его не назвал. С периодом фильтрует по дате договора и дополнительно возвращает итог за всё время в поле all_time.',
+                'parameters' => ['type' => 'object', 'properties' => [
+                    'from' => ['type' => 'string', 'description' => 'Начало периода ГГГГ-ММ-ДД. Только если пользователь назвал период.'],
+                    'to' => ['type' => 'string', 'description' => 'Конец периода ГГГГ-ММ-ДД. Только если пользователь назвал период.'],
+                ]],
             ],
             [
                 'name' => 'deals_list',
@@ -134,20 +137,48 @@ class AssistantTools
             return ['error' => 'У вас нет доступа к финансовому отчёту — цифры по прибыли я показать не могу.'];
         }
 
-        [$from, $to] = $this->period($args);
+        // Без дат — всё время, ровно как страница отчёта без фильтра.
+        // Раньше умолчанием был текущий месяц, и на вопрос «общая сумма
+        // договоров» помощник называл 1 660 000 вместо 13 160 000 со страницы.
+        [$from, $to] = $this->period($args, wholeTime: true);
 
-        // Тот же расчёт, что на странице «Сводный отчёт»: помощник обязан
-        // называть цифры, совпадающие с отчётом до тенге.
-        $request = Request::create('/reports/deals', 'GET', [
-            'from' => $from->toDateString(),
-            'to' => $to->toDateString(),
-        ]);
+        $result = $this->reportTotals(null, null) + [
+            'scope' => 'за всё время',
+            'currency' => 'KZT',
+            'hint' => 'company_profit — чистая прибыль фирмы после налога и бонусов; remainder — остаток до бонусов.',
+        ];
+
+        if ($from) {
+            // Период спрошен — отдаём его ПЕРВЫМ, а итог за всё время рядом:
+            // модель обязана назвать обе величины и не путать их.
+            $result = $this->reportTotals($from, $to) + [
+                'scope' => 'период '.$this->periodLabel($from, $to).' (по дате договора)',
+                'all_time' => $this->reportTotals(null, null),
+                'currency' => 'KZT',
+                'hint' => 'Верхний уровень — только за период; all_time — за всё время. Назови обе, если вопрос про «общую» сумму.',
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Итоги «Сводного отчёта» — тем же кодом, что рисует страницу: помощник
+     * обязан называть цифры, совпадающие с отчётом до тенге.
+     *
+     * @return array<string, mixed>
+     */
+    private function reportTotals(?Carbon $from, ?Carbon $to): array
+    {
+        $request = Request::create('/reports/deals', 'GET', array_filter([
+            'from' => $from?->toDateString(),
+            'to' => $to?->toDateString(),
+        ]));
         $request->setUserResolver(fn () => $this->user);
 
         $totals = app(ReportController::class)->assistantTotals($request);
 
         return [
-            'period' => $this->periodLabel($from, $to),
             'deals_count' => $totals['count'] ?? 0,
             'contracts_sum' => $totals['budget'] ?? 0,
             'paid' => $totals['paid'] ?? 0,
@@ -158,8 +189,6 @@ class AssistantTools
             'manager_bonus' => $totals['bonus'] ?? 0,
             'company_profit' => $totals['company'] ?? 0,
             'margin_percent' => $totals['margin'] ?? 0,
-            'currency' => 'KZT',
-            'hint' => 'company_profit — чистая прибыль фирмы после налога и бонусов; remainder — остаток до бонусов.',
         ];
     }
 

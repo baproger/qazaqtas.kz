@@ -216,18 +216,37 @@ class AssistantApiTest extends TestCase
         $tools = new AssistantTools($this->director);
         $answer = $tools->run('sales_report', []);
 
-        // Та же цифра, что покажет страница «Сводный отчёт» за тот же период.
-        $request = Request::create('/reports/deals', 'GET', [
-            'from' => now()->startOfMonth()->toDateString(),
-            'to' => now()->toDateString(),
-        ]);
+        // Без периода — та же цифра, что страница «Сводный отчёт» БЕЗ фильтра.
+        $request = Request::create('/reports/deals', 'GET', []);
         $request->setUserResolver(fn () => $this->director);
         $page = app(ReportController::class)->assistantTotals($request);
 
+        $this->assertSame('за всё время', $answer['scope']);
         $this->assertSame((float) $page['budget'], (float) $answer['contracts_sum']);
         $this->assertSame((float) $page['company'], (float) $answer['company_profit']);
         $this->assertSame($page['count'], $answer['deals_count']);
         $this->assertSame(2, $answer['deals_count']);
+        $this->assertArrayNotHasKey('all_time', $answer);
+    }
+
+    public function test_sales_report_with_period_names_both_period_and_total(): void
+    {
+        // «Общая сумма договоров» — 13 160 000 на странице, а помощник называл
+        // 1 660 000: умолчанием был текущий месяц. С периодом отдаём обе цифры.
+        $old = $this->deal(['budget' => 1000000]);
+        $old->forceFill(['created_at' => now()->subMonths(2)])->saveQuietly();
+        $this->deal(['budget' => 400000]);
+
+        $answer = (new AssistantTools($this->director))->run('sales_report', [
+            'from' => now()->startOfMonth()->toDateString(),
+            'to' => now()->toDateString(),
+        ]);
+
+        $this->assertSame(1, $answer['deals_count']);                 // за период
+        $this->assertSame(400000.0, (float) $answer['contracts_sum']);
+        $this->assertSame(2, $answer['all_time']['deals_count']);     // за всё время
+        $this->assertSame(1400000.0, (float) $answer['all_time']['contracts_sum']);
+        $this->assertStringContainsString('обе', $answer['hint']);
     }
 
     public function test_employee_summary_counts_on_the_server_and_returns_links(): void
