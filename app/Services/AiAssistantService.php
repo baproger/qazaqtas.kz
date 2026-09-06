@@ -17,13 +17,16 @@ use Illuminate\Support\Facades\DB;
  * цифр, а утечь наружу нечему.
  *
  * Ответ пишет Claude (официальный PHP SDK). Без ключа ANTHROPIC_API_KEY
- * помощник честно говорит, что не настроен: шаблонная заглушка здесь, в
- * отличие от SEO-генератора, была бы обманом — на вопрос она не отвечает.
+ * помощник не умолкает: типовые вопросы («склад», «просрочка», «деньги»)
+ * обслуживает LocalAnswerService прямо из базы — бесплатно и мгновенно.
+ * Ключ нужен только для свободных формулировок и деловых текстов.
  */
 class AiAssistantService
 {
     /** Сколько последних реплик диалога отправляем модели. */
     private const HISTORY_LIMIT = 20;
+
+    public function __construct(private LocalAnswerService $local) {}
 
     /**
      * Ответ помощника на вопрос. Ничего не пишет в БД — сохраняет контроллер.
@@ -32,8 +35,10 @@ class AiAssistantService
      */
     public function answer(AiConversation $conversation, string $question): array
     {
+        // Без ключа помощник не умолкает: типовые вопросы («склад»,
+        // «просрочка», «деньги») он берёт прямо из базы — бесплатно и сразу.
         if (! config('services.anthropic.key') || ! class_exists(\Anthropic\Client::class)) {
-            return $this->failure(__('ИИ-помощник не настроен: администратору нужно добавить ANTHROPIC_API_KEY в настройки сервера.'));
+            return $this->offline($question);
         }
 
         try {
@@ -41,7 +46,7 @@ class AiAssistantService
         } catch (\Anthropic\Core\Exceptions\APIStatusException $e) {
             report($e);
 
-            return $this->failure(match ($e->type?->value) {
+            return $this->fallback($question, match ($e->type?->value) {
                 'rate_limit_error', 'overloaded_error' => __('Помощник сейчас перегружен. Попробуйте задать вопрос через минуту.'),
                 'authentication_error', 'permission_error' => __('Ключ ИИ-помощника отклонён. Проверьте ANTHROPIC_API_KEY.'),
                 default => __('Помощник не смог ответить из-за ошибки связи. Попробуйте ещё раз.'),
@@ -49,7 +54,7 @@ class AiAssistantService
         } catch (\Throwable $e) {
             report($e);
 
-            return $this->failure(__('Помощник не смог ответить из-за ошибки связи. Попробуйте ещё раз.'));
+            return $this->fallback($question, __('Помощник не смог ответить из-за ошибки связи. Попробуйте ещё раз.'));
         }
     }
 
@@ -100,6 +105,43 @@ class AiAssistantService
             'content' => trim($text),
             'input_tokens' => $message->usage->inputTokens ?? null,
             'output_tokens' => $message->usage->outputTokens ?? null,
+            'ok' => true,
+        ];
+    }
+
+    /**
+     * Режим без ИИ: ответ прямо из базы. Тему не узнали — показываем список
+     * того, что помощник умеет без ключа.
+     *
+     * @return array{content: string, input_tokens: null, output_tokens: null, ok: bool}
+     */
+    private function offline(string $question): array
+    {
+        $answer = $this->local->answer($question);
+
+        return $answer !== null
+            ? ['content' => $answer, 'input_tokens' => null, 'output_tokens' => null, 'ok' => true]
+            : $this->failure($this->local->help());
+    }
+
+    /**
+     * ИИ не ответил (перегрузка, сеть, ключ). Если вопрос типовой — выдаём
+     * данные из базы, приписав, почему ответ короче обычного.
+     *
+     * @return array{content: string, input_tokens: null, output_tokens: null, ok: bool}
+     */
+    private function fallback(string $question, string $reason): array
+    {
+        $answer = $this->local->answer($question);
+
+        if ($answer === null) {
+            return $this->failure($reason);
+        }
+
+        return [
+            'content' => $answer."\n\n_".$reason.' Ответ собран напрямую из системы._',
+            'input_tokens' => null,
+            'output_tokens' => null,
             'ok' => true,
         ];
     }

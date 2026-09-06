@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\AiConversation;
+use App\Models\Deal;
+use App\Models\DealStage;
 use App\Models\User;
 use App\Services\AiAssistantService;
 use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\StageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -119,16 +122,56 @@ class AiAssistantTest extends TestCase
         $this->assertSame(2, AiConversation::count());
     }
 
-    public function test_without_api_key_service_explains_instead_of_failing(): void
+    public function test_without_api_key_data_questions_are_answered_from_database(): void
+    {
+        // Ключа нет — но вопрос типовой, и помощник обязан ответить цифрами.
+        config(['services.anthropic.key' => null]);
+        $this->seed(StageSeeder::class);
+        $director = $this->user('director');
+
+        $stage = DealStage::where('is_won', false)->orderBy('order')->firstOrFail();
+        Deal::create([
+            'number' => 'QT-777', 'name' => 'Просроченная', 'client_name' => 'ТОО Тест',
+            'budget' => 500000, 'status' => 'active', 'deal_stage_id' => $stage->id,
+            'deadline' => now()->subDays(5)->toDateString(),
+        ]);
+
+        $conversation = AiConversation::create(['user_id' => $director->id, 'title' => 'Тест']);
+        $answer = app(AiAssistantService::class)->answer($conversation, 'Что по просроченным сделкам?');
+
+        $this->assertTrue($answer['ok']);
+        $this->assertStringContainsString('QT-777', $answer['content']);
+        $this->assertStringContainsString('ТОО Тест', $answer['content']);
+        // Ответ из базы токенов не тратит.
+        $this->assertNull($answer['output_tokens']);
+    }
+
+    public function test_without_api_key_free_question_lists_what_is_available(): void
     {
         config(['services.anthropic.key' => null]);
         $director = $this->user('director');
         $conversation = AiConversation::create(['user_id' => $director->id, 'title' => 'Тест']);
 
-        $answer = app(AiAssistantService::class)->answer($conversation, 'Как дела?');
+        $answer = app(AiAssistantService::class)->answer($conversation, 'Напиши письмо поставщику про отсрочку');
 
         $this->assertFalse($answer['ok']);
+        $this->assertStringContainsString('Просроченные сделки', $answer['content']);
         $this->assertStringContainsString('ANTHROPIC_API_KEY', $answer['content']);
+    }
+
+    public function test_local_answers_cover_every_topic(): void
+    {
+        // Каждая тема должна отрабатывать без падений даже на пустой базе:
+        // сырые SQL-запросы легко ломаются при переименовании колонок.
+        $local = app(\App\Services\LocalAnswerService::class);
+
+        foreach (['просроченные сделки', 'остатки на складе', 'что в цехе',
+            'какие задачи открыты', 'сколько денег поступило', 'воронка сделок',
+            'дай сводку'] as $q) {
+            $this->assertIsString($local->answer($q), "Тема не распознана: {$q}");
+        }
+
+        $this->assertNull($local->answer('напиши поздравление с Наурызом'));
     }
 
     public function test_context_summary_is_built_without_errors(): void
