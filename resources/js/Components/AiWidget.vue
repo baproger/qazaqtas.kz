@@ -22,9 +22,9 @@ const conversationId = ref(null);
 const feed = ref(null);
 
 const examples = [
-    tr('Что по просроченным сделкам?'),
-    tr('Покажи остатки по складу'),
     tr('Сколько заказов в цехе и где они стоят?'),
+    tr('Сравни поступления денег с прошлым месяцем'),
+    tr('Что по просроченным сделкам?'),
 ];
 
 const canSend = computed(() => question.value.trim().length > 1 && !sending.value);

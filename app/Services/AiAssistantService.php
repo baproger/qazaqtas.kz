@@ -325,8 +325,10 @@ class AiAssistantService
 
     private function moneyBlock(): string
     {
+        // Границы суток, а не строки-даты: иначе платежи последнего дня
+        // не попадали в сумму (payment_date хранит дату со временем).
         $sum = fn ($from, $to) => (float) DB::table('payments')
-            ->whereBetween('payment_date', [$from->toDateString(), $to->toDateString()])
+            ->whereBetween('payment_date', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
             ->sum('amount');
 
         $now = now();
