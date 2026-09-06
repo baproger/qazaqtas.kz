@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AiConversation;
 use App\Models\AiMessage;
 use App\Services\AiAssistantService;
+use App\Support\AiKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -31,7 +32,37 @@ class AiAssistantController extends Controller
         return $this->render($request, $conversation);
     }
 
+    /** Полная страница: после ответа возвращаемся в диалог. */
     public function send(Request $request, AiAssistantService $ai)
+    {
+        [$conversation] = $this->handle($request, $ai);
+
+        return redirect()->route('ai.show', $conversation);
+    }
+
+    /**
+     * Мини-чат в углу экрана: тот же диалог, но ответ отдаём JSON —
+     * страница под виджетом не перезагружается.
+     */
+    public function ask(Request $request, AiAssistantService $ai)
+    {
+        [$conversation, $answer] = $this->handle($request, $ai);
+
+        return response()->json([
+            'conversation_id' => $conversation->id,
+            'answer' => $answer['content'],
+            'ok' => $answer['ok'],
+            'used_today' => $this->usedToday($request),
+        ]);
+    }
+
+    /**
+     * Общий путь вопроса: проверки → сохранение вопроса → ответ → сохранение
+     * ответа. Один код на полную страницу и на виджет.
+     *
+     * @return array{0: AiConversation, 1: array{content: string, input_tokens: ?int, output_tokens: ?int, ok: bool}}
+     */
+    private function handle(Request $request, AiAssistantService $ai): array
     {
         $data = $request->validate([
             'message' => ['required', 'string', 'min:2', 'max:4000'],
@@ -70,7 +101,7 @@ class AiAssistantController extends Controller
 
         $conversation->touch(); // свежий диалог — наверх списка
 
-        return redirect()->route('ai.show', $conversation);
+        return [$conversation, $answer];
     }
 
     public function destroy(Request $request, AiConversation $conversation)
@@ -97,7 +128,7 @@ class AiAssistantController extends Controller
                     ->orderBy('id')
                     ->get(['id', 'role', 'content', 'created_at']),
             ] : null,
-            'configured' => (bool) config('services.anthropic.key'),
+            'configured' => AiKey::isSet(),
             'usedToday' => $this->usedToday($request),
             'dailyLimit' => (int) config('services.anthropic.daily_limit'),
         ]);

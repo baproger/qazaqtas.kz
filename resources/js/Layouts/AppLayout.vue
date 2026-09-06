@@ -4,6 +4,7 @@ import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import AiWidget from '@/Components/AiWidget.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import SkeletonScreen from '@/Components/SkeletonScreen.vue';
 import { useT } from '@/composables/useTranslations';
@@ -41,6 +42,8 @@ const user = computed(() => page.props.auth.user);
 const perms = computed(() => page.props.auth.user?.permissions ?? []);
 const roles = computed(() => page.props.auth.user?.roles ?? []);
 const isLeadership = computed(() => roles.value.some((r) => ['admin', 'director', 'financist'].includes(r)));
+// Помощник — инструмент первых лиц (тот же список, что у Gate use-ai-assistant).
+const canUseAi = computed(() => roles.value.some((r) => ['admin', 'director'].includes(r)));
 const flash = computed(() => page.props.flash || {});
 // Колокольчик обновляется сам: штамп раз в 10 с, список — только при изменении.
 useLive({ notifications: ['notifications'] });
@@ -675,6 +678,8 @@ const clockDate = computed(() => now.value.toLocaleDateString('ru-RU', { day: '2
         </div>
 
         <ConfirmModal />
+        <!-- Мини-чат помощника доступен с любой страницы — но только первым лицам. -->
+        <AiWidget v-if="canUseAi" />
     </div>
 </template>
 

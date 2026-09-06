@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Support\AiKey;
 use App\Support\Seo;
 
 /**
@@ -19,7 +20,7 @@ class SeoAiService
     /** @return array{ru: array<string,string>, kk: array<string,string>, source: string} */
     public function generate(Product $product): array
     {
-        if (config('services.anthropic.key') && class_exists(\Anthropic\Client::class)) {
+        if (AiKey::isSet() && class_exists(\Anthropic\Client::class)) {
             try {
                 return $this->viaClaude($product) + ['source' => 'ai'];
             } catch (\Throwable $e) {
@@ -93,7 +94,7 @@ class SeoAiService
      */
     public function translations(array $base): array
     {
-        if (config('services.anthropic.key') && class_exists(\Anthropic\Client::class)) {
+        if (AiKey::isSet() && class_exists(\Anthropic\Client::class)) {
             try {
                 return $this->translationsViaClaude($base) + ['source' => 'ai'];
             } catch (\Throwable $e) {
@@ -151,7 +152,7 @@ class SeoAiService
      */
     public function describe(array $base): array
     {
-        if (config('services.anthropic.key') && class_exists(\Anthropic\Client::class)) {
+        if (AiKey::isSet() && class_exists(\Anthropic\Client::class)) {
             try {
                 return $this->describeViaClaude($base) + ['source' => 'ai'];
             } catch (\Throwable $e) {
@@ -229,7 +230,7 @@ class SeoAiService
     /** @return array{ru: array<string,string>, kk: array<string,string>} */
     private function describeViaClaude(array $base): array
     {
-        $client = new \Anthropic\Client(apiKey: (string) config('services.anthropic.key'));
+        $client = new \Anthropic\Client(apiKey: (string) AiKey::get());
 
         $message = $client->messages->create(
             model: (string) config('services.anthropic.model'),
@@ -300,7 +301,7 @@ class SeoAiService
     /** @return array{kk: array<string,mixed>, ru: array<string,mixed>} */
     private function translationsViaClaude(array $base): array
     {
-        $client = new \Anthropic\Client(apiKey: (string) config('services.anthropic.key'));
+        $client = new \Anthropic\Client(apiKey: (string) AiKey::get());
 
         $message = $client->messages->create(
             model: (string) config('services.anthropic.model'),
@@ -344,7 +345,7 @@ class SeoAiService
     /** @return array{ru: array<string,string>, kk: array<string,string>} */
     private function viaClaude(Product $product): array
     {
-        $client = new \Anthropic\Client(apiKey: (string) config('services.anthropic.key'));
+        $client = new \Anthropic\Client(apiKey: (string) AiKey::get());
 
         $facts = json_encode([
             'name_ru' => $product->name,

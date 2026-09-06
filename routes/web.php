@@ -77,6 +77,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:use-ai-assistant')->prefix('ai')->group(function () {
         Route::get('/', [AiAssistantController::class, 'index'])->name('ai.index');
         Route::post('send', [AiAssistantController::class, 'send'])->middleware('throttle:15,1')->name('ai.send');
+        // Мини-чат в углу экрана — тот же вопрос, ответ в JSON.
+        Route::post('ask', [AiAssistantController::class, 'ask'])->middleware('throttle:15,1')->name('ai.ask');
         Route::get('{conversation}', [AiAssistantController::class, 'show'])->name('ai.show');
         Route::delete('{conversation}', [AiAssistantController::class, 'destroy'])->name('ai.destroy');
     });
@@ -414,3 +416,4 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+

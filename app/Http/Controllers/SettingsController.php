@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Support\AiKey;
 use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,7 +55,18 @@ class SettingsController extends Controller
             $settings[$key] = Setting::get($key, $default);
         }
 
-        return Inertia::render('Settings/General', ['settings' => $settings]);
+        return Inertia::render('Settings/General', [
+            'settings' => $settings,
+            // Ключ ИИ в браузер не отдаём: только «задан/нет», хвост для
+            // узнавания и откуда он взят. Менять ключ вправе лишь админ —
+            // это доступ к платному API от лица компании.
+            'aiKey' => [
+                'set' => AiKey::isSet(),
+                'tail' => AiKey::tail(),
+                'source' => AiKey::source(),
+                'canEdit' => $request->user()->hasRole('admin'),
+            ],
+        ]);
     }
 
     public function update(Request $request): RedirectResponse
@@ -81,6 +93,37 @@ class SettingsController extends Controller
             Setting::set($key, $value);
         }
 
+        $this->saveAiKey($request);
+
         return back()->with('success', 'Настройки сохранены.');
+    }
+
+    /**
+     * Ключ ИИ: сохраняем только если админ его прислал. Пустое поле —
+     * не «стереть», а «не менять»: иначе ключ пропадал бы при каждом
+     * сохранении соседней настройки.
+     */
+    private function saveAiKey(Request $request): void
+    {
+        if (! $request->user()->hasRole('admin')) {
+            return;
+        }
+
+        $request->validate([
+            'anthropic_key' => ['nullable', 'string', 'max:255'],
+            'anthropic_key_clear' => ['sometimes', 'boolean'],
+        ]);
+
+        if ($request->boolean('anthropic_key_clear')) {
+            AiKey::forget();
+
+            return;
+        }
+
+        $key = trim((string) $request->input('anthropic_key'));
+
+        if ($key !== '') {
+            AiKey::save($key);
+        }
     }
 }

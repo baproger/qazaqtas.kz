@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AiConversation;
+use App\Support\AiKey;
 use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +38,7 @@ class AiAssistantService
     {
         // Без ключа помощник не умолкает: типовые вопросы («склад»,
         // «просрочка», «деньги») он берёт прямо из базы — бесплатно и сразу.
-        if (! config('services.anthropic.key') || ! class_exists(\Anthropic\Client::class)) {
+        if (! AiKey::isSet() || ! class_exists(\Anthropic\Client::class)) {
             return $this->offline($question);
         }
 
@@ -61,7 +62,7 @@ class AiAssistantService
     /** @return array{content: string, input_tokens: ?int, output_tokens: ?int, ok: bool} */
     private function viaClaude(AiConversation $conversation, string $question): array
     {
-        $client = new \Anthropic\Client(apiKey: (string) config('services.anthropic.key'));
+        $client = new \Anthropic\Client(apiKey: (string) AiKey::get());
 
         $messages = $conversation->messages()
             ->latest('id')

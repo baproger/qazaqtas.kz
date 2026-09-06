@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\AiConversation;
 use App\Models\Deal;
 use App\Models\DealStage;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\AiAssistantService;
+use App\Support\AiKey;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\StageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -157,6 +159,68 @@ class AiAssistantTest extends TestCase
         $this->assertFalse($answer['ok']);
         $this->assertStringContainsString('Просроченные сделки', $answer['content']);
         $this->assertStringContainsString('ANTHROPIC_API_KEY', $answer['content']);
+    }
+
+    public function test_widget_answers_with_json(): void
+    {
+        $director = $this->user('director');
+        $this->fakeAnswer('Коротко: всё в порядке');
+
+        $this->actingAs($director)
+            ->postJson(route('ai.ask'), ['message' => 'Как дела?'])
+            ->assertOk()
+            ->assertJson(['answer' => 'Коротко: всё в порядке', 'ok' => true])
+            ->assertJsonStructure(['conversation_id', 'answer', 'ok', 'used_today']);
+
+        // Виджет и полная страница ведут ОДИН диалог — переписка не теряется.
+        $this->assertSame(2, AiConversation::firstOrFail()->messages()->count());
+    }
+
+    public function test_admin_saves_the_key_in_settings(): void
+    {
+        $admin = $this->user('admin');
+
+        $this->actingAs($admin)->put(route('settings.update'), [
+            'company_name' => 'QAZAQ TAS', 'currency' => '₸', 'default_locale' => 'ru',
+            'tax_percent' => 3, 'anthropic_key' => 'sk-ant-secret-1234',
+        ])->assertRedirect();
+
+        $this->assertSame('sk-ant-secret-1234', AiKey::get());
+        // В базе — шифротекст, а не сам ключ.
+        $this->assertStringNotContainsString('sk-ant-secret', (string) Setting::get(AiKey::SETTING));
+
+        // Наружу отдаём только хвост и признак — сам ключ не покидает сервер.
+        $this->actingAs($admin)->get(route('settings.index'))->assertOk()
+            ->assertInertia(fn ($p) => $p->where('aiKey.set', true)->where('aiKey.tail', '1234'))
+            ->assertDontSee('sk-ant-secret', false);
+    }
+
+    public function test_empty_key_field_keeps_the_saved_key(): void
+    {
+        $admin = $this->user('admin');
+        AiKey::save('sk-ant-keep-me');
+
+        // Сохранение соседней настройки не должно стирать ключ.
+        $this->actingAs($admin)->put(route('settings.update'), [
+            'company_name' => 'Новое имя', 'currency' => '₸', 'default_locale' => 'ru',
+            'tax_percent' => 3, 'anthropic_key' => '',
+        ])->assertRedirect();
+
+        $this->assertSame('sk-ant-keep-me', AiKey::get());
+    }
+
+    public function test_non_admin_cannot_change_the_key(): void
+    {
+        AiKey::save('sk-ant-admin-only');
+        $director = $this->user('director');
+        $director->givePermissionTo('setting.update');
+
+        $this->actingAs($director)->put(route('settings.update'), [
+            'company_name' => 'QAZAQ TAS', 'currency' => '₸', 'default_locale' => 'ru',
+            'tax_percent' => 3, 'anthropic_key' => 'sk-ant-podmena',
+        ])->assertRedirect();
+
+        $this->assertSame('sk-ant-admin-only', AiKey::get());
     }
 
     public function test_local_answers_cover_every_topic(): void

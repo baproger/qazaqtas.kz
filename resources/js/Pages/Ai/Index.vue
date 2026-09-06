@@ -9,6 +9,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { parseAnswer } from '@/utils/chatText';
 import { useE } from '@/composables/useTranslations';
 
 const tr = useE();
@@ -35,22 +36,6 @@ const examples = [
     tr('Сколько заказов в цехе и где они стоят?'),
     tr('Сравни поступления денег с прошлым месяцем'),
 ];
-
-/**
- * Разбор ответа: строки → абзацы и пункты списка, внутри — **жирное**.
- * Никакого HTML из текста модели не строим (см. комментарий вверху).
- */
-const parse = (text) => String(text ?? '').split('\n').map((line) => {
-    const trimmed = line.trim();
-    const bullet = /^[-•*]\s+/.test(trimmed);
-    const body = bullet ? trimmed.replace(/^[-•*]\s+/, '') : trimmed;
-
-    return {
-        bullet,
-        empty: body === '',
-        parts: body.split(/\*\*(.+?)\*\*/g).map((chunk, i) => ({ text: chunk, bold: i % 2 === 1 })),
-    };
-});
 
 const scrollDown = () => nextTick(() => {
     if (feed.value) feed.value.scrollTop = feed.value.scrollHeight;
@@ -145,7 +130,7 @@ const remove = (id) => router.delete(route('ai.destroy', id), { preserveScroll: 
                             :class="m.role === 'user'
                                 ? 'bg-indigo-600 text-white'
                                 : 'spotlight border border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800/80 dark:bg-slate-800/40 dark:text-slate-200'">
-                            <template v-for="(line, i) in parse(m.content)" :key="i">
+                            <template v-for="(line, i) in parseAnswer(m.content)" :key="i">
                                 <div v-if="line.empty" class="h-2" />
                                 <div v-else :class="line.bullet ? 'flex gap-2' : ''">
                                     <span v-if="line.bullet" class="shrink-0 opacity-50">•</span>
